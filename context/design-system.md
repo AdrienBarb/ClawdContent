@@ -2,80 +2,105 @@
 
 ## Aesthetic Direction
 
-Warm, editorial, premium. Inspired by modern editorial sites — serif display headings paired with clean sans-serif body text. The overall feel is approachable yet refined, with generous whitespace, soft warm tones, and no hard borders.
+Dark, techy, OpenClaw-adjacent. Inspired by OpenClaw's brand identity — dark navy backgrounds, coral accents, subtle starfield dots, and bold sans-serif typography. The feel is modern developer-tool meets creator product. Visually aligned with the OpenClaw ecosystem to ride brand recognition.
+
+The landing page uses a scoped `.dark-theme` class (on the `(home)` layout) that overrides Tailwind theme CSS variables. The dashboard retains its own light content area with dark sidebar.
 
 ---
 
 ## Typography
 
+Single font throughout — no serif headings.
+
 | Role | Font | Tailwind Class | Usage |
 |------|------|----------------|-------|
-| **Display / Headings** | Playfair Display | `font-serif` | h1, h2, h3, logo, pricing numbers |
-| **Body / UI** | DM Sans | `font-sans` (default) | Paragraphs, buttons, nav, labels, inputs |
+| **Everything** | DM Sans | `font-sans` (default) | Headings, body, buttons, nav, labels |
+
+`--font-serif` is aliased to DM Sans in `@theme` so any legacy `font-serif` class renders DM Sans.
 
 ### Heading scale
 
-- **h1** (hero): `font-serif text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-bold leading-[1.1] tracking-tight`
-- **h2** (sections): `font-serif text-4xl md:text-5xl font-bold`
-- **h3** (cards/features): `font-serif text-xl md:text-2xl font-semibold`
+- **h1** (hero): `text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-bold leading-[1.1] tracking-tight text-white`
+- **h2** (sections): `text-4xl md:text-5xl font-bold text-white`
+- **h3** (cards/features): `text-xl md:text-2xl font-semibold text-white`
 - **Body text**: `text-[0.95rem] leading-relaxed` or `text-lg md:text-xl leading-relaxed`
-- **Small text**: `text-sm text-muted-foreground`
+- **Small text**: `text-sm text-[#7a7f94]`
 
 ---
 
 ## Color Palette
 
-All colors are defined in `globals.css` using `oklch()` for full CSS color support with Tailwind v4.
+### Theme architecture
 
-### Core colors
+Colors are defined in `globals.css` using `@theme` (not `@theme inline` — we need CSS custom properties so `.dark-theme` can override them).
 
-| Token | Tailwind | oklch Value | Description |
-|-------|----------|-------------|-------------|
-| `background` | `bg-background` | `oklch(0.98 0.01 70)` | Warm cream, used as page background |
-| `foreground` | `text-foreground` | `oklch(0.22 0.05 280)` | Dark navy-purple, primary text |
-| `card` | `bg-card` | `oklch(1 0 0)` | Pure white, card/panel backgrounds |
-| `primary` | `bg-primary` | `oklch(0.42 0.2 280)` | Deep indigo-purple, buttons & accents |
-| `primary-foreground` | `text-primary-foreground` | `oklch(1 0 0)` | White, text on primary backgrounds |
-| `muted` | `bg-muted` | `oklch(0.95 0.008 70)` | Light warm tone, subtle backgrounds |
-| `muted-foreground` | `text-muted-foreground` | `oklch(0.55 0.03 280)` | Medium gray-purple, secondary text |
-| `border` | `border` | `oklch(0.92 0.008 70)` | Warm light border |
+- **Light theme** (default, used by dashboard): oklch values in `@theme`
+- **Dark theme** (landing pages): hex overrides in `.dark-theme` class
 
-### Accent colors
+### Landing page colors (dark theme)
 
-| Token | CSS Variable | Value | Usage |
-|-------|-------------|-------|-------|
-| `lavender` | `--color-lavender` | `#C8B6F5` | Feature sections, CTA sections (`.bg-lavender`) |
+| Element | Hex | Usage |
+|---------|-----|-------|
+| Background | `#0d0f17` | Page background |
+| Card / Surface | `#151929` | Cards, panels, sections |
+| Card inner | `#111320` | Slightly lighter nested cards (e.g. HowItWorks outer) |
+| Border | `#1e2233` | Card borders, dividers |
+| Primary / Accent | `#e8614d` | CTAs, links, highlights, OpenClaw brand color |
+| Primary hover | `#d4563f` | Button hover state |
+| Text (primary) | `#ffffff` / `text-white` | Headings, names, emphasis |
+| Text (body) | `#e8e9f0` | General body text |
+| Text (secondary) | `#c0c4d0` | Quotes, lighter body |
+| Text (muted) | `#7a7f94` | Labels, captions, muted info |
+| Text (dim) | `#555a6b` | Strikethroughs, disclaimers |
 
-### Pastel card backgrounds
+### Dashboard colors (light theme — unchanged)
 
-Used on feature/testimonial cards for visual variety:
+| Element | Value | Usage |
+|---------|-------|-------|
+| Content area | `bg-[#f8f9fc]` | Main dashboard background |
+| Cards | `bg-white` | Dashboard cards |
+| Text | `text-gray-900` | Primary dashboard text |
+| Muted text | `text-gray-500` | Secondary dashboard text |
+| Borders | `border-gray-100` | Card borders |
 
-- `bg-amber-50` — warm yellow
-- `bg-sky-50` — light blue
-- `bg-violet-50` — light purple
+### Sidebar colors (CSS variables in `:root`)
+
+| Variable | Value | Usage |
+|----------|-------|-------|
+| `--sidebar-bg` | `#151929` | Sidebar background |
+| `--sidebar-bg-hover` | `#1c2035` | Nav item hover |
+| `--sidebar-bg-active` | `#252a3a` | Active nav item (behind coral) |
+| `--sidebar-text` | `#7a7f94` | Inactive nav text |
+| `--sidebar-text-active` | `#ffffff` | Active nav text |
+| `--sidebar-accent` | `#e8614d` | Active nav background, avatar bg |
+| `--sidebar-border` | `#1e2233` | Divider lines |
+| `--sidebar-user-bg` | `#1a1d2e` | User section background |
 
 ---
 
 ## Backgrounds & Gradients
 
-### Hero warm glow (`.hero-warm-glow`)
+### Hero dark glow (`.hero-dark-glow`)
 
-Subtle warm radial gradient applied to the hero section:
+Warm coral radial gradient from the top of the hero section:
 
 ```css
 background:
-  radial-gradient(ellipse 60% 50% at 85% 80%, oklch(0.9 0.06 60 / 0.4) 0%, transparent 70%),
-  radial-gradient(ellipse 40% 40% at 10% 60%, oklch(0.88 0.05 290 / 0.25) 0%, transparent 70%),
+  radial-gradient(ellipse 80% 50% at 50% -10%, rgba(232, 97, 77, 0.15) 0%, transparent 60%),
+  radial-gradient(ellipse 40% 30% at 85% 15%, rgba(232, 97, 77, 0.08) 0%, transparent 50%),
   var(--color-background);
 ```
 
-- Peach glow in bottom-right
-- Subtle lavender glow in left
-- Warm cream base
+### Starfield (`.starfield`)
 
-### Lavender sections (`.bg-lavender`)
+Subtle repeating dot pattern using CSS `radial-gradient` layers on a `::before` pseudo-element. Dots are 1-1.5px, white at 6-20% opacity, tiling at `500px x 350px`. Children need `position: relative; z-index: 1` (applied via `.starfield > *`).
 
-Full lavender `#C8B6F5` background with white cards inside. Used for "How It Works" and "Final CTA" sections. Always use `rounded-[2rem]` on the lavender container.
+### Final CTA gradient
+
+Dark gradient with subtle coral border:
+```
+bg-gradient-to-br from-[#1a1020] to-[#0d0f17] border border-[#e8614d]/20
+```
 
 ---
 
@@ -92,14 +117,17 @@ All buttons use **pill shape** (`rounded-full`) globally.
 | Large | `size="lg"` | `h-12 px-8` |
 | CTA (custom) | `size="lg"` + `className="h-14 px-10 text-base"` | Tall pill for hero/section CTAs |
 
-### Variants
+### Landing page buttons
 
-| Variant | Usage |
-|---------|-------|
-| `default` | Primary purple CTA — hero, pricing, section buttons |
-| `outline` | Secondary actions with border |
-| `ghost` | Navbar sign-in, subtle actions |
-| `secondary` | Warm beige background |
+All CTAs on the landing page use explicit coral colors (not theme `bg-primary`) for clarity:
+
+```
+bg-[#e8614d] hover:bg-[#d4563f] text-white
+```
+
+### Dashboard buttons
+
+Dashboard buttons use a mix of theme `bg-primary` (purple on light theme) and hardcoded coral `bg-[#e8614d]` for specific actions (e.g. Configure Telegram).
 
 ---
 
@@ -109,36 +137,45 @@ All buttons use **pill shape** (`rounded-full`) globally.
 |---------|--------|
 | Buttons | `rounded-full` (pill) |
 | Cards (standard) | `rounded-2xl` |
-| Cards (large/sections) | `rounded-3xl` |
-| Lavender containers | `rounded-[2rem]` |
-| Icon containers | `rounded-xl` or `rounded-full` |
+| Cards (large/sections) | `rounded-3xl` or `rounded-[2rem]` |
+| Icon containers | `rounded-xl` |
 | Badges/pills | `rounded-full` |
 
 ---
 
 ## Spacing
 
-Generous whitespace throughout. Sections breathe.
+Generous whitespace throughout.
 
 | Element | Padding |
 |---------|---------|
 | Section vertical | `py-20 md:py-28` |
 | Container horizontal | `px-6` |
 | Card inner | `p-8` to `p-10` |
-| Lavender containers | `p-10 md:p-16` or `p-12 md:p-20` |
+| Section containers | `p-10 md:p-16` or `p-12 md:p-20` |
 | Between section heading and content | `mb-14` to `mb-20` |
 
 ---
 
-## Shadows
+## Cards (Landing Page)
 
-Soft, minimal. No hard drop shadows.
+Dark cards with subtle borders. No shadows (they don't work on dark backgrounds).
 
-| Element | Shadow |
-|---------|--------|
-| Cards | `shadow-sm` or `shadow-md` |
-| Pricing card | `shadow-md` |
-| White cards inside lavender | `shadow-sm` |
+```
+bg-[#151929] border border-[#1e2233] rounded-2xl p-8
+```
+
+Hover state for interactive cards:
+```
+hover:border-[#e8614d]/20 transition-colors
+```
+
+Feature cards include a coral icon container:
+```
+<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e8614d]/10">
+  <Icon className="h-5 w-5 text-[#e8614d]" />
+</div>
+```
 
 ---
 
@@ -146,56 +183,65 @@ Soft, minimal. No hard drop shadows.
 
 ### Hero
 - Left-aligned text (not centered)
-- Max width `max-w-3xl` on text block
+- Max width `max-w-xl` on text block (`lg:max-w-xl`)
 - Full viewport height feel: `min-h-[85vh] flex items-center`
-- Warm glow background
+- Dark glow + starfield background
+- "OpenClaw" highlighted in coral in the headline
+- "Powered by OpenClaw" pill badge below CTA
 
 ### Section headings
-- Serif font, centered
+- Bold sans-serif, `text-white`, centered
 - Multi-line with `<br />` for intentional line breaks
 - Generous bottom margin (`mb-14` to `mb-20`)
 
 ### Feature columns
-- 3-column grid: `grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-16`
-- Centered text, serif subheadings
+- 3-column grid: `grid grid-cols-1 md:grid-cols-3 gap-8`
+- Dark cards with icon, heading, description
+- Coral icon accent on each card
 
-### Lavender card sections
-- Outer: `bg-lavender rounded-[2rem] p-10 md:p-16`
-- Inner items: `bg-white rounded-2xl px-6 py-5 shadow-sm`
+### Dark card sections (HowItWorks)
+- Outer: `rounded-[2rem] border border-[#1e2233] bg-[#111320] p-10 md:p-16`
+- Inner items: `bg-[#151929] border border-[#1e2233] rounded-2xl px-6 py-5`
 - 2-column grid for items: `grid grid-cols-1 md:grid-cols-2 gap-4`
 
 ### Testimonial cards
-- Pastel backgrounds (`bg-amber-50`, `bg-sky-50`, `bg-violet-50`)
-- `rounded-2xl p-8`
-- Quote text, then name/role at bottom
+- Dark cards: `bg-[#151929] border border-[#1e2233] rounded-2xl p-8`
+- Quote text in `text-[#c0c4d0]`, name in `text-white`, role in `text-[#7a7f94]`
+
+### Stats grid
+- 2x4 grid of dark cards with coral values
+- Value: `text-3xl md:text-4xl font-bold text-[#e8614d]`
+- Label: `text-sm text-[#7a7f94] font-medium`
 
 ---
 
 ## Navbar
 
-- No border, transparent with backdrop blur: `bg-background/80 backdrop-blur-md`
+- Dark transparent: `bg-[#0d0f17]/80 backdrop-blur-md border-b border-[#1e2233]/50`
 - Height: `h-20`
-- Logo: `font-serif text-2xl font-bold text-primary`
-- CTA button (logged out): purple pill `px-7 py-5 text-sm`
-- Avatar (logged in): `h-9 w-9` with `border-2 border-primary/20`
+- Logo: `text-2xl font-bold text-white hover:text-[#e8614d]`
+- CTA button (logged out): coral pill `bg-[#e8614d] hover:bg-[#d4563f]`
+- Avatar (logged in): `h-9 w-9` with `border-2 border-[#e8614d]/30`
+- Dropdown: `bg-[#151929] border-[#1e2233]`
 
 ---
 
 ## Footer
 
-- Minimal, single row layout
-- Brand name in `font-serif`
-- Single "Support" mailto link
-- Bottom bar: copyright + Privacy/Terms links
+- Dark background: `bg-[#0a0c14] border-t border-[#1e2233]`
+- Brand name: `text-lg font-semibold text-white`
+- Links: `text-[#7a7f94] hover:text-[#e8614d]`
+- Copyright: `text-sm text-[#7a7f94]`
 
 ---
 
 ## FAQ Accordion
 
 - Native `<details>/<summary>` elements (no JS dependency)
-- White card on warm background: `bg-card rounded-2xl p-6 shadow-sm`
-- Chevron rotation via CSS: `.faq-chevron` with `rotate(180deg)` on `details[open]`
-- Hidden default marker: `list-none` on summary
+- Dark card: `bg-[#151929] border border-[#1e2233] rounded-2xl p-6`
+- Summary text: `text-[#e8e9f0]`
+- Answer text: `text-[#7a7f94]`
+- Chevron: `text-[#555a6b]`, rotates 180deg on `details[open]`
 
 ---
 
@@ -213,10 +259,11 @@ Using `framer-motion` via `AnimatedSection` wrapper component.
 
 ## Key Rules
 
-1. **Always use `font-serif` on headings** (h1, h2, h3, pricing numbers, logo)
-2. **No hard borders on cards** — use `shadow-sm` or background color contrast
-3. **Warm tones only** — no cold grays or blues for backgrounds/borders
+1. **DM Sans everywhere** — no serif fonts, single typeface
+2. **Dark cards with borders** — `bg-[#151929] border border-[#1e2233]`, no shadows on dark
+3. **Coral `#e8614d` is the accent** — CTAs, highlights, icons, hover states, OpenClaw branding
 4. **Pill buttons everywhere** — never use `rounded-md` on buttons
 5. **Generous spacing** — when in doubt, add more whitespace
-6. **Pastel card fills** for visual variety — alternate between amber, sky, violet
-7. **Lavender `#C8B6F5`** for accent sections — always with `rounded-[2rem]` and white items inside
+6. **OpenClaw brand alignment** — dark backgrounds, coral accents, starfield dots, techy vibe
+7. **Scoped dark theme** — `.dark-theme` class on `(home)` layout only; dashboard stays light
+8. **Use `@theme` not `@theme inline`** — CSS custom properties must cascade for `.dark-theme` overrides

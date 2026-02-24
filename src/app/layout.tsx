@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Playfair_Display, DM_Sans } from "next/font/google";
+import { DM_Sans } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import GlobalErrorHandler from "@/components/GlobalErrorHandler";
 import { QueryProviders } from "@/components/providers/QueryProviders";
@@ -7,12 +7,6 @@ import { PostHogProvider } from "@/components/tracking/PostHogProvider";
 import "./globals.css";
 import { genPageMetadata } from "@/lib/seo/genPageMetadata";
 import { siteMetadata } from "@/data/siteMetadata";
-
-const playfair = Playfair_Display({
-  variable: "--font-playfair",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
-});
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
@@ -34,7 +28,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${playfair.variable} ${dmSans.variable} antialiased`}
+        className={`${dmSans.variable} antialiased`}
       >
         <QueryProviders>
           <PostHogProvider>

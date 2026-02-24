@@ -26,24 +26,24 @@ export default function FinalCTASection() {
       <div className="container mx-auto">
         <div className="mx-auto max-w-4xl">
           <AnimatedSection>
-            <div className="bg-lavender rounded-[2rem] p-12 md:p-20 text-center">
-              <h2 className="font-serif text-4xl md:text-5xl font-bold mb-5">
+            <div className="rounded-[2rem] border border-[#e8614d]/20 bg-gradient-to-br from-[#1a1020] to-[#0d0f17] p-12 md:p-20 text-center">
+              <h2 className="text-4xl md:text-5xl font-bold mb-5 text-white">
                 Ready to Stop Juggling
                 <br />
                 13 Different Apps?
               </h2>
-              <p className="text-foreground/70 text-lg mb-10 max-w-lg mx-auto">
+              <p className="text-[#7a7f94] text-lg mb-10 max-w-lg mx-auto">
                 Your AI content manager is one click away. Setup takes less than
                 2 minutes.
               </p>
               <Button
                 size="lg"
                 onClick={handleGetStarted}
-                className="text-base px-10 h-14"
+                className="text-base px-10 h-14 bg-[#e8614d] hover:bg-[#d4563f] text-white"
               >
                 Get Started — $39/mo
               </Button>
-              <p className="mt-5 text-sm text-foreground/50">
+              <p className="mt-5 text-sm text-[#555a6b]">
                 Cancel anytime. No contracts.
               </p>
             </div>

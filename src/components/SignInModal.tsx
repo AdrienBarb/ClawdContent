@@ -65,10 +65,10 @@ export default function SignInModal({ open, onOpenChange }: SignInModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="bg-[#151929] border-[#1e2233] text-[#e8e9f0] [&>button]:text-[#7a7f94] [&>button]:hover:text-white">
         <DialogHeader>
-          <DialogTitle>Sign In</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-white">Sign In</DialogTitle>
+          <DialogDescription className="text-[#7a7f94]">
             Enter your email address and we&apos;ll send you a magic link to
             sign in.
           </DialogDescription>
@@ -77,7 +77,7 @@ export default function SignInModal({ open, onOpenChange }: SignInModalProps) {
           <Button
             type="button"
             variant="outline"
-            className="w-full"
+            className="w-full border-[#1e2233] bg-transparent text-[#e8e9f0] hover:bg-[#1c2035] hover:text-white"
             disabled={isLoading}
             onClick={async () => {
               setIsLoading(true);
@@ -111,10 +111,10 @@ export default function SignInModal({ open, onOpenChange }: SignInModalProps) {
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
+              <span className="w-full border-t border-[#1e2233]" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
+              <span className="bg-[#151929] px-2 text-[#555a6b]">
                 Or
               </span>
             </div>
@@ -122,21 +122,26 @@ export default function SignInModal({ open, onOpenChange }: SignInModalProps) {
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-[#e8e9f0]">Email</Label>
               <Input
                 id="email"
                 type="email"
                 placeholder="you@example.com"
+                className="bg-[#0d0f17] border-[#1e2233] text-[#e8e9f0] placeholder:text-[#555a6b] focus-visible:ring-[#e8614d]"
                 {...register("email")}
                 disabled={isLoading}
               />
               {errors.email && (
-                <p className="text-sm text-destructive">
+                <p className="text-sm text-[#e8614d]">
                   {errors.email.message}
                 </p>
               )}
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button
+              type="submit"
+              className="w-full bg-[#e8614d] hover:bg-[#d4563f] text-white"
+              disabled={isLoading}
+            >
               {isLoading ? "Sending..." : "Send Magic Link"}
             </Button>
           </form>
