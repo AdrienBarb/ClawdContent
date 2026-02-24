@@ -7,6 +7,6 @@ config();
 export default defineConfig({
   schema: path.join(__dirname, "src", "lib", "db", "schema.prisma"),
   datasource: {
-    url: process.env.DATABASE_URL!,
+    url: process.env.DIRECT_URL!,
   },
 });
