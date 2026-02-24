@@ -21,7 +21,7 @@ cat > "$CONFIG_FILE" <<JSONEOF
   "agents": {
     "defaults": {
       "model": {
-        "primary": "${LLM_MODEL:-kimi-k2.5}"
+        "primary": "${LLM_MODEL:-anthropic/claude-sonnet-4-5}"
       }
     }
   },
