@@ -26,12 +26,22 @@ cat > "$CONFIG_FILE" <<JSONEOF
     }
   },
   "models": {
+    "mode": "merge",
     "providers": {
       "moonshot": {
         "baseUrl": "https://api.moonshot.ai/v1",
         "apiKey": "${MOONSHOT_API_KEY:-}",
         "api": "openai-completions",
-        "models": ["kimi-k2.5"]
+        "models": [
+          {
+            "id": "kimi-k2.5",
+            "name": "Kimi K2.5",
+            "reasoning": false,
+            "input": ["text"],
+            "contextWindow": 256000,
+            "maxTokens": 8192
+          }
+        ]
       }
     }
   },
