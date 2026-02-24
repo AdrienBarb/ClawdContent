@@ -30,7 +30,8 @@ cat > "$CONFIG_FILE" <<JSONEOF
       "moonshot": {
         "baseUrl": "https://api.moonshot.ai/v1",
         "apiKey": "${MOONSHOT_API_KEY:-}",
-        "api": "openai-completions"
+        "api": "openai-completions",
+        "models": ["kimi-k2.5"]
       }
     }
   },
