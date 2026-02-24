@@ -1,4 +1,4 @@
-# ClawdContent
+# PostClaw
 
 A modern Next.js SaaS application with authentication, database, email, payments, analytics, rate limiting, and SEO optimization.
 
@@ -80,7 +80,7 @@ A modern Next.js SaaS application with authentication, database, email, payments
 1. **Clone and install:**
 ```bash
 git clone <your-repo-url>
-cd ClawdContent
+cd PostClaw
 npm install
 ```
 

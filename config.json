@@ -1,85 +1,58 @@
 {
   "project": {
-    "name": "ClawdContent",
-    "shortName": "clawdcontent",
-    "brandName": "ClawdContent",
-    "description": "A modern SaaS application for content management",
-    "tagline": "Your content, simplified",
-    "url": "https://www.clawdcontent.com",
+    "name": "PostClaw",
+    "shortName": "postclaw",
+    "brandName": "PostClaw",
+    "description": "Your personal AI content manager on Telegram",
+    "tagline": "Publish everywhere. From one chat.",
+    "url": "https://www.postclaw.io",
     "logo": "/logo.png",
     "favicon": "/favicon.ico"
   },
   "seo": {
-    "title": "ClawdContent - Your Main Value Proposition",
-    "description": "A modern SaaS application for content management. Start free today.",
+    "title": "PostClaw - Your Personal AI Content Manager",
+    "description": "Your personal AI content manager on Telegram, powered by OpenClaw. Create, adapt, and publish to 13 social platforms — just by chatting.",
     "keywords": [
-      "saas",
-      "your-keyword-1",
-      "your-keyword-2",
-      "your-keyword-3"
+      "OpenClaw",
+      "OpenClaw social media",
+      "AI content manager",
+      "social media automation",
+      "Telegram bot",
+      "AI social media",
+      "content creation AI",
+      "social media publishing",
+      "multi-platform posting",
+      "PostClaw"
     ],
-    "author": "Your Name",
+    "author": "PostClaw",
     "ogImage": "/og-image.png",
-    "twitterHandle": "@yourhandle"
+    "twitterHandle": "@postclaw"
   },
   "contact": {
-    "email": "hello@yourproject.com",
-    "supportEmail": "support@yourproject.com"
+    "email": "hello@postclaw.io",
+    "supportEmail": "support@postclaw.io"
   },
   "social": {
-    "twitter": "https://x.com/yourhandle"
+    "twitter": "https://x.com/postclaw"
   },
   "pricing": {
-    "plans": [
-      {
-        "id": "starter",
-        "name": "Starter",
-        "price": "$9",
-        "period": "/month",
-        "description": "Perfect for individuals and small projects",
-        "stripePriceId": "",
-        "features": [
-          "Up to 5 projects",
-          "Basic analytics",
-          "Email support",
-          "5GB storage",
-          "Community access"
-        ]
-      },
-      {
-        "id": "professional",
-        "name": "Professional",
-        "price": "$29",
-        "period": "/month",
-        "description": "Ideal for growing businesses",
-        "stripePriceId": "",
-        "popular": true,
-        "features": [
-          "Unlimited projects",
-          "Advanced analytics",
-          "Priority support",
-          "50GB storage",
-          "API access",
-          "Custom integrations"
-        ]
-      },
-      {
-        "id": "enterprise",
-        "name": "Enterprise",
-        "price": "Custom",
-        "period": "",
-        "description": "For large organizations",
-        "stripePriceId": "",
-        "features": [
-          "Everything in Professional",
-          "Dedicated account manager",
-          "Custom SLA",
-          "Unlimited storage",
-          "On-premise deployment",
-          "24/7 phone support"
-        ]
-      }
-    ]
+    "plan": {
+      "id": "postclaw",
+      "name": "PostClaw",
+      "price": "$39",
+      "period": "/month",
+      "description": "Everything you need to publish everywhere, from one Telegram chat.",
+      "features": [
+        "Publish to 13 social platforms",
+        "Unlimited posts",
+        "Personal AI bot on Telegram",
+        "AI-adapted content per platform",
+        "Connect unlimited social accounts",
+        "Private, isolated bot instance",
+        "24/7 always-on bot",
+        "Cancel anytime — no contracts"
+      ]
+    }
   },
   "features": {
     "auth": {

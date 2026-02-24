@@ -1,350 +1,213 @@
 # CLAUDE.md
 
-## Project Overview
+## What is PostClaw?
 
-**ClawdContent** is a SaaS application built on a production-ready stack with authentication, database, email, payments, analytics, and rate limiting.
+PostClaw is a SaaS ($39/mo) that gives each user a personal AI content manager on Telegram. Users chat with their bot to create, adapt, and publish social media posts across 4 text-friendly platforms (Twitter/X, LinkedIn, Bluesky, Threads).
 
-**What's included:**
-- Authentication with email/password and magic links (Better Auth)
-- PostgreSQL database with Prisma ORM
-- Email sending with Resend + React Email templates
-- Payment processing with Stripe (one-time and subscriptions)
-- Analytics with PostHog (server & client-side)
-- Rate limiting with Upstash Redis
-- SEO optimization (robots.txt, sitemap, llms.txt, metadata)
-- Responsive UI with Tailwind CSS + shadcn/ui
+**How it works:**
+1. User signs up, pays $39/mo via Stripe
+2. We auto-provision a private OpenClaw container on Railway + a Late API profile
+3. User connects their Telegram bot token and social accounts
+4. User chats with their bot on Telegram to create and publish content
 
-**Who it's for:**
-- Developers who want to launch a SaaS product quickly
-- Indie hackers building their next project
-- Teams that need a solid foundation to build on
+**Key services:**
+- **OpenClaw** — Open-source AI agent framework (runs in Docker on Railway)
+- **Late API** (getlate.dev) — Unified social media API
+- **Kimi K2.5** (Moonshot) — LLM powering the bot
+- **Railway** — Container hosting (one container per user)
+
+---
+
+## Architecture
+
+```
+User ─── Telegram ─── OpenClaw Container (Railway)
+                            │
+                            ├── Kimi K2.5 (Moonshot API)
+                            └── Late API (social posting)
+
+Dashboard (Next.js on Vercel)
+    ├── Stripe (payments)
+    ├── Railway API (container management)
+    ├── Late API (account connections)
+    └── PostgreSQL (Supabase)
+```
+
+**Per-user isolation:** Each user gets their own Railway container with a **profile-scoped Late API key** that can only access their own social accounts. One master Late account, many scoped keys.
+
+**Custom Docker image:** `ghcr.io/adrienbarb/postclaw-agent:latest`
+- Entrypoint generates `openclaw.json` + `SOUL.md` from env vars
+- Pre-installs the `late-api` skill from ClawHub
+- GitHub Action auto-builds on changes to `docker/openclaw/`
+
+---
 
 ## Tech Stack
 
 - **Next.js 16** (App Router) + TypeScript + React 19
-- **Prisma** + PostgreSQL (Supabase)
-- **Better Auth** for authentication
-- **Stripe** for payments
-- **Resend** + React Email for transactional emails
-- **Upstash Redis** for rate limiting
-- **React Query** (via useApi hook) for client-side data fetching
-- **Zustand** for client-side global state
-- **react-hook-form** + Zod for form handling and validation
-- **Tailwind CSS** + shadcn/ui for styling
-- **PostHog** for analytics
+- **Prisma 7** + PostgreSQL (Supabase)
+- **Better Auth** (magic links + Google OAuth)
+- **Stripe** (subscriptions)
+- **Resend** + React Email (transactional emails)
+- **React Query** via `useApi` hook
+- **Tailwind CSS v4** + shadcn/ui
+- **PostHog** (analytics)
 
-## Commands
+---
 
-```bash
-npm run dev          # Start development server
-npm run build        # Build for production
-npm run lint         # Run ESLint
-npx prisma migrate dev    # Run migrations
-npx prisma generate       # Generate Prisma client
-npx prisma studio         # Open Prisma Studio GUI
-npm run email:dev         # Preview email templates
+## Data Model
+
 ```
+User (1:1) ── Subscription
+     (1:1) ── RailwayService
+     (1:1) ── LateProfile (1:N) ── SocialAccount
+     (1:N) ── Session
+     (1:N) ── Account
+```
+
+| Model | Purpose |
+|-------|---------|
+| **User** | Authenticated user (Better Auth) |
+| **Subscription** | Stripe subscription: customerId, subscriptionId, status, period dates |
+| **RailwayService** | User's container: serviceId, environmentId, status, hasTelegramToken |
+| **LateProfile** | User's Late API profile: profileId, scoped API key |
+| **SocialAccount** | Connected social platform: accountId, platform, username, status |
+| **Session** | Auth session |
+| **Account** | OAuth/password account info |
+
+Schema: `src/lib/db/schema.prisma`
+
+---
 
 ## Project Structure
 
 ```
 src/
-├── app/                  # Next.js App Router pages
-│   ├── api/              # API route handlers
-│   │   ├── auth/         # Authentication routes
-│   │   ├── webhooks/     # Payment webhooks
-│   │   └── waitlist/     # Waitlist endpoints
-│   ├── (home)/           # Public pages layout
-│   └── (dashboard)/      # Authenticated pages layout
-├── components/           # React components
-│   ├── ui/               # shadcn/ui components
-│   ├── sections/         # Landing page sections
-│   ├── navbar/           # Navigation components
-│   └── providers/        # Context providers
+├── app/
+│   ├── (home)/                    # Public pages (with Navbar + Footer)
+│   │   ├── page.tsx               # Landing page
+│   │   ├── privacy/               # Privacy policy
+│   │   └── terms/                 # Terms of service
+│   ├── (dashboard)/               # Protected dashboard layout (sidebar)
+│   │   ├── layout.tsx             # Sidebar + auth guard
+│   │   └── d/
+│   │       ├── page.tsx           # Dashboard home (real-time polling)
+│   │       ├── accounts/          # Social accounts
+│   │       │   └── callback/      # OAuth return handler
+│   │       ├── billing/           # Subscription info
+│   │       ├── bot/               # Redirects to /d
+│   │       └── subscribe/         # Stripe checkout card
+│   ├── api/
+│   │   ├── auth/[...all]/         # Better Auth
+│   │   ├── checkout/              # Stripe Checkout session
+│   │   ├── bot/                   # Bot management (GET/POST/PATCH)
+│   │   ├── accounts/              # List accounts (GET)
+│   │   ├── accounts/connect/      # OAuth connect URL (POST)
+│   │   ├── accounts/callback/     # Sync after OAuth (POST)
+│   │   ├── dashboard/status/      # Dashboard polling endpoint (GET)
+│   │   ├── provisioning/retry/    # Retry failed provisioning (POST)
+│   │   └── webhooks/stripe/       # Stripe webhooks
+│   └── checkout/success/          # Post-payment redirect
+├── components/
+│   ├── ui/                        # shadcn/ui
+│   ├── sections/                  # Landing page sections
+│   ├── dashboard/                 # Dashboard components
+│   │   ├── Sidebar.tsx            # Dark sidebar navigation
+│   │   ├── DashboardHome.tsx      # Real-time dashboard with polling
+│   │   ├── TelegramTokenModal.tsx # Telegram bot token setup modal
+│   │   └── ConnectAccountButtons.tsx # Platform connect buttons with icons
+│   └── providers/                 # Context providers
 ├── lib/
-│   ├── api/              # Axios instance with interceptors
-│   ├── better-auth/      # Authentication setup
-│   ├── constants/        # App constants (error messages, etc.)
-│   ├── db/               # Prisma client & schema
-│   ├── emails/           # React Email templates
-│   ├── errors/           # Error handler
-│   ├── hooks/            # Custom hooks (useApi)
-│   ├── ratelimit/        # Upstash rate limiters
-│   ├── resend/           # Resend email client
-│   ├── schemas/          # Zod validation schemas
-│   ├── seo/              # SEO utilities
-│   ├── services/         # Business logic services
-│   ├── stores/           # Zustand stores
-│   ├── stripe/           # Stripe client
-│   ├── tracking/         # PostHog analytics
-│   └── utils/            # Utility functions
-└── data/                 # Static data (site metadata)
-```
-
-## Data Model
-
-```
-User (1) ──→ (N) Session
-     (1) ──→ (N) Account
-```
-
-### Key Entities
-
-| Entity       | Purpose                                      |
-| ------------ | -------------------------------------------- |
-| **User**     | Authenticated user                           |
-| **Session**  | User session for auth                        |
-| **Account**  | OAuth/password account info                  |
-| **Waitlist** | Pre-launch email collection                  |
-
-## Key Files
-
-| File                                  | Purpose                               |
-| ------------------------------------- | ------------------------------------- |
-| `src/lib/hooks/useApi.ts`             | Centralized API hook (React Query)    |
-| `src/lib/constants/errorMessage.ts`   | Centralized error messages            |
-| `src/lib/errors/errorHandler.ts`      | Centralized error handler             |
-| `src/lib/better-auth/auth.ts`         | Authentication configuration          |
-| `src/lib/ratelimit/client.ts`         | Upstash Redis rate limiters           |
-| `src/lib/ratelimit/checkRateLimit.ts` | Rate limit check utility              |
-| `src/lib/stripe/client.ts`            | Stripe client setup                   |
-| `config.json`                         | Project configuration (name, SEO, etc)|
-
-## API Routes
-
-| Route                    | Methods | Purpose                        | Auth Required |
-| ------------------------ | ------- | ------------------------------ | ------------- |
-| `/api/auth/[...all]`     | All     | Better Auth routes             | Various       |
-| `/api/waitlist`          | POST    | Join waitlist                  | No            |
-| `/api/webhooks/stripe`   | POST    | Handle Stripe payment events   | No            |
-
-### Rate Limiting
-
-Public endpoints should be rate-limited to prevent abuse. Use Upstash Redis for rate limiting:
-
-```typescript
-import { checkRateLimit } from "@/lib/ratelimit/checkRateLimit";
-import { publicLimiter } from "@/lib/ratelimit/client";
-
-export async function POST(req: NextRequest) {
-  const rateLimit = await checkRateLimit(req, publicLimiter);
-  if (!rateLimit.success) return rateLimit.response;
-  // ... rest of logic
-}
+│   ├── late/                      # Late API client + mutations
+│   ├── railway/                   # Railway GraphQL client + mutations
+│   ├── services/                  # Business logic
+│   │   ├── provisioning.ts        # Create/destroy/retry user containers
+│   │   ├── subscription.ts        # Stripe checkout + sync
+│   │   ├── bot.ts                 # Bot status, token, restart
+│   │   └── accounts.ts            # Social account CRUD
+│   ├── schemas/                   # Zod validation schemas
+│   ├── better-auth/               # Auth config
+│   ├── stripe/                    # Stripe client
+│   ├── db/                        # Prisma client + schema
+│   ├── constants/
+│   │   ├── appRouter.ts           # Centralized route config
+│   │   ├── errorMessage.ts        # Error message constants
+│   │   └── platforms.tsx          # Social platform icons + brand colors
+│   ├── errors/                    # Error handler
+│   ├── hooks/                     # useApi (React Query)
+│   ├── resend/                    # Email client
+│   └── emails/                    # React Email templates
+├── middleware.ts                   # Auth guard for /d/* routes
+└── data/                           # Static data
 ```
 
 ---
 
-## Coding Standards
+## API Routes
 
-### Core Principles
+| Route | Methods | Auth | Purpose |
+|-------|---------|------|---------|
+| `/api/auth/[...all]` | All | Various | Better Auth |
+| `/api/checkout` | POST | Yes | Create Stripe Checkout session |
+| `/api/bot` | GET | Yes | Get bot status |
+| `/api/bot` | POST | Yes | Set Telegram token |
+| `/api/bot` | PATCH | Yes | Restart bot |
+| `/api/accounts` | GET | Yes | List connected accounts |
+| `/api/accounts/connect` | POST | Yes | Get Late OAuth URL |
+| `/api/accounts/callback` | POST | Yes | Sync accounts after OAuth |
+| `/api/dashboard/status` | GET | Yes | Dashboard polling (bot, accounts, subscription) |
+| `/api/provisioning/retry` | POST | Yes | Retry failed provisioning |
+| `/api/webhooks/stripe` | POST | No | Stripe webhook handler |
 
-1. **Type Safety First**: Always use TypeScript types. Avoid `any` unless absolutely necessary.
-2. **Server Components Default**: Use Server Components by default, Client Components only when needed.
-3. **Code Reusability**: Extract reusable logic into utilities, hooks, and services.
-4. **Readability**: Split complex code into smaller, well-named functions/components.
+---
 
-### File Naming
+## Dashboard UI
 
-- **Components**: PascalCase (`UserProfile.tsx`)
-- **Utilities/Hooks/Services**: camelCase (`formatDate.ts`, `useApi.ts`)
-- **Constants**: UPPER_SNAKE_CASE (`API_BASE_URL`)
-- **No index files**: Never create `index.ts` for re-exporting. Always import directly from source.
+The dashboard uses a **sidebar layout** with real-time polling:
 
-### API Routes Pattern
+- **Sidebar** (`Sidebar.tsx`): Dark navy sidebar (`#151929`) with coral accent (`#e8614d`), nav items (Dashboard, Accounts, Billing), user section at bottom. Mobile: sheet drawer.
+- **Dashboard home** (`DashboardHome.tsx`): Polls `/api/dashboard/status` every 5s. Shows bot status card (dark gradient), Telegram card, social accounts list with platform icons/colors.
+- **Telegram modal** (`TelegramTokenModal.tsx`): Links to OpenClaw docs (`docs.openclaw.ai/channels/telegram`).
+- **Connect buttons** (`ConnectAccountButtons.tsx`): Platform icons with brand colors for Twitter/X, LinkedIn, Bluesky, Threads.
+- **Content area**: Light gray background (`#f8f9fc`), white rounded cards, `max-w-5xl`.
 
-**Authenticated Route:**
-```typescript
-import { errorMessages } from "@/lib/constants/errorMessage";
-import { errorHandler } from "@/lib/errors/errorHandler";
-import { auth } from "@/lib/better-auth/auth";
-import { NextResponse, NextRequest } from "next/server";
-import { headers } from "next/headers";
+Supported platforms (text-only): **Twitter/X**, **LinkedIn**, **Bluesky**, **Threads**.
 
-export async function POST(req: NextRequest) {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+---
 
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: errorMessages.UNAUTHORIZED },
-        { status: 401 }
-      );
-    }
+## Service Layer
 
-    const body = await req.json();
-    const validatedData = someSchema.parse(body);
-    const result = await someService({ userId: session.user.id, data: validatedData });
+Services live in `src/lib/services/`. Routes call services, services call adapters (`src/lib/late/`, `src/lib/railway/`, `src/lib/stripe/`). Routes never call adapters directly.
 
-    return NextResponse.json(result, { status: 201 });
-  } catch (error) {
-    return errorHandler(error);
-  }
-}
-```
+### Key flows
 
-**Public Route with Rate Limiting:**
-```typescript
-import { errorMessages } from "@/lib/constants/errorMessage";
-import { errorHandler } from "@/lib/errors/errorHandler";
-import { NextResponse, NextRequest } from "next/server";
-import { checkRateLimit } from "@/lib/ratelimit/checkRateLimit";
-import { publicLimiter } from "@/lib/ratelimit/client";
+**Provisioning (on checkout.session.completed):**
+1. Create Late profile → scoped API key
+2. Deploy Railway container with env vars
+3. Save RailwayService + LateProfile to DB
 
-export async function POST(req: NextRequest) {
-  try {
-    // Rate limit check (FIRST THING in public routes)
-    const rateLimit = await checkRateLimit(req, publicLimiter);
-    if (!rateLimit.success) return rateLimit.response;
+**Deprovisioning (on subscription.deleted):**
+1. Delete Railway service
+2. Clean up DB records
 
-    const body = await req.json();
-    const validatedData = someSchema.parse(body);
-    const result = await someService({ data: validatedData });
+**Social account connection:**
+1. Get Late OAuth URL → redirect user
+2. On callback, sync accounts from Late API → upsert DB → update container env vars
 
-    return NextResponse.json(result, { status: 201 });
-  } catch (error) {
-    return errorHandler(error);
-  }
-}
-```
+---
 
-### Client-Side Data Fetching (useApi Hook)
+## Stripe Webhooks
 
-Always use `useApi` hook for client-side API calls. Never use axios directly.
+| Event | Action |
+|-------|--------|
+| `checkout.session.completed` | Upsert subscription, provision user (non-blocking via `after()`) |
+| `customer.subscription.created` | Idempotent upsert subscription |
+| `customer.subscription.updated` | Sync status + period dates |
+| `customer.subscription.deleted` | Status → canceled, deprovision (non-blocking) |
+| `invoice.payment_succeeded` | Extend period, verify container running |
+| `invoice.payment_failed` | Status → past_due (do NOT deprovision) |
 
-```typescript
-import useApi from "@/lib/hooks/useApi";
-
-// GET request
-const { useGet } = useApi();
-const { data, isLoading, error } = useGet("/endpoint", { param: "value" });
-
-// POST request
-const { usePost } = useApi();
-const { mutate: createItem, isPending } = usePost("/endpoint", {
-  onSuccess: (data) => {
-    queryClient.invalidateQueries({ queryKey: ["items"] });
-  },
-});
-```
-
-### Service Layer Pattern
-
-Extract database logic to `src/lib/services/`. Services should be reusable and single-responsibility.
-
-```typescript
-import { prisma } from "@/lib/db/prisma";
-
-export async function createUser({
-  email,
-  name,
-}: {
-  email: string;
-  name: string;
-}) {
-  return await prisma.user.create({
-    data: { email, name },
-  });
-}
-```
-
-### Validation with Zod
-
-Define schemas in `src/lib/schemas/`. Use for request validation in API routes.
-
-```typescript
-import { z } from "zod";
-
-export const createUserSchema = z.object({
-  email: z.string().email(),
-  name: z.string().min(2),
-});
-```
-
-### Forms (react-hook-form + Zod + shadcn/ui)
-
-Always use `react-hook-form` with Zod validation and shadcn/ui Form components for all forms.
-
-```typescript
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-
-const formSchema = z.object({
-  email: z.string().email(),
-  name: z.string().min(2),
-});
-
-type FormValues = z.infer<typeof formSchema>;
-
-export function MyForm() {
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: { email: "", name: "" },
-  });
-
-  const onSubmit = (data: FormValues) => {
-    // Handle submission
-  };
-
-  return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input placeholder="email@example.com" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="submit">Submit</Button>
-      </form>
-    </Form>
-  );
-}
-```
-
-### Styling & Design
-
-- Use Tailwind CSS utility classes
-- Use shadcn/ui components from `@/components/ui/` for all UI elements
-- Use theme-aware classes (`text-foreground`, `bg-background`, `text-muted-foreground`, etc.)
-- **Respect the existing design**: Match the current app's visual style, spacing, and color palette
-- Do not introduce new colors or design patterns without explicit approval
-- Keep UI consistent with existing components and pages
-
-### Import Organization
-
-```typescript
-// External
-import { NextRequest } from "next/server";
-import { z } from "zod";
-
-// Internal
-import { prisma } from "@/lib/db/prisma";
-import { errorHandler } from "@/lib/errors/errorHandler";
-
-// Types
-import type { User } from "@prisma/client";
-```
+---
 
 ## Environment Variables
 
@@ -358,88 +221,169 @@ BETTER_AUTH_SECRET=
 BETTER_AUTH_URL=
 NEXT_PUBLIC_BASE_URL=
 
+# Payments (Stripe)
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+STRIPE_PRICE_ID=
+
 # Email (Resend)
 RESEND_API_KEY=
+
+# Railway
+RAILWAY_API_TOKEN=
+RAILWAY_DEFAULT_PROJECT_ID=
+
+# Late API (master key — not per-user)
+LATE_API_KEY=
+
+# LLM (Moonshot/Kimi K2.5)
+MOONSHOT_API_KEY=
 
 # Analytics (PostHog)
 NEXT_PUBLIC_POSTHOG_KEY=
 NEXT_PUBLIC_POSTHOG_HOST=
 
-# App Environment
+# App
 NEXT_PUBLIC_APP_ENV=
-
-# Payments (Stripe)
-STRIPE_SECRET_KEY=
-STRIPE_WEBHOOK_SECRET=
-
-# Rate Limiting (Upstash Redis)
-UPSTASH_REDIS_REST_URL=
-UPSTASH_REDIS_REST_TOKEN=
 ```
 
-## MCP Servers
+---
 
-This project uses MCP (Model Context Protocol) servers to extend Claude Code capabilities.
+## Commands
 
-### Available Servers
+```bash
+npm run dev                # Start dev server
+npm run build              # Build for production
+npm run lint               # ESLint
+npx prisma migrate dev     # Run migrations
+npx prisma generate        # Generate Prisma client
+npx prisma studio          # Prisma Studio GUI
+npm run email:dev          # Preview email templates
+```
 
-| Server | Purpose |
-|--------|---------|
-| **context7** | Up-to-date documentation for Next.js, Prisma, Stripe, React Query, etc. |
-| **puppeteer** | Browser automation, screenshots, UI testing |
-| **github** | PR creation, issue management, branch operations |
-| **prisma** | Migration status, schema management, Prisma CLI |
-| **postgres** | Direct database queries for debugging |
+---
 
-### Usage Guidelines
+## Phase Status
 
-1. **Always use Context7** when working with external libraries:
-   - Before implementing features with Next.js, Prisma, Stripe, or any library
-   - Add `use context7` to prompts or let the skill auto-detect
+| Phase | Status | What it covers |
+|-------|--------|---------------|
+| **Phase 0** | COMPLETE | Railway deploy + OpenClaw + Telegram + Kimi K2.5 |
+| **Phase 0.5** | COMPLETE | Late API integration + social posting via Telegram |
+| **Phase 1** | COMPLETE | DB schema, Stripe subscription, auto-provisioning, dashboard, onboarding |
+| **Phase 2** | TODO | Monitoring, production hardening, self-service billing portal |
 
-2. **Use Puppeteer** for:
-   - Taking screenshots of the UI
-   - Visual regression testing
-   - Debugging frontend issues
+---
 
-3. **Use GitHub MCP** for:
-   - Creating PRs with proper descriptions
-   - Managing issues
-   - Branch operations
+## Coding Standards
 
-4. **Use Prisma MCP** for:
-   - Checking migration status (`prisma migrate status`)
-   - Generating client after schema changes
-   - Database workflow assistance
+### Core Principles
 
-5. **Use PostgreSQL MCP** for:
-   - Debugging data issues with direct SQL queries
-   - Exploring database state
-   - Quick data verification
+1. **Type Safety First**: Always use TypeScript. Avoid `any`.
+2. **Server Components Default**: Client Components only for interactivity.
+3. **Thin API routes**: Validate input → call service → return response. No business logic in routes.
+4. **Service layer**: All business logic in `src/lib/services/`.
+5. **No barrel imports**: Import directly from source, never through index.ts.
 
-### Configuration
+### File Naming
 
-MCP servers are configured in `.claude/settings.local.json`. Ensure environment variables are set:
+- **Components**: PascalCase (`Sidebar.tsx`)
+- **Utilities/Hooks/Services**: camelCase (`provisioning.ts`, `useApi.ts`)
+- **Constants**: UPPER_SNAKE_CASE inside files
 
-- `GITHUB_PERSONAL_ACCESS_TOKEN` for GitHub operations
-- `DATABASE_URL` for PostgreSQL access
+### API Route Pattern
 
-## Getting Started
+```typescript
+import { errorMessages } from "@/lib/constants/errorMessage";
+import { errorHandler } from "@/lib/errors/errorHandler";
+import { auth } from "@/lib/better-auth/auth";
+import { NextResponse, NextRequest } from "next/server";
+import { headers } from "next/headers";
 
-1. Clone this repository
-2. Copy `.env.example` to `.env` and fill in the values
-3. Run `npm install`
-4. Run `npx prisma generate` to generate Prisma client
-5. Run `npx prisma migrate dev` to run migrations
-6. Run `npm run dev` to start the development server
-7. Open `http://localhost:3000`
+export async function POST(req: NextRequest) {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: errorMessages.UNAUTHORIZED },
+        { status: 401 }
+      );
+    }
+
+    const body = await req.json();
+    const data = someSchema.parse(body);
+    const result = await someService({ userId: session.user.id, data });
+
+    return NextResponse.json(result, { status: 200 });
+  } catch (error) {
+    return errorHandler(error);
+  }
+}
+```
+
+### Client-Side Data Fetching
+
+Always use `useApi` hook. Never use axios directly.
+
+```typescript
+const { useGet, usePost } = useApi();
+const { data } = useGet("/api/accounts");
+const { mutate } = usePost("/api/bot", { onSuccess: () => { ... } });
+```
+
+### Styling
+
+- Tailwind CSS v4 + shadcn/ui components from `@/components/ui/`
+- Dashboard: dark sidebar with CSS variables (`--sidebar-*`), light content area (`#f8f9fc`)
+- Cards: `rounded-2xl`, `border-gray-100`, `shadow-sm`, white background
+- Platform config with icons/colors in `src/lib/constants/platforms.tsx`
+- Match existing design — don't introduce new colors without approval
+
+---
+
+## Key Technical Notes
+
+### Prisma 7
+- Config in `prisma.config.ts` (loads `.env` via dotenv) — used by CLI only (migrate, generate)
+- Runtime client uses `@prisma/adapter-pg` driver adapter: `new PrismaClient({ adapter })`
+- No `url` in schema.prisma, no `datasourceUrl` in constructor — adapter is the only way
+- Schema at `src/lib/db/schema.prisma`
+
+### Stripe SDK v20 (2026 API)
+- API version: `2026-01-28.clover`
+- Period dates on subscription **items** (`sub.items.data[0].current_period_start`), not on subscription
+- Invoice subscription via `invoice.parent?.subscription_details?.subscription`
+
+### Late API
+- Base URL: `https://getlate.dev/api/v1` (changed from old `api.getlate.dev` domain)
+- Client: `src/lib/late/client.ts`
+- Profile-scoped API keys for per-user isolation
+
+### Railway
+- `setServiceVariables` auto-triggers container redeploy
+- Don't set multiple env vars in quick succession — use single call
+- Sleep mode enabled on containers to save costs
+
+### OpenClaw Container
+- Config dir: `$HOME/.openclaw/` (runs as `node` user)
+- Entrypoint generates `openclaw.json` from env vars
+- `OVERWRITE_SOUL=true` forces SOUL.md regeneration on restart
+- `dmPolicy: "open"` — safe because each user has their own private bot
+
+### Dashboard Layout
+- Root layout (`app/layout.tsx`): providers only, no Navbar/Footer
+- Public pages in `(home)/` route group: includes Navbar + Footer
+- Dashboard in `(dashboard)/` route group: sidebar layout, no Navbar/Footer
+- Sidebar uses CSS custom properties (`--sidebar-bg`, etc.) with inline styles
+
+---
 
 ## Configuration
 
-All project configuration is centralized in `config.json`:
-- Project name, description, tagline
-- SEO metadata (title, description, keywords)
-- Contact information
-- Social links
-- Pricing plans
+App config is centralized in `config.json`:
+- Project name, description, tagline, URL
+- SEO metadata
+- Contact info
+- Single pricing plan ($39/mo)
 - Feature flags

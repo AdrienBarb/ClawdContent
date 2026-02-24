@@ -7,15 +7,18 @@ generator client {
 }
 
 model User {
-  id            String    @id
-  name          String
-  email         String
-  emailVerified Boolean   @default(false)
-  image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @default(now()) @updatedAt
-  sessions      Session[]
-  accounts      Account[]
+  id             String          @id
+  name           String
+  email          String
+  emailVerified  Boolean         @default(false)
+  image          String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @default(now()) @updatedAt
+  sessions       Session[]
+  accounts       Account[]
+  subscription   Subscription?
+  railwayService RailwayService?
+  lateProfile    LateProfile?
 
   @@unique([email])
   @@map("user")
@@ -66,14 +69,60 @@ model Verification {
   @@map("verification")
 }
 
-model Waitlist {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  position  Int?
-  status    String   @default("pending")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model Subscription {
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stripeCustomerId     String   @unique
+  stripeSubscriptionId String   @unique
+  status               String   @default("incomplete") // active, past_due, canceled, incomplete
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
-  @@map("waitlist")
+  @@map("subscription")
+}
+
+model RailwayService {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  serviceId        String   @unique
+  environmentId    String
+  status           String   @default("pending") // pending, deploying, running, stopped, failed
+  hasTelegramToken Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("railway_service")
+}
+
+model LateProfile {
+  id             String          @id @default(cuid())
+  userId         String          @unique
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lateProfileId  String          @unique
+  lateApiKey     String
+  profileName    String
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  socialAccounts SocialAccount[]
+
+  @@map("late_profile")
+}
+
+model SocialAccount {
+  id            String      @id @default(cuid())
+  lateProfileId String
+  lateProfile   LateProfile @relation(fields: [lateProfileId], references: [id], onDelete: Cascade)
+  lateAccountId String      @unique
+  platform      String
+  username      String
+  status        String      @default("active") // active, disconnected
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@map("social_account")
 }

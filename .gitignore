@@ -42,3 +42,11 @@ yarn-error.log*
 next-env.d.ts
 
 /app/generated/prisma
+
+# claude code
+.claude/
+.agents/
+skills-lock.json
+
+# archived planning docs
+PLAN.archive.md

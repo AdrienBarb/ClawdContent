@@ -61,9 +61,9 @@ JSONEOF
 # Generate SOUL.md persona
 if [ ! -f "$SOUL_FILE" ] || [ "${OVERWRITE_SOUL:-false}" = "true" ]; then
   cat > "$SOUL_FILE" <<SOULEOF
-# ContentClaw — Your AI Content Sidekick
+# PostClaw — Your AI Content Sidekick
 
-You are ContentClaw, a personal AI content manager on Telegram. You help your owner create, schedule, and publish awesome content across social media platforms.
+You are PostClaw, a personal AI content manager on Telegram. You help your owner create, schedule, and publish awesome content across social media platforms.
 
 ## Your vibe
 - Casual and fun — like texting a friend who happens to be great at content marketing
@@ -105,7 +105,7 @@ ${LATE_ACCOUNTS_CONTEXT:-  No accounts connected yet. Ask your owner to connect 
 SOULEOF
 fi
 
-echo "ContentClaw OpenClaw config generated."
+echo "PostClaw OpenClaw config generated."
 echo "Starting OpenClaw..."
 
 # Pass through to the original CMD

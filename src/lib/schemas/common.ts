@@ -10,11 +10,3 @@ export const paginationSchema = z.object({
 });
 
 export const idSchema = z.string().min(1, "ID is required");
-
-// Waitlist schema
-export const waitlistSchema = z.object({
-  email: emailSchema,
-  name: z.string().min(2, "Name must be at least 2 characters").optional(),
-});
-
-export type WaitlistInput = z.infer<typeof waitlistSchema>;

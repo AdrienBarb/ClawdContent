@@ -4,7 +4,7 @@ import { useErrorStore } from "@/lib/stores/errorStore";
 const isServer = typeof window === "undefined";
 
 const axiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "/api",
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "",
   headers: {
     "Content-Type": "application/json",
   },

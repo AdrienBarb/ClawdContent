@@ -1,0 +1,21 @@
+import HeroSection from "@/components/sections/HeroSection";
+import HowItWorksSection from "@/components/sections/HowItWorksSection";
+import FeaturesSection from "@/components/sections/FeaturesSection";
+import SocialProofSection from "@/components/sections/SocialProofSection";
+import PricingSection from "@/components/sections/PricingSection";
+import FAQSection from "@/components/sections/FAQSection";
+import FinalCTASection from "@/components/sections/FinalCTASection";
+
+export default function Home() {
+  return (
+    <div className="flex flex-col">
+      <HeroSection />
+      <HowItWorksSection />
+      <FeaturesSection />
+      <SocialProofSection />
+      <PricingSection />
+      <FAQSection />
+      <FinalCTASection />
+    </div>
+  );
+}

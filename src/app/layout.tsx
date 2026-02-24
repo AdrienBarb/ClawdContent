@@ -4,8 +4,6 @@ import { Toaster } from "react-hot-toast";
 import GlobalErrorHandler from "@/components/GlobalErrorHandler";
 import { QueryProviders } from "@/components/providers/QueryProviders";
 import { PostHogProvider } from "@/components/tracking/PostHogProvider";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 import "./globals.css";
 import { genPageMetadata } from "@/lib/seo/genPageMetadata";
 import { siteMetadata } from "@/data/siteMetadata";
@@ -41,9 +39,7 @@ export default function RootLayout({
         <QueryProviders>
           <PostHogProvider>
             <div className="flex min-h-screen flex-col">
-              <Navbar />
-              <main className="flex-1">{children}</main>
-              <Footer />
+              {children}
             </div>
             <Toaster position="bottom-center" />
             <GlobalErrorHandler />

@@ -2,27 +2,38 @@
 
 @theme inline {
   --color-background: 0 0% 100%;
-  --color-foreground: 0 0% 3.9%;
+  --color-foreground: 220 15% 10%;
   --color-card: 0 0% 100%;
-  --color-card-foreground: 0 0% 3.9%;
+  --color-card-foreground: 220 15% 10%;
   --color-popover: 0 0% 100%;
-  --color-popover-foreground: 0 0% 3.9%;
-  --color-primary: 0 0% 9%;
-  --color-primary-foreground: 0 0% 98%;
-  --color-secondary: 0 0% 96.1%;
-  --color-secondary-foreground: 0 0% 9%;
-  --color-muted: 0 0% 96.1%;
-  --color-muted-foreground: 0 0% 45.1%;
-  --color-accent: 0 0% 96.1%;
-  --color-accent-foreground: 0 0% 9%;
+  --color-popover-foreground: 220 15% 10%;
+  --color-primary: 12 76% 61%;
+  --color-primary-foreground: 0 0% 100%;
+  --color-secondary: 220 14% 96%;
+  --color-secondary-foreground: 220 15% 10%;
+  --color-muted: 220 14% 96%;
+  --color-muted-foreground: 220 9% 46%;
+  --color-accent: 220 14% 96%;
+  --color-accent-foreground: 220 15% 10%;
   --color-destructive: 0 84.2% 60.2%;
   --color-destructive-foreground: 0 0% 98%;
-  --color-border: 0 0% 89.8%;
-  --color-input: 0 0% 89.8%;
-  --color-ring: 0 0% 3.9%;
-  --radius: 0.5rem;
+  --color-border: 220 13% 91%;
+  --color-input: 220 13% 91%;
+  --color-ring: 12 76% 61%;
+  --radius: 0.75rem;
   --font-sans: var(--font-montserrat);
   --font-mono: var(--font-poppins);
+}
+
+:root {
+  --sidebar-bg: #151929;
+  --sidebar-bg-hover: #1e2340;
+  --sidebar-bg-active: #252b4a;
+  --sidebar-text: #8b8fa7;
+  --sidebar-text-active: #ffffff;
+  --sidebar-accent: #e8614d;
+  --sidebar-border: #1e2340;
+  --sidebar-user-bg: #1a1f36;
 }
 
 * {
@@ -33,4 +44,18 @@ body {
   background-color: hsl(var(--color-background));
   color: hsl(var(--color-foreground));
   font-family: var(--font-sans);
+}
+
+/* FAQ accordion chevron */
+details summary::-webkit-details-marker,
+details summary::marker {
+  display: none;
+}
+
+details .faq-chevron {
+  transition: transform 0.2s ease;
+}
+
+details[open] .faq-chevron {
+  transform: rotate(180deg);
 }

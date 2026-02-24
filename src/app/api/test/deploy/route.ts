@@ -45,6 +45,10 @@ export async function POST(req: NextRequest) {
       envVars.LATE_API_KEY = process.env.LATE_API_KEY;
     }
 
+    if (process.env.MOONSHOT_API_KEY) {
+      envVars.MOONSHOT_API_KEY = process.env.MOONSHOT_API_KEY;
+    }
+
     const { service, environmentId } = await deployOpenClawContainer({
       name,
       image,

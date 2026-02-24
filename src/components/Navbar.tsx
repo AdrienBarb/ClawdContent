@@ -62,6 +62,9 @@ export default function Navbar() {
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="bg-background">
+                    <DropdownMenuItem asChild className="cursor-pointer">
+                      <Link href="/d">Dashboard</Link>
+                    </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={handleSignOut}
                       className="cursor-pointer"
