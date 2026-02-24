@@ -18,17 +18,23 @@ cat > "$CONFIG_FILE" <<JSONEOF
       "allowFrom": ["*"]
     }
   },
-  "llm": {
-    "default": {
-      "provider": "${LLM_PROVIDER:-openai-compatible}",
-      "model": "${LLM_MODEL:-kimi-k2.5}",
-      "apiBase": "${LLM_API_BASE:-https://integrate.api.nvidia.com/v1}",
-      "apiKey": "${LLM_API_KEY:-}"
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "${LLM_MODEL:-kimi-k2.5}"
+      }
     }
   },
-  "skills": [
-    "late-api"
-  ]
+  "skills": {
+    "entries": {
+      "late-api": {
+        "enabled": true,
+        "env": {
+          "LATE_API_KEY": "${LATE_API_KEY:-}"
+        }
+      }
+    }
+  }
 }
 JSONEOF
 
