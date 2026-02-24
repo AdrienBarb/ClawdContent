@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-CONFIG_DIR="/data/.openclaw"
+CONFIG_DIR="$HOME/.openclaw"
 CONFIG_FILE="$CONFIG_DIR/openclaw.json"
 SOUL_FILE="$CONFIG_DIR/SOUL.md"
 
@@ -63,5 +63,5 @@ fi
 echo "ContentClaw OpenClaw config generated."
 echo "Starting OpenClaw..."
 
-# Pass through to the original entrypoint
-exec node dist/index.js "$@"
+# Pass through to the original CMD
+exec node openclaw.mjs gateway --allow-unconfigured "$@"
