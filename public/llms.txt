@@ -1,0 +1,35 @@
+# YourProject
+
+> YourProject is a modern SaaS application that helps you [describe your value proposition].
+
+## About
+
+YourProject provides [describe your core functionality]. Built with modern technologies like Next.js, React, and TypeScript.
+
+**Key features:**
+- Feature 1: [Describe feature]
+- Feature 2: [Describe feature]
+- Feature 3: [Describe feature]
+- Feature 4: [Describe feature]
+
+## Target Audience
+
+- [Target audience 1]
+- [Target audience 2]
+- [Target audience 3]
+
+## Important Pages
+
+- [Homepage](https://www.yourproject.com): Main landing page with product overview
+- [Pricing](https://www.yourproject.com/pricing): Pricing plans and features
+- [Blog](https://www.yourproject.com/blog): Articles and updates
+
+## Contact
+
+- [Website](https://www.yourproject.com): Main website and contact
+
+## Optional
+
+- Founder: [Your Name]
+- Pricing: [Pricing info]
+- Category: SaaS, [Your category]
