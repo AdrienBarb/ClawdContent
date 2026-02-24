@@ -21,7 +21,16 @@ cat > "$CONFIG_FILE" <<JSONEOF
   "agents": {
     "defaults": {
       "model": {
-        "primary": "${LLM_MODEL:-anthropic/claude-sonnet-4-5}"
+        "primary": "${LLM_MODEL:-moonshot/kimi-k2.5}"
+      }
+    }
+  },
+  "models": {
+    "providers": {
+      "moonshot": {
+        "baseUrl": "https://api.moonshot.ai/v1",
+        "apiKey": "${MOONSHOT_API_KEY:-}",
+        "api": "openai-completions"
       }
     }
   },
