@@ -9,7 +9,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/contentclaw-agent
 
 jobs:
   build:
@@ -20,6 +19,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Lowercase image name
+        run: echo "IMAGE_NAME=${GITHUB_REPOSITORY_OWNER,,}/contentclaw-agent" >> "$GITHUB_ENV"
 
       - uses: docker/login-action@v3
         with:
