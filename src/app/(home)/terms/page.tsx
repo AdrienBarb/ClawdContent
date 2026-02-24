@@ -3,89 +3,339 @@ import { genPageMetadata } from "@/lib/seo/genPageMetadata";
 
 export const metadata: Metadata = genPageMetadata({
   title: "Terms of Service",
-  description: "Terms of Service",
+  description: "Terms of Service for PostClaw",
   url: "/terms",
 });
 
 export default function TermsPage() {
   return (
     <div className="container mx-auto px-4 py-16 max-w-4xl">
-      <h1 className="text-4xl font-bold mb-8">Terms of Service</h1>
+      <h1 className="text-4xl font-bold mb-2">Terms of Service</h1>
+      <p className="text-sm text-muted-foreground mb-10">
+        Last updated: February 24, 2026
+      </p>
 
-      <div className="prose prose-sm max-w-none space-y-6">
+      <div className="prose prose-sm max-w-none space-y-8">
         <section>
-          <h2 className="text-2xl font-semibold mb-4">Agreement to Terms</h2>
+          <h2 className="text-2xl font-semibold mb-4">1. Agreement to Terms</h2>
           <p className="text-muted-foreground">
-            By accessing or using our service, you agree to be bound by these
-            Terms of Service and all applicable laws and regulations. If you do
-            not agree with any of these terms, you are prohibited from using or
-            accessing this service.
+            These Terms of Service (&quot;Terms&quot;) govern your access to and
+            use of PostClaw (&quot;the Service&quot;), operated by PostClaw
+            (&quot;we&quot;, &quot;us&quot;, or &quot;our&quot;), accessible at{" "}
+            <a href="https://www.postclaw.io" className="underline">
+              postclaw.io
+            </a>
+            . By creating an account or using the Service, you agree to be bound
+            by these Terms. If you do not agree, do not use the Service.
           </p>
         </section>
 
         <section>
-          <h2 className="text-2xl font-semibold mb-4">Use License</h2>
+          <h2 className="text-2xl font-semibold mb-4">
+            2. Description of the Service
+          </h2>
           <p className="text-muted-foreground">
-            Permission is granted to temporarily access the materials on our
-            service for personal, non-commercial transitory viewing only. This
-            is the grant of a license, not a transfer of title, and under this
-            license you may not modify or copy the materials.
+            PostClaw provides a personal AI content manager accessible via
+            Telegram. The Service allows you to create, adapt, and publish social
+            media posts to supported platforms (including Twitter/X, LinkedIn,
+            Bluesky, and Threads) through a conversational interface with an
+            AI-powered bot. Each subscriber receives a dedicated, isolated bot
+            instance.
           </p>
         </section>
 
         <section>
-          <h2 className="text-2xl font-semibold mb-4">User Accounts</h2>
+          <h2 className="text-2xl font-semibold mb-4">
+            3. Account Registration
+          </h2>
+          <div className="space-y-3">
+            <p className="text-muted-foreground">
+              To use the Service, you must create an account by providing a valid
+              email address. You may also sign in using Google OAuth. You agree
+              to:
+            </p>
+            <ul className="list-disc pl-6 text-muted-foreground space-y-1">
+              <li>Provide accurate and complete registration information</li>
+              <li>Keep your account credentials secure</li>
+              <li>
+                Notify us immediately of any unauthorized access to your account
+              </li>
+              <li>
+                Accept responsibility for all activity that occurs under your
+                account
+              </li>
+            </ul>
+            <p className="text-muted-foreground">
+              You must be at least 18 years old to use the Service.
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h2 className="text-2xl font-semibold mb-4">
+            4. Subscription and Payment
+          </h2>
+          <div className="space-y-3">
+            <p className="text-muted-foreground">
+              The Service is available for a monthly subscription fee of $39/month.
+              Payment is processed through Stripe. By subscribing, you agree to:
+            </p>
+            <ul className="list-disc pl-6 text-muted-foreground space-y-1">
+              <li>
+                Recurring billing: your subscription renews automatically each
+                month until canceled
+              </li>
+              <li>
+                Provide valid payment information and authorize us to charge your
+                payment method
+              </li>
+              <li>
+                Price changes: we may change pricing with at least 30 days&apos;
+                notice before the next billing cycle
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section>
+          <h2 className="text-2xl font-semibold mb-4">5. Cancellation and Refunds</h2>
+          <div className="space-y-3">
+            <p className="text-muted-foreground">
+              You may cancel your subscription at any time from your dashboard.
+              Upon cancellation:
+            </p>
+            <ul className="list-disc pl-6 text-muted-foreground space-y-1">
+              <li>
+                You retain access to the Service until the end of your current
+                billing period
+              </li>
+              <li>
+                Your bot instance and connected accounts will be deprovisioned
+                after the billing period ends
+              </li>
+              <li>
+                No partial refunds are provided for unused portions of a billing
+                period
+              </li>
+            </ul>
+            <p className="text-muted-foreground">
+              If you believe you are entitled to a refund due to a Service
+              defect, please contact us at{" "}
+              <a href="mailto:support@postclaw.io" className="underline">
+                support@postclaw.io
+              </a>
+              .
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h2 className="text-2xl font-semibold mb-4">
+            6. AI-Generated Content
+          </h2>
+          <div className="space-y-3">
+            <p className="text-muted-foreground">
+              The Service uses artificial intelligence to help you create and
+              adapt content. You acknowledge and agree that:
+            </p>
+            <ul className="list-disc pl-6 text-muted-foreground space-y-1">
+              <li>
+                <strong>You are responsible</strong> for all content published
+                through the Service to your social media accounts
+              </li>
+              <li>
+                AI-generated content may contain inaccuracies or errors — you
+                should review content before publishing
+              </li>
+              <li>
+                We do not guarantee that AI-generated content will be free from
+                bias, factual errors, or inappropriate material
+              </li>
+              <li>
+                You retain ownership of the content you create using the Service
+              </li>
+              <li>
+                We do not claim any intellectual property rights over your
+                content
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section>
+          <h2 className="text-2xl font-semibold mb-4">
+            7. Third-Party Platforms
+          </h2>
+          <div className="space-y-3">
+            <p className="text-muted-foreground">
+              The Service integrates with third-party platforms including
+              Telegram, Twitter/X, LinkedIn, Bluesky, and Threads. You
+              acknowledge that:
+            </p>
+            <ul className="list-disc pl-6 text-muted-foreground space-y-1">
+              <li>
+                You must comply with each platform&apos;s terms of service when
+                using PostClaw to publish content
+              </li>
+              <li>
+                We are not responsible for actions taken by third-party platforms
+                (e.g., account suspension, content removal)
+              </li>
+              <li>
+                Connecting your social accounts requires granting PostClaw
+                permission to post on your behalf
+              </li>
+              <li>
+                You may disconnect your accounts at any time from the dashboard
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section>
+          <h2 className="text-2xl font-semibold mb-4">
+            8. Telegram Bot Token
+          </h2>
           <p className="text-muted-foreground">
-            When you create an account with us, you must provide information
-            that is accurate, complete, and current at all times. You are
-            responsible for safeguarding the password and for all activities
-            that occur under your account.
+            To use the Service, you must provide your own Telegram bot token. You
+            are responsible for creating and managing your Telegram bot through
+            BotFather. We store your bot token securely to operate the Service.
+            You should not share your bot token with third parties.
           </p>
         </section>
 
         <section>
-          <h2 className="text-2xl font-semibold mb-4">Prohibited Uses</h2>
+          <h2 className="text-2xl font-semibold mb-4">9. Acceptable Use</h2>
+          <div className="space-y-3">
+            <p className="text-muted-foreground">
+              You agree not to use the Service to:
+            </p>
+            <ul className="list-disc pl-6 text-muted-foreground space-y-1">
+              <li>
+                Publish spam, misleading, or deceptive content
+              </li>
+              <li>
+                Generate or distribute illegal, harmful, hateful, or harassing
+                content
+              </li>
+              <li>
+                Violate any applicable law or regulation
+              </li>
+              <li>
+                Infringe on the intellectual property rights of others
+              </li>
+              <li>
+                Attempt to gain unauthorized access to the Service or its
+                infrastructure
+              </li>
+              <li>
+                Reverse-engineer, decompile, or disassemble any part of the
+                Service
+              </li>
+              <li>
+                Resell, sublicense, or provide the Service to third parties
+              </li>
+            </ul>
+            <p className="text-muted-foreground">
+              We reserve the right to suspend or terminate accounts that violate
+              these terms without notice or refund.
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h2 className="text-2xl font-semibold mb-4">
+            10. Service Availability
+          </h2>
           <p className="text-muted-foreground">
-            You may not use our service in any way that causes, or may cause,
-            damage to the service or impairment of the availability or
-            accessibility of the service, or in any way which is unlawful,
-            illegal, fraudulent, or harmful.
+            We strive to maintain high availability but do not guarantee
+            uninterrupted access to the Service. The Service may be temporarily
+            unavailable due to maintenance, updates, or circumstances beyond our
+            control. We are not liable for any loss or damage resulting from
+            Service downtime.
           </p>
         </section>
 
         <section>
-          <h2 className="text-2xl font-semibold mb-4">Termination</h2>
+          <h2 className="text-2xl font-semibold mb-4">
+            11. Limitation of Liability
+          </h2>
+          <div className="space-y-3">
+            <p className="text-muted-foreground">
+              To the maximum extent permitted by applicable law:
+            </p>
+            <ul className="list-disc pl-6 text-muted-foreground space-y-1">
+              <li>
+                The Service is provided &quot;as is&quot; and &quot;as
+                available&quot; without warranties of any kind, whether express
+                or implied
+              </li>
+              <li>
+                We disclaim all warranties, including but not limited to implied
+                warranties of merchantability, fitness for a particular purpose,
+                and non-infringement
+              </li>
+              <li>
+                In no event shall our total liability exceed the amount you paid
+                for the Service in the 12 months preceding the claim
+              </li>
+              <li>
+                We are not liable for any indirect, incidental, special,
+                consequential, or punitive damages, including loss of profits,
+                data, or business opportunities
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section>
+          <h2 className="text-2xl font-semibold mb-4">
+            12. Indemnification
+          </h2>
           <p className="text-muted-foreground">
-            We may terminate or suspend your account and bar access to the
-            service immediately, without prior notice or liability, for any
-            reason whatsoever, including without limitation if you breach the
-            Terms.
+            You agree to indemnify and hold PostClaw harmless from any claims,
+            damages, losses, or expenses (including legal fees) arising from your
+            use of the Service, your content, your violation of these Terms, or
+            your violation of any third-party rights.
           </p>
         </section>
 
         <section>
-          <h2 className="text-2xl font-semibold mb-4">Disclaimer</h2>
+          <h2 className="text-2xl font-semibold mb-4">13. Changes to Terms</h2>
           <p className="text-muted-foreground">
-            The materials on our service are provided on an &apos;as is&apos;
-            basis. We make no warranties, expressed or implied, and hereby
-            disclaim and negate all other warranties including without
-            limitation, implied warranties or conditions of merchantability,
-            fitness for a particular purpose, or non-infringement of
-            intellectual property or other violation of rights.
+            We may update these Terms from time to time. We will notify you of
+            material changes by email or through the Service at least 30 days
+            before they take effect. Your continued use of the Service after
+            changes take effect constitutes acceptance of the updated Terms.
           </p>
         </section>
 
         <section>
-          <h2 className="text-2xl font-semibold mb-4">Contact Information</h2>
+          <h2 className="text-2xl font-semibold mb-4">
+            14. Governing Law
+          </h2>
           <p className="text-muted-foreground">
-            If you have any questions about these Terms of Service, please
-            contact us through our support channels.
+            These Terms are governed by and construed in accordance with the laws
+            of France, without regard to its conflict of law provisions. Any
+            disputes arising from these Terms or the Service shall be subject to
+            the exclusive jurisdiction of the courts of France. Nothing in these
+            Terms affects your rights as a consumer under applicable EU consumer
+            protection laws.
           </p>
         </section>
 
-        <p className="text-sm text-muted-foreground mt-8">
-          Last updated: {new Date().toLocaleDateString()}
-        </p>
+        <section>
+          <h2 className="text-2xl font-semibold mb-4">
+            15. Contact Information
+          </h2>
+          <p className="text-muted-foreground">
+            If you have any questions about these Terms, please contact us at{" "}
+            <a href="mailto:hello@postclaw.io" className="underline">
+              hello@postclaw.io
+            </a>
+            .
+          </p>
+        </section>
       </div>
     </div>
   );

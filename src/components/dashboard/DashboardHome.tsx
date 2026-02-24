@@ -13,9 +13,11 @@ import {
   Plus,
   MessageCircle,
   Loader2,
+  X,
 } from "lucide-react";
 import TelegramTokenModal from "@/components/dashboard/TelegramTokenModal";
 import ConnectAccountButtons from "@/components/dashboard/ConnectAccountButtons";
+import toast from "react-hot-toast";
 
 interface DashboardStatus {
   subscription: {
@@ -75,6 +77,7 @@ function StatusLabel({ status }: { status: string | null }) {
 export default function DashboardHome({ userName }: { userName: string }) {
   const { useGet, usePost, usePatch } = useApi();
   const [telegramModalOpen, setTelegramModalOpen] = useState(false);
+  const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
 
   const {
     data: status,
@@ -97,6 +100,33 @@ export default function DashboardHome({ userName }: { userName: string }) {
     appRouter.api.bot,
     { onSuccess: () => refetch() }
   );
+
+  const { mutate: disconnectAccount } = usePost(
+    appRouter.api.accountsDisconnect,
+    {
+      onSuccess: () => {
+        setDisconnectingId(null);
+        refetch();
+      },
+      onError: () => {
+        setDisconnectingId(null);
+        toast.error("Failed to disconnect account.");
+      },
+    }
+  );
+
+  const handleDisconnect = (accountId: string) => {
+    setDisconnectingId(accountId);
+    disconnectAccount({ accountId });
+  };
+
+  const isDeploying =
+    status?.botStatus === "deploying" || status?.botStatus === "pending";
+
+  const connectedPlatforms =
+    status?.accounts
+      ?.filter((a) => a.status === "active")
+      .map((a) => a.platform) ?? [];
 
   if (isLoading) {
     return (
@@ -121,6 +151,24 @@ export default function DashboardHome({ userName }: { userName: string }) {
           Here&apos;s an overview of your PostClaw setup.
         </p>
       </div>
+
+      {/* Deploying banner */}
+      {isDeploying && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+          <div className="flex items-center gap-3">
+            <Loader2 className="h-5 w-5 text-amber-600 animate-spin shrink-0" />
+            <div>
+              <h3 className="text-sm font-semibold text-amber-900">
+                Setting up your bot
+              </h3>
+              <p className="text-sm text-amber-700 mt-0.5">
+                Your container is being deployed. This usually takes a minute or
+                two.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Status cards */}
       <div className="grid gap-5 md:grid-cols-2">
@@ -246,6 +294,7 @@ export default function DashboardHome({ userName }: { userName: string }) {
             <div className="divide-y divide-gray-50">
               {status.accounts.map((account) => {
                 const platform = getPlatform(account.platform);
+                const isDisconnecting = disconnectingId === account.id;
                 return (
                   <div
                     key={account.id}
@@ -280,6 +329,18 @@ export default function DashboardHome({ userName }: { userName: string }) {
                       <span className="text-xs text-gray-400 capitalize">
                         {account.status}
                       </span>
+                      <button
+                        className="ml-1 rounded-md p-1 text-gray-300 transition-colors hover:bg-gray-100 hover:text-gray-500 disabled:opacity-50 cursor-pointer"
+                        onClick={() => handleDisconnect(account.id)}
+                        disabled={isDisconnecting}
+                        title="Disconnect account"
+                      >
+                        {isDisconnecting ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <X className="h-3.5 w-3.5" />
+                        )}
+                      </button>
                     </div>
                   </div>
                 );
@@ -305,7 +366,10 @@ export default function DashboardHome({ userName }: { userName: string }) {
               Connect a platform
             </h3>
           </div>
-          <ConnectAccountButtons onAccountConnected={refetch} />
+          <ConnectAccountButtons
+            onAccountConnected={refetch}
+            connectedPlatforms={connectedPlatforms}
+          />
         </div>
       </div>
 

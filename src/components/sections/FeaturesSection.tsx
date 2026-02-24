@@ -1,88 +1,86 @@
-import {
-  MessageCircle,
-  Globe,
-  Sparkles,
-  Shield,
-  Clock,
-  Zap,
-} from "lucide-react";
+"use client";
+
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { useSession } from "@/lib/better-auth/auth-client";
+import { useRouter } from "next/navigation";
+import { appRouter } from "@/lib/constants/appRouter";
+import SignInModal from "@/components/SignInModal";
 import AnimatedSection from "@/components/sections/AnimatedSection";
 
 const features = [
   {
-    icon: MessageCircle,
-    title: "Just chat — no learning curve",
+    title: "Just chat — no new\ntools to learn",
     description:
-      "No new tools to learn. If you can send a Telegram message, you can manage your social media. Tell your bot what to post in plain language.",
+      "If you can send a Telegram message, you can manage your social media. Tell your bot what to post in plain language — it handles the rest.",
   },
   {
-    icon: Globe,
-    title: "13 platforms, one message",
+    title: "AI that adapts\nfor every platform",
     description:
-      "Instagram, TikTok, X, LinkedIn, Facebook, YouTube, Pinterest, Threads, Bluesky, Reddit, Telegram, Discord, and Mastodon. One message, everywhere.",
+      "Your bot doesn't copy-paste. It rewrites and tailors your content for each platform's format, tone, and audience — automatically.",
   },
   {
-    icon: Sparkles,
-    title: "AI-adapted for each platform",
+    title: "Private, secure,\nand always yours",
     description:
-      "Your bot doesn't just copy-paste. It rewrites and adapts your content for each platform's format, tone, and audience.",
-  },
-  {
-    icon: Shield,
-    title: "Powered by OpenClaw",
-    description:
-      "Built on the open-source AI agent with 140K+ GitHub stars. Your own private, isolated instance — no shared infrastructure, no data leaks.",
-  },
-  {
-    icon: Clock,
-    title: "24/7, always ready",
-    description:
-      "Your bot never sleeps, never takes vacations, and never misses a deadline. Post at 3 AM or on a Sunday — it's always there.",
-  },
-  {
-    icon: Zap,
-    title: "From idea to published in seconds",
-    description:
-      "No drafts, no approval chains, no scheduling queues. Tell your bot, it publishes. The fastest path from idea to live post.",
+      "Built on OpenClaw, the open-source AI agent with 140K+ GitHub stars. Your own isolated instance — no shared infrastructure, no data leaks.",
   },
 ];
 
 export default function FeaturesSection() {
+  const { data: session } = useSession();
+  const router = useRouter();
+  const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
+
+  const handleGetStarted = () => {
+    if (session?.user) {
+      router.push(appRouter.dashboard);
+      return;
+    }
+    setIsSignInModalOpen(true);
+  };
+
   return (
-    <section className="bg-muted/50 py-20 md:py-24">
-      <div className="container mx-auto px-4">
-        <div className="mx-auto max-w-6xl">
+    <section className="py-20 md:py-28">
+      <div className="container mx-auto px-6">
+        <div className="mx-auto max-w-5xl">
           <AnimatedSection>
-            <div className="text-center mb-16">
-              <h2 className="text-4xl font-bold mb-4">
-                Everything a social media manager does.
-                <br className="hidden sm:block" />
-                Minus the salary.
-              </h2>
-              <p className="text-xl text-muted-foreground">
-                Your AI bot handles the hard parts so you can focus on your
-                business.
-              </p>
-            </div>
+            <h2 className="font-serif text-4xl md:text-5xl font-bold text-center mb-20">
+              How PostClaw Works
+            </h2>
           </AnimatedSection>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-16 mb-16">
             {features.map((feature, index) => (
-              <AnimatedSection key={feature.title} delay={index * 0.1}>
-                <div className="p-6 rounded-lg border bg-background hover:shadow-lg transition-shadow h-full">
-                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                    <feature.icon className="h-6 w-6 text-primary" />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2">
+              <AnimatedSection key={feature.title} delay={index * 0.15}>
+                <div className="text-center">
+                  <h3 className="font-serif text-xl md:text-2xl font-semibold mb-4 whitespace-pre-line leading-snug">
                     {feature.title}
                   </h3>
-                  <p className="text-muted-foreground">{feature.description}</p>
+                  <p className="text-muted-foreground leading-relaxed text-[0.95rem]">
+                    {feature.description}
+                  </p>
                 </div>
               </AnimatedSection>
             ))}
           </div>
+
+          <AnimatedSection delay={0.5}>
+            <div className="text-center">
+              <Button
+                size="lg"
+                onClick={handleGetStarted}
+                className="text-base px-10 h-14"
+              >
+                Get Started — $39/mo
+              </Button>
+            </div>
+          </AnimatedSection>
         </div>
       </div>
+      <SignInModal
+        open={isSignInModalOpen}
+        onOpenChange={setIsSignInModalOpen}
+      />
     </section>
   );
 }

@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db/prisma";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ManageSubscriptionButton } from "./ManageSubscriptionButton";
 
 async function BillingContent() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -62,11 +63,7 @@ async function BillingContent() {
         )}
 
         <div className="pt-5 border-t border-gray-100">
-          <p className="text-sm text-gray-400">
-            To manage your subscription, cancel, or update your payment
-            method, visit your Stripe billing portal (contact support for the
-            link).
-          </p>
+          <ManageSubscriptionButton />
         </div>
       </div>
     </div>

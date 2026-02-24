@@ -1,49 +1,64 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-background: 0 0% 100%;
-  --color-foreground: 220 15% 10%;
-  --color-card: 0 0% 100%;
-  --color-card-foreground: 220 15% 10%;
-  --color-popover: 0 0% 100%;
-  --color-popover-foreground: 220 15% 10%;
-  --color-primary: 12 76% 61%;
-  --color-primary-foreground: 0 0% 100%;
-  --color-secondary: 220 14% 96%;
-  --color-secondary-foreground: 220 15% 10%;
-  --color-muted: 220 14% 96%;
-  --color-muted-foreground: 220 9% 46%;
-  --color-accent: 220 14% 96%;
-  --color-accent-foreground: 220 15% 10%;
-  --color-destructive: 0 84.2% 60.2%;
-  --color-destructive-foreground: 0 0% 98%;
-  --color-border: 220 13% 91%;
-  --color-input: 220 13% 91%;
-  --color-ring: 12 76% 61%;
+  --color-background: oklch(0.98 0.01 70);
+  --color-foreground: oklch(0.22 0.05 280);
+  --color-card: oklch(1 0 0);
+  --color-card-foreground: oklch(0.22 0.05 280);
+  --color-popover: oklch(1 0 0);
+  --color-popover-foreground: oklch(0.22 0.05 280);
+  --color-primary: oklch(0.42 0.2 280);
+  --color-primary-foreground: oklch(1 0 0);
+  --color-secondary: oklch(0.94 0.01 70);
+  --color-secondary-foreground: oklch(0.22 0.05 280);
+  --color-muted: oklch(0.95 0.008 70);
+  --color-muted-foreground: oklch(0.55 0.03 280);
+  --color-accent: oklch(0.94 0.01 70);
+  --color-accent-foreground: oklch(0.22 0.05 280);
+  --color-destructive: oklch(0.58 0.22 25);
+  --color-destructive-foreground: oklch(0.98 0 0);
+  --color-border: oklch(0.92 0.008 70);
+  --color-input: oklch(0.92 0.008 70);
+  --color-ring: oklch(0.42 0.2 280);
   --radius: 0.75rem;
-  --font-sans: var(--font-montserrat);
-  --font-mono: var(--font-poppins);
+  --font-sans: var(--font-dm-sans);
+  --font-serif: var(--font-playfair);
+  --font-mono: var(--font-dm-sans);
 }
 
 :root {
-  --sidebar-bg: #151929;
-  --sidebar-bg-hover: #1e2340;
-  --sidebar-bg-active: #252b4a;
-  --sidebar-text: #8b8fa7;
+  --sidebar-bg: #1a1535;
+  --sidebar-bg-hover: #241e45;
+  --sidebar-bg-active: #2e2755;
+  --sidebar-text: #9b8fc7;
   --sidebar-text-active: #ffffff;
-  --sidebar-accent: #e8614d;
-  --sidebar-border: #1e2340;
-  --sidebar-user-bg: #1a1f36;
+  --sidebar-accent: #4A35B9;
+  --sidebar-border: #241e45;
+  --sidebar-user-bg: #1f1940;
+  --color-lavender: #C8B6F5;
 }
 
 * {
-  border-color: hsl(var(--color-border));
+  border-color: var(--color-border);
 }
 
 body {
-  background-color: hsl(var(--color-background));
-  color: hsl(var(--color-foreground));
+  background-color: var(--color-background);
+  color: var(--color-foreground);
   font-family: var(--font-sans);
+}
+
+/* Hero warm radial glow */
+.hero-warm-glow {
+  background:
+    radial-gradient(ellipse 60% 50% at 85% 80%, oklch(0.9 0.06 60 / 0.4) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 40% at 10% 60%, oklch(0.88 0.05 290 / 0.25) 0%, transparent 70%),
+    var(--color-background);
+}
+
+/* Lavender section */
+.bg-lavender {
+  background-color: var(--color-lavender);
 }
 
 /* FAQ accordion chevron */

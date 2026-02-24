@@ -70,6 +70,60 @@ export async function getConnectUrl(
   return data.authUrl;
 }
 
+export interface LatePost {
+  id: string;
+  content: string;
+  platforms: string[];
+  status: string;
+  scheduledAt: string | null;
+  publishedAt: string | null;
+  createdAt: string;
+}
+
+interface LatePostRaw {
+  _id: string;
+  content: string;
+  platforms: string[];
+  status: string;
+  scheduledAt: string | null;
+  publishedAt: string | null;
+  createdAt: string;
+}
+
+export async function listPosts(
+  profileId: string,
+  apiKey: string,
+  options?: { status?: string; limit?: number }
+): Promise<LatePost[]> {
+  const params = new URLSearchParams({ profileId });
+  if (options?.status) params.set("status", options.status);
+  if (options?.limit) params.set("limit", String(options.limit));
+
+  const data = await lateRequest<{ posts: LatePostRaw[] }>(
+    `/posts?${params.toString()}`,
+    { apiKey }
+  );
+  return data.posts.map((p) => ({
+    id: p._id,
+    content: p.content,
+    platforms: p.platforms,
+    status: p.status,
+    scheduledAt: p.scheduledAt,
+    publishedAt: p.publishedAt,
+    createdAt: p.createdAt,
+  }));
+}
+
+export async function deletePost(
+  postId: string,
+  apiKey: string
+): Promise<void> {
+  await lateRequest(`/posts/${postId}`, {
+    method: "DELETE",
+    apiKey,
+  });
+}
+
 export async function listAccounts(
   profileId: string,
   apiKey: string

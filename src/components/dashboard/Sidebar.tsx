@@ -7,6 +7,7 @@ import { useSession, signOut } from "@/lib/better-auth/auth-client";
 import {
   LayoutDashboard,
   Share2,
+  FileText,
   CreditCard,
   LogOut,
   Menu,
@@ -23,6 +24,7 @@ import { useState } from "react";
 
 const navItems = [
   { href: appRouter.dashboard, label: "Dashboard", icon: LayoutDashboard },
+  { href: appRouter.posts, label: "Posts", icon: FileText },
   { href: appRouter.accounts, label: "Accounts", icon: Share2 },
   { href: appRouter.billing, label: "Billing", icon: CreditCard },
 ];

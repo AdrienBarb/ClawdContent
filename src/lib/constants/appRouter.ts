@@ -14,9 +14,9 @@ export const appRouter = {
 
   // Dashboard routes (protected)
   dashboard: "/d",
-  subscribe: "/d/subscribe",
   bot: "/d/bot",
   accounts: "/d/accounts",
+  posts: "/d/posts",
   accountsCallback: "/d/accounts/callback",
   settings: "/d/settings",
   billing: "/d/billing",
@@ -28,8 +28,12 @@ export const appRouter = {
     bot: "/api/bot",
     accounts: "/api/accounts",
     accountsConnect: "/api/accounts/connect",
+    accountsDisconnect: "/api/accounts/disconnect",
+    posts: "/api/posts",
+    postsDelete: "/api/posts/delete",
     accountsCallback: "/api/accounts/callback",
     provisioningRetry: "/api/provisioning/retry",
+    billingPortal: "/api/billing/portal",
     dashboardStatus: "/api/dashboard/status",
     webhooks: {
       stripe: "/api/webhooks/stripe",

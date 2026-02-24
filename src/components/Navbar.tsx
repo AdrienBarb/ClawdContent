@@ -39,11 +39,11 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
-        <nav className="container mx-auto flex h-16 items-center justify-between px-4">
+      <header className="sticky top-0 z-50 w-full bg-background/80 backdrop-blur-md">
+        <nav className="container mx-auto flex h-20 items-center justify-between px-6">
           <Link
             href="/"
-            className="text-xl font-semibold hover:opacity-80 transition-opacity"
+            className="font-serif text-2xl font-bold text-primary hover:opacity-80 transition-opacity"
           >
             {config.project.shortName || config.project.name}
           </Link>
@@ -54,14 +54,14 @@ export default function Navbar() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button className="cursor-pointer">
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback>
+                      <Avatar className="h-9 w-9 border-2 border-primary/20">
+                        <AvatarFallback className="bg-primary/10 text-primary font-medium text-sm">
                           {getInitials(session.user.name, session.user.email)}
                         </AvatarFallback>
                       </Avatar>
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-background">
+                  <DropdownMenuContent align="end" className="bg-card rounded-xl shadow-lg border-0">
                     <DropdownMenuItem asChild className="cursor-pointer">
                       <Link href="/d">Dashboard</Link>
                     </DropdownMenuItem>
@@ -75,11 +75,10 @@ export default function Navbar() {
                 </DropdownMenu>
               ) : (
                 <Button
-                  variant="ghost"
                   onClick={() => setIsSignInModalOpen(true)}
-                  className="cursor-pointer"
+                  className="px-7 py-5 text-sm font-medium cursor-pointer"
                 >
-                  Sign In
+                  Get Started
                 </Button>
               )}
             </>

@@ -105,7 +105,7 @@ export async function disconnectAccount(
 
   await prisma.socialAccount.update({
     where: {
-      lateAccountId: accountId,
+      id: accountId,
       lateProfileId: lateProfile.id,
     },
     data: { status: "disconnected" },

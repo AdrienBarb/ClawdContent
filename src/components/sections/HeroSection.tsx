@@ -1,113 +1,99 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { useSession } from "@/lib/better-auth/auth-client";
 import { useRouter } from "next/navigation";
 import { appRouter } from "@/lib/constants/appRouter";
-import useApi from "@/lib/hooks/useApi";
+import SignInModal from "@/components/SignInModal";
 import AnimatedSection from "@/components/sections/AnimatedSection";
-
-const platforms = [
-  "Instagram",
-  "TikTok",
-  "X / Twitter",
-  "LinkedIn",
-  "Facebook",
-  "YouTube",
-  "Pinterest",
-  "Threads",
-  "Bluesky",
-  "Reddit",
-  "Telegram",
-  "Discord",
-  "Mastodon",
-];
+import Image from "next/image";
 
 export default function HeroSection() {
   const { data: session } = useSession();
   const router = useRouter();
-  const { usePost } = useApi();
-  const [isLoading, setIsLoading] = useState(false);
-
-  const { mutate: createCheckout } = usePost(appRouter.api.checkout, {
-    onSuccess: (data: { url: string }) => {
-      window.location.href = data.url;
-    },
-    onSettled: () => setIsLoading(false),
-  });
+  const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
 
   const handleGetStarted = () => {
-    if (!session?.user) {
-      router.push(appRouter.signin);
+    if (session?.user) {
+      router.push(appRouter.dashboard);
       return;
     }
-    setIsLoading(true);
-    createCheckout({});
+    setIsSignInModalOpen(true);
   };
 
   return (
-    <section className="container mx-auto px-4 py-20 md:py-32">
-      <div className="mx-auto max-w-4xl text-center">
-        <AnimatedSection>
-          <Badge variant="secondary" className="mb-6 text-sm font-medium">
-            Powered by OpenClaw — 140K+ GitHub stars
-          </Badge>
-        </AnimatedSection>
+    <section className="hero-warm-glow min-h-[85vh] flex items-center">
+      <div className="container mx-auto px-6 py-20 md:py-28">
+        <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
+          <div className="max-w-3xl lg:max-w-xl flex-shrink-0">
+            <AnimatedSection>
+              <h1 className="font-serif text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-bold leading-[1.1] tracking-tight mb-8">
+                Publish Everywhere.
+                <br />
+                From One Chat.
+              </h1>
+            </AnimatedSection>
 
-        <AnimatedSection delay={0.1}>
-          <h1 className="text-5xl font-bold tracking-tight sm:text-6xl md:text-7xl mb-6">
-            Stop managing social media.
-            <br />
-            <span className="text-primary">Start chatting.</span>
-          </h1>
-        </AnimatedSection>
+            <AnimatedSection delay={0.15}>
+              <p className="text-lg md:text-xl leading-relaxed text-muted-foreground max-w-xl mb-10">
+                Tell your AI bot what to post. It writes, adapts for each
+                platform, and publishes to{" "}
+                <strong className="text-foreground font-semibold">
+                  13 social networks
+                </strong>{" "}
+                — all from one Telegram conversation. No dashboards. No
+                scheduling tools. <em className="italic">Just chat.</em>
+              </p>
+            </AnimatedSection>
 
-        <AnimatedSection delay={0.2}>
-          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Tell your AI bot what to post. It writes, adapts, and publishes to{" "}
-            <strong className="text-foreground">13 platforms</strong> — all from
-            one Telegram conversation. No dashboards. No scheduling tools. Just
-            chat.
-          </p>
-        </AnimatedSection>
+            <AnimatedSection delay={0.3}>
+              <Button
+                size="lg"
+                onClick={handleGetStarted}
+                className="text-base px-10 h-14"
+              >
+                Get Started — $39/mo
+              </Button>
+            </AnimatedSection>
 
-        <AnimatedSection delay={0.3}>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <Button
-              size="lg"
-              onClick={handleGetStarted}
-              disabled={isLoading}
-              className="text-base px-8 py-6"
-            >
-              {isLoading ? "Loading..." : "Get Started — $39/mo"}
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="text-base px-8 py-6"
-              onClick={() => {
-                document
-                  .getElementById("how-it-works")
-                  ?.scrollIntoView({ behavior: "smooth" });
-              }}
-            >
-              See How It Works
-            </Button>
+            <AnimatedSection delay={0.4}>
+              <p className="mt-5 text-sm text-muted-foreground">
+                Powered by OpenClaw — 140K+ GitHub stars
+              </p>
+            </AnimatedSection>
           </div>
-        </AnimatedSection>
 
-        <AnimatedSection delay={0.4}>
-          <div className="flex flex-wrap justify-center gap-2">
-            {platforms.map((platform) => (
-              <Badge key={platform} variant="outline" className="text-xs">
-                {platform}
-              </Badge>
-            ))}
-          </div>
-        </AnimatedSection>
+          <AnimatedSection delay={0.3}>
+            <div className="flex items-center gap-4 md:gap-6">
+              <div className="-rotate-3">
+                <Image
+                  src="/images/IMG_2617.PNG"
+                  alt="Telegram bot drafting a post about building in public"
+                  width={280}
+                  height={560}
+                  className="rounded-3xl shadow-2xl"
+                  priority
+                />
+              </div>
+              <div className="rotate-3 mt-12">
+                <Image
+                  src="/images/IMG_2618.PNG"
+                  alt="Telegram bot scheduling 3 posts for tomorrow"
+                  width={280}
+                  height={560}
+                  className="rounded-3xl shadow-2xl"
+                  priority
+                />
+              </div>
+            </div>
+          </AnimatedSection>
+        </div>
       </div>
+      <SignInModal
+        open={isSignInModalOpen}
+        onOpenChange={setIsSignInModalOpen}
+      />
     </section>
   );
 }

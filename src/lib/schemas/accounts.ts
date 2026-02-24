@@ -17,3 +17,7 @@ export const connectAccountSchema = z.object({
     "discord",
   ]),
 });
+
+export const disconnectAccountSchema = z.object({
+  accountId: z.string().min(1),
+});

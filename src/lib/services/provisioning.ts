@@ -24,26 +24,34 @@ export async function provisionUser(
     return;
   }
 
-  // 1. Create Late profile + scoped API key
-  const profile = await createProfile(`postclaw-${userId}`);
-  const scopedKey = await createScopedApiKey(profile.id);
-
-  const lateProfile = await prisma.lateProfile.create({
-    data: {
-      userId,
-      lateProfileId: profile.id,
-      lateApiKey: scopedKey.key,
-      profileName: userName,
-    },
+  // 1. Reuse existing Late profile or create a new one
+  let lateProfile = await prisma.lateProfile.findUnique({
+    where: { userId },
+    include: { socialAccounts: { where: { status: "active" } } },
   });
 
-  // 2. Deploy Railway container
+  if (!lateProfile) {
+    const profile = await createProfile(`postclaw-${userId}`);
+    const scopedKey = await createScopedApiKey(profile.id);
+
+    lateProfile = await prisma.lateProfile.create({
+      data: {
+        userId,
+        lateProfileId: profile.id,
+        lateApiKey: scopedKey.key,
+        profileName: userName,
+      },
+      include: { socialAccounts: { where: { status: "active" } } },
+    });
+  }
+
+  // 2. Deploy Railway container (reuse accounts context if re-subscribing)
+  const accountsContext = formatAccountsContext(lateProfile.socialAccounts);
   const serviceName = `postclaw-${userId.slice(0, 8)}`;
   const envVars: Record<string, string> = {
-    LATE_API_KEY: scopedKey.key,
-    LATE_PROFILE_ID: profile.id,
-    LATE_ACCOUNTS_CONTEXT:
-      "  No accounts connected yet. Ask your owner to connect accounts from the dashboard.",
+    LATE_API_KEY: lateProfile.lateApiKey,
+    LATE_PROFILE_ID: lateProfile.lateProfileId,
+    LATE_ACCOUNTS_CONTEXT: accountsContext,
     MOONSHOT_API_KEY: process.env.MOONSHOT_API_KEY ?? "",
     OVERWRITE_SOUL: "true",
   };
@@ -79,13 +87,6 @@ export async function provisionUser(
       data: { status: "failed" },
     });
 
-    // Clean up Late profile on failure
-    if (lateProfile) {
-      await prisma.lateProfile
-        .delete({ where: { userId } })
-        .catch(() => {});
-    }
-
     throw error;
   }
 }
@@ -108,11 +109,6 @@ export async function retryProvisionUser(
     await prisma.railwayService.delete({ where: { userId } });
   }
 
-  // Clean up Late profile if the previous attempt left one behind
-  await prisma.lateProfile
-    .delete({ where: { userId } })
-    .catch(() => {});
-
   await provisionUser(userId, userName);
 }
 
@@ -127,11 +123,13 @@ export async function deprovisionUser(userId: string): Promise<void> {
     );
   }
 
-  // Note: we don't delete the Late profile/API key — the scoped key was
-  // embedded in the container. Deleting the Railway service is sufficient
-  // to cut access. The Late profile stays for potential re-subscription.
-
   await prisma.railwayService.deleteMany({ where: { userId } });
+
+  // Clean up social accounts and Late profile
+  await prisma.socialAccount.deleteMany({
+    where: { lateProfile: { userId } },
+  });
+  await prisma.lateProfile.deleteMany({ where: { userId } });
 }
 
 export async function updateContainerEnvVars(
@@ -153,20 +151,29 @@ export async function updateContainerEnvVars(
   });
 }
 
+const NO_ACCOUNTS_MESSAGE =
+  "  No accounts connected yet. Ask your owner to connect accounts from the dashboard.";
+
+function formatAccountsContext(
+  accounts: { platform: string; username: string; lateAccountId: string }[]
+): string {
+  if (accounts.length === 0) return NO_ACCOUNTS_MESSAGE;
+
+  return accounts
+    .map(
+      (a) =>
+        `  - ${a.platform}: @${a.username} (accountId: ${a.lateAccountId})`
+    )
+    .join("\n");
+}
+
 export async function buildAccountsContext(userId: string): Promise<string> {
   const lateProfile = await prisma.lateProfile.findUnique({
     where: { userId },
     include: { socialAccounts: { where: { status: "active" } } },
   });
 
-  if (!lateProfile || lateProfile.socialAccounts.length === 0) {
-    return "  No accounts connected yet. Ask your owner to connect accounts from the dashboard.";
-  }
+  if (!lateProfile) return NO_ACCOUNTS_MESSAGE;
 
-  return lateProfile.socialAccounts
-    .map(
-      (a) =>
-        `  - ${a.platform}: @${a.username} (accountId: ${a.lateAccountId})`
-    )
-    .join("\n");
+  return formatAccountsContext(lateProfile.socialAccounts);
 }

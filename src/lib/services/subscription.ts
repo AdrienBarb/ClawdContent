@@ -37,7 +37,7 @@ export async function createCheckoutSession(
     mode: "subscription",
     line_items: [{ price: priceId, quantity: 1 }],
     success_url: `${baseUrl}/d`,
-    cancel_url: `${baseUrl}/d/subscribe`,
+    cancel_url: `${baseUrl}/d`,
     metadata: { userId },
     subscription_data: {
       metadata: { userId },
@@ -53,6 +53,26 @@ export async function createCheckoutSession(
 
 export async function getSubscriptionByUserId(userId: string) {
   return prisma.subscription.findUnique({ where: { userId } });
+}
+
+export async function createPortalSession(userId: string): Promise<string> {
+  const subscription = await prisma.subscription.findUnique({
+    where: { userId },
+  });
+
+  if (!subscription?.stripeCustomerId) {
+    throw new Error("NO_SUBSCRIPTION");
+  }
+
+  const baseUrl =
+    process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+
+  const portalSession = await stripe.billingPortal.sessions.create({
+    customer: subscription.stripeCustomerId,
+    return_url: `${baseUrl}/d/billing`,
+  });
+
+  return portalSession.url;
 }
 
 export async function syncSubscriptionStatus(

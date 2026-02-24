@@ -40,28 +40,25 @@ const faqs = [
 
 export default function FAQSection() {
   return (
-    <section className="bg-muted/50 py-20 md:py-24">
-      <div className="container mx-auto px-4">
+    <section className="py-20 md:py-28 px-6">
+      <div className="container mx-auto">
         <div className="mx-auto max-w-3xl">
           <AnimatedSection>
-            <div className="text-center mb-16">
-              <h2 className="text-4xl font-bold mb-4">
-                Frequently Asked Questions
-              </h2>
-              <p className="text-xl text-muted-foreground">
-                Everything you need to know before getting started.
-              </p>
-            </div>
+            <h2 className="font-serif text-4xl md:text-5xl font-bold text-center mb-14">
+              Frequently Asked
+              <br />
+              Questions
+            </h2>
           </AnimatedSection>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             {faqs.map((faq, index) => (
-              <AnimatedSection key={faq.question} delay={index * 0.08}>
-                <details className="group rounded-lg border bg-background p-6">
-                  <summary className="flex cursor-pointer items-center justify-between font-semibold">
+              <AnimatedSection key={faq.question} delay={index * 0.06}>
+                <details className="group bg-card rounded-2xl p-6 shadow-sm">
+                  <summary className="flex cursor-pointer items-center justify-between font-semibold text-[0.95rem] list-none">
                     {faq.question}
                     <svg
-                      className="faq-chevron h-5 w-5 shrink-0 text-muted-foreground"
+                      className="faq-chevron h-5 w-5 shrink-0 text-muted-foreground ml-4"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -74,7 +71,9 @@ export default function FAQSection() {
                       />
                     </svg>
                   </summary>
-                  <p className="mt-4 text-muted-foreground">{faq.answer}</p>
+                  <p className="mt-4 text-muted-foreground leading-relaxed text-[0.92rem]">
+                    {faq.answer}
+                  </p>
                 </details>
               </AnimatedSection>
             ))}

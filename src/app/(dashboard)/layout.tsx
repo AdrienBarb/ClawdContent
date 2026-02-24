@@ -1,9 +1,11 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/lib/better-auth/auth";
+import { prisma } from "@/lib/db/prisma";
 import Sidebar, {
   MobileSidebarTrigger,
 } from "@/components/dashboard/Sidebar";
+import SubscribeModal from "@/components/dashboard/SubscribeModal";
 
 export default async function DashboardLayout({
   children,
@@ -17,6 +19,13 @@ export default async function DashboardLayout({
   if (!session?.user) {
     redirect("/");
   }
+
+  const subscription = await prisma.subscription.findUnique({
+    where: { userId: session.user.id },
+  });
+
+  const hasActiveSubscription =
+    subscription?.status === "active" || subscription?.status === "past_due";
 
   return (
     <div className="flex min-h-screen">
@@ -34,6 +43,8 @@ export default async function DashboardLayout({
           <div className="mx-auto max-w-5xl px-6 py-8">{children}</div>
         </main>
       </div>
+
+      {!hasActiveSubscription && <SubscribeModal />}
     </div>
   );
 }
