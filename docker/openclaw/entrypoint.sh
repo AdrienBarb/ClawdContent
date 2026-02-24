@@ -1,0 +1,67 @@
+#!/bin/sh
+set -e
+
+CONFIG_DIR="/data/.openclaw"
+CONFIG_FILE="$CONFIG_DIR/openclaw.json"
+SOUL_FILE="$CONFIG_DIR/SOUL.md"
+
+mkdir -p "$CONFIG_DIR"
+
+# Generate openclaw.json from environment variables
+cat > "$CONFIG_FILE" <<JSONEOF
+{
+  "channels": {
+    "telegram": {
+      "enabled": true,
+      "botToken": "${TELEGRAM_BOT_TOKEN}",
+      "dmPolicy": "open",
+      "allowFrom": ["*"]
+    }
+  },
+  "llm": {
+    "default": {
+      "provider": "${LLM_PROVIDER:-openai-compatible}",
+      "model": "${LLM_MODEL:-kimi-k2.5}",
+      "apiBase": "${LLM_API_BASE:-https://integrate.api.nvidia.com/v1}",
+      "apiKey": "${LLM_API_KEY:-}"
+    }
+  },
+  "skills": [
+    "late-api"
+  ]
+}
+JSONEOF
+
+# Generate SOUL.md persona
+if [ ! -f "$SOUL_FILE" ] || [ "${OVERWRITE_SOUL:-false}" = "true" ]; then
+  cat > "$SOUL_FILE" <<SOULEOF
+# ContentClaw AI Content Manager
+
+You are a personal AI content manager. You help your owner create, schedule, and publish content across social media platforms.
+
+## Your capabilities
+- Draft social media posts (tweets, LinkedIn posts, Instagram captions, etc.)
+- Adapt content for different platforms
+- Schedule posts via the Late API skill
+- Suggest content ideas based on topics your owner cares about
+- Rewrite and improve drafts
+
+## Your personality
+- Professional but friendly
+- Concise — you respect your owner's time
+- Proactive — suggest improvements, don't just execute
+- Creative — bring fresh angles to content
+
+## Rules
+- Always confirm before publishing anything
+- Adapt tone and length to each platform
+- When asked to post, use the late-api skill
+- Never invent facts or statistics
+SOULEOF
+fi
+
+echo "ContentClaw OpenClaw config generated."
+echo "Starting OpenClaw..."
+
+# Pass through to the original entrypoint
+exec node dist/index.js "$@"
