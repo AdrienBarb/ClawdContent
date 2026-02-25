@@ -46,6 +46,21 @@ const GET_PROJECT = `
   }
 `;
 
+const GET_SERVICES = `
+  query getServices($projectId: String!) {
+    project(id: $projectId) {
+      services {
+        edges {
+          node {
+            id
+            name
+          }
+        }
+      }
+    }
+  }
+`;
+
 const GET_DEPLOYMENTS = `
   query getDeployments($serviceId: String!, $environmentId: String!, $first: Int) {
     deployments(
@@ -183,6 +198,22 @@ export async function getProductionEnvironmentId(
     );
   }
   return prodEnv.node.id;
+}
+
+export async function findServiceByName(
+  name: string,
+  projectId?: string
+): Promise<RailwayService | null> {
+  const pId = projectId ?? getDefaultProjectId();
+  const data = await railwayQuery<{
+    project: {
+      services: { edges: Array<{ node: RailwayService }> };
+    };
+  }>(GET_SERVICES, { projectId: pId });
+
+  return (
+    data.project.services.edges.find((e) => e.node.name === name)?.node ?? null
+  );
 }
 
 export async function createService({
@@ -439,13 +470,18 @@ export async function deployOpenClawContainer({
   const pId = projectId ?? getDefaultProjectId();
   const environmentId = await getProductionEnvironmentId(pId);
 
-  // 1. Create the service with the Docker image
-  const service = await createService({
-    name,
-    image,
-    projectId: pId,
-    environmentId,
-  });
+  // 1. Reuse existing service if one with the same name exists (e.g. after
+  //    a failed provisioning left an orphaned service on Railway)
+  let service = await findServiceByName(name, pId);
+
+  if (!service) {
+    service = await createService({
+      name,
+      image,
+      projectId: pId,
+      environmentId,
+    });
+  }
 
   // 2. Enable sleep mode BEFORE setting env vars — configuring an empty
   //    service does NOT trigger a deploy, so this avoids two back-to-back
