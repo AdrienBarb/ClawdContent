@@ -307,7 +307,8 @@ export default function DashboardHome({ userName }: { userName: string }) {
               </Button>
             )}
             {(status?.botStatus === "running" ||
-              status?.botStatus === "deploying") && (
+              status?.botStatus === "deploying" ||
+              status?.botStatus === "stopped") && (
               <Button
                 size="sm"
                 variant="outline"
