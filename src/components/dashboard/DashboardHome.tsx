@@ -308,6 +308,7 @@ export default function DashboardHome({ userName }: { userName: string }) {
                 size="sm"
                 variant="outline"
                 onClick={() => setTelegramModalOpen(true)}
+                disabled={isDeploying}
               >
                 Update token
               </Button>
@@ -322,6 +323,7 @@ export default function DashboardHome({ userName }: { userName: string }) {
                 size="sm"
                 className="bg-[#e8614d] hover:bg-[#d4563f] text-white"
                 onClick={() => setTelegramModalOpen(true)}
+                disabled={isDeploying}
               >
                 <MessageCircle className="h-3.5 w-3.5 mr-1.5" />
                 Configure Telegram
@@ -425,6 +427,7 @@ export default function DashboardHome({ userName }: { userName: string }) {
           <ConnectAccountButtons
             onAccountConnected={refetch}
             connectedPlatforms={connectedPlatforms}
+            disabled={isDeploying}
           />
         </div>
       </div>

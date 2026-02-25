@@ -100,6 +100,12 @@ const ENVIRONMENT_TRIGGERS_DEPLOY = `
   }
 `;
 
+const DEPLOYMENT_CANCEL = `
+  mutation deploymentCancel($id: String!) {
+    deploymentCancel(id: $id)
+  }
+`;
+
 const DEPLOYMENT_STOP = `
   mutation deploymentStop($id: String!) {
     deploymentStop(id: $id)
@@ -308,6 +314,43 @@ export async function getDeployments({
   });
 
   return data.deployments.edges.map((e) => e.node);
+}
+
+export async function cancelDeployment(deploymentId: string): Promise<boolean> {
+  await railwayQuery(DEPLOYMENT_CANCEL, { id: deploymentId });
+  return true;
+}
+
+export async function cancelActiveDeployments({
+  serviceId,
+  environmentId,
+  projectId,
+}: {
+  serviceId: string;
+  environmentId?: string;
+  projectId?: string;
+}): Promise<void> {
+  const deployments = await getDeployments({
+    serviceId,
+    environmentId,
+    projectId,
+    limit: 5,
+  });
+
+  const active = deployments.filter(
+    (d) =>
+      d.status === "DEPLOYING" ||
+      d.status === "BUILDING" ||
+      d.status === "QUEUED" ||
+      d.status === "INITIALIZING" ||
+      d.status === "WAITING"
+  );
+
+  for (const deployment of active) {
+    await cancelDeployment(deployment.id).catch((err) =>
+      console.error(`Failed to cancel deployment ${deployment.id}:`, err)
+    );
+  }
 }
 
 export async function stopDeployment(deploymentId: string): Promise<boolean> {

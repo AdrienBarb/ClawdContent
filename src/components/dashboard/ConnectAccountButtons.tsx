@@ -10,11 +10,13 @@ import { Check } from "lucide-react";
 interface ConnectAccountButtonsProps {
   onAccountConnected?: () => void;
   connectedPlatforms?: string[];
+  disabled?: boolean;
 }
 
 export default function ConnectAccountButtons({
   onAccountConnected,
   connectedPlatforms = [],
+  disabled = false,
 }: ConnectAccountButtonsProps) {
   const { usePost } = useApi();
   const [connectingPlatform, setConnectingPlatform] = useState<string | null>(
@@ -62,7 +64,7 @@ export default function ConnectAccountButtons({
                 ? "border-gray-100 bg-gray-50 text-gray-400 cursor-default"
                 : "border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             }`}
-            disabled={isConnected || connectingPlatform !== null}
+            disabled={isConnected || connectingPlatform !== null || disabled}
             onClick={() => !isConnected && handleConnect(platform.id)}
           >
             <span

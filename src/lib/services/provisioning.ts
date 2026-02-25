@@ -8,6 +8,7 @@ import {
   deployOpenClawContainer,
   deleteService,
   setServiceVariables,
+  cancelActiveDeployments,
 } from "@/lib/railway/mutations";
 import {
   seedDefaultProject,
@@ -199,6 +200,15 @@ export async function updateContainerEnvVars(
   if (!railwayService || railwayService.serviceId === "pending") {
     throw new Error("No active Railway service found for user");
   }
+
+  // Cancel any in-progress deployments to avoid queuing conflicts
+  await cancelActiveDeployments({
+    serviceId: railwayService.serviceId,
+    environmentId: railwayService.environmentId,
+    projectId: railwayService.railwayProject?.railwayProjectId,
+  }).catch((err) =>
+    console.error("Failed to cancel active deployments:", err)
+  );
 
   await setServiceVariables({
     serviceId: railwayService.serviceId,
