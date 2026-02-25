@@ -486,9 +486,17 @@ export async function deployOpenClawContainer({
     environmentId,
   });
 
-  // 2. Enable sleep mode BEFORE setting env vars — configuring an empty
-  //    service does NOT trigger a deploy, so this avoids two back-to-back
-  //    deploys that can leave the second one stuck in INITIALIZING.
+  // 2. createService with an image auto-triggers a deploy. Cancel it
+  //    immediately so we only get ONE deploy after setting env vars.
+  await cancelActiveDeployments({
+    serviceId: service.id,
+    environmentId,
+    projectId: pId,
+  }).catch((err) =>
+    console.error("Failed to cancel initial deploy:", err)
+  );
+
+  // 3. Enable sleep mode (no deploy triggered on an idle service)
   await configureServiceInstance({
     serviceId: service.id,
     environmentId,
@@ -496,7 +504,7 @@ export async function deployOpenClawContainer({
     sleepApplication: true,
   });
 
-  // 3. Set env vars (this auto-triggers a single deploy)
+  // 4. Set env vars — this triggers the single, final deploy
   await setServiceVariables({
     serviceId: service.id,
     environmentId,
