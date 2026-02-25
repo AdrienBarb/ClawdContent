@@ -312,6 +312,11 @@ export default function DashboardHome({ userName }: { userName: string }) {
               >
                 Update token
               </Button>
+              {isDeploying && (
+                <p className="text-xs text-amber-500 mt-2">
+                  Available once your bot finishes deploying.
+                </p>
+              )}
             </>
           ) : (
             <>
@@ -328,6 +333,11 @@ export default function DashboardHome({ userName }: { userName: string }) {
                 <MessageCircle className="h-3.5 w-3.5 mr-1.5" />
                 Configure Telegram
               </Button>
+              {isDeploying && (
+                <p className="text-xs text-amber-500 mt-2">
+                  Available once your bot finishes deploying.
+                </p>
+              )}
             </>
           )}
         </div>
@@ -429,6 +439,11 @@ export default function DashboardHome({ userName }: { userName: string }) {
             connectedPlatforms={connectedPlatforms}
             disabled={isDeploying}
           />
+          {isDeploying && (
+            <p className="text-xs text-amber-500 mt-2">
+              Available once your bot finishes deploying.
+            </p>
+          )}
         </div>
       </div>
 

@@ -58,20 +58,29 @@ export default function TelegramTokenModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="rounded-lg bg-muted/50 p-4 text-sm text-muted-foreground space-y-2">
+        <div className="rounded-lg bg-muted/50 p-4 text-sm text-muted-foreground space-y-3">
           <p>
-            Follow our setup guide to create your Telegram bot and get your
-            token:
+            Message @BotFather on Telegram, send /newbot, and follow the steps
+            to create your bot and copy its token.
           </p>
-          <a
-            href="https://docs.openclaw.ai/channels/telegram"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-primary font-medium hover:underline"
-          >
-            Telegram setup guide
-            <ExternalLink className="h-3.5 w-3.5" />
-          </a>
+          <div className="flex items-center gap-4">
+            <a
+              href="https://t.me/BotFather"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-primary font-medium hover:underline"
+            >
+              Open @BotFather &rarr;
+            </a>
+            <a
+              href="https://docs.openclaw.ai/channels/telegram"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted-foreground hover:text-primary hover:underline"
+            >
+              Setup guide
+            </a>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
