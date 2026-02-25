@@ -36,7 +36,7 @@ export async function createCheckoutSession(
     customer: customerId,
     mode: "subscription",
     line_items: [{ price: priceId, quantity: 1 }],
-    success_url: `${baseUrl}/d`,
+    success_url: `${baseUrl}/d?payment=success`,
     cancel_url: `${baseUrl}/d`,
     metadata: { userId },
     subscription_data: {

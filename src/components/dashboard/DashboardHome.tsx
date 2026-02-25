@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { appRouter } from "@/lib/constants/appRouter";
 import { getPlatform } from "@/lib/constants/platforms";
 import useApi from "@/lib/hooks/useApi";
@@ -87,11 +88,27 @@ const EXAMPLE_PROMPTS = [
   "Rewrite this in a more casual tone for Twitter",
 ];
 
+declare global {
+  interface Window {
+    twq?: (...args: unknown[]) => void;
+  }
+}
+
 export default function DashboardHome({ userName }: { userName: string }) {
   const { useGet, usePost, usePatch } = useApi();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [telegramModalOpen, setTelegramModalOpen] = useState(false);
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
   const [copiedPrompt, setCopiedPrompt] = useState<string | null>(null);
+
+  // X (Twitter) conversion tracking on successful payment
+  useEffect(() => {
+    if (searchParams.get("payment") === "success") {
+      window.twq?.("event", "tw-r6zft-r6zfu", {});
+      router.replace("/d", { scroll: false });
+    }
+  }, [searchParams, router]);
 
   const {
     data: status,
