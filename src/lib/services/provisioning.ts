@@ -8,6 +8,12 @@ import {
   deleteService,
   setServiceVariables,
 } from "@/lib/railway/mutations";
+import {
+  seedDefaultProject,
+  allocateProject,
+  createServiceVolume,
+  releaseProjectVolume,
+} from "./railwayProjects";
 
 const DOCKER_IMAGE = "ghcr.io/adrienbarb/postclaw-agent:latest";
 
@@ -45,7 +51,11 @@ export async function provisionUser(
     });
   }
 
-  // 2. Deploy Railway container (reuse accounts context if re-subscribing)
+  // 2. Allocate a Railway project with capacity
+  await seedDefaultProject();
+  const project = await allocateProject();
+
+  // 3. Deploy Railway container (reuse accounts context if re-subscribing)
   const accountsContext = formatAccountsContext(lateProfile.socialAccounts);
   const serviceName = `postclaw-${userId.slice(0, 8)}`;
   const envVars: Record<string, string> = {
@@ -54,6 +64,8 @@ export async function provisionUser(
     LATE_ACCOUNTS_CONTEXT: accountsContext,
     MOONSHOT_API_KEY: process.env.MOONSHOT_API_KEY ?? "",
     OVERWRITE_SOUL: "true",
+    RAILWAY_RUN_UID: "0",
+    HOME: "/home/node",
   };
 
   try {
@@ -63,6 +75,7 @@ export async function provisionUser(
         serviceId: "pending",
         environmentId: "pending",
         status: "deploying",
+        railwayProjectId: project.id,
       },
     });
 
@@ -70,7 +83,24 @@ export async function provisionUser(
       name: serviceName,
       image: DOCKER_IMAGE,
       envVars,
+      projectId: project.railwayProjectId,
     });
+
+    // 4. Create volume for persistent bot memory (graceful degradation)
+    let volumeId: string | null = null;
+    try {
+      volumeId = await createServiceVolume({
+        projectId: project.id,
+        railwayProjectId: project.railwayProjectId,
+        serviceId: service.id,
+        environmentId,
+      });
+    } catch (volumeError) {
+      console.error(
+        `Failed to create volume for user ${userId}, bot will work without persistence:`,
+        volumeError
+      );
+    }
 
     await prisma.railwayService.update({
       where: { userId },
@@ -78,6 +108,7 @@ export async function provisionUser(
         serviceId: service.id,
         environmentId,
         status: "running",
+        volumeId,
       },
     });
   } catch (error) {
@@ -123,6 +154,13 @@ export async function deprovisionUser(userId: string): Promise<void> {
     );
   }
 
+  // Decrement volume count if this service had a volume
+  if (railwayService?.volumeId && railwayService.railwayProjectId) {
+    await releaseProjectVolume(railwayService.railwayProjectId).catch((err) =>
+      console.error(`Failed to release project volume: ${err}`)
+    );
+  }
+
   await prisma.railwayService.deleteMany({ where: { userId } });
 
   // Clean up social accounts and Late profile
@@ -138,6 +176,7 @@ export async function updateContainerEnvVars(
 ): Promise<void> {
   const railwayService = await prisma.railwayService.findUnique({
     where: { userId },
+    include: { railwayProject: true },
   });
 
   if (!railwayService || railwayService.serviceId === "pending") {
@@ -147,6 +186,7 @@ export async function updateContainerEnvVars(
   await setServiceVariables({
     serviceId: railwayService.serviceId,
     environmentId: railwayService.environmentId,
+    projectId: railwayService.railwayProject?.railwayProjectId,
     variables: { ...variables, OVERWRITE_SOUL: "true" },
   });
 }

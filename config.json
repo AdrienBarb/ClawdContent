@@ -29,8 +29,8 @@
     "twitterHandle": "@postclaw"
   },
   "contact": {
-    "email": "hello@postclaw.io",
-    "supportEmail": "support@postclaw.io"
+    "email": "no-reply@postclaw.io",
+    "supportEmail": "admin@postclaw.io"
   },
   "social": {
     "twitter": "https://x.com/postclaw"
@@ -50,6 +50,7 @@
         "Connect unlimited social accounts",
         "Private, isolated bot instance",
         "24/7 always-on bot",
+        "7-day money-back guarantee",
         "Cancel anytime — no contracts"
       ]
     }

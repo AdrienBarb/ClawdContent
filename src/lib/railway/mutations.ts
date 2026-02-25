@@ -118,6 +118,32 @@ const SERVICE_DELETE = `
   }
 `;
 
+const PROJECT_CREATE = `
+  mutation projectCreate($input: ProjectCreateInput!) {
+    projectCreate(input: $input) {
+      id
+      name
+      environments {
+        edges {
+          node {
+            id
+            name
+          }
+        }
+      }
+    }
+  }
+`;
+
+const VOLUME_CREATE = `
+  mutation volumeCreate($input: VolumeCreateInput!) {
+    volumeCreate(input: $input) {
+      id
+      name
+    }
+  }
+`;
+
 // ─── Helper Functions ───────────────────────────────────────────
 
 function getDefaultProjectId(): string {
@@ -299,6 +325,56 @@ export async function restartDeployment(
 export async function deleteService(serviceId: string): Promise<boolean> {
   await railwayQuery(SERVICE_DELETE, { id: serviceId });
   return true;
+}
+
+export async function createProject(
+  name: string
+): Promise<{ id: string; name: string; environmentId: string }> {
+  const data = await railwayQuery<{ projectCreate: RailwayProject }>(
+    PROJECT_CREATE,
+    { input: { name } }
+  );
+
+  const project = data.projectCreate;
+  const prodEnv = project.environments.edges.find(
+    (e) => e.node.name === "production"
+  );
+  if (!prodEnv) {
+    throw new Error(
+      `No production environment found in newly created project ${project.id}`
+    );
+  }
+
+  return {
+    id: project.id,
+    name: project.name,
+    environmentId: prodEnv.node.id,
+  };
+}
+
+export async function createVolume({
+  projectId,
+  serviceId,
+  environmentId,
+  mountPath,
+}: {
+  projectId: string;
+  serviceId: string;
+  environmentId: string;
+  mountPath: string;
+}): Promise<{ id: string; name: string }> {
+  const data = await railwayQuery<{
+    volumeCreate: { id: string; name: string };
+  }>(VOLUME_CREATE, {
+    input: {
+      projectId,
+      serviceId,
+      environmentId,
+      mountPath,
+    },
+  });
+
+  return data.volumeCreate;
 }
 
 // ─── High-Level Orchestration ───────────────────────────────────

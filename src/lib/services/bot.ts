@@ -8,6 +8,7 @@ import { updateContainerEnvVars } from "./provisioning";
 export async function getBotStatus(userId: string) {
   const railwayService = await prisma.railwayService.findUnique({
     where: { userId },
+    include: { railwayProject: true },
   });
 
   if (!railwayService) return null;
@@ -21,6 +22,7 @@ export async function getBotStatus(userId: string) {
       const deployments = await getDeployments({
         serviceId: railwayService.serviceId,
         environmentId: railwayService.environmentId,
+        projectId: railwayService.railwayProject?.railwayProjectId,
         limit: 1,
       });
 
@@ -77,6 +79,7 @@ export async function setTelegramToken(
 export async function restartBot(userId: string): Promise<void> {
   const railwayService = await prisma.railwayService.findUnique({
     where: { userId },
+    include: { railwayProject: true },
   });
 
   if (!railwayService || railwayService.serviceId === "pending") {
@@ -86,6 +89,7 @@ export async function restartBot(userId: string): Promise<void> {
   await triggerDeploy({
     serviceId: railwayService.serviceId,
     environmentId: railwayService.environmentId,
+    projectId: railwayService.railwayProject?.railwayProjectId,
   });
 
   await prisma.railwayService.update({

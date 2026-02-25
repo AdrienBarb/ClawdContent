@@ -115,16 +115,41 @@ export default function TermsPage() {
               </li>
               <li>
                 No partial refunds are provided for unused portions of a billing
-                period
+                period, except as described in the 7-day money-back guarantee
+                below
+              </li>
+            </ul>
+
+            <h3 className="text-lg font-semibold mt-6 mb-2">
+              7-Day Money-Back Guarantee
+            </h3>
+            <p className="text-muted-foreground">
+              If you are not satisfied with the Service, you may request a full
+              refund of your first monthly payment within 7 days of your initial
+              subscription date. To request a refund:
+            </p>
+            <ul className="list-disc pl-6 text-muted-foreground space-y-1">
+              <li>
+                Send an email to{" "}
+                <a href="mailto:admin@postclaw.io" className="underline">
+                  admin@postclaw.io
+                </a>{" "}
+                within 7 days of your first payment
+              </li>
+              <li>
+                Include your account email address and the reason for your
+                refund request
+              </li>
+              <li>
+                Refunds are processed within 5–10 business days to your
+                original payment method
               </li>
             </ul>
             <p className="text-muted-foreground">
-              If you believe you are entitled to a refund due to a Service
-              defect, please contact us at{" "}
-              <a href="mailto:support@postclaw.io" className="underline">
-                support@postclaw.io
-              </a>
-              .
+              This guarantee applies only to your first billing cycle. Subsequent
+              months are not eligible for the money-back guarantee. Upon refund,
+              your subscription will be canceled and your bot instance will be
+              deprovisioned immediately.
             </p>
           </div>
         </section>

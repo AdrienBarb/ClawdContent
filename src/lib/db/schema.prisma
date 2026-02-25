@@ -85,16 +85,32 @@ model Subscription {
   @@map("subscription")
 }
 
-model RailwayService {
-  id               String   @id @default(cuid())
-  userId           String   @unique
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  serviceId        String   @unique
+model RailwayProject {
+  id               String           @id @default(cuid())
+  railwayProjectId String           @unique
+  name             String
   environmentId    String
-  status           String   @default("pending") // pending, deploying, running, stopped, failed
-  hasTelegramToken Boolean  @default(false)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  volumeCount      Int              @default(0)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  services         RailwayService[]
+
+  @@map("railway_project")
+}
+
+model RailwayService {
+  id               String          @id @default(cuid())
+  userId           String          @unique
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  serviceId        String          @unique
+  environmentId    String
+  status           String          @default("pending") // pending, deploying, running, stopped, failed
+  hasTelegramToken Boolean         @default(false)
+  railwayProjectId String?
+  railwayProject   RailwayProject? @relation(fields: [railwayProjectId], references: [id])
+  volumeId         String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 
   @@map("railway_service")
 }
