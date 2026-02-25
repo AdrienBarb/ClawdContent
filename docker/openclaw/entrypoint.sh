@@ -2,10 +2,12 @@
 set -e
 
 CONFIG_DIR="$HOME/.openclaw"
+WORKSPACE_DIR="$CONFIG_DIR/workspace"
 CONFIG_FILE="$CONFIG_DIR/openclaw.json"
-SOUL_FILE="$CONFIG_DIR/SOUL.md"
+SOUL_FILE="$WORKSPACE_DIR/SOUL.md"
 
 mkdir -p "$CONFIG_DIR"
+mkdir -p "$WORKSPACE_DIR"
 
 # Generate openclaw.json from environment variables
 cat > "$CONFIG_FILE" <<JSONEOF
