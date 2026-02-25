@@ -91,6 +91,7 @@ const EXAMPLE_PROMPTS = [
 declare global {
   interface Window {
     twq?: (...args: unknown[]) => void;
+    rdt?: (...args: unknown[]) => void;
   }
 }
 
@@ -102,10 +103,11 @@ export default function DashboardHome({ userName }: { userName: string }) {
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
   const [copiedPrompt, setCopiedPrompt] = useState<string | null>(null);
 
-  // X (Twitter) conversion tracking on successful payment
+  // Conversion tracking on successful payment
   useEffect(() => {
     if (searchParams.get("payment") === "success") {
       window.twq?.("event", "tw-r6zft-r6zfu", {});
+      window.rdt?.("track", "Purchase");
       router.replace("/d", { scroll: false });
     }
   }, [searchParams, router]);
