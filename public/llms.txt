@@ -1,35 +1,35 @@
-# YourProject
+# PostClaw
 
-> YourProject is a modern SaaS application that helps you [describe your value proposition].
+> PostClaw is a SaaS that gives you a personal AI content manager on Telegram. Create, adapt, and publish social media posts across 13 social platforms — just by chatting.
 
 ## About
 
-YourProject provides [describe your core functionality]. Built with modern technologies like Next.js, React, and TypeScript.
+PostClaw provides each user with their own private AI bot on Telegram, powered by OpenClaw. Chat with your bot to draft posts, adapt content for different platforms, and publish — all from one conversation. Each user gets an isolated bot instance with their own social accounts connected.
 
 **Key features:**
-- Feature 1: [Describe feature]
-- Feature 2: [Describe feature]
-- Feature 3: [Describe feature]
-- Feature 4: [Describe feature]
+- Personal AI bot on Telegram that creates and publishes social media content
+- Publish to 13 social platforms from one chat
+- AI-adapted content per platform (tone, length, hashtags, format)
+- Private, isolated bot instance per user
+- Unlimited posts, cancel anytime
 
 ## Target Audience
 
-- [Target audience 1]
-- [Target audience 2]
-- [Target audience 3]
+- Content creators who publish across multiple platforms
+- Founders and indie hackers managing their own social presence
+- Professionals who want to stay active on social media without the overhead
 
 ## Important Pages
 
-- [Homepage](https://www.yourproject.com): Main landing page with product overview
-- [Pricing](https://www.yourproject.com/pricing): Pricing plans and features
-- [Blog](https://www.yourproject.com/blog): Articles and updates
+- [Homepage](https://www.postclaw.io): Main landing page with product overview
 
 ## Contact
 
-- [Website](https://www.yourproject.com): Main website and contact
+- [Website](https://www.postclaw.io): Main website
+- [Support](mailto:admin@postclaw.io): Email support
+- [Twitter/X](https://x.com/postclaw): Follow for updates
 
 ## Optional
 
-- Founder: [Your Name]
-- Pricing: [Pricing info]
-- Category: SaaS, [Your category]
+- Pricing: $39/month (single plan, everything included)
+- Category: SaaS, Social Media, AI, Content Creation
