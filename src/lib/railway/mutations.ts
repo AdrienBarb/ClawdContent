@@ -470,18 +470,21 @@ export async function deployOpenClawContainer({
   const pId = projectId ?? getDefaultProjectId();
   const environmentId = await getProductionEnvironmentId(pId);
 
-  // 1. Reuse existing service if one with the same name exists (e.g. after
-  //    a failed provisioning left an orphaned service on Railway)
-  let service = await findServiceByName(name, pId);
-
-  if (!service) {
-    service = await createService({
-      name,
-      image,
-      projectId: pId,
-      environmentId,
-    });
+  // 1. If an orphaned service with the same name exists (e.g. from a failed
+  //    provisioning), delete it first to start fresh.
+  const existing = await findServiceByName(name, pId);
+  if (existing) {
+    await deleteService(existing.id).catch((err) =>
+      console.error(`Failed to delete orphaned service ${existing.id}:`, err)
+    );
   }
+
+  const service = await createService({
+    name,
+    image,
+    projectId: pId,
+    environmentId,
+  });
 
   // 2. Enable sleep mode BEFORE setting env vars — configuring an empty
   //    service does NOT trigger a deploy, so this avoids two back-to-back
