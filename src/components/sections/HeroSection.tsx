@@ -8,6 +8,7 @@ import { appRouter } from "@/lib/constants/appRouter";
 import SignInModal from "@/components/SignInModal";
 import AnimatedSection from "@/components/sections/AnimatedSection";
 import Image from "next/image";
+import { PLATFORMS } from "@/lib/constants/platforms";
 
 export default function HeroSection() {
   const { data: session } = useSession();
@@ -90,6 +91,28 @@ export default function HeroSection() {
             </div>
           </AnimatedSection>
         </div>
+        {/* Platform marquee */}
+        <AnimatedSection delay={0.5}>
+          <div className="mt-16 md:mt-24 relative overflow-hidden">
+            <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-[#0c0f1a] to-transparent z-10 pointer-events-none" />
+            <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-[#0c0f1a] to-transparent z-10 pointer-events-none" />
+            <div className="flex animate-marquee gap-8">
+              {[...PLATFORMS, ...PLATFORMS].map((platform, i) => (
+                <div
+                  key={`${platform.id}-${i}`}
+                  className="flex items-center gap-2 shrink-0 rounded-full border border-[#1e2233] bg-[#151929]/60 px-4 py-2"
+                >
+                  <span style={{ color: platform.color === "#000000" ? "#ffffff" : platform.color }}>
+                    {platform.icon}
+                  </span>
+                  <span className="text-sm text-[#8a8f9e] whitespace-nowrap">
+                    {platform.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </AnimatedSection>
       </div>
       <SignInModal
         open={isSignInModalOpen}
