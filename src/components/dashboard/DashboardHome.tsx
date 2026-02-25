@@ -14,6 +14,10 @@ import {
   MessageCircle,
   Loader2,
   X,
+  Sparkles,
+  CheckCircle2,
+  Copy,
+  Check,
 } from "lucide-react";
 import TelegramTokenModal from "@/components/dashboard/TelegramTokenModal";
 import ConnectAccountButtons from "@/components/dashboard/ConnectAccountButtons";
@@ -74,10 +78,20 @@ function StatusLabel({ status }: { status: string | null }) {
   );
 }
 
+const EXAMPLE_PROMPTS = [
+  "Write a LinkedIn post about my latest project",
+  "Turn this idea into a Twitter thread",
+  "Draft a short announcement for Threads",
+  "Adapt my last post for Bluesky",
+  "Write a professional update about a milestone",
+  "Rewrite this in a more casual tone for Twitter",
+];
+
 export default function DashboardHome({ userName }: { userName: string }) {
   const { useGet, usePost, usePatch } = useApi();
   const [telegramModalOpen, setTelegramModalOpen] = useState(false);
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
+  const [copiedPrompt, setCopiedPrompt] = useState<string | null>(null);
 
   const {
     data: status,
@@ -159,13 +173,55 @@ export default function DashboardHome({ userName }: { userName: string }) {
             <Loader2 className="h-5 w-5 text-amber-600 animate-spin shrink-0" />
             <div>
               <h3 className="text-sm font-semibold text-amber-900">
-                Setting up your bot
+                Your bot is starting up
               </h3>
               <p className="text-sm text-amber-700 mt-0.5">
-                Your container is being deployed. This usually takes a minute or
-                two.
+                This usually takes a minute or two. Once it&apos;s ready,
+                you&apos;ll be able to chat with your AI content manager
+                directly on Telegram.
               </p>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bot ready banner */}
+      {status?.botStatus === "running" && (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+          <div className="flex items-center gap-3 mb-4">
+            <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+            <div>
+              <h3 className="text-sm font-semibold text-emerald-900">
+                Your bot is ready!
+              </h3>
+              <p className="text-sm text-emerald-700 mt-0.5">
+                Open Telegram and try sending one of these prompts — just copy
+                and paste. The first reply may take up to 5 minutes while
+                the bot wakes up.
+              </p>
+            </div>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {EXAMPLE_PROMPTS.map((prompt) => (
+              <button
+                key={prompt}
+                type="button"
+                className="group flex items-start gap-2 rounded-xl bg-white/70 hover:bg-white px-3 py-2.5 text-sm text-emerald-800 text-left transition-colors cursor-pointer"
+                onClick={() => {
+                  navigator.clipboard.writeText(prompt);
+                  setCopiedPrompt(prompt);
+                  setTimeout(() => setCopiedPrompt(null), 2000);
+                }}
+              >
+                <Sparkles className="h-3.5 w-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                <span className="flex-1">&ldquo;{prompt}&rdquo;</span>
+                {copiedPrompt === prompt ? (
+                  <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5 text-emerald-400 opacity-0 group-hover:opacity-100 shrink-0 mt-0.5 transition-opacity" />
+                )}
+              </button>
+            ))}
           </div>
         </div>
       )}

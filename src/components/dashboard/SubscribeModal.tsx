@@ -36,10 +36,20 @@ export default function SubscribeModal() {
             <p className="text-[#7a7f94]">One plan. Everything included.</p>
           </div>
           <div className="mb-6">
+            <span className="inline-block bg-[#e8614d]/10 text-[#e8614d] text-xs font-semibold px-3 py-1 rounded-full mb-4">
+              All-inclusive
+            </span>
             <h3 className="text-xl font-semibold mb-2 text-white">{plan.name}</h3>
             <div className="flex items-baseline gap-2 mb-2">
+              <span className="text-2xl font-semibold text-[#555a6b] line-through">$59</span>
               <span className="text-4xl font-semibold text-[#e8614d]">{plan.price}</span>
               <span className="text-[#7a7f94]">{plan.period}</span>
+            </div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-green-400 text-sm">🎁</span>
+              <span className="text-green-400 text-sm font-medium">
+                $20 off for early customers (12 left)
+              </span>
             </div>
             <p className="text-sm text-[#7a7f94]">{plan.description}</p>
           </div>
@@ -56,7 +66,7 @@ export default function SubscribeModal() {
             onClick={handleSubscribe}
             disabled={isLoading}
           >
-            {isLoading ? "Loading..." : "Subscribe"}
+            {isLoading ? "Loading..." : <>Get Started — <span className="line-through opacity-60">$59</span> $39/mo</>}
           </Button>
         </div>
       </div>
