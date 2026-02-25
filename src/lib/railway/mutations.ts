@@ -447,20 +447,22 @@ export async function deployOpenClawContainer({
     environmentId,
   });
 
-  // 2. Set env vars (this auto-triggers a deploy)
-  await setServiceVariables({
-    serviceId: service.id,
-    environmentId,
-    projectId: pId,
-    variables: envVars,
-  });
-
-  // 3. Enable sleep mode so idle containers don't burn resources
+  // 2. Enable sleep mode BEFORE setting env vars — configuring an empty
+  //    service does NOT trigger a deploy, so this avoids two back-to-back
+  //    deploys that can leave the second one stuck in INITIALIZING.
   await configureServiceInstance({
     serviceId: service.id,
     environmentId,
     projectId: pId,
     sleepApplication: true,
+  });
+
+  // 3. Set env vars (this auto-triggers a single deploy)
+  await setServiceVariables({
+    serviceId: service.id,
+    environmentId,
+    projectId: pId,
+    variables: envVars,
   });
 
   return { service, environmentId };

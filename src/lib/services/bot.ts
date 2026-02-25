@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db/prisma";
 import {
   getDeployments,
   triggerDeploy,
+  cancelActiveDeployments,
 } from "@/lib/railway/mutations";
 import { updateContainerEnvVars } from "./provisioning";
 
@@ -85,6 +86,15 @@ export async function restartBot(userId: string): Promise<void> {
   if (!railwayService || railwayService.serviceId === "pending") {
     throw new Error("No active Railway service found for user");
   }
+
+  // Cancel any stuck/in-progress deployments before triggering a fresh one
+  await cancelActiveDeployments({
+    serviceId: railwayService.serviceId,
+    environmentId: railwayService.environmentId,
+    projectId: railwayService.railwayProject?.railwayProjectId,
+  }).catch((err) =>
+    console.error("Failed to cancel active deployments:", err)
+  );
 
   await triggerDeploy({
     serviceId: railwayService.serviceId,

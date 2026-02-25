@@ -190,16 +190,29 @@ export default function DashboardHome({ userName }: { userName: string }) {
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
           <div className="flex items-center gap-3">
             <Loader2 className="h-5 w-5 text-amber-600 animate-spin shrink-0" />
-            <div>
+            <div className="flex-1">
               <h3 className="text-sm font-semibold text-amber-900">
                 Your bot is starting up
               </h3>
               <p className="text-sm text-amber-700 mt-0.5">
-                This usually takes a minute or two. Once it&apos;s ready,
-                you&apos;ll be able to chat with your AI content manager
-                directly on Telegram.
+                This usually takes a minute or two. If it seems stuck, you can
+                restart the deployment.
               </p>
             </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="shrink-0 border-amber-300 text-amber-800 hover:bg-amber-100"
+              onClick={() => restartBot({})}
+              disabled={restarting}
+            >
+              {restarting ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+              ) : (
+                <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+              )}
+              Restart
+            </Button>
           </div>
         </div>
       )}
@@ -285,7 +298,8 @@ export default function DashboardHome({ userName }: { userName: string }) {
                 Retry
               </Button>
             )}
-            {status?.botStatus === "running" && (
+            {(status?.botStatus === "running" ||
+              status?.botStatus === "deploying") && (
               <Button
                 size="sm"
                 variant="outline"
