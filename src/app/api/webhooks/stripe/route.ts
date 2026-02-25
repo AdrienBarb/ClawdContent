@@ -38,6 +38,15 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Deduplicate: skip events we've already processed
+  try {
+    await prisma.stripeEvent.create({ data: { id: event.id } });
+  } catch {
+    // Unique constraint violation → already processed
+    console.log(`Stripe event ${event.id} already processed, skipping`);
+    return NextResponse.json({ received: true }, { status: 200 });
+  }
+
   try {
     switch (event.type) {
       case "checkout.session.completed":

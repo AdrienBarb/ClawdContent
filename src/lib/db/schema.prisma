@@ -142,3 +142,10 @@ model SocialAccount {
 
   @@map("social_account")
 }
+
+model StripeEvent {
+  id          String   @id // Stripe event ID (evt_xxx)
+  processedAt DateTime @default(now())
+
+  @@map("stripe_event")
+}

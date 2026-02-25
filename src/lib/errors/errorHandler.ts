@@ -12,10 +12,10 @@ export function errorHandler(error: unknown) {
     );
   }
 
-  const errorMessage =
-    error instanceof Error && error.message
-      ? error.message
-      : errorMessages.SERVER_ERROR;
-
-  return NextResponse.json({ error: errorMessage }, { status: 500 });
+  // Never leak internal error messages to the client.
+  // The real error is already logged above via console.error.
+  return NextResponse.json(
+    { error: errorMessages.SERVER_ERROR },
+    { status: 500 }
+  );
 }

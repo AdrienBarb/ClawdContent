@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import {
   createProfile,
@@ -69,15 +70,31 @@ export async function provisionUser(
   };
 
   try {
-    await prisma.railwayService.create({
-      data: {
-        userId,
-        serviceId: "pending",
-        environmentId: "pending",
-        status: "deploying",
-        railwayProjectId: project.id,
-      },
-    });
+    // Use try/catch on create to handle race conditions — if two concurrent
+    // provisionUser() calls pass the findUnique guard simultaneously, the
+    // unique constraint on userId will reject the second one.
+    try {
+      await prisma.railwayService.create({
+        data: {
+          userId,
+          serviceId: "pending",
+          environmentId: "pending",
+          status: "deploying",
+          railwayProjectId: project.id,
+        },
+      });
+    } catch (err) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === "P2002"
+      ) {
+        console.log(
+          `User ${userId} already has a Railway service (race condition), skipping`
+        );
+        return;
+      }
+      throw err;
+    }
 
     const { service, environmentId } = await deployOpenClawContainer({
       name: serviceName,

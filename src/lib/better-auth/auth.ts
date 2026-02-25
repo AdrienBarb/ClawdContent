@@ -52,8 +52,15 @@ export const auth = betterAuth({
     process.env.BETTER_AUTH_URL ||
     process.env.NEXT_PUBLIC_BASE_URL ||
     "http://localhost:3000",
-  secret:
-    process.env.BETTER_AUTH_SECRET || "change-this-secret-key-in-production",
+  secret: (() => {
+    const secret = process.env.BETTER_AUTH_SECRET;
+    if (!secret) {
+      throw new Error(
+        "BETTER_AUTH_SECRET environment variable is required"
+      );
+    }
+    return secret;
+  })(),
   trustedOrigins: [
     process.env.BETTER_AUTH_URL ||
       process.env.NEXT_PUBLIC_BASE_URL ||
