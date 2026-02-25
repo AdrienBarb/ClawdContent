@@ -50,10 +50,7 @@ cat > "$CONFIG_FILE" <<JSONEOF
   "skills": {
     "entries": {
       "late-api": {
-        "enabled": true,
-        "env": {
-          "LATE_API_KEY": "${LATE_API_KEY:-}"
-        }
+        "enabled": true
       }
     }
   }
