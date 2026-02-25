@@ -453,15 +453,17 @@ export async function createVolume({
 
 // ─── High-Level Orchestration ───────────────────────────────────
 
-export async function deployOpenClawContainer({
+/**
+ * Creates and configures a Railway service WITHOUT triggering the final deploy.
+ * Call `finalizeServiceDeploy` after all setup (volumes, etc.) is complete.
+ */
+export async function createOpenClawService({
   name,
   image,
-  envVars,
   projectId,
 }: {
   name: string;
   image: string;
-  envVars: Record<string, string>;
   projectId?: string;
 }): Promise<{
   service: RailwayService;
@@ -479,6 +481,7 @@ export async function deployOpenClawContainer({
     );
   }
 
+  // 2. Create the service (this auto-triggers a deploy from the image)
   const service = await createService({
     name,
     image,
@@ -486,17 +489,7 @@ export async function deployOpenClawContainer({
     environmentId,
   });
 
-  // 2. createService with an image auto-triggers a deploy. Cancel it
-  //    immediately so we only get ONE deploy after setting env vars.
-  await cancelActiveDeployments({
-    serviceId: service.id,
-    environmentId,
-    projectId: pId,
-  }).catch((err) =>
-    console.error("Failed to cancel initial deploy:", err)
-  );
-
-  // 3. Enable sleep mode (no deploy triggered on an idle service)
+  // 3. Enable sleep mode
   await configureServiceInstance({
     serviceId: service.id,
     environmentId,
@@ -504,13 +497,41 @@ export async function deployOpenClawContainer({
     sleepApplication: true,
   });
 
-  // 4. Set env vars — this triggers the single, final deploy
+  return { service, environmentId };
+}
+
+/**
+ * Cancel all stacked deploys and trigger a single clean deploy with env vars.
+ * Call this AFTER all setup (service creation, volume, config) is done.
+ */
+export async function finalizeServiceDeploy({
+  serviceId,
+  environmentId,
+  projectId,
+  envVars,
+}: {
+  serviceId: string;
+  environmentId: string;
+  projectId?: string;
+  envVars: Record<string, string>;
+}): Promise<void> {
+  const pId = projectId ?? getDefaultProjectId();
+
+  // Cancel ALL deploys that stacked up during setup (from createService,
+  // configureServiceInstance, volumeCreate, etc.)
+  await cancelActiveDeployments({
+    serviceId,
+    environmentId,
+    projectId: pId,
+  }).catch((err) =>
+    console.error("Failed to cancel stacked deploys:", err)
+  );
+
+  // Set env vars — triggers the single, final deploy
   await setServiceVariables({
-    serviceId: service.id,
+    serviceId,
     environmentId,
     projectId: pId,
     variables: envVars,
   });
-
-  return { service, environmentId };
 }

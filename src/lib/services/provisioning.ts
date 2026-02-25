@@ -5,7 +5,8 @@ import {
   createScopedApiKey,
 } from "@/lib/late/mutations";
 import {
-  deployOpenClawContainer,
+  createOpenClawService,
+  finalizeServiceDeploy,
   deleteService,
   setServiceVariables,
   cancelActiveDeployments,
@@ -97,14 +98,15 @@ export async function provisionUser(
       throw err;
     }
 
-    const { service, environmentId } = await deployOpenClawContainer({
+    // 3a. Create and configure service (does NOT trigger final deploy)
+    const { service, environmentId } = await createOpenClawService({
       name: serviceName,
       image: DOCKER_IMAGE,
-      envVars,
       projectId: project.railwayProjectId,
     });
 
-    // 4. Create volume for persistent bot memory (graceful degradation)
+    // 3b. Create volume for persistent bot memory (graceful degradation)
+    // This may trigger intermediate deploys — that's fine, we cancel them all below.
     let volumeId: string | null = null;
     try {
       volumeId = await createServiceVolume({
@@ -119,6 +121,14 @@ export async function provisionUser(
         volumeError
       );
     }
+
+    // 3c. Cancel ALL stacked deploys, then trigger a single clean final deploy
+    await finalizeServiceDeploy({
+      serviceId: service.id,
+      environmentId,
+      projectId: project.railwayProjectId,
+      envVars,
+    });
 
     await prisma.railwayService.update({
       where: { userId },
