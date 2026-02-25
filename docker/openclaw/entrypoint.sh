@@ -9,6 +9,21 @@ SOUL_FILE="$WORKSPACE_DIR/SOUL.md"
 mkdir -p "$CONFIG_DIR"
 mkdir -p "$WORKSPACE_DIR"
 
+# Verify late-api skill is installed (baked into Docker image)
+if [ ! -d "/app/skills/late-api" ]; then
+  echo "FATAL: late-api skill not found at /app/skills/late-api"
+  echo "The Docker image may have been built without the skill."
+  exit 1
+fi
+
+# Verify required environment variables
+for var in LATE_API_KEY LATE_PROFILE_ID MOONSHOT_API_KEY; do
+  eval val=\$$var
+  if [ -z "$val" ]; then
+    echo "WARNING: $var is not set"
+  fi
+done
+
 # Generate openclaw.json from environment variables
 cat > "$CONFIG_FILE" <<JSONEOF
 {
