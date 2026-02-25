@@ -10,8 +10,8 @@
     "favicon": "/favicon.ico"
   },
   "seo": {
-    "title": "PostClaw - Your Personal AI Content Manager",
-    "description": "Your personal AI content manager on Telegram. Create, adapt, and publish to 13 social platforms — just by chatting.",
+    "title": "PostClaw - AI Content Manager Powered by OpenClaw",
+    "description": "Your personal AI content manager on Telegram, powered by OpenClaw. Create, adapt, and publish to 13 social platforms — just by chatting.",
     "keywords": [
       "OpenClaw",
       "OpenClaw social media",
@@ -25,7 +25,7 @@
       "PostClaw"
     ],
     "author": "PostClaw",
-    "ogImage": "/og-image.png",
+    "ogImage": "/og-banner.png",
     "twitterHandle": "@postclaw"
   },
   "contact": {
