@@ -131,7 +131,15 @@ export default function DashboardHome({ userName }: { userName: string }) {
 
   const { mutate: restartBot, isPending: restarting } = usePatch(
     appRouter.api.bot,
-    { onSuccess: () => refetch() }
+    {
+      onSuccess: () => {
+        toast.success("Bot is restarting...");
+        refetch();
+      },
+      onError: () => {
+        toast.error("Failed to restart bot.");
+      },
+    }
   );
 
   const { mutate: disconnectAccount } = usePost(

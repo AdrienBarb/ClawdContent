@@ -21,6 +21,7 @@ export async function railwayQuery<T = unknown>(
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({ query, variables }),
+    signal: AbortSignal.timeout(15_000),
   });
 
   if (!response.ok) {
