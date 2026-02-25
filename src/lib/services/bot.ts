@@ -1,9 +1,9 @@
 import { prisma } from "@/lib/db/prisma";
 import {
   getDeployments,
-  triggerDeploy,
   cancelDeployment,
   cancelActiveDeployments,
+  setServiceVariables,
 } from "@/lib/railway/mutations";
 import { updateContainerEnvVars } from "./provisioning";
 
@@ -137,10 +137,13 @@ export async function restartBot(userId: string): Promise<void> {
     console.error("Failed to cancel active deployments:", err)
   );
 
-  await triggerDeploy({
+  // Use setServiceVariables to trigger a deploy — environmentTriggersDeploy
+  // does NOT work for Docker image services.
+  await setServiceVariables({
     serviceId: railwayService.serviceId,
     environmentId: railwayService.environmentId,
     projectId: railwayService.railwayProject?.railwayProjectId,
+    variables: { OVERWRITE_SOUL: "true" },
   });
 
   await prisma.railwayService.update({
