@@ -305,11 +305,11 @@ async function handleInvoiceSucceeded(
   });
 
   // Verify container is still running
-  const railwayService = await prisma.railwayService.findUnique({
+  const flyMachine = await prisma.flyMachine.findUnique({
     where: { userId: existing.userId },
   });
 
-  if (!railwayService || railwayService.status === "failed") {
+  if (!flyMachine || flyMachine.status === "failed") {
     console.log(
       `Container missing/failed for user ${existing.userId} — will need manual re-provision`
     );

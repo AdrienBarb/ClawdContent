@@ -203,8 +203,8 @@ export default function PrivacyPage() {
                 <strong>Supabase</strong> — database hosting (PostgreSQL)
               </li>
               <li>
-                <strong>Railway</strong> — container hosting for your bot
-                instance (USA)
+                <strong>Fly.io</strong> — container hosting for your bot
+                instance (Europe)
               </li>
               <li>
                 <strong>Late API (getlate.dev)</strong> — social media posting

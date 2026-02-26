@@ -6,34 +6,34 @@ PostClaw is a SaaS ($39/mo) that gives each user a personal AI content manager o
 
 **How it works:**
 1. User signs up, pays $39/mo via Stripe
-2. We auto-provision a private OpenClaw container on Railway + a Late API profile
+2. We auto-provision a private OpenClaw container on Fly.io + a Late API profile
 3. User connects their Telegram bot token and social accounts
 4. User chats with their bot on Telegram to create and publish content
 
 **Key services:**
-- **OpenClaw** — Open-source AI agent framework (runs in Docker on Railway)
+- **OpenClaw** — Open-source AI agent framework (runs in Docker on Fly.io)
 - **Late API** (getlate.dev) — Unified social media API
 - **Kimi K2.5** (Moonshot) — LLM powering the bot
-- **Railway** — Container hosting (one container per user)
+- **Fly.io** — Container hosting (one machine per user)
 
 ---
 
 ## Architecture
 
 ```
-User ─── Telegram ─── OpenClaw Container (Railway)
+User ─── Telegram ─── OpenClaw Container (Fly.io)
                             │
                             ├── Kimi K2.5 (Moonshot API)
                             └── Late API (social posting)
 
 Dashboard (Next.js on Vercel)
     ├── Stripe (payments)
-    ├── Railway API (container management)
+    ├── Fly.io Machines API (container management)
     ├── Late API (account connections)
     └── PostgreSQL (Supabase)
 ```
 
-**Per-user isolation:** Each user gets their own Railway container with a **profile-scoped Late API key** that can only access their own social accounts. One master Late account, many scoped keys.
+**Per-user isolation:** Each user gets their own Fly.io machine with a **profile-scoped Late API key** that can only access their own social accounts. One master Late account, many scoped keys.
 
 **Custom Docker image:** `ghcr.io/adrienbarb/postclaw-agent:latest`
 - Entrypoint generates `openclaw.json` + `SOUL.md` from env vars
@@ -59,7 +59,7 @@ Dashboard (Next.js on Vercel)
 
 ```
 User (1:1) ── Subscription
-     (1:1) ── RailwayService
+     (1:1) ── FlyMachine
      (1:1) ── LateProfile (1:N) ── SocialAccount
      (1:N) ── Session
      (1:N) ── Account
@@ -69,7 +69,7 @@ User (1:1) ── Subscription
 |-------|---------|
 | **User** | Authenticated user (Better Auth) |
 | **Subscription** | Stripe subscription: customerId, subscriptionId, status, period dates |
-| **RailwayService** | User's container: serviceId, environmentId, status, hasTelegramToken |
+| **FlyMachine** | User's container: machineId, volumeId, region, status, hasTelegramToken |
 | **LateProfile** | User's Late API profile: profileId, scoped API key |
 | **SocialAccount** | Connected social platform: accountId, platform, username, status |
 | **Session** | Auth session |
@@ -119,7 +119,7 @@ src/
 │   └── providers/                 # Context providers
 ├── lib/
 │   ├── late/                      # Late API client + mutations
-│   ├── railway/                   # Railway GraphQL client + mutations
+│   ├── fly/                       # Fly.io Machines API client + mutations
 │   ├── services/                  # Business logic
 │   │   ├── provisioning.ts        # Create/destroy/retry user containers
 │   │   ├── subscription.ts        # Stripe checkout + sync
@@ -177,17 +177,17 @@ Supported platforms (text-only): **Twitter/X**, **LinkedIn**, **Bluesky**, **Thr
 
 ## Service Layer
 
-Services live in `src/lib/services/`. Routes call services, services call adapters (`src/lib/late/`, `src/lib/railway/`, `src/lib/stripe/`). Routes never call adapters directly.
+Services live in `src/lib/services/`. Routes call services, services call adapters (`src/lib/late/`, `src/lib/fly/`, `src/lib/stripe/`). Routes never call adapters directly.
 
 ### Key flows
 
 **Provisioning (on checkout.session.completed):**
 1. Create Late profile → scoped API key
-2. Deploy Railway container with env vars
-3. Save RailwayService + LateProfile to DB
+2. Create Fly.io volume + machine with env vars (single API call for machine)
+3. Save FlyMachine + LateProfile to DB
 
 **Deprovisioning (on subscription.deleted):**
-1. Delete Railway service
+1. Delete Fly.io machine + volume
 2. Clean up DB records
 
 **Social account connection:**
@@ -229,9 +229,9 @@ STRIPE_PRICE_ID=
 # Email (Resend)
 RESEND_API_KEY=
 
-# Railway
-RAILWAY_API_TOKEN=
-RAILWAY_DEFAULT_PROJECT_ID=
+# Fly.io
+FLY_API_TOKEN=
+FLY_APP_NAME=
 
 # Late API (master key — not per-user)
 LATE_API_KEY=
@@ -267,7 +267,7 @@ npm run email:dev          # Preview email templates
 
 | Phase | Status | What it covers |
 |-------|--------|---------------|
-| **Phase 0** | COMPLETE | Railway deploy + OpenClaw + Telegram + Kimi K2.5 |
+| **Phase 0** | COMPLETE | Fly.io deploy + OpenClaw + Telegram + Kimi K2.5 |
 | **Phase 0.5** | COMPLETE | Late API integration + social posting via Telegram |
 | **Phase 1** | COMPLETE | DB schema, Stripe subscription, auto-provisioning, dashboard, onboarding |
 | **Phase 2** | TODO | Monitoring, production hardening, self-service billing portal |
@@ -360,10 +360,15 @@ const { mutate } = usePost("/api/bot", { onSuccess: () => { ... } });
 - Client: `src/lib/late/client.ts`
 - Profile-scoped API keys for per-user isolation
 
-### Railway
-- `setServiceVariables` auto-triggers container redeploy
-- Don't set multiple env vars in quick succession — use single call
-- Sleep mode enabled on containers to save costs
+### Fly.io
+- One app (`FLY_APP_NAME`) with many machines — one per user
+- Machines API (REST): `https://api.machines.dev/v1`
+- Client: `src/lib/fly/client.ts`, mutations: `src/lib/fly/mutations.ts`
+- `updateMachineEnv` fetches current config, merges env vars, POSTs back — triggers restart
+- `restart.policy: "always"` for crash recovery
+- Region: `cdg` (Paris), Guest: `shared-cpu-1x, 512MB RAM`
+- Each machine gets a 1GB volume mounted at `/home/node/.openclaw/`
+- No auto-stop (Telegram bots use outbound long-polling, not HTTP)
 
 ### OpenClaw Container
 - Config dir: `$HOME/.openclaw/` (runs as `node` user)

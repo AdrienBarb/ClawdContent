@@ -17,7 +17,7 @@ model User {
   sessions       Session[]
   accounts       Account[]
   subscription   Subscription?
-  railwayService RailwayService?
+  flyMachine     FlyMachine?
   lateProfile    LateProfile?
 
   @@unique([email])
@@ -85,34 +85,19 @@ model Subscription {
   @@map("subscription")
 }
 
-model RailwayProject {
-  id               String           @id @default(cuid())
-  railwayProjectId String           @unique
-  name             String
-  environmentId    String
-  volumeCount      Int              @default(0)
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-  services         RailwayService[]
-
-  @@map("railway_project")
-}
-
-model RailwayService {
-  id               String          @id @default(cuid())
-  userId           String          @unique
-  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  serviceId        String          @unique
-  environmentId    String
-  status           String          @default("pending") // pending, deploying, running, stopped, failed
-  hasTelegramToken Boolean         @default(false)
-  railwayProjectId String?
-  railwayProject   RailwayProject? @relation(fields: [railwayProjectId], references: [id])
+model FlyMachine {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  machineId        String   @unique
   volumeId         String?
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
+  region           String   @default("cdg")
+  status           String   @default("pending") // pending, deploying, running, stopped, failed
+  hasTelegramToken Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  @@map("railway_service")
+  @@map("fly_machine")
 }
 
 model LateProfile {

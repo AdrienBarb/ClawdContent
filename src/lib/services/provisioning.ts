@@ -5,18 +5,12 @@ import {
   createScopedApiKey,
 } from "@/lib/late/mutations";
 import {
-  createOpenClawService,
-  finalizeServiceDeploy,
-  deleteService,
-  setServiceVariables,
-  cancelActiveDeployments,
-} from "@/lib/railway/mutations";
-import {
-  seedDefaultProject,
-  allocateProject,
-  createServiceVolume,
-  releaseProjectVolume,
-} from "./railwayProjects";
+  createVolume,
+  createMachine,
+  updateMachineEnv,
+  deleteMachine,
+  deleteVolume,
+} from "@/lib/fly/mutations";
 
 const DOCKER_IMAGE = "ghcr.io/adrienbarb/postclaw-agent:latest";
 
@@ -25,11 +19,11 @@ export async function provisionUser(
   userName: string
 ): Promise<void> {
   // Guard against double provisioning
-  const existing = await prisma.railwayService.findUnique({
+  const existing = await prisma.flyMachine.findUnique({
     where: { userId },
   });
   if (existing) {
-    console.log(`User ${userId} already has a Railway service, skipping`);
+    console.log(`User ${userId} already has a Fly machine, skipping`);
     return;
   }
 
@@ -54,21 +48,15 @@ export async function provisionUser(
     });
   }
 
-  // 2. Allocate a Railway project with capacity
-  await seedDefaultProject();
-  const project = await allocateProject();
-
-  // 3. Deploy Railway container (reuse accounts context if re-subscribing)
+  // 2. Build env vars
   const accountsContext = formatAccountsContext(lateProfile.socialAccounts);
-  const serviceName = `postclaw-${userId.slice(0, 8)}`;
   const envVars: Record<string, string> = {
     LATE_API_KEY: lateProfile.lateApiKey,
     LATE_PROFILE_ID: lateProfile.lateProfileId,
     LATE_ACCOUNTS_CONTEXT: accountsContext,
     MOONSHOT_API_KEY: process.env.MOONSHOT_API_KEY ?? "",
     OVERWRITE_SOUL: "true",
-    RAILWAY_RUN_UID: "0",
-    HOME: "/home/node",
+    NODE_OPTIONS: "--max-old-space-size=768",
   };
 
   try {
@@ -76,13 +64,11 @@ export async function provisionUser(
     // provisionUser() calls pass the findUnique guard simultaneously, the
     // unique constraint on userId will reject the second one.
     try {
-      await prisma.railwayService.create({
+      await prisma.flyMachine.create({
         data: {
           userId,
-          serviceId: "pending",
-          environmentId: "pending",
+          machineId: "pending",
           status: "deploying",
-          railwayProjectId: project.id,
         },
       });
     } catch (err) {
@@ -91,57 +77,38 @@ export async function provisionUser(
         err.code === "P2002"
       ) {
         console.log(
-          `User ${userId} already has a Railway service (race condition), skipping`
+          `User ${userId} already has a Fly machine (race condition), skipping`
         );
         return;
       }
       throw err;
     }
 
-    // 3a. Create and configure service (does NOT trigger final deploy)
-    const { service, environmentId } = await createOpenClawService({
-      name: serviceName,
+    // 3. Create volume for persistent bot memory
+    const sanitizedId = userId.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+    const volumeName = `pc_${sanitizedId.slice(0, 26)}`;
+    const volume = await createVolume(volumeName);
+
+    // 4. Create machine — starts automatically with all config
+    const machineName = `postclaw_${sanitizedId.slice(0, 20)}`;
+    const machine = await createMachine({
+      name: machineName,
       image: DOCKER_IMAGE,
-      projectId: project.railwayProjectId,
+      env: envVars,
+      volumeId: volume.id,
     });
 
-    // 3b. Create volume for persistent bot memory (graceful degradation)
-    // This may trigger intermediate deploys — that's fine, we cancel them all below.
-    let volumeId: string | null = null;
-    try {
-      volumeId = await createServiceVolume({
-        projectId: project.id,
-        railwayProjectId: project.railwayProjectId,
-        serviceId: service.id,
-        environmentId,
-      });
-    } catch (volumeError) {
-      console.error(
-        `Failed to create volume for user ${userId}, bot will work without persistence:`,
-        volumeError
-      );
-    }
-
-    // 3c. Cancel ALL stacked deploys, then trigger a single clean final deploy
-    await finalizeServiceDeploy({
-      serviceId: service.id,
-      environmentId,
-      projectId: project.railwayProjectId,
-      envVars,
-    });
-
-    await prisma.railwayService.update({
+    await prisma.flyMachine.update({
       where: { userId },
       data: {
-        serviceId: service.id,
-        environmentId,
+        machineId: machine.id,
+        volumeId: volume.id,
         status: "running",
-        volumeId,
       },
     });
   } catch (error) {
-    console.error(`Failed to deploy Railway container for user ${userId}:`, error);
-    await prisma.railwayService.update({
+    console.error(`Failed to provision Fly machine for user ${userId}:`, error);
+    await prisma.flyMachine.update({
       where: { userId },
       data: { status: "failed" },
     });
@@ -154,42 +121,41 @@ export async function retryProvisionUser(
   userId: string,
   userName: string
 ): Promise<void> {
-  const existing = await prisma.railwayService.findUnique({
+  const existing = await prisma.flyMachine.findUnique({
     where: { userId },
   });
 
-  // Only allow retry if no service exists or it failed
+  // Only allow retry if no machine exists or it failed
   if (existing && existing.status !== "failed") {
     throw new Error("Provisioning already in progress or completed");
   }
 
   // Clean up failed records so provisionUser can start fresh
   if (existing) {
-    await prisma.railwayService.delete({ where: { userId } });
+    await prisma.flyMachine.delete({ where: { userId } });
   }
 
   await provisionUser(userId, userName);
 }
 
 export async function deprovisionUser(userId: string): Promise<void> {
-  const railwayService = await prisma.railwayService.findUnique({
+  const flyMachine = await prisma.flyMachine.findUnique({
     where: { userId },
   });
 
-  if (railwayService && railwayService.serviceId !== "pending") {
-    await deleteService(railwayService.serviceId).catch((err) =>
-      console.error(`Failed to delete Railway service: ${err}`)
+  if (flyMachine && flyMachine.machineId !== "pending") {
+    await deleteMachine(flyMachine.machineId).catch((err) =>
+      console.error(`Failed to delete Fly machine: ${err}`)
     );
+
+    if (flyMachine.volumeId) {
+      await deleteVolume(flyMachine.volumeId).catch((err) =>
+        console.error(`Failed to delete Fly volume: ${err}`)
+      );
+    }
   }
 
-  // Decrement volume count if this service had a volume
-  if (railwayService?.volumeId && railwayService.railwayProjectId) {
-    await releaseProjectVolume(railwayService.railwayProjectId).catch((err) =>
-      console.error(`Failed to release project volume: ${err}`)
-    );
-  }
-
-  await prisma.railwayService.deleteMany({ where: { userId } });
+  await prisma.flyMachine.deleteMany({ where: { userId } });
 
   // Clean up social accounts and Late profile
   await prisma.socialAccount.deleteMany({
@@ -202,29 +168,17 @@ export async function updateContainerEnvVars(
   userId: string,
   variables: Record<string, string>
 ): Promise<void> {
-  const railwayService = await prisma.railwayService.findUnique({
+  const flyMachine = await prisma.flyMachine.findUnique({
     where: { userId },
-    include: { railwayProject: true },
   });
 
-  if (!railwayService || railwayService.serviceId === "pending") {
-    throw new Error("No active Railway service found for user");
+  if (!flyMachine || flyMachine.machineId === "pending") {
+    throw new Error("No active Fly machine found for user");
   }
 
-  // Cancel any in-progress deployments to avoid queuing conflicts
-  await cancelActiveDeployments({
-    serviceId: railwayService.serviceId,
-    environmentId: railwayService.environmentId,
-    projectId: railwayService.railwayProject?.railwayProjectId,
-  }).catch((err) =>
-    console.error("Failed to cancel active deployments:", err)
-  );
-
-  await setServiceVariables({
-    serviceId: railwayService.serviceId,
-    environmentId: railwayService.environmentId,
-    projectId: railwayService.railwayProject?.railwayProjectId,
-    variables: { ...variables, OVERWRITE_SOUL: "true" },
+  await updateMachineEnv(flyMachine.machineId, {
+    ...variables,
+    OVERWRITE_SOUL: "true",
   });
 }
 
