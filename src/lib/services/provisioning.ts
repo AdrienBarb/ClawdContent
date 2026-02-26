@@ -55,6 +55,7 @@ export async function provisionUser(
     LATE_PROFILE_ID: lateProfile.lateProfileId,
     LATE_ACCOUNTS_CONTEXT: accountsContext,
     MOONSHOT_API_KEY: process.env.MOONSHOT_API_KEY ?? "",
+    BRAVE_API_KEY: process.env.BRAVE_API_KEY ?? "",
     OVERWRITE_SOUL: "true",
     NODE_OPTIONS: "--max-old-space-size=768",
   };

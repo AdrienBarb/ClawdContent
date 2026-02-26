@@ -366,7 +366,8 @@ const { mutate } = usePost("/api/bot", { onSuccess: () => { ... } });
 - Client: `src/lib/fly/client.ts`, mutations: `src/lib/fly/mutations.ts`
 - `updateMachineEnv` fetches current config, merges env vars, POSTs back — triggers restart
 - `restart.policy: "always"` for crash recovery
-- Region: `cdg` (Paris), Guest: `shared-cpu-1x, 512MB RAM`
+- Region: `cdg` (Paris), Guest: `shared-cpu-2x, 1024MB RAM`
+- `NODE_OPTIONS=--max-old-space-size=768` set on all machines (OpenClaw needs >512MB heap)
 - Each machine gets a 1GB volume mounted at `/home/node/.openclaw/`
 - No auto-stop (Telegram bots use outbound long-polling, not HTTP)
 

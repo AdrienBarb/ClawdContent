@@ -17,7 +17,7 @@ if [ ! -d "/app/skills/late-api" ]; then
 fi
 
 # Verify required environment variables
-for var in LATE_API_KEY LATE_PROFILE_ID MOONSHOT_API_KEY; do
+for var in LATE_API_KEY LATE_PROFILE_ID MOONSHOT_API_KEY BRAVE_API_KEY; do
   eval val=\$$var
   if [ -z "$val" ]; then
     echo "WARNING: $var is not set"
@@ -61,6 +61,26 @@ cat > "$CONFIG_FILE" <<JSONEOF
         ]
       }
     }
+  },
+  "tools": {
+    "web": {
+      "search": {
+        "enabled": true,
+        "provider": "brave",
+        "apiKey": "${BRAVE_API_KEY:-}",
+        "maxResults": 5,
+        "timeoutSeconds": 30,
+        "cacheTtlMinutes": 15
+      },
+      "fetch": {
+        "enabled": true
+      }
+    }
+  },
+  "cron": {
+    "enabled": true,
+    "maxConcurrentRuns": 2,
+    "sessionRetention": "24h"
   },
   "skills": {
     "entries": {
