@@ -89,7 +89,7 @@ export async function createMachine({
         guest: {
           cpu_kind: "shared",
           cpus: 2,
-          memory_mb: 1024,
+          memory_mb: 2048,
         },
         restart: { policy: "always" },
         mounts: [{ volume: volumeId, path: VOLUME_MOUNT_PATH }],

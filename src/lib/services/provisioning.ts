@@ -57,7 +57,7 @@ export async function provisionUser(
     MOONSHOT_API_KEY: process.env.MOONSHOT_API_KEY ?? "",
     BRAVE_API_KEY: process.env.BRAVE_API_KEY ?? "",
     OVERWRITE_SOUL: "true",
-    NODE_OPTIONS: "--max-old-space-size=768",
+    NODE_OPTIONS: "--max-old-space-size=1536",
   };
 
   try {
