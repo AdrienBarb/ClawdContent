@@ -28,20 +28,20 @@ export default function FinalCTASection() {
           <AnimatedSection>
             <div className="rounded-[2rem] border border-[#e8614d]/20 bg-gradient-to-br from-[#1a1020] to-[#0d0f17] p-12 md:p-20 text-center">
               <h2 className="text-4xl md:text-5xl font-bold mb-5 text-white">
-                Ready to Stop Juggling
+                Every Day You Wait Is Another
                 <br />
-                13 Different Apps?
+                Day of Copy-Pasting
               </h2>
               <p className="text-[#7a7f94] text-lg mb-10 max-w-lg mx-auto">
-                Your AI content manager is one click away. Setup takes less than
-                2 minutes.
+                Setup takes less than 2 minutes. Start publishing from Telegram
+                today.
               </p>
               <Button
                 size="lg"
                 onClick={handleGetStarted}
                 className="text-base px-10 h-14 bg-[#e8614d] hover:bg-[#d4563f] text-white"
               >
-                Get Started — $39/mo
+                Start Publishing — $39/mo
               </Button>
               <p className="mt-5 text-sm text-[#555a6b]">
                 Cancel anytime. No contracts.

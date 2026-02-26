@@ -30,20 +30,17 @@ export default function HeroSection() {
           <div className="max-w-3xl lg:max-w-xl flex-shrink-0">
             <AnimatedSection>
               <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-bold leading-[1.1] tracking-tight mb-8 text-white">
-                <span className="text-[#e8614d]">OpenClaw</span> Runs Your Social Media.
+                Publish to 13 Platforms.
                 <br />
-                You Just Chat.
+                From <span className="text-[#e8614d]">One Chat.</span>
               </h1>
             </AnimatedSection>
 
             <AnimatedSection delay={0.15}>
               <p className="text-lg md:text-xl leading-relaxed text-[#8a8f9e] max-w-xl mb-10">
-                A private OpenClaw agent on Telegram. It writes, adapts for each
-                platform, and publishes to{" "}
-                <strong className="text-[#e8614d] font-semibold">
-                  13 social networks
-                </strong>{" "}
-                — while you do literally nothing else.
+                Tell your AI bot what to post on Telegram. It rewrites for each
+                platform&apos;s tone and audience, then publishes everywhere —
+                while you move on with your day.
               </p>
             </AnimatedSection>
 
@@ -53,7 +50,7 @@ export default function HeroSection() {
                 onClick={handleGetStarted}
                 className="text-base px-10 h-14 bg-[#e8614d] hover:bg-[#d4563f] text-white"
               >
-                Get Started — $39/mo
+                Start Publishing — $39/mo
               </Button>
             </AnimatedSection>
 

@@ -1,31 +1,31 @@
 import AnimatedSection from "@/components/sections/AnimatedSection";
+import { Github, Lock, Zap } from "lucide-react";
 
 const stats = [
-  { value: "13", label: "Platforms" },
-  { value: "140K+", label: "OpenClaw Stars" },
-  { value: "1,000+", label: "Posts Published" },
+  { value: "13", label: "Platforms Supported" },
+  { value: "140K+", label: "OpenClaw GitHub Stars" },
   { value: "< 2 min", label: "Setup Time" },
+  { value: "24/7", label: "Always-On Bot" },
 ];
 
-// TODO: Replace with real testimonials
-const testimonials = [
+const trustPoints = [
   {
-    quote:
-      "I used to spend 2 hours a day managing social media across 5 platforms. Now I send one message and it's done in seconds.",
-    name: "Sarah M.",
-    role: "Founder, PixelBrew Studio",
+    icon: Github,
+    title: "Built on OpenClaw",
+    description:
+      "The most popular open-source AI agent framework with 140K+ GitHub stars. Battle-tested, transparent, community-driven.",
   },
   {
-    quote:
-      "The content adapts for each platform. My LinkedIn posts sound professional, my tweets are punchy. It actually gets it.",
-    name: "James K.",
-    role: "Marketing Lead, Nomad SaaS",
+    icon: Lock,
+    title: "Your own isolated server",
+    description:
+      "Every user gets a private bot instance on a dedicated server. No shared infrastructure, no data leaks. Your content stays yours.",
   },
   {
-    quote:
-      "I was paying $200/mo for three different tools. PostClaw replaced all of them for $39. The ROI is insane.",
-    name: "Priya R.",
-    role: "Solo Creator, The Content Lab",
+    icon: Zap,
+    title: "Set up in under 2 minutes",
+    description:
+      "Connect your accounts, link your Telegram bot, and start publishing. No complex configuration, no onboarding calls.",
   },
 ];
 
@@ -54,23 +54,23 @@ export default function SocialProofSection() {
 
           <AnimatedSection>
             <h2 className="text-4xl md:text-5xl font-bold text-center mb-14 text-white">
-              What Our Users Say
+              Why You Can Trust PostClaw
             </h2>
           </AnimatedSection>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {testimonials.map((testimonial, index) => (
-              <AnimatedSection key={testimonial.name} delay={index * 0.12}>
+            {trustPoints.map((point, index) => (
+              <AnimatedSection key={point.title} delay={index * 0.12}>
                 <div className="bg-[#151929] border border-[#1e2233] rounded-2xl p-8 h-full flex flex-col hover:border-[#e8614d]/20 transition-colors">
-                  <p className="text-[#c0c4d0] leading-relaxed flex-1 text-[0.95rem] mb-6">
-                    &ldquo;{testimonial.quote}&rdquo;
-                  </p>
-                  <div>
-                    <p className="font-semibold text-sm text-white">{testimonial.name}</p>
-                    <p className="text-xs text-[#7a7f94] mt-0.5">
-                      {testimonial.role}
-                    </p>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e8614d]/10 mb-5">
+                    <point.icon className="h-5 w-5 text-[#e8614d]" />
                   </div>
+                  <h3 className="text-lg font-semibold text-white mb-3">
+                    {point.title}
+                  </h3>
+                  <p className="text-[#7a7f94] leading-relaxed text-[0.92rem] flex-1">
+                    {point.description}
+                  </p>
                 </div>
               </AnimatedSection>
             ))}

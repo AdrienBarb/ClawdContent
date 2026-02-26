@@ -92,7 +92,7 @@ export default function PricingSection() {
                 size="lg"
                 onClick={handleGetStarted}
               >
-                Get Started — <span className="line-through opacity-60">$59</span> $39/mo
+                Start Publishing — <span className="line-through opacity-60">$59</span> $39/mo
               </Button>
               <p className="text-center text-sm text-[#555a6b] mt-5">
                 Cancel anytime. No contracts. No hidden fees.
