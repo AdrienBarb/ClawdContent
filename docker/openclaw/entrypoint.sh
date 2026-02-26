@@ -40,7 +40,15 @@ cat > "$CONFIG_FILE" <<JSONEOF
       "model": {
         "primary": "${LLM_MODEL:-moonshot/kimi-k2.5}"
       }
-    }
+    },
+    "list": [
+      {
+        "id": "main",
+        "tools": {
+          "alsoAllow": ["cron", "web_search", "web_fetch"]
+        }
+      }
+    ]
   },
   "models": {
     "mode": "merge",
