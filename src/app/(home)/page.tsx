@@ -1,6 +1,7 @@
 import HeroSection from "@/components/sections/HeroSection";
 import PainSection from "@/components/sections/PainSection";
 import HowItWorksSection from "@/components/sections/HowItWorksSection";
+import CapabilitiesSection from "@/components/sections/CapabilitiesSection";
 import FeaturesSection from "@/components/sections/FeaturesSection";
 import SocialProofSection from "@/components/sections/SocialProofSection";
 import PricingSection from "@/components/sections/PricingSection";
@@ -13,6 +14,7 @@ export default function Home() {
       <HeroSection />
       <PainSection />
       <HowItWorksSection />
+      <CapabilitiesSection />
       <FeaturesSection />
       <SocialProofSection />
       <PricingSection />
