@@ -106,7 +106,7 @@ export default function DashboardHome({ userName }: { userName: string }) {
   // Conversion tracking on successful payment
   useEffect(() => {
     if (searchParams.get("payment") === "success") {
-      window.twq?.("event", "tw-r6zft-r6zfu", {});
+      window.twq?.("event", "tw-r799m-r799n", {});
       window.rdt?.("track", "Purchase");
       router.replace("/d", { scroll: false });
     }
@@ -236,8 +236,8 @@ export default function DashboardHome({ userName }: { userName: string }) {
               </h3>
               <p className="text-sm text-emerald-700 mt-0.5">
                 Open Telegram and try sending one of these prompts — just copy
-                and paste. The first reply may take up to 5 minutes while
-                the bot wakes up.
+                and paste. The first reply may take up to 5 minutes while the
+                bot wakes up.
               </p>
             </div>
           </div>
@@ -417,9 +417,7 @@ export default function DashboardHome({ userName }: { userName: string }) {
                           backgroundColor: platform?.color ?? "#6b7280",
                         }}
                       >
-                        {platform?.icon ?? (
-                          <Share2 className="h-4 w-4" />
-                        )}
+                        {platform?.icon ?? <Share2 className="h-4 w-4" />}
                       </span>
                       <div>
                         <span className="text-sm font-medium text-gray-900">
