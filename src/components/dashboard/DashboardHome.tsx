@@ -207,20 +207,6 @@ export default function DashboardHome({ userName }: { userName: string }) {
                 restart the deployment.
               </p>
             </div>
-            <Button
-              size="sm"
-              variant="outline"
-              className="shrink-0 border-amber-300 text-amber-800 hover:bg-amber-100"
-              onClick={() => restartBot({})}
-              disabled={restarting}
-            >
-              {restarting ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
-              ) : (
-                <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-              )}
-              Restart
-            </Button>
           </div>
         </div>
       )}
@@ -307,7 +293,6 @@ export default function DashboardHome({ userName }: { userName: string }) {
               </Button>
             )}
             {(status?.botStatus === "running" ||
-              status?.botStatus === "deploying" ||
               status?.botStatus === "stopped") && (
               <Button
                 size="sm"

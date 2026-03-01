@@ -25,7 +25,6 @@ import { useState } from "react";
 const navItems = [
   { href: appRouter.dashboard, label: "Dashboard", icon: LayoutDashboard },
   { href: appRouter.posts, label: "Posts", icon: FileText },
-  { href: appRouter.accounts, label: "Accounts", icon: Share2 },
   { href: appRouter.billing, label: "Billing", icon: CreditCard },
 ];
 
@@ -58,7 +57,10 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
       style={{ background: "var(--sidebar-bg)" }}
     >
       {/* Logo */}
-      <div className="flex h-16 items-center px-5 border-b" style={{ borderColor: "var(--sidebar-border)" }}>
+      <div
+        className="flex h-16 items-center px-5 border-b"
+        style={{ borderColor: "var(--sidebar-border)" }}
+      >
         <Link
           href={appRouter.dashboard}
           className="text-lg font-bold tracking-tight text-white"
@@ -89,12 +91,8 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
               onClick={onNavigate}
               className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150"
               style={{
-                background: isActive
-                  ? "var(--sidebar-accent)"
-                  : "transparent",
-                color: isActive
-                  ? "#ffffff"
-                  : "var(--sidebar-text)",
+                background: isActive ? "var(--sidebar-accent)" : "transparent",
+                color: isActive ? "#ffffff" : "var(--sidebar-text)",
               }}
               onMouseEnter={(e) => {
                 if (!isActive) {

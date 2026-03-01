@@ -29,6 +29,10 @@ export default async function DashboardLayout({
     subscription?.status === "trialing" ||
     subscription?.status === "past_due";
 
+  if (!hasActiveSubscription) {
+    return <SubscribeModal />;
+  }
+
   return (
     <div className="flex min-h-screen">
       <Sidebar />
@@ -45,8 +49,6 @@ export default async function DashboardLayout({
           <div className="mx-auto max-w-5xl px-6 py-8">{children}</div>
         </main>
       </div>
-
-      {!hasActiveSubscription && <SubscribeModal />}
     </div>
   );
 }
