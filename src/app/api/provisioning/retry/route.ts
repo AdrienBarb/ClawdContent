@@ -23,7 +23,10 @@ export async function POST() {
       where: { userId: session.user.id },
     });
 
-    if (!subscription || subscription.status !== "active") {
+    if (
+      !subscription ||
+      (subscription.status !== "active" && subscription.status !== "trialing")
+    ) {
       return NextResponse.json(
         { error: errorMessages.SUBSCRIPTION_REQUIRED },
         { status: 403 }

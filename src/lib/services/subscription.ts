@@ -9,7 +9,10 @@ export async function createCheckoutSession(
     where: { userId },
   });
 
-  if (existing && existing.status === "active") {
+  if (
+    existing &&
+    (existing.status === "active" || existing.status === "trialing")
+  ) {
     throw new Error("ALREADY_SUBSCRIBED");
   }
 
@@ -41,6 +44,7 @@ export async function createCheckoutSession(
     metadata: { userId },
     subscription_data: {
       metadata: { userId },
+      trial_period_days: 3,
     },
   });
 

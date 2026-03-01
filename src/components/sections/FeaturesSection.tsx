@@ -131,7 +131,7 @@ export default function FeaturesSection() {
                 onClick={handleGetStarted}
                 className="text-base px-10 h-14 bg-[#e8614d] hover:bg-[#d4563f] text-white"
               >
-                Start Publishing — $39/mo
+                Start Free Trial
               </Button>
             </div>
           </AnimatedSection>

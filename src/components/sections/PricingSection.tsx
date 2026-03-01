@@ -70,9 +70,8 @@ export default function PricingSection() {
                   </span>
                 </div>
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-green-400 text-sm">🎁</span>
                   <span className="text-green-400 text-sm font-medium">
-                    $20 off for early customers (12 left)
+                    3-day free trial — no charge until day 4
                   </span>
                 </div>
                 <p className="text-[#7a7f94]">{plan.description}</p>
@@ -92,10 +91,10 @@ export default function PricingSection() {
                 size="lg"
                 onClick={handleGetStarted}
               >
-                Start Publishing — <span className="line-through opacity-60">$59</span> $39/mo
+                Start Free Trial
               </Button>
               <p className="text-center text-sm text-[#555a6b] mt-5">
-                Cancel anytime. No contracts. No hidden fees.
+                Then $39/mo. Cancel anytime. No contracts. No hidden fees.
               </p>
             </div>
           </AnimatedSection>

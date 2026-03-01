@@ -119,7 +119,11 @@ function getSubscriptionIdFromInvoice(
 async function handleCheckoutCompleted(
   session: Stripe.Checkout.Session
 ): Promise<void> {
-  if (session.payment_status !== "paid") {
+  // For trials, payment_status is "no_payment_required" (no charge yet)
+  if (
+    session.payment_status !== "paid" &&
+    session.payment_status !== "no_payment_required"
+  ) {
     console.log("Payment not completed, skipping");
     return;
   }

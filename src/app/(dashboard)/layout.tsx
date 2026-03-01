@@ -25,7 +25,9 @@ export default async function DashboardLayout({
   });
 
   const hasActiveSubscription =
-    subscription?.status === "active" || subscription?.status === "past_due";
+    subscription?.status === "active" ||
+    subscription?.status === "trialing" ||
+    subscription?.status === "past_due";
 
   return (
     <div className="flex min-h-screen">

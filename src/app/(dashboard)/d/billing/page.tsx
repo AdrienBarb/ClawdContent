@@ -18,7 +18,8 @@ async function BillingContent() {
     redirect("/");
   }
 
-  const isActive = subscription.status === "active";
+  const isActive =
+    subscription.status === "active" || subscription.status === "trialing";
 
   return (
     <div className="space-y-8">

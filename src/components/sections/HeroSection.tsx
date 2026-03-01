@@ -50,12 +50,15 @@ export default function HeroSection() {
                 onClick={handleGetStarted}
                 className="text-base px-10 h-14 bg-[#e8614d] hover:bg-[#d4563f] text-white"
               >
-                Start Publishing — $39/mo
+                Start Free Trial
               </Button>
+              <p className="text-sm text-[#555a6b] mt-3">
+                Then $39/mo. Cancel anytime.
+              </p>
             </AnimatedSection>
 
             <AnimatedSection delay={0.4}>
-              <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-[#1e2233] bg-[#151929]/80 px-4 py-2">
+              <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#1e2233] bg-[#151929]/80 px-4 py-2">
                 <span className="text-sm text-[#7a7f94]">Powered by</span>
                 <span className="text-sm font-semibold text-[#e8614d]">OpenClaw</span>
                 <span className="text-xs text-[#7a7f94]">— 140K+ GitHub stars</span>

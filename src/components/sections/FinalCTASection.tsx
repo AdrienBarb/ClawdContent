@@ -41,10 +41,10 @@ export default function FinalCTASection() {
                 onClick={handleGetStarted}
                 className="text-base px-10 h-14 bg-[#e8614d] hover:bg-[#d4563f] text-white"
               >
-                Start Publishing — $39/mo
+                Start Free Trial
               </Button>
               <p className="mt-5 text-sm text-[#555a6b]">
-                Cancel anytime. No contracts.
+                Then $39/mo. Cancel anytime. No contracts.
               </p>
             </div>
           </AnimatedSection>
