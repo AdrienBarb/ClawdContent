@@ -94,6 +94,21 @@ cat > "$CONFIG_FILE" <<JSONEOF
     "entries": {
       "late-api": {
         "enabled": true
+      },
+      "humanizer": {
+        "enabled": true
+      },
+      "de-ai-ify": {
+        "enabled": true
+      },
+      "copywriting": {
+        "enabled": true
+      },
+      "content-creator-skill": {
+        "enabled": true
+      },
+      "social-content": {
+        "enabled": true
       }
     }
   }
