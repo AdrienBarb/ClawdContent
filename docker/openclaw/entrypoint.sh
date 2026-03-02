@@ -8,6 +8,7 @@ SOUL_FILE="$WORKSPACE_DIR/SOUL.md"
 
 mkdir -p "$CONFIG_DIR"
 mkdir -p "$WORKSPACE_DIR"
+mkdir -p "$CONFIG_DIR/skills"
 
 # Verify late-api skill is installed (baked into Docker image)
 if [ ! -d "/app/skills/late-api" ]; then
@@ -15,6 +16,18 @@ if [ ! -d "/app/skills/late-api" ]; then
   echo "The Docker image may have been built without the skill."
   exit 1
 fi
+
+# Copy skills from Docker image to OpenClaw managed directory
+# Skills are baked into /app/skills/ at build time but OpenClaw
+# looks for managed skills in ~/.openclaw/skills/
+echo "Syncing skills to managed directory..."
+for skill_dir in /app/skills/*/; do
+  skill_name=$(basename "$skill_dir")
+  if [ -d "$skill_dir" ]; then
+    cp -r "$skill_dir" "$CONFIG_DIR/skills/$skill_name"
+    echo "  -> $skill_name"
+  fi
+done
 
 # Verify required environment variables
 for var in LATE_API_KEY LATE_PROFILE_ID MOONSHOT_API_KEY BRAVE_API_KEY; do
@@ -91,6 +104,9 @@ cat > "$CONFIG_FILE" <<JSONEOF
     "sessionRetention": "24h"
   },
   "skills": {
+    "load": {
+      "extraDirs": ["/app/skills"]
+    },
     "entries": {
       "late-api": {
         "enabled": true
