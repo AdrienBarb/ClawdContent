@@ -272,8 +272,34 @@ export async function fetchChatHistory(
     )
     .map((m) => ({
       role: m.role as "user" | "assistant",
-      content: extractTextContent(m.content),
+      content:
+        m.role === "user"
+          ? stripContextPrefix(extractTextContent(m.content))
+          : extractTextContent(m.content),
     }));
+}
+
+/**
+ * OpenClaw bundles conversation context into each user message like:
+ *   [Chat messages since your last reply - for context]
+ *   User: ...
+ *   Assistant: ...
+ *   [Current message - respond to this]
+ *   User: actual message here
+ *
+ * Strip everything before the last "[Current message - respond to this]"
+ * and the "User: " prefix to get the real user message.
+ */
+function stripContextPrefix(content: string): string {
+  const marker = "[Current message - respond to this]\n";
+  const lastIndex = content.lastIndexOf(marker);
+  if (lastIndex === -1) return content;
+
+  let actual = content.substring(lastIndex + marker.length);
+  if (actual.startsWith("User: ")) {
+    actual = actual.substring(6);
+  }
+  return actual;
 }
 
 /**

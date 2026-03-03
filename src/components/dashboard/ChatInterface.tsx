@@ -128,11 +128,8 @@ function ChatSkeleton() {
   );
 }
 
-function ChatInner({
-  initialMessages,
-}: {
-  initialMessages: UIMessage[];
-}) {
+function ChatInner({ initialMessages }: { initialMessages: UIMessage[] }) {
+  console.log("🚀 ~ ChatInner ~ initialMessages:", initialMessages);
   const transport = useMemo(
     () => new DefaultChatTransport({ api: appRouter.api.chat }),
     []
@@ -141,6 +138,7 @@ function ChatInner({
     transport,
     messages: initialMessages,
   });
+  console.log("🚀 ~ ChatInner ~ messages:", messages);
 
   const [input, setInput] = useState("");
   const [attachedMedia, setAttachedMedia] = useState<AttachedMedia | null>(
@@ -151,13 +149,10 @@ function ChatInner({
 
   const isLoading = status === "submitted" || status === "streaming";
 
-  const handleTranscript = useCallback(
-    (text: string) => {
-      setInput((prev) => (prev ? `${prev} ${text}` : text));
-      inputRef.current?.focus();
-    },
-    []
-  );
+  const handleTranscript = useCallback((text: string) => {
+    setInput((prev) => (prev ? `${prev} ${text}` : text));
+    inputRef.current?.focus();
+  }, []);
   const {
     isRecording,
     isTranscribing,
@@ -178,8 +173,7 @@ function ChatInner({
       const info = result.info;
       if (!info || typeof info === "string") return;
 
-      const resourceType =
-        info.resource_type === "video" ? "video" : "image";
+      const resourceType = info.resource_type === "video" ? "video" : "image";
       const format = info.format;
       const url = info.secure_url;
       const cloudinaryId = info.public_id;
@@ -319,9 +313,9 @@ function ChatInner({
               .join("");
 
             const isUser = message.role === "user";
-            const { cleanText, media } = isUser && textContent
+            const { cleanText, media } = textContent
               ? extractMediaFromText(textContent)
-              : { cleanText: textContent || "", media: [] };
+              : { cleanText: "", media: [] };
 
             return (
               <div
@@ -336,14 +330,16 @@ function ChatInner({
                   }`}
                 >
                   {media.length > 0 && (
-                    <div className="mb-2">
+                    <div
+                      className={`${cleanText ? "mb-2" : ""} flex flex-wrap gap-1.5`}
+                    >
                       {media.map((m, i) =>
                         m.mediaType.startsWith("image/") ? (
                           <img
                             key={i}
                             src={m.url}
                             alt="Attached media"
-                            className="rounded-lg max-w-full max-h-48 object-cover"
+                            className="rounded-lg max-h-40 max-w-[200px] object-cover"
                           />
                         ) : (
                           <div
