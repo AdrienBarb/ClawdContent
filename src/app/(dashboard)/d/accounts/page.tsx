@@ -1,24 +1,76 @@
-import { Suspense } from "react";
-import { auth } from "@/lib/better-auth/auth";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
-import { prisma } from "@/lib/db/prisma";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Share2, Plus } from "lucide-react";
+"use client";
+
+import { appRouter } from "@/lib/constants/appRouter";
 import { getPlatform } from "@/lib/constants/platforms";
+import useApi from "@/lib/hooks/useApi";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Share2, Plus, X, Loader2 } from "lucide-react";
 import ConnectAccountButtons from "@/components/dashboard/ConnectAccountButtons";
+import toast from "react-hot-toast";
+import { useState } from "react";
 
-async function AccountsContent() {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) redirect("/");
+interface DashboardStatus {
+  botStatus: string | null;
+  accounts: Array<{
+    id: string;
+    platform: string;
+    username: string;
+    status: string;
+  }>;
+}
 
-  const lateProfile = await prisma.lateProfile.findUnique({
-    where: { userId: session.user.id },
-    include: { socialAccounts: { orderBy: { createdAt: "desc" } } },
-  });
+export default function AccountsPage() {
+  const { useGet, usePost } = useApi();
+  const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
 
-  const accounts = lateProfile?.socialAccounts ?? [];
+  const {
+    data: status,
+    isLoading,
+    refetch,
+  } = useGet(appRouter.api.dashboardStatus, undefined, {
+    refetchInterval: 5000,
+  }) as {
+    data: DashboardStatus | undefined;
+    isLoading: boolean;
+    refetch: () => void;
+  };
+
+  const { mutate: disconnectAccount } = usePost(
+    appRouter.api.accountsDisconnect,
+    {
+      onSuccess: () => {
+        setDisconnectingId(null);
+        refetch();
+      },
+      onError: () => {
+        setDisconnectingId(null);
+        toast.error("Failed to disconnect account.");
+      },
+    }
+  );
+
+  const handleDisconnect = (accountId: string) => {
+    setDisconnectingId(accountId);
+    disconnectAccount({ accountId });
+  };
+
+  const accounts = status?.accounts ?? [];
   const activeCount = accounts.filter((a) => a.status === "active").length;
+  const connectedPlatforms = accounts
+    .filter((a) => a.status === "active")
+    .map((a) => a.platform);
+  const isDeploying =
+    status?.botStatus === "deploying" || status?.botStatus === "pending";
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-48 rounded-2xl" />
+        <Skeleton className="h-48 rounded-2xl" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -40,6 +92,7 @@ async function AccountsContent() {
           <div className="divide-y divide-gray-50">
             {accounts.map((account) => {
               const platform = getPlatform(account.platform);
+              const isDisconnecting = disconnectingId === account.id;
               return (
                 <div
                   key={account.id}
@@ -74,6 +127,18 @@ async function AccountsContent() {
                     <span className="text-xs text-gray-400 capitalize">
                       {account.status}
                     </span>
+                    <button
+                      className="ml-1 rounded-md p-1 text-gray-300 transition-colors hover:bg-gray-100 hover:text-gray-500 disabled:opacity-50 cursor-pointer"
+                      onClick={() => handleDisconnect(account.id)}
+                      disabled={isDisconnecting}
+                      title="Disconnect account"
+                    >
+                      {isDisconnecting ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <X className="h-3.5 w-3.5" />
+                      )}
+                    </button>
                   </div>
                 </div>
               );
@@ -100,24 +165,17 @@ async function AccountsContent() {
             Connect a platform
           </h3>
         </div>
-        <ConnectAccountButtons />
+        <ConnectAccountButtons
+          onAccountConnected={refetch}
+          connectedPlatforms={connectedPlatforms}
+          disabled={isDeploying}
+        />
+        {isDeploying && (
+          <p className="text-xs text-amber-500 mt-2">
+            Available once your bot finishes deploying.
+          </p>
+        )}
       </div>
     </div>
-  );
-}
-
-export default function AccountsPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="space-y-6">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-48 rounded-2xl" />
-          <Skeleton className="h-48 rounded-2xl" />
-        </div>
-      }
-    >
-      <AccountsContent />
-    </Suspense>
   );
 }

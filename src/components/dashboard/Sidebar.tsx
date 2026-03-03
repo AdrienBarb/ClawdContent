@@ -5,10 +5,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { appRouter } from "@/lib/constants/appRouter";
 import { useSession, signOut } from "@/lib/better-auth/auth-client";
 import {
-  LayoutDashboard,
   Share2,
-  FileText,
   MessageCircle,
+  Radio,
   CreditCard,
   LogOut,
   Menu,
@@ -24,9 +23,9 @@ import {
 import { useState } from "react";
 
 const navItems = [
-  { href: appRouter.dashboard, label: "Dashboard", icon: LayoutDashboard },
   { href: appRouter.chat, label: "Chat", icon: MessageCircle },
-  { href: appRouter.posts, label: "Posts", icon: FileText },
+  { href: appRouter.accounts, label: "Accounts", icon: Share2 },
+  { href: appRouter.channels, label: "Channels", icon: Radio },
   { href: appRouter.billing, label: "Billing", icon: CreditCard },
 ];
 
@@ -82,9 +81,9 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
         </p>
         {navItems.map((item) => {
           const isActive =
-            pathname === item.href ||
-            (item.href !== appRouter.dashboard &&
-              pathname.startsWith(item.href));
+            item.href === "/d"
+              ? pathname === "/d"
+              : pathname.startsWith(item.href);
 
           return (
             <Link

@@ -2,6 +2,7 @@
 
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
+import type { UIMessage } from "ai";
 import { appRouter } from "@/lib/constants/appRouter";
 import { Button } from "@/components/ui/button";
 import { Send, Loader2, Sparkles, AlertCircle } from "lucide-react";
@@ -15,11 +16,65 @@ const SUGGESTIONS = [
 ];
 
 export default function ChatInterface() {
+  const [initialMessages, setInitialMessages] = useState<UIMessage[] | null>(
+    null
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(appRouter.api.chatHistory)
+      .then((res) => (res.ok ? res.json() : { messages: [] }))
+      .then((data) => {
+        if (!cancelled) setInitialMessages(data.messages ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setInitialMessages([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (initialMessages === null) {
+    return <ChatSkeleton />;
+  }
+
+  return <ChatInner initialMessages={initialMessages} />;
+}
+
+function ChatSkeleton() {
+  return (
+    <div className="flex flex-col h-[calc(100vh-4rem)] max-w-3xl mx-auto">
+      <div className="mb-4">
+        <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
+          Chat
+        </h1>
+        <p className="text-gray-500 mt-1">
+          Chat with your AI content manager directly from the dashboard.
+        </p>
+      </div>
+      <div className="flex-1 flex flex-col rounded-2xl bg-white shadow-sm border border-gray-100 overflow-hidden">
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-gray-300" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ChatInner({
+  initialMessages,
+}: {
+  initialMessages: UIMessage[];
+}) {
   const transport = useMemo(
     () => new DefaultChatTransport({ api: appRouter.api.chat }),
     []
   );
-  const { messages, sendMessage, status, error } = useChat({ transport });
+  const { messages, sendMessage, status, error } = useChat({
+    transport,
+    messages: initialMessages,
+  });
 
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -124,7 +179,9 @@ export default function ChatInterface() {
               >
                 {message.parts
                   ?.filter((part) => part.type === "text")
-                  .map((part, i) => <span key={i}>{part.text}</span>)}
+                  .map((part, i) => (
+                    <span key={i}>{part.text}</span>
+                  ))}
               </div>
             </div>
           ))}
