@@ -42,6 +42,11 @@ cat > "$CONFIG_FILE" <<JSONEOF
 {
   "gateway": {
     "bind": "lan",
+    "http": {
+      "endpoints": {
+        "chatCompletions": { "enabled": true }
+      }
+    },
     "auth": {
       "mode": "token",
       "token": "${OPENCLAW_GATEWAY_TOKEN:-}"

@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
     const modelMessages = await convertToModelMessages(messages);
 
     const result = streamText({
-      model: provider.chatModel("kimi-k2.5"),
+      model: provider.chatModel("openclaw:main"),
       messages: modelMessages,
     });
 
