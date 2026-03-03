@@ -44,7 +44,7 @@ export default function FinalCTASection() {
                 Start Free Trial
               </Button>
               <p className="mt-5 text-sm text-[#555a6b]">
-                Then $39/mo. Cancel anytime. No contracts.
+                Then $29/mo. Cancel anytime. No contracts.
               </p>
             </div>
           </AnimatedSection>

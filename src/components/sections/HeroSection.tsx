@@ -53,7 +53,7 @@ export default function HeroSection() {
                 Start Free Trial
               </Button>
               <p className="text-sm text-[#555a6b] mt-3">
-                Then $39/mo. Cancel anytime.
+                Then $29/mo. Cancel anytime.
               </p>
             </AnimatedSection>
 

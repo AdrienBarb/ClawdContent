@@ -77,7 +77,7 @@ export default function TermsPage() {
           </h2>
           <div className="space-y-3">
             <p className="text-muted-foreground">
-              The Service is available for a monthly subscription fee of $39/month.
+              The Service is available for a monthly subscription fee of $29/month.
               Payment is processed through Stripe. By subscribing, you agree to:
             </p>
             <ul className="list-disc pl-6 text-muted-foreground space-y-1">

@@ -60,7 +60,7 @@ export default function PricingSection() {
                 </h3>
                 <div className="flex items-baseline gap-2 mb-2">
                   <span className="text-3xl font-bold text-[#555a6b] line-through">
-                    $59
+                    $49
                   </span>
                   <span className="text-6xl font-bold text-[#e8614d]">
                     {plan.price}
@@ -94,7 +94,7 @@ export default function PricingSection() {
                 Start Free Trial
               </Button>
               <p className="text-center text-sm text-[#555a6b] mt-5">
-                Then $39/mo. Cancel anytime. No contracts. No hidden fees.
+                Then $29/mo. Cancel anytime. No contracts. No hidden fees.
               </p>
             </div>
           </AnimatedSection>

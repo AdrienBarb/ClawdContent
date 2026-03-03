@@ -38,7 +38,7 @@ async function BillingContent() {
         </p>
 
         <div className="flex items-baseline gap-1 mb-5">
-          <span className="text-4xl font-semibold text-gray-900">$39</span>
+          <span className="text-4xl font-semibold text-gray-900">$29</span>
           <span className="text-gray-400 text-lg">/month</span>
         </div>
 

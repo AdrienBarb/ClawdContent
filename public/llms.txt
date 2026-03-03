@@ -31,5 +31,5 @@ PostClaw provides each user with their own private AI bot on Telegram, powered b
 
 ## Optional
 
-- Pricing: $39/month (single plan, everything included)
+- Pricing: $29/month (single plan, everything included)
 - Category: SaaS, Social Media, AI, Content Creation
