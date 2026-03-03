@@ -35,10 +35,12 @@ Dashboard (Next.js on Vercel)
 
 **Per-user isolation:** Each user gets their own Fly.io machine with a **profile-scoped Late API key** that can only access their own social accounts. One master Late account, many scoped keys.
 
-**Custom Docker image:** `ghcr.io/adrienbarb/postclaw-agent:latest`
+**Custom Docker image:** `ghcr.io/adrienbarb/postclaw-agent`
+- Tags: `:latest` (production, built from `main`) and `:dev` (testing, built from `dev` branch)
 - Entrypoint generates `openclaw.json` + `SOUL.md` from env vars
 - Pre-installs the `late-api` skill from ClawHub
 - GitHub Action auto-builds on changes to `docker/openclaw/`
+- `OPENCLAW_DOCKER_IMAGE` env var overrides image used in provisioning (defaults to `:latest`)
 
 ---
 
@@ -61,6 +63,7 @@ Dashboard (Next.js on Vercel)
 User (1:1) ── Subscription
      (1:1) ── FlyMachine
      (1:1) ── LateProfile (1:N) ── SocialAccount
+     (1:N) ── Media
      (1:N) ── Session
      (1:N) ── Account
 ```
@@ -72,6 +75,7 @@ User (1:1) ── Subscription
 | **FlyMachine** | User's container: machineId, volumeId, region, status, hasTelegramToken |
 | **LateProfile** | User's Late API profile: profileId, scoped API key |
 | **SocialAccount** | Connected social platform: accountId, platform, username, status |
+| **Media** | Uploaded media: cloudinaryId, url, resourceType, format, bytes, dimensions |
 | **Session** | Auth session |
 | **Account** | OAuth/password account info |
 
@@ -91,16 +95,19 @@ src/
 │   ├── (dashboard)/               # Protected dashboard layout (sidebar)
 │   │   ├── layout.tsx             # Sidebar + auth guard
 │   │   └── d/
-│   │       ├── page.tsx           # Dashboard home (real-time polling)
-│   │       ├── accounts/          # Social accounts
+│   │       ├── page.tsx           # Chat with provisioning guard (default view)
+│   │       ├── accounts/          # Social accounts (connect/disconnect)
 │   │       │   └── callback/      # OAuth return handler
+│   │       ├── channels/          # Messaging channels (Telegram)
+│   │       ├── chat/              # Redirects to /d
 │   │       ├── billing/           # Subscription info
 │   │       ├── bot/               # Redirects to /d
 │   │       └── subscribe/         # Stripe checkout card
 │   ├── api/
 │   │   ├── auth/[...all]/         # Better Auth
 │   │   ├── checkout/              # Stripe Checkout session
-│   │   ├── bot/                   # Bot management (GET/POST/PATCH)
+│   │   ├── bot/                   # Bot management (GET/POST/PUT/PATCH)
+│   │   ├── media/upload/          # Media upload callback (POST)
 │   │   ├── accounts/              # List accounts (GET)
 │   │   ├── accounts/connect/      # OAuth connect URL (POST)
 │   │   ├── accounts/callback/     # Sync after OAuth (POST)
@@ -113,7 +120,9 @@ src/
 │   ├── sections/                  # Landing page sections
 │   ├── dashboard/                 # Dashboard components
 │   │   ├── Sidebar.tsx            # Dark sidebar navigation
-│   │   ├── DashboardHome.tsx      # Real-time dashboard with polling
+│   │   ├── ChatWithLoader.tsx     # Provisioning guard → ChatInterface
+│   │   ├── ChatInterface.tsx      # AI chat with streaming + media upload (Cloudinary)
+│   │   ├── DashboardHome.tsx      # Legacy dashboard (kept, unused)
 │   │   ├── TelegramTokenModal.tsx # Telegram bot token setup modal
 │   │   └── ConnectAccountButtons.tsx # Platform connect buttons with icons
 │   └── providers/                 # Context providers
@@ -123,7 +132,8 @@ src/
 │   ├── services/                  # Business logic
 │   │   ├── provisioning.ts        # Create/destroy/retry user containers
 │   │   ├── subscription.ts        # Stripe checkout + sync
-│   │   ├── bot.ts                 # Bot status, token, restart
+│   │   ├── bot.ts                 # Bot status, token, restart, image update
+│   │   ├── media.ts               # Media upload save + list
 │   │   └── accounts.ts            # Social account CRUD
 │   ├── schemas/                   # Zod validation schemas
 │   ├── better-auth/               # Auth config
@@ -151,10 +161,15 @@ src/
 | `/api/checkout` | POST | Yes | Create Stripe Checkout session |
 | `/api/bot` | GET | Yes | Get bot status |
 | `/api/bot` | POST | Yes | Set Telegram token |
+| `/api/bot` | PUT | Yes | Update bot Docker image |
 | `/api/bot` | PATCH | Yes | Restart bot |
+| `/api/media/upload` | POST | Yes | Save media upload record |
 | `/api/accounts` | GET | Yes | List connected accounts |
 | `/api/accounts/connect` | POST | Yes | Get Late OAuth URL |
 | `/api/accounts/callback` | POST | Yes | Sync accounts after OAuth |
+| `/api/accounts/disconnect` | POST | Yes | Disconnect a social account |
+| `/api/chat` | POST | Yes | Streaming chat proxy to OpenClaw container |
+| `/api/chat/history` | GET | Yes | Get chat history from container |
 | `/api/dashboard/status` | GET | Yes | Dashboard polling (bot, accounts, subscription) |
 | `/api/provisioning/retry` | POST | Yes | Retry failed provisioning |
 | `/api/webhooks/stripe` | POST | No | Stripe webhook handler |
@@ -163,15 +178,17 @@ src/
 
 ## Dashboard UI
 
-The dashboard uses a **sidebar layout** with real-time polling:
+The dashboard is **chat-first** — after subscribing, users land directly on the chat interface.
 
-- **Sidebar** (`Sidebar.tsx`): Dark navy sidebar (`#151929`) with coral accent (`#e8614d`), nav items (Dashboard, Accounts, Billing), user section at bottom. Mobile: sheet drawer.
-- **Dashboard home** (`DashboardHome.tsx`): Polls `/api/dashboard/status` every 5s. Shows bot status card (dark gradient), Telegram card, social accounts list with platform icons/colors.
+- **Sidebar** (`Sidebar.tsx`): Dark navy sidebar (`#151929`) with coral accent (`#e8614d`), nav items: Chat, Accounts, Channels, Billing. User section at bottom. Mobile: sheet drawer.
+- **Chat** (`/d`): `ChatWithLoader` polls `/api/dashboard/status` every 3s. During provisioning shows spinner + "Your bot is starting up...". On failure shows error + retry button. Once running, renders `ChatInterface` (streaming AI chat via `@ai-sdk/react`).
+- **Accounts** (`/d/accounts`): Client component polling dashboard status. Shows connected accounts with disconnect (X) button + `ConnectAccountButtons` to add new ones.
+- **Channels** (`/d/channels`): Telegram channel card with connected/not-connected state. Opens `TelegramTokenModal` to set or update token.
 - **Telegram modal** (`TelegramTokenModal.tsx`): Links to OpenClaw docs (`docs.openclaw.ai/channels/telegram`).
 - **Connect buttons** (`ConnectAccountButtons.tsx`): Platform icons with brand colors for Twitter/X, LinkedIn, Bluesky, Threads.
 - **Content area**: Light gray background (`#f8f9fc`), white rounded cards, `max-w-5xl`.
 
-Supported platforms (text-only): **Twitter/X**, **LinkedIn**, **Bluesky**, **Threads**.
+Supported platforms: **Twitter/X**, **LinkedIn**, **Bluesky**, **Threads**. Media uploads (images/videos) supported via Cloudinary.
 
 ---
 
@@ -242,6 +259,14 @@ MOONSHOT_API_KEY=
 # Analytics (PostHog)
 NEXT_PUBLIC_POSTHOG_KEY=
 NEXT_PUBLIC_POSTHOG_HOST=
+
+# Media (Cloudinary)
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+
+# Docker image override (optional, defaults to :latest)
+OPENCLAW_DOCKER_IMAGE=
 
 # App
 NEXT_PUBLIC_APP_ENV=
@@ -370,6 +395,20 @@ const { mutate } = usePost("/api/bot", { onSuccess: () => { ... } });
 - `NODE_OPTIONS=--max-old-space-size=768` set on all machines (OpenClaw needs >512MB heap)
 - Each machine gets a 1GB volume mounted at `/home/node/.openclaw/`
 - No auto-stop (Telegram bots use outbound long-polling, not HTTP)
+
+### Docker Dev/Prod Tags
+- GitHub Action builds on push to `main` (→ `:latest` + `:sha`) or `dev` (→ `:dev` + `:sha`)
+- `OPENCLAW_DOCKER_IMAGE` env var overrides image in provisioning (defaults to `:latest`)
+- Fly machines are pinned to a specific image digest — restarting does NOT auto-pull new tags
+- To update existing machines: use `PUT /api/bot` with `{ image: "ghcr.io/adrienbarb/postclaw-agent:dev" }`
+- To promote: merge `dev` → `main`, push, then update all prod machines with `updateMachineImage()`
+
+### Media Upload (Cloudinary)
+- `next-cloudinary` package with `CldUploadWidget` in ChatInterface
+- Unsigned upload preset: `postclaw_unsigned`, cloud: `postclaw`
+- Media saved to `Media` table via `/api/media/upload` (fire-and-forget from client)
+- Chat messages include `[MEDIA: <url>]` + `[MEDIA_TYPE: <mime>]` tags
+- SOUL.md teaches bot to handle media via Late API skill (`xurl media upload` + `xurl post --media-id`)
 
 ### OpenClaw Container
 - Config dir: `$HOME/.openclaw/` (runs as `node` user)
