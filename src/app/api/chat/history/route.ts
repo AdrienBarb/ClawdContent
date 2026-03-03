@@ -24,7 +24,6 @@ export async function GET() {
 
     const config = await getChatConfig(session.user.id);
     const sessionKey = getSessionKey(session.user.id);
-
     const rawMessages = await fetchChatHistory(config, sessionKey);
 
     const uiMessages: UIMessage[] = rawMessages.map((m, i) => ({

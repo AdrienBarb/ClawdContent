@@ -19,6 +19,7 @@ model User {
   subscription   Subscription?
   flyMachine     FlyMachine?
   lateProfile    LateProfile?
+  media          Media[]
 
   @@unique([email])
   @@map("user")
@@ -127,6 +128,22 @@ model SocialAccount {
   updatedAt     DateTime    @updatedAt
 
   @@map("social_account")
+}
+
+model Media {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cloudinaryId  String   @unique
+  url           String
+  resourceType  String
+  format        String
+  bytes         Int
+  width         Int?
+  height        Int?
+  createdAt     DateTime @default(now())
+
+  @@map("media")
 }
 
 model StripeEvent {

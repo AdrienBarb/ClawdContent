@@ -148,6 +148,30 @@ export async function updateMachineEnv(
   );
 }
 
+export async function updateMachineImage(
+  machineId: string,
+  image: string
+): Promise<FlyMachineResponse> {
+  const app = getAppName();
+
+  const current = await getMachine(machineId);
+
+  return flyRequest<FlyMachineResponse>(
+    `/apps/${app}/machines/${machineId}`,
+    {
+      method: "POST",
+      body: {
+        config: {
+          ...current.config,
+          image,
+          env: { ...current.config.env, OVERWRITE_SOUL: "true" },
+          services: current.config.services ?? HTTP_SERVICES,
+        },
+      },
+    }
+  );
+}
+
 export async function stopMachine(machineId: string): Promise<void> {
   const app = getAppName();
   await flyRequest(`/apps/${app}/machines/${machineId}/stop`, {

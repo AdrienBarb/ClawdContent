@@ -1,5 +1,10 @@
 import { prisma } from "@/lib/db/prisma";
-import { getMachine, mapFlyState, updateMachineEnv } from "@/lib/fly/mutations";
+import {
+  getMachine,
+  mapFlyState,
+  updateMachineEnv,
+  updateMachineImage,
+} from "@/lib/fly/mutations";
 import { updateContainerEnvVars } from "./provisioning";
 
 export async function getBotStatus(userId: string) {
@@ -41,6 +46,26 @@ export async function setTelegramToken(
   await prisma.flyMachine.update({
     where: { userId },
     data: { hasTelegramToken: true },
+  });
+}
+
+export async function updateBotImage(
+  userId: string,
+  image: string
+): Promise<void> {
+  const flyMachine = await prisma.flyMachine.findUnique({
+    where: { userId },
+  });
+
+  if (!flyMachine || flyMachine.machineId === "pending") {
+    throw new Error("No active Fly machine found for user");
+  }
+
+  await updateMachineImage(flyMachine.machineId, image);
+
+  await prisma.flyMachine.update({
+    where: { userId },
+    data: { status: "deploying" },
   });
 }
 

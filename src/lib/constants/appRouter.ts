@@ -38,6 +38,7 @@ export const appRouter = {
     chatHistory: "/api/chat/history",
     provisioningRetry: "/api/provisioning/retry",
     billingPortal: "/api/billing/portal",
+    mediaUpload: "/api/media/upload",
     dashboardStatus: "/api/dashboard/status",
     webhooks: {
       stripe: "/api/webhooks/stripe",

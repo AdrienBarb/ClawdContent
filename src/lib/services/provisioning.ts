@@ -13,7 +13,9 @@ import {
   deleteVolume,
 } from "@/lib/fly/mutations";
 
-const DOCKER_IMAGE = "ghcr.io/adrienbarb/postclaw-agent:latest";
+const DOCKER_IMAGE =
+  process.env.OPENCLAW_DOCKER_IMAGE ||
+  "ghcr.io/adrienbarb/postclaw-agent:latest";
 
 export async function provisionUser(
   userId: string,

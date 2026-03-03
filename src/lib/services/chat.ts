@@ -76,7 +76,6 @@ export function createFlyFetch(
   };
 }
 
-
 export function getSessionKey(userId: string): string {
   return `webchat:${userId}`;
 }
@@ -87,17 +86,25 @@ export async function getChatConfig(userId: string): Promise<ChatConfig> {
   });
 
   if (!flyMachine || flyMachine.machineId === "pending") {
-    throw new Error("Your bot is not set up yet. Please wait for provisioning to complete.");
+    throw new Error(
+      "Your bot is not set up yet. Please wait for provisioning to complete."
+    );
   }
 
   if (flyMachine.status !== "running") {
-    throw new Error(`Your bot is currently ${flyMachine.status}. It needs to be running to chat.`);
+    throw new Error(
+      `Your bot is currently ${flyMachine.status}. It needs to be running to chat.`
+    );
   }
 
   // Lazy migration: generate gateway token for existing machines
   if (!flyMachine.gatewayToken) {
     const token = await ensureGatewayToken(userId, flyMachine.machineId);
-    return { machineId: flyMachine.machineId, gatewayToken: token, appName: getAppName() };
+    return {
+      machineId: flyMachine.machineId,
+      gatewayToken: token,
+      appName: getAppName(),
+    };
   }
 
   return {
@@ -189,7 +196,9 @@ async function gatewayRpc(
           if (!msg.ok) {
             clearTimeout(timer);
             ws.close();
-            reject(new Error(`Gateway connect failed: ${JSON.stringify(msg.error)}`));
+            reject(
+              new Error(`Gateway connect failed: ${JSON.stringify(msg.error)}`)
+            );
             return;
           }
           connected = true;
@@ -212,7 +221,9 @@ async function gatewayRpc(
           if (msg.ok) {
             resolve(msg.payload);
           } else {
-            reject(new Error(`Gateway RPC error: ${JSON.stringify(msg.error)}`));
+            reject(
+              new Error(`Gateway RPC error: ${JSON.stringify(msg.error)}`)
+            );
           }
           return;
         }
@@ -250,16 +261,36 @@ export async function fetchChatHistory(
     sessionKey,
   });
 
-  if (!Array.isArray(payload)) return [];
+  // Payload is { messages: [...] }, not an array directly
+  const raw = payload as { messages?: unknown[] };
+  const messages = Array.isArray(raw?.messages) ? raw.messages : [];
 
-  return payload
+  return (messages as Record<string, unknown>[])
     .filter(
-      (m: { role?: string; content?: string }) =>
-        (m.role === "user" || m.role === "assistant") &&
-        typeof m.content === "string"
+      (m) =>
+        m.role === "user" || m.role === "assistant"
     )
-    .map((m: { role: string; content: string }) => ({
+    .map((m) => ({
       role: m.role as "user" | "assistant",
-      content: m.content,
+      content: extractTextContent(m.content),
     }));
+}
+
+/**
+ * Extract text from message content which can be a string or
+ * an array of content parts (e.g. [{ type: "text", text: "..." }]).
+ */
+function extractTextContent(content: unknown): string {
+  if (typeof content === "string") return content;
+  if (Array.isArray(content)) {
+    return content
+      .map((part) => {
+        if (typeof part === "string") return part;
+        if (part && typeof part === "object" && "text" in part)
+          return String(part.text);
+        return "";
+      })
+      .join("");
+  }
+  return "";
 }

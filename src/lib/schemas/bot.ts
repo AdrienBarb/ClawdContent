@@ -8,3 +8,7 @@ export const telegramTokenSchema = z.object({
       "Invalid Telegram bot token format. Expected format: 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"
     ),
 });
+
+export const botImageSchema = z.object({
+  image: z.string().min(1).startsWith("ghcr.io/"),
+});
