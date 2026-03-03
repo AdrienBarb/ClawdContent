@@ -13,12 +13,15 @@ import {
   Paperclip,
   X,
   Film,
+  Mic,
+  Square,
 } from "lucide-react";
 import { useRef, useEffect, useState, useMemo, useCallback } from "react";
 import {
   CldUploadWidget,
   type CloudinaryUploadWidgetResults,
 } from "next-cloudinary";
+import { useVoiceRecorder } from "@/lib/hooks/useVoiceRecorder";
 
 const SUGGESTIONS = [
   "Write a LinkedIn post about my latest project",
@@ -147,6 +150,21 @@ function ChatInner({
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const isLoading = status === "submitted" || status === "streaming";
+
+  const handleTranscript = useCallback(
+    (text: string) => {
+      setInput((prev) => (prev ? `${prev} ${text}` : text));
+      inputRef.current?.focus();
+    },
+    []
+  );
+  const {
+    isRecording,
+    isTranscribing,
+    startRecording,
+    stopRecording,
+    error: voiceError,
+  } = useVoiceRecorder(handleTranscript);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({
@@ -361,6 +379,13 @@ function ChatInner({
             )}
         </div>
 
+        {/* Voice error */}
+        {voiceError && (
+          <div className="px-4 pt-2">
+            <p className="text-xs text-red-500">{voiceError}</p>
+          </div>
+        )}
+
         {/* Media preview */}
         {attachedMedia && (
           <div className="px-4 pt-3">
@@ -425,6 +450,28 @@ function ChatInner({
                 </Button>
               )}
             </CldUploadWidget>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              disabled={isTranscribing || isLoading}
+              onClick={isRecording ? stopRecording : startRecording}
+              className={`h-11 w-11 shrink-0 rounded-xl transition-colors ${
+                isRecording
+                  ? "bg-red-500 text-white hover:bg-red-600 animate-pulse"
+                  : isTranscribing
+                    ? "text-gray-300"
+                    : "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+              }`}
+            >
+              {isTranscribing ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : isRecording ? (
+                <Square className="h-4 w-4 fill-current" />
+              ) : (
+                <Mic className="h-5 w-5" />
+              )}
+            </Button>
             <textarea
               ref={inputRef}
               value={input}

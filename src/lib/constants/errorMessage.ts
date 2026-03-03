@@ -17,4 +17,5 @@ export const errorMessages = {
   INVALID_TELEGRAM_TOKEN: "Invalid Telegram bot token format.",
   SUBSCRIPTION_REQUIRED: "An active subscription is required.",
   LATE_API_ERROR: "Failed to communicate with social media service.",
+  TRANSCRIPTION_FAILED: "Failed to transcribe audio. Please try again.",
 };

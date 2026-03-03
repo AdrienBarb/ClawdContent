@@ -39,6 +39,7 @@ export const appRouter = {
     provisioningRetry: "/api/provisioning/retry",
     billingPortal: "/api/billing/portal",
     mediaUpload: "/api/media/upload",
+    transcribe: "/api/transcribe",
     dashboardStatus: "/api/dashboard/status",
     webhooks: {
       stripe: "/api/webhooks/stripe",
