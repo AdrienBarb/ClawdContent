@@ -22,6 +22,11 @@ interface FlyMachineConfig {
     volume: string;
     path: string;
   }>;
+  services?: Array<{
+    ports: Array<{ port: number; handlers: string[] }>;
+    internal_port: number;
+    protocol: string;
+  }>;
   restart?: {
     policy: string;
   };
@@ -41,6 +46,16 @@ export interface FlyMachineResponse {
 
 const DEFAULT_REGION = "cdg";
 const VOLUME_MOUNT_PATH = "/home/node/.openclaw/";
+const HTTP_SERVICES = [
+  {
+    ports: [
+      { port: 443, handlers: ["tls", "http"] },
+      { port: 80, handlers: ["http"] },
+    ],
+    internal_port: 18789,
+    protocol: "tcp",
+  },
+];
 
 // ─── Volume Operations ─────────────────────────────────────────
 
@@ -93,6 +108,7 @@ export async function createMachine({
         },
         restart: { policy: "always" },
         mounts: [{ volume: volumeId, path: VOLUME_MOUNT_PATH }],
+        services: HTTP_SERVICES,
         metadata: { managed_by: "postclaw" },
       },
     },
@@ -125,6 +141,7 @@ export async function updateMachineEnv(
         config: {
           ...current.config,
           env: { ...current.config.env, ...env },
+          services: current.config.services ?? HTTP_SERVICES,
         },
       },
     }

@@ -40,6 +40,13 @@ done
 # Generate openclaw.json from environment variables
 cat > "$CONFIG_FILE" <<JSONEOF
 {
+  "gateway": {
+    "bind": "lan",
+    "auth": {
+      "mode": "token",
+      "token": "${OPENCLAW_GATEWAY_TOKEN:-}"
+    }
+  },
   "channels": {
     "telegram": {
       "enabled": true,

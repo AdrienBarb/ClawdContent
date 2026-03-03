@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   Share2,
   FileText,
+  MessageCircle,
   CreditCard,
   LogOut,
   Menu,
@@ -24,6 +25,7 @@ import { useState } from "react";
 
 const navItems = [
   { href: appRouter.dashboard, label: "Dashboard", icon: LayoutDashboard },
+  { href: appRouter.chat, label: "Chat", icon: MessageCircle },
   { href: appRouter.posts, label: "Posts", icon: FileText },
   { href: appRouter.billing, label: "Billing", icon: CreditCard },
 ];

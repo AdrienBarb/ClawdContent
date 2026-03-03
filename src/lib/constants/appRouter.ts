@@ -15,6 +15,7 @@ export const appRouter = {
   // Dashboard routes (protected)
   dashboard: "/d",
   bot: "/d/bot",
+  chat: "/d/chat",
   accounts: "/d/accounts",
   posts: "/d/posts",
   accountsCallback: "/d/accounts/callback",
@@ -32,6 +33,7 @@ export const appRouter = {
     posts: "/api/posts",
     postsDelete: "/api/posts/delete",
     accountsCallback: "/api/accounts/callback",
+    chat: "/api/chat",
     provisioningRetry: "/api/provisioning/retry",
     billingPortal: "/api/billing/portal",
     dashboardStatus: "/api/dashboard/status",

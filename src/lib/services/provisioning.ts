@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import {
@@ -49,6 +50,7 @@ export async function provisionUser(
   }
 
   // 2. Build env vars
+  const gatewayToken = crypto.randomUUID();
   const accountsContext = formatAccountsContext(lateProfile.socialAccounts);
   const envVars: Record<string, string> = {
     LATE_API_KEY: lateProfile.lateApiKey,
@@ -56,6 +58,8 @@ export async function provisionUser(
     LATE_ACCOUNTS_CONTEXT: accountsContext,
     MOONSHOT_API_KEY: process.env.MOONSHOT_API_KEY ?? "",
     BRAVE_API_KEY: process.env.BRAVE_API_KEY ?? "",
+    OPENCLAW_GATEWAY_TOKEN: gatewayToken,
+    OPENCLAW_GATEWAY_BIND: "lan",
     OVERWRITE_SOUL: "true",
     NODE_OPTIONS: "--max-old-space-size=1536",
   };
@@ -104,6 +108,7 @@ export async function provisionUser(
       data: {
         machineId: machine.id,
         volumeId: volume.id,
+        gatewayToken,
         status: "running",
       },
     });
