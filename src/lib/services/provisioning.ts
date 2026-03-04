@@ -30,6 +30,12 @@ export async function provisionUser(
     return;
   }
 
+  // 0. Fetch user timezone
+  const user = await prisma.user.findUniqueOrThrow({
+    where: { id: userId },
+    select: { timezone: true },
+  });
+
   // 1. Reuse existing Late profile or create a new one
   let lateProfile = await prisma.lateProfile.findUnique({
     where: { userId },
@@ -62,6 +68,7 @@ export async function provisionUser(
     BRAVE_API_KEY: process.env.BRAVE_API_KEY ?? "",
     OPENCLAW_GATEWAY_TOKEN: gatewayToken,
     OPENCLAW_GATEWAY_BIND: "lan",
+    TZ: user.timezone ?? "UTC",
     OVERWRITE_SOUL: "true",
     NODE_OPTIONS: "--max-old-space-size=1536",
   };

@@ -20,7 +20,11 @@ export async function GET() {
 
     const userId = session.user.id;
 
-    const [subscription, botStatus, lateProfile] = await Promise.all([
+    const [user, subscription, botStatus, lateProfile] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: { timezone: true },
+      }),
       prisma.subscription.findUnique({ where: { userId } }),
       getBotStatus(userId),
       prisma.lateProfile.findUnique({
@@ -30,6 +34,7 @@ export async function GET() {
     ]);
 
     return NextResponse.json({
+      timezone: user?.timezone ?? null,
       subscription: subscription
         ? {
             status: subscription.status,

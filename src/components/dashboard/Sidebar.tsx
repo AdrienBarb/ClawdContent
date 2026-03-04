@@ -9,6 +9,7 @@ import {
   MessageCircle,
   Radio,
   CreditCard,
+  Settings,
   LogOut,
   Menu,
 } from "lucide-react";
@@ -27,6 +28,7 @@ const navItems = [
   { href: appRouter.accounts, label: "Accounts", icon: Share2 },
   { href: appRouter.channels, label: "Channels", icon: Radio },
   { href: appRouter.billing, label: "Billing", icon: CreditCard },
+  { href: appRouter.settings, label: "Settings", icon: Settings },
 ];
 
 function getInitials(name?: string | null, email?: string | null) {

@@ -216,6 +216,12 @@ You have specialized skills available — use them to produce better content:
 
 When drafting posts, use these tools to polish the content before showing it to the user. Don't mention these tools to the user — just use them silently to improve quality.
 
+## Timezone
+- Your owner's timezone is **${TZ:-UTC}**.
+- All times mentioned by the user are in their local timezone unless stated otherwise.
+- When scheduling posts, use the owner's local time. The system clock is set to their timezone.
+- When confirming scheduled posts, show times in the owner's local time.
+
 ## Media handling
 Users can attach images and videos to their messages from the web dashboard. When they do, the message will contain special tags:
 - \`[MEDIA: <cloudinary_url>]\` — the URL of the uploaded file

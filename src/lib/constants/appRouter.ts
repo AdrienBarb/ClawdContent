@@ -40,6 +40,7 @@ export const appRouter = {
     billingPortal: "/api/billing/portal",
     mediaUpload: "/api/media/upload",
     transcribe: "/api/transcribe",
+    userTimezone: "/api/user/timezone",
     dashboardStatus: "/api/dashboard/status",
     webhooks: {
       stripe: "/api/webhooks/stripe",

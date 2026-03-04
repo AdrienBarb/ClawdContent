@@ -6,6 +6,7 @@ import Sidebar, {
   MobileSidebarTrigger,
 } from "@/components/dashboard/Sidebar";
 import SubscribeModal from "@/components/dashboard/SubscribeModal";
+import TimezoneSync from "@/components/dashboard/TimezoneSync";
 
 export default async function DashboardLayout({
   children,
@@ -35,6 +36,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex min-h-screen">
+      <TimezoneSync />
       <Sidebar />
 
       <div className="flex-1 md:ml-64 flex flex-col min-h-screen">
