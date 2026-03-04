@@ -259,6 +259,7 @@ export async function fetchChatHistory(
 ): Promise<ChatMessage[]> {
   const payload = await gatewayRpc(config, "chat.history", {
     sessionKey,
+    includeTools: false,
   });
 
   // Payload is { messages: [...] }, not an array directly
