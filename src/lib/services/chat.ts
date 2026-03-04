@@ -266,17 +266,21 @@ export async function fetchChatHistory(
   const messages = Array.isArray(raw?.messages) ? raw.messages : [];
 
   return (messages as Record<string, unknown>[])
-    .filter(
-      (m) =>
-        m.role === "user" || m.role === "assistant"
-    )
+    .filter((m) => m.role === "user" || m.role === "assistant")
     .map((m) => ({
       role: m.role as "user" | "assistant",
       content:
         m.role === "user"
           ? stripContextPrefix(extractTextContent(m.content))
           : extractTextContent(m.content),
-    }));
+    }))
+    .filter((m) => {
+      // Drop empty assistant messages (pre-tool-call intermediary messages)
+      if (m.role === "assistant" && m.content.trim() === "") return false;
+      // Drop user messages where context was truncated (real content lost)
+      if (m.role === "user" && m.content.trim() === "") return false;
+      return true;
+    });
 }
 
 /**
@@ -309,18 +313,11 @@ function stripContextPrefix(content: string): string {
     return actual;
   }
 
-  // Fallback: if the message starts with context header, try to find the last
-  // "User: " line which is the actual message (truncate at next "Assistant:" line)
+  // If the message has a context header but no marker, it was truncated by
+  // OpenClaw's chat.history (size-bounded). The actual user message was cut off,
+  // so we can't recover it — return empty to filter it out.
   if (content.startsWith("[Chat messages since")) {
-    const lastUserPrefix = content.lastIndexOf("\nUser: ");
-    if (lastUserPrefix !== -1) {
-      let actual = content.substring(lastUserPrefix + 7);
-      const nextAssistant = actual.indexOf("\nAssistant:");
-      if (nextAssistant !== -1) {
-        actual = actual.substring(0, nextAssistant);
-      }
-      return actual.trim();
-    }
+    return "";
   }
 
   return content;
