@@ -82,31 +82,42 @@ function extractMediaFromText(text: string): {
   return { cleanText, media };
 }
 
+interface HistoryState {
+  messages: UIMessage[];
+  hasMore: boolean;
+  nextBefore?: number;
+}
+
 export default function ChatInterface() {
-  const [initialMessages, setInitialMessages] = useState<UIMessage[] | null>(
-    null
-  );
+  const [historyState, setHistoryState] = useState<HistoryState | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    fetch(appRouter.api.chatHistory)
-      .then((res) => (res.ok ? res.json() : { messages: [] }))
+    fetch(`${appRouter.api.chatHistory}?limit=50`)
+      .then((res) => (res.ok ? res.json() : { messages: [], hasMore: false }))
       .then((data) => {
-        if (!cancelled) setInitialMessages(data.messages ?? []);
+        if (!cancelled) {
+          setHistoryState({
+            messages: data.messages ?? [],
+            hasMore: data.hasMore ?? false,
+            nextBefore: data.nextBefore,
+          });
+        }
       })
       .catch(() => {
-        if (!cancelled) setInitialMessages([]);
+        if (!cancelled)
+          setHistoryState({ messages: [], hasMore: false });
       });
     return () => {
       cancelled = true;
     };
   }, []);
 
-  if (initialMessages === null) {
+  if (historyState === null) {
     return <ChatSkeleton />;
   }
 
-  return <ChatInner initialMessages={initialMessages} />;
+  return <ChatInner historyState={historyState} />;
 }
 
 function ChatSkeleton() {
@@ -129,17 +140,45 @@ function ChatSkeleton() {
   );
 }
 
-function ChatInner({ initialMessages }: { initialMessages: UIMessage[] }) {
-  console.log("🚀 ~ ChatInner ~ initialMessages:", initialMessages);
+function ChatInner({ historyState }: { historyState: HistoryState }) {
   const transport = useMemo(
     () => new DefaultChatTransport({ api: appRouter.api.chat }),
     []
   );
   const { messages, sendMessage, status, error } = useChat({
     transport,
-    messages: initialMessages,
+    messages: historyState.messages,
   });
-  console.log("🚀 ~ ChatInner ~ messages:", messages);
+
+  const [hasMore, setHasMore] = useState(historyState.hasMore);
+  const [nextBefore, setNextBefore] = useState(historyState.nextBefore);
+  const [olderMessages, setOlderMessages] = useState<UIMessage[]>([]);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+
+  const allMessages = useMemo(
+    () => [...olderMessages, ...messages],
+    [olderMessages, messages]
+  );
+
+  const loadOlderMessages = useCallback(async () => {
+    if (!hasMore || loadingOlder || nextBefore === undefined) return;
+    setLoadingOlder(true);
+    try {
+      const res = await fetch(
+        `${appRouter.api.chatHistory}?limit=50&before=${nextBefore}`
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      const older: UIMessage[] = data.messages ?? [];
+      setOlderMessages((prev) => [...older, ...prev]);
+      setHasMore(data.hasMore ?? false);
+      setNextBefore(data.nextBefore);
+    } catch {
+      // Silent failure
+    } finally {
+      setLoadingOlder(false);
+    }
+  }, [hasMore, loadingOlder, nextBefore]);
 
   const [input, setInput] = useState("");
   const [attachedMedia, setAttachedMedia] = useState<AttachedMedia | null>(
@@ -264,7 +303,7 @@ function ChatInner({ initialMessages }: { initialMessages: UIMessage[] }) {
       <div className="flex-1 flex flex-col rounded-2xl bg-white shadow-sm border border-gray-100 overflow-hidden">
         {/* Messages area */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto p-5 space-y-4">
-          {messages.length === 0 && !error && (
+          {allMessages.length === 0 && !error && (
             <div className="flex flex-col items-center justify-center h-full text-center px-4">
               <div className="h-12 w-12 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
                 <Sparkles className="h-6 w-6 text-gray-400" />
@@ -307,7 +346,27 @@ function ChatInner({ initialMessages }: { initialMessages: UIMessage[] }) {
             </div>
           )}
 
-          {messages.map((message) => {
+          {hasMore && (
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={loadOlderMessages}
+                disabled={loadingOlder}
+                className="text-sm text-gray-500 hover:text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                {loadingOlder ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Loading...
+                  </span>
+                ) : (
+                  "Load older messages"
+                )}
+              </button>
+            </div>
+          )}
+
+          {allMessages.map((message) => {
             const textContent = message.parts
               ?.filter((part) => part.type === "text")
               .map((part) => part.text)
