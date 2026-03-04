@@ -3,11 +3,7 @@ import { errorHandler } from "@/lib/errors/errorHandler";
 import { auth } from "@/lib/better-auth/auth";
 import { NextResponse, NextRequest } from "next/server";
 import { headers } from "next/headers";
-import {
-  getChatConfig,
-  fetchChatHistory,
-  getSessionKey,
-} from "@/lib/services/chat";
+import { getChatHistory } from "@/lib/services/chatMessages";
 import type { UIMessage } from "ai";
 
 const DEFAULT_LIMIT = 5;
@@ -29,19 +25,16 @@ export async function GET(req: NextRequest) {
       Math.max(parseInt(searchParams.get("limit") || "", 10) || DEFAULT_LIMIT, 1),
       500
     );
-    const before = parseInt(searchParams.get("before") || "", 10);
+    const cursor = searchParams.get("cursor") || undefined;
 
-    const config = await getChatConfig(session.user.id);
-    const sessionKey = getSessionKey(session.user.id);
-    const allMessages = await fetchChatHistory(config, sessionKey);
+    const { messages, hasMore, nextCursor } = await getChatHistory({
+      userId: session.user.id,
+      limit,
+      cursor,
+    });
 
-    const total = allMessages.length;
-    const endIndex = !isNaN(before) && before > 0 ? Math.min(before, total) : total;
-    const startIndex = Math.max(endIndex - limit, 0);
-    const sliced = allMessages.slice(startIndex, endIndex);
-
-    const uiMessages: UIMessage[] = sliced.map((m, i) => ({
-      id: `history-${startIndex + i}`,
+    const uiMessages: UIMessage[] = messages.map((m) => ({
+      id: m.id,
       role: m.role as "user" | "assistant",
       content: m.content,
       parts: [{ type: "text" as const, text: m.content }],
@@ -49,9 +42,8 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       messages: uiMessages,
-      hasMore: startIndex > 0,
-      nextBefore: startIndex > 0 ? startIndex : undefined,
-      total,
+      hasMore,
+      nextCursor,
     });
   } catch (error) {
     return errorHandler(error);

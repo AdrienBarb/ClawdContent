@@ -11,6 +11,7 @@ import {
   createFlyFetch,
   getSessionKey,
 } from "@/lib/services/chat";
+import { saveChatMessage } from "@/lib/services/chatMessages";
 
 export const maxDuration = 60;
 
@@ -44,11 +45,36 @@ export async function POST(req: NextRequest) {
       fetch: createFlyFetch(hostname, ip),
     });
 
+    // Extract and save the last user message
+    const lastUserMessage = [...messages].reverse().find((m) => m.role === "user");
+    if (lastUserMessage) {
+      const userText = lastUserMessage.parts
+        ?.filter((p): p is { type: "text"; text: string } => p.type === "text")
+        .map((p) => p.text)
+        .join("");
+      if (userText) {
+        await saveChatMessage({
+          userId: session.user.id,
+          role: "user",
+          content: userText,
+        });
+      }
+    }
+
     const modelMessages = await convertToModelMessages(messages);
 
     const result = streamText({
       model: provider.chatModel("openclaw:main"),
       messages: modelMessages,
+      onFinish: async ({ text }) => {
+        if (text) {
+          await saveChatMessage({
+            userId: session.user.id,
+            role: "assistant",
+            content: text,
+          });
+        }
+      },
     });
 
     return result.toUIMessageStreamResponse();

@@ -20,6 +20,7 @@ model User {
   flyMachine     FlyMachine?
   lateProfile    LateProfile?
   media          Media[]
+  chatMessages   ChatMessage[]
 
   @@unique([email])
   @@map("user")
@@ -144,6 +145,18 @@ model Media {
   createdAt     DateTime @default(now())
 
   @@map("media")
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      String   // "user" | "assistant"
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@map("chat_message")
 }
 
 model StripeEvent {

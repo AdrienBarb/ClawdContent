@@ -85,7 +85,7 @@ function extractMediaFromText(text: string): {
 interface HistoryState {
   messages: UIMessage[];
   hasMore: boolean;
-  nextBefore?: number;
+  nextCursor?: string;
 }
 
 export default function ChatInterface() {
@@ -100,7 +100,7 @@ export default function ChatInterface() {
           setHistoryState({
             messages: data.messages ?? [],
             hasMore: data.hasMore ?? false,
-            nextBefore: data.nextBefore,
+            nextCursor: data.nextCursor,
           });
         }
       })
@@ -150,7 +150,7 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
   });
 
   const [hasMore, setHasMore] = useState(historyState.hasMore);
-  const [nextBefore, setNextBefore] = useState(historyState.nextBefore);
+  const [nextCursor, setNextCursor] = useState(historyState.nextCursor);
   const [olderMessages, setOlderMessages] = useState<UIMessage[]>([]);
   const [loadingOlder, setLoadingOlder] = useState(false);
 
@@ -159,27 +159,25 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
     [olderMessages, messages]
   );
 
-  console.log("🚀 ~ ChatInner ~ allMessages:", allMessages);
-
   const loadOlderMessages = useCallback(async () => {
-    if (!hasMore || loadingOlder || nextBefore === undefined) return;
+    if (!hasMore || loadingOlder || nextCursor === undefined) return;
     setLoadingOlder(true);
     try {
       const res = await fetch(
-        `${appRouter.api.chatHistory}?before=${nextBefore}`
+        `${appRouter.api.chatHistory}?cursor=${encodeURIComponent(nextCursor)}`
       );
       if (!res.ok) return;
       const data = await res.json();
       const older: UIMessage[] = data.messages ?? [];
       setOlderMessages((prev) => [...older, ...prev]);
       setHasMore(data.hasMore ?? false);
-      setNextBefore(data.nextBefore);
+      setNextCursor(data.nextCursor);
     } catch {
       // Silent failure
     } finally {
       setLoadingOlder(false);
     }
-  }, [hasMore, loadingOlder, nextBefore]);
+  }, [hasMore, loadingOlder, nextCursor]);
 
   const [input, setInput] = useState("");
   const [attachedMedia, setAttachedMedia] = useState<AttachedMedia | null>(
