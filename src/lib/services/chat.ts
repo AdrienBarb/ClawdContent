@@ -310,11 +310,16 @@ function stripContextPrefix(content: string): string {
   }
 
   // Fallback: if the message starts with context header, try to find the last
-  // "User: " line which is the actual message
+  // "User: " line which is the actual message (truncate at next "Assistant:" line)
   if (content.startsWith("[Chat messages since")) {
     const lastUserPrefix = content.lastIndexOf("\nUser: ");
     if (lastUserPrefix !== -1) {
-      return content.substring(lastUserPrefix + 7);
+      let actual = content.substring(lastUserPrefix + 7);
+      const nextAssistant = actual.indexOf("\nAssistant:");
+      if (nextAssistant !== -1) {
+        actual = actual.substring(0, nextAssistant);
+      }
+      return actual.trim();
     }
   }
 
