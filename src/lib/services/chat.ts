@@ -291,15 +291,34 @@ export async function fetchChatHistory(
  * and the "User: " prefix to get the real user message.
  */
 function stripContextPrefix(content: string): string {
-  const marker = "[Current message - respond to this]\n";
-  const lastIndex = content.lastIndexOf(marker);
-  if (lastIndex === -1) return content;
-
-  let actual = content.substring(lastIndex + marker.length);
-  if (actual.startsWith("User: ")) {
-    actual = actual.substring(6);
+  // Try exact marker first, then regex for variations (no newline, extra spaces)
+  const markerRegex = /\[Current message\s*[-–—]\s*respond to this\]\n?/gi;
+  let lastIndex = -1;
+  let lastLength = 0;
+  let match;
+  while ((match = markerRegex.exec(content)) !== null) {
+    lastIndex = match.index;
+    lastLength = match[0].length;
   }
-  return actual;
+
+  if (lastIndex !== -1) {
+    let actual = content.substring(lastIndex + lastLength);
+    if (actual.startsWith("User: ")) {
+      actual = actual.substring(6);
+    }
+    return actual;
+  }
+
+  // Fallback: if the message starts with context header, try to find the last
+  // "User: " line which is the actual message
+  if (content.startsWith("[Chat messages since")) {
+    const lastUserPrefix = content.lastIndexOf("\nUser: ");
+    if (lastUserPrefix !== -1) {
+      return content.substring(lastUserPrefix + 7);
+    }
+  }
+
+  return content;
 }
 
 /**
