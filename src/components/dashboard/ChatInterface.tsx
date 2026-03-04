@@ -22,6 +22,7 @@ import {
   type CloudinaryUploadWidgetResults,
 } from "next-cloudinary";
 import { useVoiceRecorder } from "@/lib/hooks/useVoiceRecorder";
+import ReactMarkdown from "react-markdown";
 
 const SUGGESTIONS = [
   "Write a LinkedIn post about my latest project",
@@ -357,9 +358,14 @@ function ChatInner({ initialMessages }: { initialMessages: UIMessage[] }) {
                       )}
                     </div>
                   )}
-                  {cleanText && (
-                    <span className="whitespace-pre-wrap">{cleanText}</span>
-                  )}
+                  {cleanText &&
+                    (isUser ? (
+                      <span className="whitespace-pre-wrap">{cleanText}</span>
+                    ) : (
+                      <div className="prose prose-sm max-w-none prose-p:my-1.5 prose-headings:my-2 prose-ul:my-1.5 prose-ol:my-1.5 prose-li:my-0.5 prose-hr:my-3 prose-blockquote:my-2 prose-pre:my-2">
+                        <ReactMarkdown>{cleanText}</ReactMarkdown>
+                      </div>
+                    ))}
                 </div>
               </div>
             );
