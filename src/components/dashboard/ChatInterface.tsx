@@ -105,8 +105,7 @@ export default function ChatInterface() {
         }
       })
       .catch(() => {
-        if (!cancelled)
-          setHistoryState({ messages: [], hasMore: false });
+        if (!cancelled) setHistoryState({ messages: [], hasMore: false });
       });
     return () => {
       cancelled = true;
@@ -159,6 +158,8 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
     () => [...olderMessages, ...messages],
     [olderMessages, messages]
   );
+
+  console.log("🚀 ~ ChatInner ~ allMessages:", allMessages);
 
   const loadOlderMessages = useCallback(async () => {
     if (!hasMore || loadingOlder || nextBefore === undefined) return;
