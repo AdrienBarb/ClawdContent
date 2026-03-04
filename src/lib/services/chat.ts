@@ -265,7 +265,7 @@ export async function fetchChatHistory(
   const raw = payload as { messages?: unknown[] };
   const messages = Array.isArray(raw?.messages) ? raw.messages : [];
 
-  return (messages as Record<string, unknown>[])
+  const cleaned = (messages as Record<string, unknown>[])
     .filter((m) => m.role === "user" || m.role === "assistant")
     .map((m) => ({
       role: m.role as "user" | "assistant",
@@ -274,13 +274,20 @@ export async function fetchChatHistory(
           ? stripContextPrefix(extractTextContent(m.content))
           : extractTextContent(m.content),
     }))
-    .filter((m) => {
-      // Drop empty assistant messages (pre-tool-call intermediary messages)
-      if (m.role === "assistant" && m.content.trim() === "") return false;
-      // Drop user messages where context was truncated (real content lost)
-      if (m.role === "user" && m.content.trim() === "") return false;
-      return true;
-    });
+    .filter((m) => m.content.trim() !== "");
+
+  // Deduplicate user messages with identical content.
+  // Truncated context messages often produce the same text as a prior user message.
+  let lastUserContent = "";
+  return cleaned.filter((m) => {
+    if (m.role === "user") {
+      // Keep the first occurrence, skip if the same text already appeared
+      // right before (context duplication from truncated messages)
+      if (m.content === lastUserContent) return false;
+      lastUserContent = m.content;
+    }
+    return true;
+  });
 }
 
 /**
@@ -313,10 +320,18 @@ function stripContextPrefix(content: string): string {
     return actual;
   }
 
-  // If the message has a context header but no marker, it was truncated by
-  // OpenClaw's chat.history (size-bounded). The actual user message was cut off,
-  // so we can't recover it — return empty to filter it out.
+  // Fallback: message has context header but marker was truncated by OpenClaw's
+  // size-bounded chat.history. Extract the last "User: " line as best guess.
   if (content.startsWith("[Chat messages since")) {
+    const lastUserPrefix = content.lastIndexOf("\nUser: ");
+    if (lastUserPrefix !== -1) {
+      let actual = content.substring(lastUserPrefix + 7);
+      const nextAssistant = actual.indexOf("\nAssistant:");
+      if (nextAssistant !== -1) {
+        actual = actual.substring(0, nextAssistant);
+      }
+      return actual.trim();
+    }
     return "";
   }
 
