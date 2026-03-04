@@ -93,7 +93,7 @@ export default function ChatInterface() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`${appRouter.api.chatHistory}?limit=50`)
+    fetch(appRouter.api.chatHistory)
       .then((res) => (res.ok ? res.json() : { messages: [], hasMore: false }))
       .then((data) => {
         if (!cancelled) {
@@ -165,7 +165,7 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
     setLoadingOlder(true);
     try {
       const res = await fetch(
-        `${appRouter.api.chatHistory}?limit=50&before=${nextBefore}`
+        `${appRouter.api.chatHistory}?before=${nextBefore}`
       );
       if (!res.ok) return;
       const data = await res.json();

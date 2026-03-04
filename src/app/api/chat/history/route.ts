@@ -10,7 +10,7 @@ import {
 } from "@/lib/services/chat";
 import type { UIMessage } from "ai";
 
-const DEFAULT_LIMIT = 50;
+const DEFAULT_LIMIT = 5;
 
 export async function GET(req: NextRequest) {
   try {
