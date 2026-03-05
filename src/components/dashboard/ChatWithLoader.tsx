@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { appRouter } from "@/lib/constants/appRouter";
 import useApi from "@/lib/hooks/useApi";
@@ -23,6 +23,7 @@ export default function ChatWithLoader() {
   const { useGet, usePost } = useApi();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const [botReady, setBotReady] = useState(false);
 
   // Conversion tracking on successful payment
   useEffect(() => {
@@ -38,21 +39,28 @@ export default function ChatWithLoader() {
     isLoading,
     refetch,
   } = useGet(appRouter.api.dashboardStatus, undefined, {
-    refetchInterval: 3000,
+    refetchInterval: botReady ? false : 3000,
   }) as {
     data: DashboardStatus | undefined;
     isLoading: boolean;
     refetch: () => void;
   };
 
+  const botStatus = status?.botStatus ?? null;
+  const isProvisioning =
+    botStatus === null || botStatus === "pending" || botStatus === "deploying";
+
+  // Stop polling once bot is running
+  useEffect(() => {
+    if (botStatus === "running") {
+      setBotReady(true);
+    }
+  }, [botStatus]);
+
   const { mutate: retryProvisioning, isPending: retrying } = usePost(
     appRouter.api.provisioningRetry,
     { onSuccess: () => refetch() }
   );
-
-  const botStatus = status?.botStatus ?? null;
-  const isProvisioning =
-    botStatus === null || botStatus === "pending" || botStatus === "deploying";
 
   if (isLoading || isProvisioning) {
     return (
