@@ -22,6 +22,7 @@ export const appRouter = {
   accountsCallback: "/d/accounts/callback",
   settings: "/d/settings",
   billing: "/d/billing",
+  onboarding: "/onboarding",
 
   // API routes
   api: {
@@ -41,6 +42,7 @@ export const appRouter = {
     mediaUpload: "/api/media/upload",
     transcribe: "/api/transcribe",
     userTimezone: "/api/user/timezone",
+    onboarding: "/api/onboarding",
     dashboardStatus: "/api/dashboard/status",
     webhooks: {
       stripe: "/api/webhooks/stripe",

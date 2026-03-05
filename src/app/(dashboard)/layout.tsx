@@ -5,7 +5,6 @@ import { prisma } from "@/lib/db/prisma";
 import Sidebar, {
   MobileSidebarTrigger,
 } from "@/components/dashboard/Sidebar";
-import SubscribeModal from "@/components/dashboard/SubscribeModal";
 import TimezoneSync from "@/components/dashboard/TimezoneSync";
 
 export default async function DashboardLayout({
@@ -21,17 +20,13 @@ export default async function DashboardLayout({
     redirect("/");
   }
 
-  const subscription = await prisma.subscription.findUnique({
-    where: { userId: session.user.id },
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { onboardingCompleted: true },
   });
 
-  const hasActiveSubscription =
-    subscription?.status === "active" ||
-    subscription?.status === "trialing" ||
-    subscription?.status === "past_due";
-
-  if (!hasActiveSubscription) {
-    return <SubscribeModal />;
+  if (!user?.onboardingCompleted) {
+    redirect("/onboarding");
   }
 
   return (

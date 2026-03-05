@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db/prisma";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ManageSubscriptionButton } from "./ManageSubscriptionButton";
+import BillingUnsubscribed from "@/components/dashboard/BillingUnsubscribed";
 
 async function BillingContent() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -15,7 +16,7 @@ async function BillingContent() {
   });
 
   if (!subscription) {
-    redirect("/");
+    return <BillingUnsubscribed />;
   }
 
   const isActive =

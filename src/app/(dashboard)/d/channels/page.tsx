@@ -5,17 +5,20 @@ import { appRouter } from "@/lib/constants/appRouter";
 import useApi from "@/lib/hooks/useApi";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, Lock } from "lucide-react";
 import TelegramTokenModal from "@/components/dashboard/TelegramTokenModal";
+import SubscribeModal from "@/components/dashboard/SubscribeModal";
 
 interface DashboardStatus {
   botStatus: string | null;
   hasTelegramToken: boolean;
+  subscription: { status: string } | null;
 }
 
 export default function ChannelsPage() {
   const { useGet } = useApi();
   const [telegramModalOpen, setTelegramModalOpen] = useState(false);
+  const [showSubscribeModal, setShowSubscribeModal] = useState(false);
 
   const {
     data: status,
@@ -29,8 +32,13 @@ export default function ChannelsPage() {
     refetch: () => void;
   };
 
+  const subStatus = status?.subscription?.status;
+  const hasActiveSubscription =
+    subStatus === "active" || subStatus === "trialing" || subStatus === "past_due";
+
   const isDeploying =
     status?.botStatus === "deploying" || status?.botStatus === "pending";
+  const isDisabled = !hasActiveSubscription || isDeploying;
 
   if (isLoading) {
     return (
@@ -51,6 +59,27 @@ export default function ChannelsPage() {
           Connect messaging platforms to chat with your bot.
         </p>
       </div>
+
+      {/* Subscription gate banner */}
+      {!hasActiveSubscription && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 flex items-center gap-3">
+          <Lock className="h-5 w-5 text-amber-600 shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-amber-900">
+              Launch your bot to connect channels
+            </p>
+            <p className="text-xs text-amber-700 mt-0.5">
+              You need an active subscription to set up Telegram.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowSubscribeModal(true)}
+            className="text-sm font-semibold text-[#e8614d] hover:underline cursor-pointer shrink-0"
+          >
+            Launch bot
+          </button>
+        </div>
+      )}
 
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {/* Telegram card */}
@@ -89,12 +118,18 @@ export default function ChannelsPage() {
                 ? ""
                 : "bg-[#e8614d] hover:bg-[#d4563f] text-white"
             }
-            onClick={() => setTelegramModalOpen(true)}
-            disabled={isDeploying}
+            onClick={() => {
+              if (!hasActiveSubscription) {
+                setShowSubscribeModal(true);
+              } else {
+                setTelegramModalOpen(true);
+              }
+            }}
+            disabled={isDeploying && hasActiveSubscription}
           >
             {status?.hasTelegramToken ? "Update token" : "Connect Telegram"}
           </Button>
-          {isDeploying && (
+          {isDeploying && hasActiveSubscription && (
             <p className="text-xs text-amber-500 mt-2">
               Available once your bot finishes deploying.
             </p>
@@ -106,6 +141,11 @@ export default function ChannelsPage() {
         open={telegramModalOpen}
         onOpenChange={setTelegramModalOpen}
         onSuccess={refetch}
+      />
+
+      <SubscribeModal
+        open={showSubscribeModal}
+        onOpenChange={setShowSubscribeModal}
       />
     </div>
   );

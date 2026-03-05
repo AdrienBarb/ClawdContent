@@ -1,13 +1,21 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Check } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { useState } from "react";
 import config from "@/lib/config";
 import { appRouter } from "@/lib/constants/appRouter";
 import useApi from "@/lib/hooks/useApi";
 
-export default function SubscribeModal() {
+interface SubscribeModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export default function SubscribeModal({
+  open,
+  onOpenChange,
+}: SubscribeModalProps) {
   const { usePost } = useApi();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -25,10 +33,19 @@ export default function SubscribeModal() {
     createCheckout({});
   };
 
+  if (!open) return null;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
       <div className="mx-auto max-w-lg w-full px-4">
-        <div className="p-8 rounded-2xl border border-[#1e2233] bg-[#151929] shadow-xl">
+        <div className="relative p-8 rounded-2xl border border-[#1e2233] bg-[#151929] shadow-xl">
+          <button
+            onClick={() => onOpenChange(false)}
+            className="absolute top-4 right-4 text-[#7a7f94] hover:text-white transition-colors cursor-pointer"
+          >
+            <X className="h-5 w-5" />
+          </button>
+
           <div className="text-center mb-8">
             <h1 className="text-2xl font-semibold tracking-tight text-white mb-2">
               Get started with PostClaw
@@ -39,10 +56,16 @@ export default function SubscribeModal() {
             <span className="inline-block bg-[#e8614d]/10 text-[#e8614d] text-xs font-semibold px-3 py-1 rounded-full mb-4">
               All-inclusive
             </span>
-            <h3 className="text-xl font-semibold mb-2 text-white">{plan.name}</h3>
+            <h3 className="text-xl font-semibold mb-2 text-white">
+              {plan.name}
+            </h3>
             <div className="flex items-baseline gap-2 mb-2">
-              <span className="text-2xl font-semibold text-[#555a6b] line-through">$49</span>
-              <span className="text-4xl font-semibold text-[#e8614d]">{plan.price}</span>
+              <span className="text-2xl font-semibold text-[#555a6b] line-through">
+                $49
+              </span>
+              <span className="text-4xl font-semibold text-[#e8614d]">
+                {plan.price}
+              </span>
               <span className="text-[#7a7f94]">{plan.period}</span>
             </div>
             <div className="flex items-center gap-2 mb-2">

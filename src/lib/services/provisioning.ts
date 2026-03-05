@@ -30,10 +30,15 @@ export async function provisionUser(
     return;
   }
 
-  // 0. Fetch user timezone
+  // 0. Fetch user profile (timezone + onboarding data)
   const user = await prisma.user.findUniqueOrThrow({
     where: { id: userId },
-    select: { timezone: true },
+    select: {
+      timezone: true,
+      onboardingRole: true,
+      onboardingNiche: true,
+      onboardingTopics: true,
+    },
   });
 
   // 1. Reuse existing Late profile or create a new one
@@ -60,10 +65,12 @@ export async function provisionUser(
   // 2. Build env vars
   const gatewayToken = crypto.randomUUID();
   const accountsContext = formatAccountsContext(lateProfile.socialAccounts);
+  const userContext = formatUserContext(user);
   const envVars: Record<string, string> = {
     LATE_API_KEY: lateProfile.lateApiKey,
     LATE_PROFILE_ID: lateProfile.lateProfileId,
     LATE_ACCOUNTS_CONTEXT: accountsContext,
+    USER_CONTEXT: userContext,
     MOONSHOT_API_KEY: process.env.MOONSHOT_API_KEY ?? "",
     BRAVE_API_KEY: process.env.BRAVE_API_KEY ?? "",
     OPENCLAW_GATEWAY_TOKEN: gatewayToken,
@@ -211,6 +218,36 @@ function formatAccountsContext(
         `  - ${a.platform}: @${a.username} (accountId: ${a.lateAccountId})`
     )
     .join("\n");
+}
+
+const ROLE_LABELS: Record<string, string> = {
+  solopreneur: "Solopreneur / Indie Maker",
+  startup_founder: "Startup Founder",
+  freelancer: "Freelancer / Consultant",
+  content_creator: "Content Creator",
+  marketing_manager: "Marketing Manager",
+};
+
+function formatUserContext(user: {
+  onboardingRole: string | null;
+  onboardingNiche: string | null;
+  onboardingTopics: string[];
+}): string {
+  const parts: string[] = [];
+
+  if (user.onboardingRole) {
+    parts.push(`  Role: ${ROLE_LABELS[user.onboardingRole] ?? user.onboardingRole}`);
+  }
+  if (user.onboardingNiche) {
+    parts.push(`  Niche: ${user.onboardingNiche}`);
+  }
+  if (user.onboardingTopics.length > 0) {
+    parts.push(`  Topics: ${user.onboardingTopics.join(", ")}`);
+  }
+
+  return parts.length > 0
+    ? parts.join("\n")
+    : "  No profile information provided yet.";
 }
 
 export async function buildAccountsContext(userId: string): Promise<string> {

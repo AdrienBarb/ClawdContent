@@ -1,16 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import { appRouter } from "@/lib/constants/appRouter";
 import { getPlatform } from "@/lib/constants/platforms";
 import useApi from "@/lib/hooks/useApi";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Share2, Plus, X, Loader2 } from "lucide-react";
+import { Share2, Plus, X, Loader2, Lock } from "lucide-react";
 import ConnectAccountButtons from "@/components/dashboard/ConnectAccountButtons";
+import SubscribeModal from "@/components/dashboard/SubscribeModal";
 import toast from "react-hot-toast";
-import { useState } from "react";
 
 interface DashboardStatus {
   botStatus: string | null;
+  subscription: { status: string } | null;
   accounts: Array<{
     id: string;
     platform: string;
@@ -22,6 +24,7 @@ interface DashboardStatus {
 export default function AccountsPage() {
   const { useGet, usePost } = useApi();
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
+  const [showSubscribeModal, setShowSubscribeModal] = useState(false);
 
   const {
     data: status,
@@ -54,6 +57,10 @@ export default function AccountsPage() {
     disconnectAccount({ accountId });
   };
 
+  const subStatus = status?.subscription?.status;
+  const hasActiveSubscription =
+    subStatus === "active" || subStatus === "trialing" || subStatus === "past_due";
+
   const accounts = status?.accounts ?? [];
   const activeCount = accounts.filter((a) => a.status === "active").length;
   const connectedPlatforms = accounts
@@ -61,6 +68,7 @@ export default function AccountsPage() {
     .map((a) => a.platform);
   const isDeploying =
     status?.botStatus === "deploying" || status?.botStatus === "pending";
+  const isDisabled = !hasActiveSubscription || isDeploying;
 
   if (isLoading) {
     return (
@@ -82,6 +90,27 @@ export default function AccountsPage() {
           Manage your connected social media accounts.
         </p>
       </div>
+
+      {/* Subscription gate banner */}
+      {!hasActiveSubscription && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 flex items-center gap-3">
+          <Lock className="h-5 w-5 text-amber-600 shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-amber-900">
+              Launch your bot to connect accounts
+            </p>
+            <p className="text-xs text-amber-700 mt-0.5">
+              You need an active subscription to connect social media accounts.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowSubscribeModal(true)}
+            className="text-sm font-semibold text-[#e8614d] hover:underline cursor-pointer shrink-0"
+          >
+            Launch bot
+          </button>
+        </div>
+      )}
 
       {/* Connected accounts */}
       {accounts.length > 0 ? (
@@ -168,14 +197,29 @@ export default function AccountsPage() {
         <ConnectAccountButtons
           onAccountConnected={refetch}
           connectedPlatforms={connectedPlatforms}
-          disabled={isDeploying}
+          disabled={isDisabled}
+          onDisabledClick={
+            !hasActiveSubscription
+              ? () => setShowSubscribeModal(true)
+              : undefined
+          }
         />
-        {isDeploying && (
+        {isDeploying && hasActiveSubscription && (
           <p className="text-xs text-amber-500 mt-2">
             Available once your bot finishes deploying.
           </p>
         )}
+        {!hasActiveSubscription && (
+          <p className="text-xs text-amber-500 mt-2">
+            Launch your bot to connect social accounts.
+          </p>
+        )}
       </div>
+
+      <SubscribeModal
+        open={showSubscribeModal}
+        onOpenChange={setShowSubscribeModal}
+      />
     </div>
   );
 }

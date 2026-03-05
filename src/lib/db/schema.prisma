@@ -7,21 +7,25 @@ generator client {
 }
 
 model User {
-  id             String          @id
-  name           String
-  email          String
-  emailVerified  Boolean         @default(false)
-  image          String?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @default(now()) @updatedAt
-  sessions       Session[]
-  accounts       Account[]
-  subscription   Subscription?
-  flyMachine     FlyMachine?
-  lateProfile    LateProfile?
-  timezone       String?
-  media          Media[]
-  chatMessages   ChatMessage[]
+  id                  String          @id
+  name                String
+  email               String
+  emailVerified       Boolean         @default(false)
+  image               String?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @default(now()) @updatedAt
+  sessions            Session[]
+  accounts            Account[]
+  subscription        Subscription?
+  flyMachine          FlyMachine?
+  lateProfile         LateProfile?
+  timezone            String?
+  media               Media[]
+  chatMessages        ChatMessage[]
+  onboardingCompleted Boolean         @default(false)
+  onboardingRole      String?
+  onboardingNiche     String?
+  onboardingTopics    String[]        @default([])
 
   @@unique([email])
   @@map("user")
