@@ -69,6 +69,12 @@ export default function PricingSection() {
                     {plan.period}
                   </span>
                 </div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-green-400 text-sm">🎁</span>
+                  <span className="text-green-400 text-sm font-medium">
+                    $20 off for early customers (12 left)
+                  </span>
+                </div>
                 <p className="text-[#7a7f94]">{plan.description}</p>
               </div>
               <ul className="space-y-3.5 mb-10">
