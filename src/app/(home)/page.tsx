@@ -1,5 +1,5 @@
-import { cookies } from "next/headers";
 import { getPostHogClient } from "@/lib/tracking/postHogClient";
+import { getDistinctId } from "@/lib/tracking/distinctId";
 import HeroSection from "@/components/sections/HeroSection";
 import PainSection from "@/components/sections/PainSection";
 import HowItWorksSection from "@/components/sections/HowItWorksSection";
@@ -15,8 +15,7 @@ export const dynamic = "force-dynamic";
 export type HeroVariant = "control" | "test";
 
 async function getHeroVariant(): Promise<HeroVariant> {
-  const cookieStore = await cookies();
-  const distinctId = cookieStore.get("postclaw_distinct_id")?.value;
+  const distinctId = await getDistinctId();
 
   if (!distinctId) return "control";
 

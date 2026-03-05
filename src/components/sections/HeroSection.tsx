@@ -20,11 +20,11 @@ const heroContent = {
       "Tell your AI bot what to post on Telegram. It rewrites for each platform\u2019s tone and audience, then publishes everywhere \u2014 while you move on with your day.",
   },
   test: {
-    h1Start: "Be Everywhere.",
-    h1Prefix: "Without ",
-    h1Highlight: "Living Online.",
+    h1Start: "Your AI",
+    h1Prefix: "",
+    h1Highlight: "Social Media Manager.",
     subtitle:
-      "One message to your AI bot on Telegram becomes perfectly adapted posts across every platform. You stay creative \u2014 it handles distribution.",
+      "Tell your AI agent what to post. It adapts your content for each platform\u2019s tone and audience, then schedules and publishes everywhere \u2014 so you don\u2019t have to.",
   },
 } as const;
 

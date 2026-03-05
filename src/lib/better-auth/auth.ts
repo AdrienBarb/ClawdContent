@@ -5,6 +5,11 @@ import { prisma } from "@/lib/db/prisma";
 import { resendClient } from "@/lib/resend/resendClient";
 import { MagicLinkEmail } from "@/lib/emails/MagicLinkEmail";
 import config from "@/lib/config";
+import {
+  captureServerEvent,
+  identifyUser,
+} from "@/lib/tracking/postHogClient";
+import { getDistinctIdFromHeader } from "@/lib/tracking/distinctId";
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -48,6 +53,34 @@ export const auth = betterAuth({
       },
     }),
   ],
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (user, ctx) => {
+          const cookieHeader =
+            ctx?.headers?.get?.("cookie") ?? "";
+          const anonId = getDistinctIdFromHeader(cookieHeader);
+          const distinctId = anonId ?? user.id;
+
+          if (anonId) {
+            await identifyUser(anonId, {
+              userId: user.id,
+              email: user.email,
+              name: user.name,
+            });
+          }
+
+          await captureServerEvent(distinctId, "user_signed_up", {
+            userId: user.id,
+            email: user.email,
+            authMethod: ctx?.path?.includes("callback")
+              ? "oauth"
+              : "email",
+          });
+        },
+      },
+    },
+  },
   baseURL:
     process.env.BETTER_AUTH_URL ||
     process.env.NEXT_PUBLIC_BASE_URL ||
