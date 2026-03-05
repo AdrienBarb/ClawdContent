@@ -416,6 +416,16 @@ const { mutate } = usePost("/api/bot", { onSuccess: () => { ... } });
 - `OVERWRITE_SOUL=true` forces SOUL.md regeneration on restart
 - `dmPolicy: "open"` — safe because each user has their own private bot
 
+### PostHog A/B Testing
+- Server-side experiments via `posthog-node` feature flags
+- `src/proxy.ts` sets a `postclaw_distinct_id` cookie (UUID, 1-year TTL) on first visit — Next.js 16 uses `proxy.ts` instead of `middleware.ts`
+- Distinct ID helpers in `src/lib/tracking/distinctId.ts`: `getDistinctId()` (server components), `getDistinctIdFromHeader()` (raw cookie header)
+- PostHog server client singleton in `src/lib/tracking/postHogClient.ts`
+- Home page (`src/app/(home)/page.tsx`) evaluates feature flags server-side via `getFeatureFlag()`, passes variant as prop
+- `user_signed_up` event captured in Better Auth `databaseHooks.user.create.after` — linked to anonymous distinct ID for conversion tracking
+- Experiments must be created in PostHog dashboard (feature flag key + goal metric)
+- Active experiment: `hero-copy-experiment` (control vs test hero copy)
+
 ### Dashboard Layout
 - Root layout (`app/layout.tsx`): providers only, no Navbar/Footer
 - Public pages in `(home)/` route group: includes Navbar + Footer
