@@ -44,7 +44,6 @@ export async function createCheckoutSession(
     metadata: { userId },
     subscription_data: {
       metadata: { userId },
-      trial_period_days: 3,
     },
   });
 

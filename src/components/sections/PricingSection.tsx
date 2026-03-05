@@ -69,11 +69,6 @@ export default function PricingSection() {
                     {plan.period}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-green-400 text-sm font-medium">
-                    3-day free trial — no charge until day 4
-                  </span>
-                </div>
                 <p className="text-[#7a7f94]">{plan.description}</p>
               </div>
               <ul className="space-y-3.5 mb-10">
@@ -91,10 +86,10 @@ export default function PricingSection() {
                 size="lg"
                 onClick={handleGetStarted}
               >
-                Start Free Trial
+                Get Started
               </Button>
               <p className="text-center text-sm text-[#555a6b] mt-5">
-                Then $29/mo. Cancel anytime. No contracts. No hidden fees.
+                $29/mo. Cancel anytime. No contracts. No hidden fees.
               </p>
             </div>
           </AnimatedSection>

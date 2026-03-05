@@ -9,8 +9,26 @@ import SignInModal from "@/components/SignInModal";
 import AnimatedSection from "@/components/sections/AnimatedSection";
 import Image from "next/image";
 import { PLATFORMS } from "@/lib/constants/platforms";
+import type { HeroVariant } from "@/app/(home)/page";
 
-export default function HeroSection() {
+const heroContent = {
+  control: {
+    h1Start: "Publish to 13 Platforms.",
+    h1Prefix: "From ",
+    h1Highlight: "One Chat.",
+    subtitle:
+      "Tell your AI bot what to post on Telegram. It rewrites for each platform\u2019s tone and audience, then publishes everywhere \u2014 while you move on with your day.",
+  },
+  test: {
+    h1Start: "Be Everywhere.",
+    h1Prefix: "Without ",
+    h1Highlight: "Living Online.",
+    subtitle:
+      "One message to your AI bot on Telegram becomes perfectly adapted posts across every platform. You stay creative \u2014 it handles distribution.",
+  },
+} as const;
+
+export default function HeroSection({ variant }: { variant: HeroVariant }) {
   const { data: session } = useSession();
   const router = useRouter();
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
@@ -23,6 +41,8 @@ export default function HeroSection() {
     setIsSignInModalOpen(true);
   };
 
+  const content = heroContent[variant];
+
   return (
     <section className="hero-dark-glow starfield min-h-[85vh] flex items-center">
       <div className="container mx-auto px-6 py-20 md:py-28">
@@ -30,17 +50,16 @@ export default function HeroSection() {
           <div className="max-w-3xl lg:max-w-xl flex-shrink-0">
             <AnimatedSection>
               <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-bold leading-[1.1] tracking-tight mb-8 text-white">
-                Publish to 13 Platforms.
+                {content.h1Start}
                 <br />
-                From <span className="text-[#e8614d]">One Chat.</span>
+                {content.h1Prefix}
+                <span className="text-[#e8614d]">{content.h1Highlight}</span>
               </h1>
             </AnimatedSection>
 
             <AnimatedSection delay={0.15}>
               <p className="text-lg md:text-xl leading-relaxed text-[#8a8f9e] max-w-xl mb-10">
-                Tell your AI bot what to post on Telegram. It rewrites for each
-                platform&apos;s tone and audience, then publishes everywhere —
-                while you move on with your day.
+                {content.subtitle}
               </p>
             </AnimatedSection>
 
@@ -50,10 +69,10 @@ export default function HeroSection() {
                 onClick={handleGetStarted}
                 className="text-base px-10 h-14 bg-[#e8614d] hover:bg-[#d4563f] text-white"
               >
-                Start Free Trial
+                Get Started
               </Button>
               <p className="text-sm text-[#555a6b] mt-3">
-                Then $29/mo. Cancel anytime.
+                $29/mo. Cancel anytime.
               </p>
             </AnimatedSection>
 

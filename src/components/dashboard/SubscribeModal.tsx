@@ -31,9 +31,9 @@ export default function SubscribeModal() {
         <div className="p-8 rounded-2xl border border-[#1e2233] bg-[#151929] shadow-xl">
           <div className="text-center mb-8">
             <h1 className="text-2xl font-semibold tracking-tight text-white mb-2">
-              Start your free trial
+              Get started with PostClaw
             </h1>
-            <p className="text-[#7a7f94]">3 days free. Then $29/mo. Cancel anytime.</p>
+            <p className="text-[#7a7f94]">$29/mo. Cancel anytime.</p>
           </div>
           <div className="mb-6">
             <span className="inline-block bg-[#e8614d]/10 text-[#e8614d] text-xs font-semibold px-3 py-1 rounded-full mb-4">
@@ -66,7 +66,7 @@ export default function SubscribeModal() {
             onClick={handleSubscribe}
             disabled={isLoading}
           >
-            {isLoading ? "Loading..." : "Start Free Trial"}
+            {isLoading ? "Loading..." : "Get Started"}
           </Button>
         </div>
       </div>
