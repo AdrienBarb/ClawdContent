@@ -6,8 +6,7 @@ import { appRouter } from "@/lib/constants/appRouter";
 import { useSession, signOut } from "@/lib/better-auth/auth-client";
 import {
   Share2,
-  MessageCircle,
-  Radio,
+  Bot,
   CreditCard,
   Settings,
   LogOut,
@@ -24,9 +23,8 @@ import {
 import { useState } from "react";
 
 const navItems = [
-  { href: appRouter.chat, label: "Chat", icon: MessageCircle },
+  { href: appRouter.dashboard, label: "Bot", icon: Bot },
   { href: appRouter.accounts, label: "Accounts", icon: Share2 },
-  { href: appRouter.channels, label: "Channels", icon: Radio },
   { href: appRouter.billing, label: "Billing", icon: CreditCard },
   { href: appRouter.settings, label: "Settings", icon: Settings },
 ];
