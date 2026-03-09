@@ -24,6 +24,7 @@ export const onboardingTopicOptions = [
 ] as const;
 
 export const onboardingSchema = z.object({
+  telegramBotToken: z.string().min(1),
   role: z.enum(onboardingRoles).optional(),
   niche: z.string().max(200).optional(),
   topics: z.array(z.string().max(50)).max(10).optional(),

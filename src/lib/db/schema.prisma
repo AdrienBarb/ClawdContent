@@ -26,6 +26,7 @@ model User {
   onboardingRole      String?
   onboardingNiche     String?
   onboardingTopics    String[]        @default([])
+  telegramBotToken    String?
 
   @@unique([email])
   @@map("user")

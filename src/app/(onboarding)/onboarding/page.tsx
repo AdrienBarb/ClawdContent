@@ -13,10 +13,9 @@ import {
   Megaphone,
   ArrowRight,
   ArrowLeft,
-  MessageCircle,
-  Share2,
-  Zap,
   Check,
+  MessageCircle,
+  ExternalLink,
 } from "lucide-react";
 
 const roles = [
@@ -73,6 +72,7 @@ export default function OnboardingPage() {
   const router = useRouter();
   const { usePost } = useApi();
   const [step, setStep] = useState(1);
+  const [telegramToken, setTelegramToken] = useState("");
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [niche, setNiche] = useState("");
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
@@ -89,6 +89,7 @@ export default function OnboardingPage() {
 
   const handleFinish = () => {
     saveOnboarding({
+      telegramBotToken: telegramToken.trim(),
       role: selectedRole ?? undefined,
       niche: niche || undefined,
       topics: selectedTopics.length > 0 ? selectedTopics : undefined,
@@ -96,7 +97,9 @@ export default function OnboardingPage() {
   };
 
   const handleSkip = () => {
-    saveOnboarding({});
+    saveOnboarding({
+      telegramBotToken: telegramToken.trim(),
+    });
   };
 
   const toggleTopic = (topic: string) => {
@@ -125,7 +128,7 @@ export default function OnboardingPage() {
           <span className="text-xs font-medium text-gray-400">
             Step {step} of {TOTAL_STEPS}
           </span>
-          {step < 3 && (
+          {step > 1 && (
             <button
               onClick={handleSkip}
               className="text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
@@ -143,8 +146,96 @@ export default function OnboardingPage() {
         </div>
       </div>
 
-      {/* Step 1: Role */}
+      {/* Step 1: Telegram Bot Token (mandatory) */}
       {step === 1 && (
+        <div className="w-full max-w-lg">
+          <div className="text-center mb-8">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#26A5E4]/10 mx-auto mb-4">
+              <MessageCircle className="h-7 w-7 text-[#26A5E4]" />
+            </div>
+            <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
+              Connect your Telegram bot
+            </h1>
+            <p className="text-gray-500 mt-2">
+              PostClaw works through Telegram. Create a bot and paste its token
+              below.
+            </p>
+          </div>
+
+          {/* Instructions */}
+          <div className="rounded-xl bg-gray-50 border border-gray-200 p-5 mb-6">
+            <p className="text-sm font-medium text-gray-900 mb-3">
+              How to create your bot:
+            </p>
+            <ol className="space-y-2 text-sm text-gray-600">
+              <li className="flex items-start gap-2.5">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#e8614d] text-white text-xs font-semibold mt-0.5">
+                  1
+                </span>
+                <span>
+                  Open{" "}
+                  <a
+                    href="https://t.me/BotFather"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#26A5E4] font-medium hover:underline inline-flex items-center gap-1"
+                  >
+                    @BotFather on Telegram
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                </span>
+              </li>
+              <li className="flex items-start gap-2.5">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#e8614d] text-white text-xs font-semibold mt-0.5">
+                  2
+                </span>
+                <span>
+                  Send <code className="bg-gray-200 px-1.5 py-0.5 rounded text-xs font-mono">/newbot</code> and follow the steps
+                </span>
+              </li>
+              <li className="flex items-start gap-2.5">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#e8614d] text-white text-xs font-semibold mt-0.5">
+                  3
+                </span>
+                <span>Copy the token and paste it below</span>
+              </li>
+            </ol>
+          </div>
+
+          {/* Token input */}
+          <div className="space-y-2 mb-2">
+            <label
+              htmlFor="telegram-token"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Bot token
+            </label>
+            <input
+              id="telegram-token"
+              type="text"
+              value={telegramToken}
+              onChange={(e) => setTelegramToken(e.target.value)}
+              placeholder="123456:ABC-DEF1234ghIkl-zyx57W2v..."
+              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#e8614d] focus:outline-none focus:ring-1 focus:ring-[#e8614d] font-mono"
+              autoFocus
+            />
+          </div>
+
+          <div className="mt-8 flex justify-end">
+            <Button
+              onClick={() => setStep(2)}
+              className="bg-[#e8614d] hover:bg-[#d4563f] text-white"
+              disabled={!telegramToken.trim()}
+            >
+              Continue
+              <ArrowRight className="h-4 w-4 ml-1.5" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Step 2: Role */}
+      {step === 2 && (
         <div className="w-full max-w-lg">
           <div className="text-center mb-8">
             <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
@@ -197,9 +288,17 @@ export default function OnboardingPage() {
             })}
           </div>
 
-          <div className="mt-8 flex justify-end">
+          <div className="mt-8 flex justify-between">
             <Button
-              onClick={() => setStep(2)}
+              variant="ghost"
+              onClick={() => setStep(1)}
+              className="text-gray-500"
+            >
+              <ArrowLeft className="h-4 w-4 mr-1.5" />
+              Back
+            </Button>
+            <Button
+              onClick={() => setStep(3)}
               className="bg-[#e8614d] hover:bg-[#d4563f] text-white"
             >
               Continue
@@ -209,8 +308,8 @@ export default function OnboardingPage() {
         </div>
       )}
 
-      {/* Step 2: Niche & Topics */}
-      {step === 2 && (
+      {/* Step 3: Niche & Topics */}
+      {step === 3 && (
         <div className="w-full max-w-lg">
           <div className="text-center mb-8">
             <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
@@ -307,112 +406,6 @@ export default function OnboardingPage() {
           <div className="mt-8 flex justify-between">
             <Button
               variant="ghost"
-              onClick={() => setStep(1)}
-              className="text-gray-500"
-            >
-              <ArrowLeft className="h-4 w-4 mr-1.5" />
-              Back
-            </Button>
-            <Button
-              onClick={() => setStep(3)}
-              className="bg-[#e8614d] hover:bg-[#d4563f] text-white"
-            >
-              Continue
-              <ArrowRight className="h-4 w-4 ml-1.5" />
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Step 3: Value showcase */}
-      {step === 3 && (
-        <div className="w-full max-w-lg">
-          <div className="text-center mb-8">
-            <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-              You&apos;re all set. Here&apos;s what you get.
-            </h1>
-            <p className="text-gray-500 mt-2">
-              Your personal AI content manager, always ready on Telegram.
-            </p>
-          </div>
-
-          <div className="space-y-4">
-            <div className="rounded-xl border border-gray-200 bg-white p-5">
-              <div className="flex items-start gap-4">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-                  <MessageCircle className="h-5 w-5" />
-                </span>
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">
-                    Chat to create
-                  </p>
-                  <p className="text-sm text-gray-500 mt-0.5">
-                    Tell your bot what to post. It writes, you approve.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-gray-200 bg-white p-5">
-              <div className="flex items-start gap-4">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-                  <Share2 className="h-5 w-5" />
-                </span>
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">
-                    Post everywhere
-                  </p>
-                  <p className="text-sm text-gray-500 mt-0.5">
-                    One message, published to Twitter/X, LinkedIn, Bluesky &
-                    Threads.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-gray-200 bg-white p-5">
-              <div className="flex items-start gap-4">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
-                  <Zap className="h-5 w-5" />
-                </span>
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">
-                    Always on
-                  </p>
-                  <p className="text-sm text-gray-500 mt-0.5">
-                    Your bot remembers your style and improves over time. No
-                    dashboards, no scheduling tools.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Old way vs new way */}
-          <div className="grid grid-cols-2 gap-3 mt-6">
-            <div className="rounded-xl bg-gray-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">
-                The old way
-              </p>
-              <p className="text-2xl font-bold text-gray-400">5+ hrs</p>
-              <p className="text-xs text-gray-400 mt-1">
-                per week juggling tools
-              </p>
-            </div>
-            <div className="rounded-xl bg-[#e8614d]/5 border border-[#e8614d]/20 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wider text-[#e8614d] mb-2">
-                With PostClaw
-              </p>
-              <p className="text-2xl font-bold text-[#e8614d]">5 min</p>
-              <p className="text-xs text-gray-500 mt-1">
-                on Telegram, done
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-8 flex justify-between">
-            <Button
-              variant="ghost"
               onClick={() => setStep(2)}
               className="text-gray-500"
             >
@@ -424,7 +417,7 @@ export default function OnboardingPage() {
               className="bg-[#e8614d] hover:bg-[#d4563f] text-white"
               disabled={isPending}
             >
-              {isPending ? "Setting up..." : "Start chatting"}
+              {isPending ? "Setting up..." : "Finish setup"}
               {!isPending && <ArrowRight className="h-4 w-4 ml-1.5" />}
             </Button>
           </div>
