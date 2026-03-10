@@ -35,7 +35,9 @@ export async function createCheckoutSession(
   const baseUrl =
     process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
-  const session = await stripe.checkout.sessions.create({
+  const checkoutParams: Parameters<
+    typeof stripe.checkout.sessions.create
+  >[0] = {
     customer: customerId,
     mode: "subscription",
     line_items: [{ price: priceId, quantity: 1 }],
@@ -45,7 +47,14 @@ export async function createCheckoutSession(
     subscription_data: {
       metadata: { userId },
     },
-  });
+  };
+
+  const couponId = process.env.STRIPE_FIRST_MONTH_COUPON_ID;
+  if (couponId) {
+    checkoutParams.discounts = [{ coupon: couponId }];
+  }
+
+  const session = await stripe.checkout.sessions.create(checkoutParams);
 
   if (!session.url) {
     throw new Error("Failed to create checkout session");

@@ -2,15 +2,17 @@
 
 ## What is PostClaw?
 
-PostClaw is a SaaS ($39/mo) that gives each user a personal AI content manager on Telegram. Users chat with their bot to create, adapt, and publish social media posts across 4 text-friendly platforms (Twitter/X, LinkedIn, Bluesky, Threads).
+PostClaw is a SaaS ($39/mo) that gives each user a personal AI content manager on Telegram. Users chat with their bot to create, adapt, and publish social media posts across 13 text-friendly platforms (Twitter/X, LinkedIn, Bluesky, Threads).
 
 **How it works:**
+
 1. User signs up, pays $39/mo via Stripe
 2. We auto-provision a private OpenClaw container on Fly.io + a Late API profile
 3. User connects their Telegram bot token and social accounts
 4. User chats with their bot on Telegram to create and publish content
 
 **Key services:**
+
 - **OpenClaw** — Open-source AI agent framework (runs in Docker on Fly.io)
 - **Late API** (getlate.dev) — Unified social media API
 - **Kimi K2.5** (Moonshot) — LLM powering the bot
@@ -36,6 +38,7 @@ Dashboard (Next.js on Vercel)
 **Per-user isolation:** Each user gets their own Fly.io machine with a **profile-scoped Late API key** that can only access their own social accounts. One master Late account, many scoped keys.
 
 **Custom Docker image:** `ghcr.io/adrienbarb/postclaw-agent`
+
 - Tags: `:latest` (production, built from `main`) and `:dev` (testing, built from `dev` branch)
 - Entrypoint generates `openclaw.json` + `SOUL.md` from env vars
 - Pre-installs the `late-api` skill from ClawHub
@@ -68,16 +71,16 @@ User (1:1) ── Subscription
      (1:N) ── Account
 ```
 
-| Model | Purpose |
-|-------|---------|
-| **User** | Authenticated user (Better Auth) |
-| **Subscription** | Stripe subscription: customerId, subscriptionId, status, period dates |
-| **FlyMachine** | User's container: machineId, volumeId, region, status, hasTelegramToken |
-| **LateProfile** | User's Late API profile: profileId, scoped API key |
-| **SocialAccount** | Connected social platform: accountId, platform, username, status |
-| **Media** | Uploaded media: cloudinaryId, url, resourceType, format, bytes, dimensions |
-| **Session** | Auth session |
-| **Account** | OAuth/password account info |
+| Model             | Purpose                                                                    |
+| ----------------- | -------------------------------------------------------------------------- |
+| **User**          | Authenticated user (Better Auth)                                           |
+| **Subscription**  | Stripe subscription: customerId, subscriptionId, status, period dates      |
+| **FlyMachine**    | User's container: machineId, volumeId, region, status, hasTelegramToken    |
+| **LateProfile**   | User's Late API profile: profileId, scoped API key                         |
+| **SocialAccount** | Connected social platform: accountId, platform, username, status           |
+| **Media**         | Uploaded media: cloudinaryId, url, resourceType, format, bytes, dimensions |
+| **Session**       | Auth session                                                               |
+| **Account**       | OAuth/password account info                                                |
 
 Schema: `src/lib/db/schema.prisma`
 
@@ -155,24 +158,24 @@ src/
 
 ## API Routes
 
-| Route | Methods | Auth | Purpose |
-|-------|---------|------|---------|
-| `/api/auth/[...all]` | All | Various | Better Auth |
-| `/api/checkout` | POST | Yes | Create Stripe Checkout session |
-| `/api/bot` | GET | Yes | Get bot status |
-| `/api/bot` | POST | Yes | Set Telegram token |
-| `/api/bot` | PUT | Yes | Update bot Docker image |
-| `/api/bot` | PATCH | Yes | Restart bot |
-| `/api/media/upload` | POST | Yes | Save media upload record |
-| `/api/accounts` | GET | Yes | List connected accounts |
-| `/api/accounts/connect` | POST | Yes | Get Late OAuth URL |
-| `/api/accounts/callback` | POST | Yes | Sync accounts after OAuth |
-| `/api/accounts/disconnect` | POST | Yes | Disconnect a social account |
-| `/api/chat` | POST | Yes | Streaming chat proxy to OpenClaw container |
-| `/api/chat/history` | GET | Yes | Get chat history from container |
-| `/api/dashboard/status` | GET | Yes | Dashboard polling (bot, accounts, subscription) |
-| `/api/provisioning/retry` | POST | Yes | Retry failed provisioning |
-| `/api/webhooks/stripe` | POST | No | Stripe webhook handler |
+| Route                      | Methods | Auth    | Purpose                                         |
+| -------------------------- | ------- | ------- | ----------------------------------------------- |
+| `/api/auth/[...all]`       | All     | Various | Better Auth                                     |
+| `/api/checkout`            | POST    | Yes     | Create Stripe Checkout session                  |
+| `/api/bot`                 | GET     | Yes     | Get bot status                                  |
+| `/api/bot`                 | POST    | Yes     | Set Telegram token                              |
+| `/api/bot`                 | PUT     | Yes     | Update bot Docker image                         |
+| `/api/bot`                 | PATCH   | Yes     | Restart bot                                     |
+| `/api/media/upload`        | POST    | Yes     | Save media upload record                        |
+| `/api/accounts`            | GET     | Yes     | List connected accounts                         |
+| `/api/accounts/connect`    | POST    | Yes     | Get Late OAuth URL                              |
+| `/api/accounts/callback`   | POST    | Yes     | Sync accounts after OAuth                       |
+| `/api/accounts/disconnect` | POST    | Yes     | Disconnect a social account                     |
+| `/api/chat`                | POST    | Yes     | Streaming chat proxy to OpenClaw container      |
+| `/api/chat/history`        | GET     | Yes     | Get chat history from container                 |
+| `/api/dashboard/status`    | GET     | Yes     | Dashboard polling (bot, accounts, subscription) |
+| `/api/provisioning/retry`  | POST    | Yes     | Retry failed provisioning                       |
+| `/api/webhooks/stripe`     | POST    | No      | Stripe webhook handler                          |
 
 ---
 
@@ -199,15 +202,18 @@ Services live in `src/lib/services/`. Routes call services, services call adapte
 ### Key flows
 
 **Provisioning (on checkout.session.completed):**
+
 1. Create Late profile → scoped API key
 2. Create Fly.io volume + machine with env vars (single API call for machine)
 3. Save FlyMachine + LateProfile to DB
 
 **Deprovisioning (on subscription.deleted):**
+
 1. Delete Fly.io machine + volume
 2. Clean up DB records
 
 **Social account connection:**
+
 1. Get Late OAuth URL → redirect user
 2. On callback, sync accounts from Late API → upsert DB → update container env vars
 
@@ -215,14 +221,14 @@ Services live in `src/lib/services/`. Routes call services, services call adapte
 
 ## Stripe Webhooks
 
-| Event | Action |
-|-------|--------|
-| `checkout.session.completed` | Upsert subscription, provision user (non-blocking via `after()`) |
-| `customer.subscription.created` | Idempotent upsert subscription |
-| `customer.subscription.updated` | Sync status + period dates |
-| `customer.subscription.deleted` | Status → canceled, deprovision (non-blocking) |
-| `invoice.payment_succeeded` | Extend period, verify container running |
-| `invoice.payment_failed` | Status → past_due (do NOT deprovision) |
+| Event                           | Action                                                           |
+| ------------------------------- | ---------------------------------------------------------------- |
+| `checkout.session.completed`    | Upsert subscription, provision user (non-blocking via `after()`) |
+| `customer.subscription.created` | Idempotent upsert subscription                                   |
+| `customer.subscription.updated` | Sync status + period dates                                       |
+| `customer.subscription.deleted` | Status → canceled, deprovision (non-blocking)                    |
+| `invoice.payment_succeeded`     | Extend period, verify container running                          |
+| `invoice.payment_failed`        | Status → past_due (do NOT deprovision)                           |
 
 ---
 
@@ -290,12 +296,12 @@ npm run email:dev          # Preview email templates
 
 ## Phase Status
 
-| Phase | Status | What it covers |
-|-------|--------|---------------|
-| **Phase 0** | COMPLETE | Fly.io deploy + OpenClaw + Telegram + Kimi K2.5 |
-| **Phase 0.5** | COMPLETE | Late API integration + social posting via Telegram |
-| **Phase 1** | COMPLETE | DB schema, Stripe subscription, auto-provisioning, dashboard, onboarding |
-| **Phase 2** | TODO | Monitoring, production hardening, self-service billing portal |
+| Phase         | Status   | What it covers                                                           |
+| ------------- | -------- | ------------------------------------------------------------------------ |
+| **Phase 0**   | COMPLETE | Fly.io deploy + OpenClaw + Telegram + Kimi K2.5                          |
+| **Phase 0.5** | COMPLETE | Late API integration + social posting via Telegram                       |
+| **Phase 1**   | COMPLETE | DB schema, Stripe subscription, auto-provisioning, dashboard, onboarding |
+| **Phase 2**   | TODO     | Monitoring, production hardening, self-service billing portal            |
 
 ---
 
@@ -370,22 +376,26 @@ const { mutate } = usePost("/api/bot", { onSuccess: () => { ... } });
 ## Key Technical Notes
 
 ### Prisma 7
+
 - Config in `prisma.config.ts` (loads `.env` via dotenv) — used by CLI only (migrate, generate)
 - Runtime client uses `@prisma/adapter-pg` driver adapter: `new PrismaClient({ adapter })`
 - No `url` in schema.prisma, no `datasourceUrl` in constructor — adapter is the only way
 - Schema at `src/lib/db/schema.prisma`
 
 ### Stripe SDK v20 (2026 API)
+
 - API version: `2026-01-28.clover`
 - Period dates on subscription **items** (`sub.items.data[0].current_period_start`), not on subscription
 - Invoice subscription via `invoice.parent?.subscription_details?.subscription`
 
 ### Late API
+
 - Base URL: `https://getlate.dev/api/v1` (changed from old `api.getlate.dev` domain)
 - Client: `src/lib/late/client.ts`
 - Profile-scoped API keys for per-user isolation
 
 ### Fly.io
+
 - One app (`FLY_APP_NAME`) with many machines — one per user
 - Machines API (REST): `https://api.machines.dev/v1`
 - Client: `src/lib/fly/client.ts`, mutations: `src/lib/fly/mutations.ts`
@@ -397,6 +407,7 @@ const { mutate } = usePost("/api/bot", { onSuccess: () => { ... } });
 - No auto-stop (Telegram bots use outbound long-polling, not HTTP)
 
 ### Docker Dev/Prod Tags
+
 - GitHub Action builds on push to `main` (→ `:latest` + `:sha`) or `dev` (→ `:dev` + `:sha`)
 - `OPENCLAW_DOCKER_IMAGE` env var overrides image in provisioning (defaults to `:latest`)
 - Fly machines are pinned to a specific image digest — restarting does NOT auto-pull new tags
@@ -404,6 +415,7 @@ const { mutate } = usePost("/api/bot", { onSuccess: () => { ... } });
 - To promote: merge `dev` → `main`, push, then update all prod machines with `updateMachineImage()`
 
 ### Media Upload (Cloudinary)
+
 - `next-cloudinary` package with `CldUploadWidget` in ChatInterface
 - Unsigned upload preset: `postclaw_unsigned`, cloud: `postclaw`
 - Media saved to `Media` table via `/api/media/upload` (fire-and-forget from client)
@@ -411,12 +423,14 @@ const { mutate } = usePost("/api/bot", { onSuccess: () => { ... } });
 - SOUL.md teaches bot to handle media via Late API skill (`xurl media upload` + `xurl post --media-id`)
 
 ### OpenClaw Container
+
 - Config dir: `$HOME/.openclaw/` (runs as `node` user)
 - Entrypoint generates `openclaw.json` from env vars
 - `OVERWRITE_SOUL=true` forces SOUL.md regeneration on restart
 - `dmPolicy: "open"` — safe because each user has their own private bot
 
 ### PostHog A/B Testing
+
 - Server-side experiments via `posthog-node` feature flags
 - `src/proxy.ts` sets a `postclaw_distinct_id` cookie (UUID, 1-year TTL) on first visit — Next.js 16 uses `proxy.ts` instead of `middleware.ts`
 - Distinct ID helpers in `src/lib/tracking/distinctId.ts`: `getDistinctId()` (server components), `getDistinctIdFromHeader()` (raw cookie header)
@@ -427,6 +441,7 @@ const { mutate } = usePost("/api/bot", { onSuccess: () => { ... } });
 - Active experiment: `hero-copy-experiment` (control vs test hero copy)
 
 ### Dashboard Layout
+
 - Root layout (`app/layout.tsx`): providers only, no Navbar/Footer
 - Public pages in `(home)/` route group: includes Navbar + Footer
 - Dashboard in `(dashboard)/` route group: sidebar layout, no Navbar/Footer
@@ -437,6 +452,7 @@ const { mutate } = usePost("/api/bot", { onSuccess: () => { ... } });
 ## Configuration
 
 App config is centralized in `config.json`:
+
 - Project name, description, tagline, URL
 - SEO metadata
 - Contact info

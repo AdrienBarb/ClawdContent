@@ -58,21 +58,20 @@ export default function PricingSection() {
                 <h3 className="text-2xl font-bold mb-3 text-white">
                   {plan.name}
                 </h3>
-                <div className="flex items-baseline gap-2 mb-2">
-                  <span className="text-3xl font-bold text-[#555a6b] line-through">
-                    $49
-                  </span>
+                <div className="flex items-baseline gap-2 mb-1">
                   <span className="text-6xl font-bold text-[#e8614d]">
-                    {plan.price}
+                    $14.50
                   </span>
                   <span className="text-[#7a7f94] text-lg">
-                    {plan.period}
+                    /first month
                   </span>
                 </div>
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-green-400 text-sm">🎁</span>
+                  <span className="text-[#555a6b] text-sm line-through">
+                    {plan.price}/mo
+                  </span>
                   <span className="text-green-400 text-sm font-medium">
-                    $20 off for early customers (12 left)
+                    50% off
                   </span>
                 </div>
                 <p className="text-[#7a7f94]">{plan.description}</p>
@@ -95,7 +94,7 @@ export default function PricingSection() {
                 Get Started
               </Button>
               <p className="text-center text-sm text-[#555a6b] mt-5">
-                $29/mo. Cancel anytime. No contracts. No hidden fees.
+                $14.50 first month, then $29/mo. Cancel anytime.
               </p>
             </div>
           </AnimatedSection>
