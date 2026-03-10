@@ -6,14 +6,22 @@ import { Button } from "@/components/ui/button";
 import useApi from "@/lib/hooks/useApi";
 import { MessageCircle, ExternalLink, ArrowRight } from "lucide-react";
 
-export default function TelegramSetup() {
+interface TelegramSetupProps {
+  onSuccess?: () => void;
+}
+
+export default function TelegramSetup({ onSuccess }: TelegramSetupProps) {
   const router = useRouter();
   const { usePost } = useApi();
   const [token, setToken] = useState("");
 
   const { mutate: saveToken, isPending } = usePost("/api/user/telegram-token", {
     onSuccess: () => {
-      router.refresh();
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.refresh();
+      }
     },
   });
 

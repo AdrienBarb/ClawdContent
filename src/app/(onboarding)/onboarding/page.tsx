@@ -89,7 +89,7 @@ export default function OnboardingPage() {
 
   const handleFinish = () => {
     saveOnboarding({
-      telegramBotToken: telegramToken.trim(),
+      telegramBotToken: telegramToken.trim() || undefined,
       role: selectedRole ?? undefined,
       niche: niche || undefined,
       topics: selectedTopics.length > 0 ? selectedTopics : undefined,
@@ -98,7 +98,7 @@ export default function OnboardingPage() {
 
   const handleSkip = () => {
     saveOnboarding({
-      telegramBotToken: telegramToken.trim(),
+      telegramBotToken: telegramToken.trim() || undefined,
     });
   };
 
@@ -128,15 +128,13 @@ export default function OnboardingPage() {
           <span className="text-xs font-medium text-gray-400">
             Step {step} of {TOTAL_STEPS}
           </span>
-          {step > 1 && (
-            <button
-              onClick={handleSkip}
-              className="text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
-              disabled={isPending}
-            >
-              Skip setup
-            </button>
-          )}
+          <button
+            onClick={handleSkip}
+            className="text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+            disabled={isPending}
+          >
+            Skip setup
+          </button>
         </div>
         <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
           <div
@@ -225,7 +223,7 @@ export default function OnboardingPage() {
             <Button
               onClick={() => setStep(2)}
               className="bg-[#e8614d] hover:bg-[#d4563f] text-white"
-              disabled={!telegramToken.trim()}
+              disabled={false}
             >
               Continue
               <ArrowRight className="h-4 w-4 ml-1.5" />

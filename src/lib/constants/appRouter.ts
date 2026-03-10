@@ -33,6 +33,7 @@ export const appRouter = {
     posts: "/api/posts",
     postsDelete: "/api/posts/delete",
     accountsCallback: "/api/accounts/callback",
+    provisioningLaunch: "/api/provisioning/launch",
     provisioningRetry: "/api/provisioning/retry",
     billingPortal: "/api/billing/portal",
     mediaUpload: "/api/media/upload",

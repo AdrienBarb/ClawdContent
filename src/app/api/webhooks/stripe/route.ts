@@ -4,7 +4,7 @@ import Stripe from "stripe";
 import { stripe } from "@/lib/stripe/client";
 import { errorMessages } from "@/lib/constants/errorMessage";
 import { prisma } from "@/lib/db/prisma";
-import { provisionUser, deprovisionUser } from "@/lib/services/provisioning";
+import { deprovisionUser } from "@/lib/services/provisioning";
 
 export async function POST(req: NextRequest) {
   const sig = req.headers.get("stripe-signature");
@@ -176,19 +176,6 @@ async function handleCheckoutCompleted(
       currentPeriodEnd: period.end,
     },
   });
-
-  // Provision user's bot in background (non-blocking)
-  const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (user) {
-    after(async () => {
-      try {
-        await provisionUser(userId, user.name);
-        console.log(`Provisioned user ${userId} successfully`);
-      } catch (err) {
-        console.error(`Failed to provision user ${userId}:`, err);
-      }
-    });
-  }
 }
 
 async function handleSubscriptionCreated(

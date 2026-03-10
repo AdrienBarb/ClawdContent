@@ -2,9 +2,7 @@ import { auth } from "@/lib/better-auth/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db/prisma";
-import BotDashboard from "@/components/dashboard/BotDashboard";
-import DashboardUnsubscribed from "@/components/dashboard/DashboardUnsubscribed";
-import TelegramSetup from "@/components/dashboard/TelegramSetup";
+import DashboardFlow from "@/components/dashboard/DashboardFlow";
 
 export default async function DashboardPage() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -24,21 +22,19 @@ export default async function DashboardPage() {
     }),
   ]);
 
-  const hasTelegramToken = !!user?.telegramBotToken || !!flyMachine?.hasTelegramToken;
-
-  // No token set anywhere — show Telegram setup first
-  if (!hasTelegramToken) {
-    return <TelegramSetup />;
-  }
+  const hasTelegramToken =
+    !!user?.telegramBotToken || !!flyMachine?.hasTelegramToken;
 
   const hasActiveSubscription =
     subscription?.status === "active" ||
     subscription?.status === "trialing" ||
     subscription?.status === "past_due";
 
-  if (!hasActiveSubscription) {
-    return <DashboardUnsubscribed />;
-  }
-
-  return <BotDashboard />;
+  return (
+    <DashboardFlow
+      initialHasTelegramToken={hasTelegramToken}
+      initialHasSubscription={hasActiveSubscription}
+      initialHasFlyMachine={!!flyMachine}
+    />
+  );
 }
