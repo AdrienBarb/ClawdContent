@@ -50,7 +50,7 @@ export default function SubscribeModal({
             <h1 className="text-2xl font-semibold tracking-tight text-white mb-2">
               Get started with PostClaw
             </h1>
-            <p className="text-[#7a7f94]">$14.50 first month, then $29/mo. Cancel anytime.</p>
+            <p className="text-[#7a7f94]">$29/mo. Cancel anytime.</p>
           </div>
           <div className="mb-6">
             <span className="inline-block bg-[#e8614d]/10 text-[#e8614d] text-xs font-semibold px-3 py-1 rounded-full mb-4">
@@ -59,18 +59,19 @@ export default function SubscribeModal({
             <h3 className="text-xl font-semibold mb-2 text-white">
               {plan.name}
             </h3>
-            <div className="flex items-baseline gap-2 mb-1">
-              <span className="text-4xl font-semibold text-[#e8614d]">
-                $14.50
+            <div className="flex items-baseline gap-2 mb-2">
+              <span className="text-2xl font-semibold text-[#555a6b] line-through">
+                $49
               </span>
-              <span className="text-[#7a7f94]">/first month</span>
+              <span className="text-4xl font-semibold text-[#e8614d]">
+                {plan.price}
+              </span>
+              <span className="text-[#7a7f94]">{plan.period}</span>
             </div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-[#555a6b] text-sm line-through">
-                {plan.price}/mo
-              </span>
+              <span className="text-green-400 text-sm">🎁</span>
               <span className="text-green-400 text-sm font-medium">
-                50% off
+                $20 off for early customers (12 left)
               </span>
             </div>
             <p className="text-sm text-[#7a7f94]">{plan.description}</p>

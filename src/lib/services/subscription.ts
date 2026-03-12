@@ -35,8 +35,6 @@ export async function createCheckoutSession(
   const baseUrl =
     process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
-  const couponId = process.env.STRIPE_FIRST_MONTH_COUPON_ID;
-
   const session = await stripe.checkout.sessions.create({
     customer: customerId,
     mode: "subscription",
@@ -47,7 +45,6 @@ export async function createCheckoutSession(
     subscription_data: {
       metadata: { userId },
     },
-    ...(couponId && { discounts: [{ coupon: couponId }] }),
   });
 
   if (!session.url) {
