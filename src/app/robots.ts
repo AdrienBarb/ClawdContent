@@ -7,12 +7,12 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: ["/"],
-        disallow: [
-          "/api/",
-          "/d/",
-          "/checkout/",
-          "/subscribe/",
-        ],
+        disallow: ["/api/", "/d/", "/checkout/", "/subscribe/"],
+      },
+      {
+        userAgent: ["GPTBot", "ChatGPT-User", "ClaudeBot", "PerplexityBot"],
+        allow: ["/", "/llms.txt"],
+        disallow: ["/api/", "/d/", "/checkout/", "/subscribe/"],
       },
     ],
     sitemap: `${siteMetadata.siteUrl}/sitemap.xml`,

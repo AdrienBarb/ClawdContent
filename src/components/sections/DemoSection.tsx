@@ -21,8 +21,10 @@ export default function DemoSection() {
               loop
               playsInline
               className="w-full"
+              aria-label="Demo video showing how to create and publish social media posts from Telegram using PostClaw"
             >
               <source src="/videos/demo.mp4" type="video/mp4" />
+              Your browser does not support the video tag.
             </video>
           </div>
         </AnimatedSection>

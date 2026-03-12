@@ -2,7 +2,7 @@
 
 ## What is PostClaw?
 
-PostClaw is a SaaS ($39/mo) that gives each user a personal AI content manager on Telegram. Users chat with their bot to create, adapt, and publish social media posts across 13+ social media platforms via Late API.
+PostClaw is a SaaS ($29/mo) that gives each user a personal AI content manager on Telegram. Users chat with their bot to create, adapt, and publish social media posts across 13+ social media platforms via Late API.
 
 **How it works:**
 

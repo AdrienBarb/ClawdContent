@@ -1,35 +1,61 @@
 # PostClaw
 
-> PostClaw is a SaaS that gives you a personal AI content manager on Telegram. Create, adapt, and publish social media posts across 13 social platforms — just by chatting.
+> PostClaw is a SaaS that gives you a personal AI content manager on Telegram. Create, adapt, and publish social media posts across 13+ social platforms — just by chatting.
 
-## About
+## What PostClaw Does
 
-PostClaw provides each user with their own private AI bot on Telegram, powered by OpenClaw. Chat with your bot to draft posts, adapt content for different platforms, and publish — all from one conversation. Each user gets an isolated bot instance with their own social accounts connected.
+PostClaw provides each user with their own private AI bot on Telegram, powered by OpenClaw (the open-source AI agent framework with 140K+ GitHub stars). Chat with your bot to draft posts, adapt content for different platforms, and publish — all from one conversation. Each user gets an isolated bot instance with their own social accounts connected.
 
-**Key features:**
+## Key Features
+
 - Personal AI bot on Telegram that creates and publishes social media content
-- Publish to 13 social platforms from one chat
+- Publish to 13+ social platforms from one chat (Instagram, TikTok, X/Twitter, LinkedIn, Facebook, YouTube, Pinterest, Threads, Bluesky, Reddit, Telegram, Discord, Mastodon)
 - AI-adapted content per platform (tone, length, hashtags, format)
+- Media support (images and videos via Cloudinary)
 - Private, isolated bot instance per user
 - Unlimited posts, cancel anytime
+
+## How It Works
+
+1. Sign up and subscribe ($29/month)
+2. Connect your social media accounts from the dashboard
+3. Open Telegram and start chatting with your personal AI bot
+4. Tell it what to post — it writes, adapts, and publishes across all your platforms
 
 ## Target Audience
 
 - Content creators who publish across multiple platforms
 - Founders and indie hackers managing their own social presence
+- Small businesses wanting consistent social media without hiring a manager
 - Professionals who want to stay active on social media without the overhead
+
+## Pricing
+
+- $29/month — single plan, everything included
+- Unlimited posts across all connected platforms
+- 7-day money-back guarantee
+- Cancel anytime, no contracts
+
+## Tech Stack
+
+- AI Agent: OpenClaw (open-source)
+- LLM: Kimi K2.5 by Moonshot
+- Messaging: Telegram Bot API
+- Social Media API: Late API (getlate.dev)
+- Hosting: Fly.io (isolated container per user)
 
 ## Important Pages
 
-- [Homepage](https://www.postclaw.io): Main landing page with product overview
+- [Homepage](https://www.postclaw.io): Main landing page with product overview, demo, and pricing
+- [Privacy Policy](https://www.postclaw.io/privacy): Privacy policy
+- [Terms of Service](https://www.postclaw.io/terms): Terms of service
 
 ## Contact
 
-- [Website](https://www.postclaw.io): Main website
-- [Support](mailto:admin@postclaw.io): Email support
-- [Twitter/X](https://x.com/postclaw): Follow for updates
+- Website: https://www.postclaw.io
+- Support: admin@postclaw.io
+- Twitter/X: https://x.com/postclaw
 
-## Optional
+## Category
 
-- Pricing: $29/month (single plan, everything included)
-- Category: SaaS, Social Media, AI, Content Creation
+SaaS, Social Media, AI, Content Creation, Automation, Telegram Bot
