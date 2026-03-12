@@ -12,16 +12,16 @@ const steps = [
   {
     icon: MessageSquare,
     step: "2",
-    title: "Chat with your bot",
+    title: "Chat with OpenClaw",
     description:
-      'Open Telegram and tell your bot what to post. "Write about our product launch" — plain language, nothing to learn.',
+      'Open Telegram and tell OpenClaw what to post. "Write about our product launch" — plain language, nothing to learn.',
   },
   {
     icon: Send,
     step: "3",
     title: "It writes, adapts, and publishes",
     description:
-      "Your bot rewrites the content for each platform\u2019s tone and format, then publishes everywhere. You\u2019re done.",
+      "OpenClaw rewrites the content for each platform\u2019s tone and format, then publishes everywhere. You\u2019re done.",
   },
 ];
 

@@ -14,7 +14,7 @@ const features = [
     icon: Sparkles,
     title: "Your content sounds\nnative everywhere",
     description:
-      "Your bot doesn\u2019t copy-paste. Your LinkedIn post sounds professional, your tweet is punchy, your Threads post is conversational \u2014 all from a single message.",
+      "OpenClaw doesn\u2019t copy-paste. Your LinkedIn post sounds professional, your tweet is punchy, your Threads post is conversational \u2014 all from a single message.",
   },
   {
     icon: Shield,

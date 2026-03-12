@@ -9,26 +9,8 @@ import SignInModal from "@/components/SignInModal";
 import AnimatedSection from "@/components/sections/AnimatedSection";
 import Image from "next/image";
 import { PLATFORMS } from "@/lib/constants/platforms";
-import type { HeroVariant } from "@/app/(home)/page";
 
-const heroContent = {
-  control: {
-    h1Start: "Publish to 13 Platforms.",
-    h1Prefix: "From ",
-    h1Highlight: "One Chat.",
-    subtitle:
-      "Tell your AI bot what to post on Telegram. It rewrites for each platform\u2019s tone and audience, then publishes everywhere \u2014 while you move on with your day.",
-  },
-  test: {
-    h1Start: "Your AI",
-    h1Prefix: "",
-    h1Highlight: "Social Media Manager.",
-    subtitle:
-      "Tell your AI agent what to post. It adapts your content for each platform\u2019s tone and audience, then schedules and publishes everywhere \u2014 so you don\u2019t have to.",
-  },
-} as const;
-
-export default function HeroSection({ variant }: { variant: HeroVariant }) {
+export default function HeroSection() {
   const { data: session } = useSession();
   const router = useRouter();
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
@@ -41,8 +23,6 @@ export default function HeroSection({ variant }: { variant: HeroVariant }) {
     setIsSignInModalOpen(true);
   };
 
-  const content = heroContent[variant];
-
   return (
     <section className="hero-dark-glow starfield min-h-[85vh] flex items-center">
       <div className="container mx-auto px-6 py-20 md:py-28">
@@ -50,16 +30,15 @@ export default function HeroSection({ variant }: { variant: HeroVariant }) {
           <div className="max-w-3xl lg:max-w-xl flex-shrink-0">
             <AnimatedSection>
               <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-bold leading-[1.1] tracking-tight mb-8 text-white">
-                {content.h1Start}
+                Your Own OpenClaw.
                 <br />
-                {content.h1Prefix}
-                <span className="text-[#e8614d]">{content.h1Highlight}</span>
+                Built for <span className="text-[#e8614d]">Social Media.</span>
               </h1>
             </AnimatedSection>
 
             <AnimatedSection delay={0.15}>
               <p className="text-lg md:text-xl leading-relaxed text-[#8a8f9e] max-w-xl mb-10">
-                {content.subtitle}
+                A private OpenClaw instance, pre-configured to write, adapt, and publish your content across 13 platforms. No server setup. No terminal. Just message OpenClaw on Telegram and go.
               </p>
             </AnimatedSection>
 

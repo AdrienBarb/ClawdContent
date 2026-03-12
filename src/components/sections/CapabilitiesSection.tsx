@@ -34,25 +34,25 @@ const capabilities = [
     icon: CalendarClock,
     title: "Schedule & Automate",
     description:
-      '\u201CPost this tomorrow at 9am.\u201D Schedule one-off posts or set up recurring content. Your bot handles the timing, even while you sleep.',
+      '\u201CPost this tomorrow at 9am.\u201D Schedule one-off posts or set up recurring content. OpenClaw handles the timing, even while you sleep.',
   },
   {
     icon: Brain,
     title: "Remember Your Brand Voice",
     description:
-      "Your bot learns your tone, style, and preferences over time. The more you use it, the more it sounds like you \u2014 not a generic AI.",
+      "OpenClaw learns your tone, style, and preferences over time. The more you use it, the more it sounds like you \u2014 not a generic AI.",
   },
   {
     icon: Globe,
     title: "Research the Web",
     description:
-      "Your bot browses the web to find trending topics, competitor activity, and industry news \u2014 then turns it into content ideas for you.",
+      "OpenClaw browses the web to find trending topics, competitor activity, and industry news \u2014 then turns it into content ideas for you.",
   },
   {
     icon: ImagePlus,
     title: "Generate Images",
     description:
-      "Need a visual for your post? Your bot creates images tailored for each platform \u2014 square for Instagram, vertical for Stories, landscape for X.",
+      "Need a visual for your post? OpenClaw creates images tailored for each platform \u2014 square for Instagram, vertical for Stories, landscape for X.",
   },
   {
     icon: CalendarDays,
@@ -64,7 +64,7 @@ const capabilities = [
     icon: Lightbulb,
     title: "Advise Your Strategy",
     description:
-      "Stuck on what to post? Ask for ideas. Your bot suggests content based on your niche, what\u2019s working, and what your audience engages with.",
+      "Stuck on what to post? Ask for ideas. OpenClaw suggests content based on your niche, what\u2019s working, and what your audience engages with.",
   },
 ];
 
@@ -75,7 +75,7 @@ export default function CapabilitiesSection() {
         <div className="mx-auto max-w-5xl">
           <AnimatedSection>
             <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 text-white">
-              What Your Bot Can Do
+              What OpenClaw Can Do
             </h2>
             <p className="text-center text-[#7a7f94] text-lg mb-16">
               More than a posting tool. It&apos;s your full content team in one

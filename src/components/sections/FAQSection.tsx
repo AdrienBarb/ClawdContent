@@ -4,7 +4,7 @@ const faqs = [
   {
     question: "How does it actually work?",
     answer:
-      "After you sign up and subscribe, we deploy a private AI bot just for you. You connect your social media accounts from the dashboard, then open Telegram and start chatting with your bot. Tell it what to post — it writes the content, adapts it for each platform, and publishes. That's it.",
+      "After you sign up and subscribe, we deploy a private OpenClaw instance just for you. You connect your social media accounts from the dashboard, then open Telegram and start chatting with OpenClaw. Tell it what to post — it writes the content, adapts it for each platform, and publishes. That's it.",
   },
   {
     question: "What is OpenClaw?",
@@ -19,7 +19,7 @@ const faqs = [
   {
     question: "Is the content actually good?",
     answer:
-      "Yes. Your bot uses advanced AI to write original content, not generic templates. It understands each platform's format, tone, and best practices — so your LinkedIn post sounds professional while your tweet is punchy and concise. You can also review and edit before publishing.",
+      "Yes. OpenClaw uses advanced AI to write original content, not generic templates. It understands each platform's format, tone, and best practices — so your LinkedIn post sounds professional while your tweet is punchy and concise. You can also review and edit before publishing.",
   },
   {
     question: "Is my data private?",
