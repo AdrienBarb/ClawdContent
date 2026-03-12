@@ -57,6 +57,9 @@ export default function Navbar() {
               {config.project.shortName || config.project.name}
             </Link>
             <div className="hidden md:flex items-center gap-6">
+              <a href="#who-is-this-for" className="text-sm text-[#8a8f9e] hover:text-white transition-colors">
+                Who It's For
+              </a>
               <a href="#how-it-works" className="text-sm text-[#8a8f9e] hover:text-white transition-colors">
                 How It Works
               </a>
@@ -105,6 +108,13 @@ export default function Navbar() {
 
         {isMobileMenuOpen && (
           <div className="md:hidden border-t border-[#1e2233]/50 bg-[#0d0f17]/95 backdrop-blur-md px-6 py-4 space-y-4">
+            <a
+              href="#who-is-this-for"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="block text-sm text-[#8a8f9e] hover:text-white transition-colors"
+            >
+              Who It's For
+            </a>
             <a
               href="#how-it-works"
               onClick={() => setIsMobileMenuOpen(false)}

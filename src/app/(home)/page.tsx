@@ -1,5 +1,6 @@
 import HeroSection from "@/components/sections/HeroSection";
 import PainSection from "@/components/sections/PainSection";
+import WhoIsThisForSection from "@/components/sections/WhoIsThisForSection";
 import HowItWorksSection from "@/components/sections/HowItWorksSection";
 import CapabilitiesSection from "@/components/sections/CapabilitiesSection";
 import FeaturesSection from "@/components/sections/FeaturesSection";
@@ -13,6 +14,7 @@ export default function Home() {
     <div className="flex flex-col">
       <HeroSection />
       <PainSection />
+      <WhoIsThisForSection />
       <HowItWorksSection />
       <CapabilitiesSection />
       <FeaturesSection />
