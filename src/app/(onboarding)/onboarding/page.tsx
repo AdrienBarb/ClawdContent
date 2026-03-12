@@ -66,7 +66,7 @@ const topicOptions = [
   "Lifestyle",
 ];
 
-const TOTAL_STEPS = 3;
+const TOTAL_STEPS = 2;
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -128,13 +128,15 @@ export default function OnboardingPage() {
           <span className="text-xs font-medium text-gray-400">
             Step {step} of {TOTAL_STEPS}
           </span>
-          <button
-            onClick={handleSkip}
-            className="text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
-            disabled={isPending}
-          >
-            Skip setup
-          </button>
+          {step === 2 && (
+            <button
+              onClick={handleSkip}
+              className="text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+              disabled={isPending}
+            >
+              Skip — you can update this later
+            </button>
+          )}
         </div>
         <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
           <div
@@ -144,7 +146,7 @@ export default function OnboardingPage() {
         </div>
       </div>
 
-      {/* Step 1: Telegram Bot Token (mandatory) */}
+      {/* Step 1: Telegram Bot Token */}
       {step === 1 && (
         <div className="w-full max-w-lg">
           <div className="text-center mb-8">
@@ -155,7 +157,7 @@ export default function OnboardingPage() {
               Connect your Telegram bot
             </h1>
             <p className="text-gray-500 mt-2">
-              PostClaw works through Telegram. Create a bot and paste its token
+              OpenClaw works through Telegram. Create a bot and paste its token
               below.
             </p>
           </div>
@@ -223,7 +225,6 @@ export default function OnboardingPage() {
             <Button
               onClick={() => setStep(2)}
               className="bg-[#e8614d] hover:bg-[#d4563f] text-white"
-              disabled={false}
             >
               Continue
               <ArrowRight className="h-4 w-4 ml-1.5" />
@@ -232,93 +233,74 @@ export default function OnboardingPage() {
         </div>
       )}
 
-      {/* Step 2: Role */}
+      {/* Step 2: Context (Role + Niche + Topics) */}
       {step === 2 && (
         <div className="w-full max-w-lg">
           <div className="text-center mb-8">
             <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-              What best describes you?
+              Better context, better posts
             </h1>
             <p className="text-gray-500 mt-2">
-              We&apos;ll tailor your bot&apos;s content strategy to your goals.
+              OpenClaw helps you create and publish content across 13+
+              social media platforms. The more it knows about your work,
+              the more relevant every post will be.
             </p>
           </div>
 
-          <div className="space-y-3">
-            {roles.map((role) => {
-              const isSelected = selectedRole === role.id;
-              return (
-                <button
-                  key={role.id}
-                  onClick={() => setSelectedRole(role.id)}
-                  className={`w-full flex items-center gap-4 rounded-xl border p-4 text-left transition-all cursor-pointer ${
-                    isSelected
-                      ? "border-[#e8614d] bg-[#e8614d]/5"
-                      : "border-gray-200 bg-white hover:border-gray-300"
-                  }`}
-                >
-                  <span
-                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
-                      isSelected
-                        ? "bg-[#e8614d] text-white"
-                        : "bg-gray-100 text-gray-500"
-                    }`}
-                  >
-                    <role.icon className="h-5 w-5" />
-                  </span>
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-gray-900">
-                      {role.label}
-                    </p>
-                    <p className="text-xs text-gray-500">{role.description}</p>
-                  </div>
-                  <span
-                    className={`h-5 w-5 shrink-0 rounded-full border-2 flex items-center justify-center ${
-                      isSelected
-                        ? "border-[#e8614d] bg-[#e8614d]"
-                        : "border-gray-300"
-                    }`}
-                  >
-                    {isSelected && <Check className="h-3 w-3 text-white" />}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+          <div className="space-y-8">
+            {/* Role */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                What best describes you?
+              </label>
+              <div className="space-y-2">
+                {roles.map((role) => {
+                  const isSelected = selectedRole === role.id;
+                  return (
+                    <button
+                      key={role.id}
+                      onClick={() => setSelectedRole(role.id)}
+                      className={`w-full flex items-center gap-4 rounded-xl border p-4 text-left transition-all cursor-pointer ${
+                        isSelected
+                          ? "border-[#e8614d] bg-[#e8614d]/5"
+                          : "border-gray-200 bg-white hover:border-gray-300"
+                      }`}
+                    >
+                      <span
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
+                          isSelected
+                            ? "bg-[#e8614d] text-white"
+                            : "bg-gray-100 text-gray-500"
+                        }`}
+                      >
+                        <role.icon className="h-5 w-5" />
+                      </span>
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-gray-900">
+                          {role.label}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {role.description}
+                        </p>
+                      </div>
+                      <span
+                        className={`h-5 w-5 shrink-0 rounded-full border-2 flex items-center justify-center ${
+                          isSelected
+                            ? "border-[#e8614d] bg-[#e8614d]"
+                            : "border-gray-300"
+                        }`}
+                      >
+                        {isSelected && (
+                          <Check className="h-3 w-3 text-white" />
+                        )}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
-          <div className="mt-8 flex justify-between">
-            <Button
-              variant="ghost"
-              onClick={() => setStep(1)}
-              className="text-gray-500"
-            >
-              <ArrowLeft className="h-4 w-4 mr-1.5" />
-              Back
-            </Button>
-            <Button
-              onClick={() => setStep(3)}
-              className="bg-[#e8614d] hover:bg-[#d4563f] text-white"
-            >
-              Continue
-              <ArrowRight className="h-4 w-4 ml-1.5" />
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Step 3: Niche & Topics */}
-      {step === 3 && (
-        <div className="w-full max-w-lg">
-          <div className="text-center mb-8">
-            <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-              What do you talk about?
-            </h1>
-            <p className="text-gray-500 mt-2">
-              Your bot needs to know your world to write like you.
-            </p>
-          </div>
-
-          <div className="space-y-6">
+            {/* Niche */}
             <div>
               <label
                 htmlFor="niche"
@@ -340,6 +322,7 @@ export default function OnboardingPage() {
               </p>
             </div>
 
+            {/* Topics */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Pick your main topics{" "}
@@ -404,7 +387,7 @@ export default function OnboardingPage() {
           <div className="mt-8 flex justify-between">
             <Button
               variant="ghost"
-              onClick={() => setStep(2)}
+              onClick={() => setStep(1)}
               className="text-gray-500"
             >
               <ArrowLeft className="h-4 w-4 mr-1.5" />

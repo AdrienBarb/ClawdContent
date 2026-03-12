@@ -41,7 +41,7 @@ export default function TelegramSetup({ onSuccess }: TelegramSetupProps) {
             Connect your Telegram bot
           </h1>
           <p className="text-gray-500 mt-2">
-            PostClaw works through Telegram. Create a bot and paste its token
+            OpenClaw works through Telegram. Create a bot and paste its token
             below.
           </p>
         </div>

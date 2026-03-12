@@ -2,7 +2,7 @@
 
 ## What is PostClaw?
 
-PostClaw is a SaaS ($39/mo) that gives each user a personal AI content manager on Telegram. Users chat with their bot to create, adapt, and publish social media posts across 13 text-friendly platforms (Twitter/X, LinkedIn, Bluesky, Threads).
+PostClaw is a SaaS ($39/mo) that gives each user a personal AI content manager on Telegram. Users chat with their bot to create, adapt, and publish social media posts across 13+ social media platforms via Late API.
 
 **How it works:**
 
@@ -188,10 +188,10 @@ The dashboard is **chat-first** — after subscribing, users land directly on th
 - **Accounts** (`/d/accounts`): Client component polling dashboard status. Shows connected accounts with disconnect (X) button + `ConnectAccountButtons` to add new ones.
 - **Channels** (`/d/channels`): Telegram channel card with connected/not-connected state. Opens `TelegramTokenModal` to set or update token.
 - **Telegram modal** (`TelegramTokenModal.tsx`): Links to OpenClaw docs (`docs.openclaw.ai/channels/telegram`).
-- **Connect buttons** (`ConnectAccountButtons.tsx`): Platform icons with brand colors for Twitter/X, LinkedIn, Bluesky, Threads.
+- **Connect buttons** (`ConnectAccountButtons.tsx`): Platform icons with brand colors.
 - **Content area**: Light gray background (`#f8f9fc`), white rounded cards, `max-w-5xl`.
 
-Supported platforms: **Twitter/X**, **LinkedIn**, **Bluesky**, **Threads**. Media uploads (images/videos) supported via Cloudinary.
+Supported platforms: **13+ social media platforms** via Late API (Twitter/X, LinkedIn, Bluesky, Threads, Facebook, Instagram, Pinterest, TikTok, YouTube, Reddit, Mastodon, Telegram, and more). Media uploads (images/videos) supported via Cloudinary.
 
 ---
 

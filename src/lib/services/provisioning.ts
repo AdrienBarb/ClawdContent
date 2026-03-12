@@ -243,6 +243,14 @@ const ROLE_LABELS: Record<string, string> = {
   marketing_manager: "Marketing Manager",
 };
 
+export function formatUserContextFromData(user: {
+  onboardingRole: string | null;
+  onboardingNiche: string | null;
+  onboardingTopics: string[];
+}): string {
+  return formatUserContext(user);
+}
+
 function formatUserContext(user: {
   onboardingRole: string | null;
   onboardingNiche: string | null;

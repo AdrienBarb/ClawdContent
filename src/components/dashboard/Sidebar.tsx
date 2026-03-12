@@ -11,6 +11,7 @@ import {
   Settings,
   LogOut,
   Menu,
+  UserCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -25,6 +26,7 @@ import { useState } from "react";
 const navItems = [
   { href: appRouter.dashboard, label: "Bot", icon: Bot },
   { href: appRouter.accounts, label: "Accounts", icon: Share2 },
+  { href: appRouter.context, label: "Context", icon: UserCircle },
   { href: appRouter.billing, label: "Billing", icon: CreditCard },
   { href: appRouter.settings, label: "Settings", icon: Settings },
 ];

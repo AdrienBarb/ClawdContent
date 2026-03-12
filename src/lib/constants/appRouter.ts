@@ -18,6 +18,7 @@ export const appRouter = {
   accounts: "/d/accounts",
   posts: "/d/posts",
   accountsCallback: "/d/accounts/callback",
+  context: "/d/context",
   settings: "/d/settings",
   billing: "/d/billing",
   onboarding: "/onboarding",
@@ -39,6 +40,7 @@ export const appRouter = {
     mediaUpload: "/api/media/upload",
     transcribe: "/api/transcribe",
     userTimezone: "/api/user/timezone",
+    userContext: "/api/user/context",
     onboarding: "/api/onboarding",
     dashboardStatus: "/api/dashboard/status",
     webhooks: {
