@@ -3,7 +3,8 @@ import { stripe } from "@/lib/stripe/client";
 
 export async function createCheckoutSession(
   userId: string,
-  email: string
+  email: string,
+  affonsoReferral?: string
 ): Promise<string> {
   const existing = await prisma.subscription.findUnique({
     where: { userId },
@@ -41,7 +42,10 @@ export async function createCheckoutSession(
     line_items: [{ price: priceId, quantity: 1 }],
     success_url: `${baseUrl}/d?payment=success`,
     cancel_url: `${baseUrl}/d`,
-    metadata: { userId },
+    metadata: {
+      userId,
+      ...(affonsoReferral && { affonso_referral: affonsoReferral }),
+    },
     subscription_data: {
       metadata: { userId },
     },

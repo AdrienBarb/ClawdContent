@@ -3,7 +3,7 @@ import { errorHandler } from "@/lib/errors/errorHandler";
 import { auth } from "@/lib/better-auth/auth";
 import { createCheckoutSession } from "@/lib/services/subscription";
 import { NextResponse, NextRequest } from "next/server";
-import { headers } from "next/headers";
+import { headers, cookies } from "next/headers";
 
 export async function POST(req: NextRequest) {
   try {
@@ -18,9 +18,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const cookieStore = await cookies();
+    const affonsoReferral = cookieStore.get("affonso_referral")?.value || "";
+
     const url = await createCheckoutSession(
       session.user.id,
-      session.user.email
+      session.user.email,
+      affonsoReferral
     );
 
     return NextResponse.json({ url }, { status: 200 });
