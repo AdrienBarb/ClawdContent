@@ -4,6 +4,7 @@ export const appRouter = {
   home: "/",
   pricing: "/pricing",
   blog: "/blog",
+  affiliates: "/affiliates",
   privacy: "/privacy",
   terms: "/terms",
 

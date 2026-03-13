@@ -12,6 +12,7 @@ import {
   LogOut,
   Menu,
   UserCircle,
+  Gift,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -116,6 +117,29 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           );
         })}
       </nav>
+
+      {/* Affiliates */}
+      <div className="px-3 pb-3">
+        <Link
+          href={appRouter.affiliates}
+          onClick={onNavigate}
+          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150"
+          style={{
+            color: "var(--sidebar-text)",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "var(--sidebar-bg-hover)";
+            e.currentTarget.style.color = "var(--sidebar-text-active)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "transparent";
+            e.currentTarget.style.color = "var(--sidebar-text)";
+          }}
+        >
+          <Gift className="h-[18px] w-[18px] shrink-0" />
+          Affiliates
+        </Link>
+      </div>
 
       {/* User section */}
       <div

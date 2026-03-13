@@ -66,6 +66,9 @@ export default function Navbar() {
               <a href="#pricing" className="text-sm text-[#8a8f9e] hover:text-white transition-colors">
                 Pricing
               </a>
+              <Link href="/affiliates" className="text-sm text-[#8a8f9e] hover:text-white transition-colors">
+                Affiliates
+              </Link>
             </div>
           </div>
 
@@ -129,6 +132,13 @@ export default function Navbar() {
             >
               Pricing
             </a>
+            <Link
+              href="/affiliates"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="block text-sm text-[#8a8f9e] hover:text-white transition-colors"
+            >
+              Affiliates
+            </Link>
             {config.features.auth && !session?.user && (
               <Button
                 onClick={() => {

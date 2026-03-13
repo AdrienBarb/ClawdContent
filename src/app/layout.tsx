@@ -35,6 +35,12 @@ export default function RootLayout({
         <Script id="reddit-pixel" strategy="afterInteractive">
           {`!function(w,d){if(!w.rdt){var p=w.rdt=function(){p.sendEvent?p.sendEvent.apply(p,arguments):p.callQueue.push(arguments)};p.callQueue=[];var t=d.createElement("script");t.src="https://www.redditstatic.com/ads/pixel.js?pixel_id=a2_hydv97z4rbjb",t.async=!0;var s=d.getElementsByTagName("script")[0];s.parentNode.insertBefore(t,s)}}(window,document);rdt('init','a2_hydv97z4rbjb');rdt('track','PageVisit');`}
         </Script>
+        <Script
+          src="https://cdn.affonso.io/js/pixel.min.js"
+          data-affonso="cmmp272p100dbfezm2z469o0w"
+          data-cookie_duration="30"
+          strategy="afterInteractive"
+        />
       </head>
       <body className={`${dmSans.variable} antialiased`}>
         <QueryProviders>

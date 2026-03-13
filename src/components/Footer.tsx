@@ -60,6 +60,14 @@ export default async function Footer() {
                   Blog
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/affiliates"
+                  className="hover:text-[#e8614d] transition-colors"
+                >
+                  Affiliates
+                </Link>
+              </li>
             </ul>
           </div>
 
