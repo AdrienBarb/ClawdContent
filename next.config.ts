@@ -14,8 +14,8 @@ const securityHeaders = [
     value: "nosniff",
   },
   {
-    key: "X-Frame-Options",
-    value: "SAMEORIGIN",
+    key: "Content-Security-Policy",
+    value: "frame-ancestors 'self' https://rankinpublic.xyz",
   },
   {
     key: "X-XSS-Protection",
