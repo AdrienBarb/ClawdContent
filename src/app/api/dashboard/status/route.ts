@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/db/prisma";
 import { getBotStatus } from "@/lib/services/bot";
+import { getPlan, type PlanId } from "@/lib/constants/plans";
 
 export async function GET() {
   try {
@@ -33,15 +34,24 @@ export async function GET() {
       }),
     ]);
 
+    const planId = (subscription?.planId as PlanId) || "starter";
+    const plan = getPlan(planId);
+
     return NextResponse.json({
       timezone: user?.timezone ?? null,
       subscription: subscription
         ? {
             status: subscription.status,
+            planId: subscription.planId,
             cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
             currentPeriodEnd: subscription.currentPeriodEnd,
           }
         : null,
+      plan: {
+        id: planId,
+        name: plan.name,
+        socialAccountLimit: plan.socialAccountLimit,
+      },
       botStatus: botStatus?.status ?? null,
       hasTelegramToken: botStatus?.hasTelegramToken ?? false,
       accountCount: lateProfile?.socialAccounts?.length ?? 0,

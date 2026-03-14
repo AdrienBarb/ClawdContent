@@ -6,6 +6,8 @@ import { headers } from "next/headers";
 import { getConnectUrl } from "@/lib/services/accounts";
 import { connectAccountSchema } from "@/lib/schemas/accounts";
 import { appRouter } from "@/lib/constants/appRouter";
+import { prisma } from "@/lib/db/prisma";
+import { getPlan, type PlanId } from "@/lib/constants/plans";
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,6 +24,33 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const { platform } = connectAccountSchema.parse(body);
+
+    // Check account limit for user's plan
+    const [subscription, lateProfile] = await Promise.all([
+      prisma.subscription.findUnique({
+        where: { userId: session.user.id },
+      }),
+      prisma.lateProfile.findUnique({
+        where: { userId: session.user.id },
+        include: { socialAccounts: { where: { status: "active" } } },
+      }),
+    ]);
+
+    const planId = (subscription?.planId as PlanId) || "starter";
+    const plan = getPlan(planId);
+    const activeAccountCount = lateProfile?.socialAccounts?.length ?? 0;
+
+    if (activeAccountCount >= plan.socialAccountLimit) {
+      return NextResponse.json(
+        {
+          error: "ACCOUNT_LIMIT_REACHED",
+          limit: plan.socialAccountLimit,
+          planId,
+          planName: plan.name,
+        },
+        { status: 403 }
+      );
+    }
 
     const baseUrl =
       process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";

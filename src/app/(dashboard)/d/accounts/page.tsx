@@ -8,11 +8,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Share2, Plus, X, Loader2, Lock } from "lucide-react";
 import ConnectAccountButtons from "@/components/dashboard/ConnectAccountButtons";
 import SubscribeModal from "@/components/dashboard/SubscribeModal";
+import UpgradeModal from "@/components/dashboard/UpgradeModal";
 import toast from "react-hot-toast";
 
 interface DashboardStatus {
   botStatus: string | null;
-  subscription: { status: string } | null;
+  subscription: { status: string; planId: string } | null;
+  plan: { id: string; name: string; socialAccountLimit: number };
   accounts: Array<{
     id: string;
     platform: string;
@@ -25,6 +27,7 @@ export default function AccountsPage() {
   const { useGet, usePost } = useApi();
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
   const [showSubscribeModal, setShowSubscribeModal] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const {
     data: status,
@@ -66,9 +69,14 @@ export default function AccountsPage() {
   const connectedPlatforms = accounts
     .filter((a) => a.status === "active")
     .map((a) => a.platform);
+  const isBotReady = status?.botStatus === "running";
   const isDeploying =
-    status?.botStatus === "deploying" || status?.botStatus === "pending";
-  const isDisabled = !hasActiveSubscription || isDeploying;
+    hasActiveSubscription && !isBotReady;
+  const isDisabled = !hasActiveSubscription || !isBotReady;
+
+  const plan = status?.plan;
+  const accountLimit = plan?.socialAccountLimit ?? 2;
+  const isAtLimit = activeCount >= accountLimit;
 
   if (isLoading) {
     return (
@@ -90,6 +98,31 @@ export default function AccountsPage() {
           Manage your connected social media accounts.
         </p>
       </div>
+
+      {/* Account limit indicator */}
+      {hasActiveSubscription && plan && (
+        <div className="rounded-2xl border border-gray-100 bg-white p-4 flex items-center justify-between shadow-sm">
+          <div>
+            <p className="text-sm font-medium text-gray-900">
+              {activeCount} / {accountLimit} accounts connected
+            </p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              {plan.name} plan
+              {isAtLimit && " — upgrade for more accounts"}
+            </p>
+          </div>
+          <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${
+                isAtLimit ? "bg-amber-400" : "bg-[#e8614d]"
+              }`}
+              style={{
+                width: `${Math.min((activeCount / accountLimit) * 100, 100)}%`,
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Subscription gate banner */}
       {!hasActiveSubscription && (
@@ -197,11 +230,13 @@ export default function AccountsPage() {
         <ConnectAccountButtons
           onAccountConnected={refetch}
           connectedPlatforms={connectedPlatforms}
-          disabled={isDisabled}
+          disabled={isDisabled || isAtLimit}
           onDisabledClick={
             !hasActiveSubscription
               ? () => setShowSubscribeModal(true)
-              : undefined
+              : isAtLimit
+                ? () => setShowUpgradeModal(true)
+                : undefined
           }
         />
         {isDeploying && hasActiveSubscription && (
@@ -214,12 +249,32 @@ export default function AccountsPage() {
             Launch your bot to connect social accounts.
           </p>
         )}
+        {isAtLimit && hasActiveSubscription && (
+          <p className="text-xs text-amber-500 mt-2">
+            You&apos;ve reached your {plan?.name} plan limit.{" "}
+            <button
+              onClick={() => setShowUpgradeModal(true)}
+              className="text-[#e8614d] font-medium hover:underline cursor-pointer"
+            >
+              Upgrade for more accounts
+            </button>
+          </p>
+        )}
       </div>
 
       <SubscribeModal
         open={showSubscribeModal}
         onOpenChange={setShowSubscribeModal}
       />
+
+      {plan && (
+        <UpgradeModal
+          open={showUpgradeModal}
+          onOpenChange={setShowUpgradeModal}
+          currentPlanName={plan.name}
+          accountLimit={accountLimit}
+        />
+      )}
     </div>
   );
 }

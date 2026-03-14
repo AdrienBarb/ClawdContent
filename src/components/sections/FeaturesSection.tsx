@@ -45,7 +45,7 @@ const comparisons = [
   },
   {
     without: "$200/mo in tools or $2,000/mo for a freelancer",
-    with: "$29/mo \u2014 everything included",
+    with: "From $17/mo \u2014 everything included",
   },
 ];
 

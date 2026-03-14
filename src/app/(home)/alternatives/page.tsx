@@ -104,7 +104,7 @@ export default async function AlternativesPage() {
         <p className="text-[#7a7f94] mb-6">
           Your personal AI content manager on Telegram. Create, adapt, and
           publish to 13+ social platforms — all from one chat. Starting at
-          $29/month.
+          Plans from $17/month.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Button

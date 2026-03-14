@@ -2,6 +2,7 @@ import { errorMessages } from "@/lib/constants/errorMessage";
 import { errorHandler } from "@/lib/errors/errorHandler";
 import { auth } from "@/lib/better-auth/auth";
 import { createCheckoutSession } from "@/lib/services/subscription";
+import { checkoutSchema } from "@/lib/schemas/checkout";
 import { NextResponse, NextRequest } from "next/server";
 import { headers, cookies } from "next/headers";
 
@@ -18,12 +19,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const body = await req.json();
+    const { planId, interval } = checkoutSchema.parse(body);
+
     const cookieStore = await cookies();
     const affonsoReferral = cookieStore.get("affonso_referral")?.value || "";
 
     const url = await createCheckoutSession(
       session.user.id,
       session.user.email,
+      planId,
+      interval,
       affonsoReferral
     );
 

@@ -17,7 +17,7 @@ PostClaw provides each user with their own private AI bot on Telegram, powered b
 
 ## How It Works
 
-1. Sign up and subscribe ($29/month)
+1. Sign up and choose a plan (from $17/month)
 2. Connect your social media accounts from the dashboard
 3. Open Telegram and start chatting with your personal AI bot
 4. Tell it what to post — it writes, adapts, and publishes across all your platforms
@@ -31,8 +31,11 @@ PostClaw provides each user with their own private AI bot on Telegram, powered b
 
 ## Pricing
 
-- $29/month — single plan, everything included
-- Unlimited posts across all connected platforms
+- Starter: $17/month — 2 social accounts
+- Pro: $37/month — 6 social accounts, 3-day free trial
+- Business: $79/month — all 13 social accounts, 3-day free trial, priority support
+- Annual billing available (30% off)
+- Unlimited posts on all plans
 - 7-day money-back guarantee
 - Cancel anytime, no contracts
 

@@ -36,12 +36,29 @@ const softwareAppSchema = {
   operatingSystem: "Web",
   description: config.seo.description,
   url: config.project.url,
-  offers: {
-    "@type": "Offer",
-    price: "29",
-    priceCurrency: "USD",
-    availability: "https://schema.org/InStock",
-  },
+  offers: [
+    {
+      "@type": "Offer",
+      name: "Starter",
+      price: "17",
+      priceCurrency: "USD",
+      availability: "https://schema.org/InStock",
+    },
+    {
+      "@type": "Offer",
+      name: "Pro",
+      price: "37",
+      priceCurrency: "USD",
+      availability: "https://schema.org/InStock",
+    },
+    {
+      "@type": "Offer",
+      name: "Business",
+      price: "79",
+      priceCurrency: "USD",
+      availability: "https://schema.org/InStock",
+    },
+  ],
   aggregateRating: undefined,
 };
 

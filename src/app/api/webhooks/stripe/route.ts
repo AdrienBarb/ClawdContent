@@ -5,6 +5,7 @@ import { stripe } from "@/lib/stripe/client";
 import { errorMessages } from "@/lib/constants/errorMessage";
 import { prisma } from "@/lib/db/prisma";
 import { deprovisionUser } from "@/lib/services/provisioning";
+import { getPlanFromStripePriceId } from "@/lib/constants/plans";
 
 export async function POST(req: NextRequest) {
   const sig = req.headers.get("stripe-signature");
@@ -114,6 +115,23 @@ function getSubscriptionIdFromInvoice(
   return typeof subRef === "string" ? subRef : subRef.id;
 }
 
+function resolvePlanId(subscription: Stripe.Subscription): string {
+  // Try metadata first (set during checkout or plan change)
+  if (subscription.metadata?.planId) {
+    return subscription.metadata.planId;
+  }
+
+  // Fall back to reverse-mapping from Stripe price ID
+  const priceId = subscription.items?.data?.[0]?.price?.id;
+  if (priceId) {
+    const mapped = getPlanFromStripePriceId(priceId);
+    if (mapped) return mapped.planId;
+  }
+
+  // Default for legacy subscriptions
+  return "pro";
+}
+
 // ─── Event Handlers ───────────────────────────────────────────────
 
 async function handleCheckoutCompleted(
@@ -132,6 +150,8 @@ async function handleCheckoutCompleted(
     console.error("Missing userId in checkout metadata");
     return;
   }
+
+  const planId = session.metadata?.planId || "pro";
 
   const subscriptionId =
     typeof session.subscription === "string"
@@ -165,6 +185,7 @@ async function handleCheckoutCompleted(
       stripeCustomerId: customerId,
       stripeSubscriptionId: subscriptionId,
       status: sub.status,
+      planId,
       currentPeriodStart: period.start,
       currentPeriodEnd: period.end,
     },
@@ -172,6 +193,7 @@ async function handleCheckoutCompleted(
       stripeCustomerId: customerId,
       stripeSubscriptionId: subscriptionId,
       status: sub.status,
+      planId,
       currentPeriodStart: period.start,
       currentPeriodEnd: period.end,
     },
@@ -193,6 +215,7 @@ async function handleSubscriptionCreated(
       : subscription.customer.id;
 
   const period = getSubscriptionPeriod(subscription);
+  const planId = resolvePlanId(subscription);
 
   // Idempotent upsert — checkout.session.completed may have already handled this
   await prisma.subscription.upsert({
@@ -202,11 +225,13 @@ async function handleSubscriptionCreated(
       stripeCustomerId: customerId,
       stripeSubscriptionId: subscription.id,
       status: subscription.status,
+      planId,
       currentPeriodStart: period.start,
       currentPeriodEnd: period.end,
     },
     update: {
       status: subscription.status,
+      planId,
       currentPeriodStart: period.start,
       currentPeriodEnd: period.end,
     },
@@ -226,11 +251,13 @@ async function handleSubscriptionUpdated(
   }
 
   const period = getSubscriptionPeriod(subscription);
+  const planId = resolvePlanId(subscription);
 
   await prisma.subscription.update({
     where: { stripeSubscriptionId: subscription.id },
     data: {
       status: subscription.status,
+      planId,
       currentPeriodStart: period.start,
       currentPeriodEnd: period.end,
       cancelAtPeriodEnd: subscription.cancel_at_period_end,

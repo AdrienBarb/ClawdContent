@@ -36,24 +36,8 @@
     "twitter": "https://x.com/postclaw"
   },
   "pricing": {
-    "plan": {
-      "id": "postclaw",
-      "name": "PostClaw",
-      "price": "$29",
-      "period": "/month",
-      "description": "Everything you need to publish everywhere, from one Telegram chat.",
-      "features": [
-        "Publish to 13 social platforms",
-        "Unlimited posts",
-        "Personal AI bot on Telegram",
-        "AI-adapted content per platform",
-        "Connect unlimited social accounts",
-        "Private, isolated bot instance",
-        "24/7 always-on bot",
-        "7-day money-back guarantee",
-        "Cancel anytime — no contracts"
-      ]
-    }
+    "description": "Choose the plan that fits your needs.",
+    "yearlyDiscountPercent": 30
   },
   "features": {
     "auth": {

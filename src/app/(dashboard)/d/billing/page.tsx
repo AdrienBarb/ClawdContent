@@ -6,6 +6,8 @@ import { prisma } from "@/lib/db/prisma";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ManageSubscriptionButton } from "./ManageSubscriptionButton";
 import BillingUnsubscribed from "@/components/dashboard/BillingUnsubscribed";
+import ChangePlanSection from "@/components/dashboard/ChangePlanSection";
+import { getPlan, type PlanId } from "@/lib/constants/plans";
 
 async function BillingContent() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -21,6 +23,16 @@ async function BillingContent() {
 
   const isActive =
     subscription.status === "active" || subscription.status === "trialing";
+
+  const planId = (subscription.planId as PlanId) || "pro";
+  const plan = getPlan(planId);
+
+  const lateProfile = await prisma.lateProfile.findUnique({
+    where: { userId: session.user.id },
+    include: { socialAccounts: { where: { status: "active" } } },
+  });
+
+  const activeAccountCount = lateProfile?.socialAccounts?.length ?? 0;
 
   return (
     <div className="space-y-8">
@@ -38,9 +50,44 @@ async function BillingContent() {
           Current Plan
         </p>
 
-        <div className="flex items-baseline gap-1 mb-5">
-          <span className="text-4xl font-semibold text-gray-900">$29</span>
+        <div className="flex items-center gap-3 mb-4">
+          <h2 className="text-2xl font-semibold text-gray-900">{plan.name}</h2>
+          {subscription.status === "trialing" && (
+            <span className="text-xs font-medium bg-green-50 text-green-700 px-2.5 py-0.5 rounded-full">
+              Trial
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-baseline gap-1 mb-4">
+          <span className="text-4xl font-semibold text-gray-900">
+            ${plan.monthlyPrice}
+          </span>
           <span className="text-gray-400 text-lg">/month</span>
+        </div>
+
+        {/* Usage */}
+        <div className="flex items-center gap-3 mb-4 p-3 rounded-xl bg-gray-50">
+          <div className="flex-1">
+            <p className="text-sm font-medium text-gray-700">
+              Social accounts: {activeAccountCount} / {plan.socialAccountLimit}
+            </p>
+          </div>
+          <div className="w-20 h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full ${
+                activeAccountCount >= plan.socialAccountLimit
+                  ? "bg-amber-400"
+                  : "bg-[#e8614d]"
+              }`}
+              style={{
+                width: `${Math.min(
+                  (activeAccountCount / plan.socialAccountLimit) * 100,
+                  100
+                )}%`,
+              }}
+            />
+          </div>
         </div>
 
         <div className="flex items-center gap-2.5 mb-2">
@@ -68,6 +115,9 @@ async function BillingContent() {
           <ManageSubscriptionButton />
         </div>
       </div>
+
+      {/* Change Plan */}
+      {isActive && <ChangePlanSection currentPlanId={planId} />}
     </div>
   );
 }

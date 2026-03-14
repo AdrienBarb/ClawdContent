@@ -83,7 +83,8 @@ model Subscription {
   user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   stripeCustomerId     String   @unique
   stripeSubscriptionId String   @unique
-  status               String   @default("incomplete") // active, past_due, canceled, incomplete
+  status               String   @default("incomplete") // active, past_due, canceled, incomplete, trialing
+  planId               String   @default("pro") // starter, pro, business
   currentPeriodStart   DateTime?
   currentPeriodEnd     DateTime?
   cancelAtPeriodEnd    Boolean  @default(false)

@@ -1,9 +1,17 @@
 import { prisma } from "@/lib/db/prisma";
 import { stripe } from "@/lib/stripe/client";
+import {
+  type PlanId,
+  type BillingInterval,
+  getPlan,
+  getStripePriceId,
+} from "@/lib/constants/plans";
 
 export async function createCheckoutSession(
   userId: string,
   email: string,
+  planId: PlanId,
+  interval: BillingInterval,
   affonsoReferral?: string
 ): Promise<string> {
   const existing = await prisma.subscription.findUnique({
@@ -28,10 +36,8 @@ export async function createCheckoutSession(
     customerId = customer.id;
   }
 
-  const priceId = process.env.STRIPE_PRICE_ID;
-  if (!priceId) {
-    throw new Error("Missing STRIPE_PRICE_ID environment variable");
-  }
+  const priceId = getStripePriceId(planId, interval);
+  const plan = getPlan(planId);
 
   const baseUrl =
     process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
@@ -44,11 +50,16 @@ export async function createCheckoutSession(
     cancel_url: `${baseUrl}/d`,
     metadata: {
       userId,
+      planId,
       ...(affonsoReferral && { affonso_referral: affonsoReferral }),
     },
     subscription_data: {
-      metadata: { userId },
+      metadata: { userId, planId },
+      ...(plan.hasTrial && { trial_period_days: plan.trialDays }),
     },
+    ...(plan.hasTrial && {
+      payment_method_collection: "if_required" as const,
+    }),
   });
 
   if (!session.url) {
@@ -80,6 +91,55 @@ export async function createPortalSession(userId: string): Promise<string> {
   });
 
   return portalSession.url;
+}
+
+export async function changePlan(
+  userId: string,
+  newPlanId: PlanId,
+  newInterval: BillingInterval
+): Promise<void> {
+  const subscription = await prisma.subscription.findUnique({
+    where: { userId },
+  });
+
+  if (!subscription) {
+    throw new Error("NO_SUBSCRIPTION");
+  }
+
+  if (
+    subscription.status !== "active" &&
+    subscription.status !== "trialing"
+  ) {
+    throw new Error("SUBSCRIPTION_NOT_ACTIVE");
+  }
+
+  const newPriceId = getStripePriceId(newPlanId, newInterval);
+
+  const stripeSub = await stripe.subscriptions.retrieve(
+    subscription.stripeSubscriptionId
+  );
+
+  const item = stripeSub.items.data[0];
+  if (!item) {
+    throw new Error("No subscription item found");
+  }
+
+  // Check if this is the same price (no change needed)
+  if (item.price.id === newPriceId) {
+    throw new Error("SAME_PLAN");
+  }
+
+  await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+    items: [{ id: item.id, price: newPriceId }],
+    proration_behavior: "create_prorations",
+    metadata: { userId, planId: newPlanId },
+  });
+
+  // Update DB immediately (webhook will also update, idempotent)
+  await prisma.subscription.update({
+    where: { userId },
+    data: { planId: newPlanId },
+  });
 }
 
 export async function syncSubscriptionStatus(

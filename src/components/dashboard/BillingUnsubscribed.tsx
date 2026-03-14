@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { CreditCard } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import SubscribeModal from "@/components/dashboard/SubscribeModal";
 
 export default function BillingUnsubscribed() {
@@ -28,12 +27,12 @@ export default function BillingUnsubscribed() {
           <p className="text-xs text-gray-400 mb-4">
             Subscribe to get your personal AI content manager.
           </p>
-          <Button
-            className="bg-[#e8614d] hover:bg-[#d4563f] text-white"
+          <button
+            className="inline-flex items-center justify-center rounded-md bg-[#e8614d] hover:bg-[#d4563f] text-white px-6 py-2.5 text-sm font-medium transition-colors cursor-pointer"
             onClick={() => setShowModal(true)}
           >
-            Get started — $29/mo
-          </Button>
+            View plans
+          </button>
         </div>
       </div>
 
