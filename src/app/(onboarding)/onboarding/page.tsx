@@ -128,15 +128,13 @@ export default function OnboardingPage() {
           <span className="text-xs font-medium text-gray-400">
             Step {step} of {TOTAL_STEPS}
           </span>
-          {step === 2 && (
-            <button
-              onClick={handleSkip}
-              className="text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
-              disabled={isPending}
-            >
-              Skip — you can update this later
-            </button>
-          )}
+          <button
+            onClick={step === 1 ? () => setStep(2) : handleSkip}
+            className="text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+            disabled={isPending}
+          >
+            Skip — you can {step === 1 ? "connect later" : "update this later"}
+          </button>
         </div>
         <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
           <div
