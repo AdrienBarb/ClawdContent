@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { appRouter } from "@/lib/constants/appRouter";
 import useApi from "@/lib/hooks/useApi";
 import TelegramSetup from "@/components/dashboard/TelegramSetup";
-import BotDashboard from "@/components/dashboard/BotDashboard";
+import ChatWithLoader from "@/components/dashboard/ChatWithLoader";
 import SubscribeModal from "@/components/dashboard/SubscribeModal";
 
 interface DashboardFlowProps {
@@ -43,7 +43,7 @@ export default function DashboardFlow({
 
   // Bot already provisioned → full dashboard
   if (initialHasFlyMachine || launched) {
-    return <BotDashboard />;
+    return <ChatWithLoader />;
   }
 
   // No Telegram token yet → show setup (with subscribe modal overlay if needed)

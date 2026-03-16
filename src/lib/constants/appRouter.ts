@@ -44,6 +44,8 @@ export const appRouter = {
     userTimezone: "/api/user/timezone",
     userContext: "/api/user/context",
     onboarding: "/api/onboarding",
+    chat: "/api/chat",
+    chatHistory: "/api/chat/history",
     dashboardStatus: "/api/dashboard/status",
     webhooks: {
       stripe: "/api/webhooks/stripe",
