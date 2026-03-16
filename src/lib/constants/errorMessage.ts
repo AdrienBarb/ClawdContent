@@ -14,7 +14,6 @@ export const errorMessages = {
   ALREADY_SUBSCRIBED: "You already have an active subscription.",
   PROVISIONING_FAILED: "Failed to set up your bot. Please contact support.",
   BOT_NOT_FOUND: "Bot not found. Please set up your bot first.",
-  INVALID_TELEGRAM_TOKEN: "Invalid Telegram bot token format.",
   SUBSCRIPTION_REQUIRED: "An active subscription is required.",
   LATE_API_ERROR: "Failed to communicate with social media service.",
   TRANSCRIPTION_FAILED: "Failed to transcribe audio. Please try again.",

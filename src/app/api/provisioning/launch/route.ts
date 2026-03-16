@@ -33,18 +33,6 @@ export async function POST() {
       );
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { telegramBotToken: true },
-    });
-
-    if (!user?.telegramBotToken) {
-      return NextResponse.json(
-        { error: "Telegram bot token is required before launching" },
-        { status: 400 }
-      );
-    }
-
     await provisionUser(session.user.id, session.user.name);
 
     return NextResponse.json({ success: true }, { status: 200 });

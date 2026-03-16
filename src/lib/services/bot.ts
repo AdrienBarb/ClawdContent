@@ -5,8 +5,6 @@ import {
   updateMachineEnv,
   updateMachineImage,
 } from "@/lib/fly/mutations";
-import { updateContainerEnvVars } from "./provisioning";
-
 export async function getBotStatus(userId: string) {
   const flyMachine = await prisma.flyMachine.findUnique({
     where: { userId },
@@ -36,17 +34,6 @@ export async function getBotStatus(userId: string) {
   }
 
   return flyMachine;
-}
-
-export async function setTelegramToken(
-  userId: string,
-  token: string
-): Promise<void> {
-  await updateContainerEnvVars(userId, { TELEGRAM_BOT_TOKEN: token });
-  await prisma.flyMachine.update({
-    where: { userId },
-    data: { hasTelegramToken: true },
-  });
 }
 
 export async function updateBotImage(

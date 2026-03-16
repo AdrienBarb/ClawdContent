@@ -68,7 +68,7 @@ export interface SharedFeature {
 }
 
 export const SHARED_FEATURES: SharedFeature[] = [
-  { label: "Personal OpenClaw on Telegram", includedIn: "all" },
+  { label: "Personal AI content manager", includedIn: "all" },
   { label: "Private, isolated instance", includedIn: "all" },
   { label: "24/7 always-on bot", includedIn: "all" },
   { label: "Unlimited posts", includedIn: "all" },

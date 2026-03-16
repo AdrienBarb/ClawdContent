@@ -5,11 +5,10 @@ import { NextResponse, NextRequest } from "next/server";
 import { headers } from "next/headers";
 import {
   getBotStatus,
-  setTelegramToken,
   restartBot,
   updateBotImage,
 } from "@/lib/services/bot";
-import { telegramTokenSchema, botImageSchema } from "@/lib/schemas/bot";
+import { botImageSchema } from "@/lib/schemas/bot";
 
 export async function GET() {
   try {
@@ -34,30 +33,6 @@ export async function GET() {
     }
 
     return NextResponse.json(status, { status: 200 });
-  } catch (error) {
-    return errorHandler(error);
-  }
-}
-
-export async function POST(req: NextRequest) {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: errorMessages.UNAUTHORIZED },
-        { status: 401 }
-      );
-    }
-
-    const body = await req.json();
-    const { token } = telegramTokenSchema.parse(body);
-
-    await setTelegramToken(session.user.id, token);
-
-    return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
     return errorHandler(error);
   }

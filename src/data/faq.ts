@@ -2,12 +2,12 @@ export const faqs = [
   {
     question: "How does it actually work?",
     answer:
-      "After you sign up and subscribe, we deploy a private OpenClaw instance just for you. You connect your social media accounts from the dashboard, then open Telegram and start chatting with OpenClaw. Tell it what to post — it writes the content, adapts it for each platform, and publishes. That's it.",
+      "After you sign up and subscribe, we deploy a private OpenClaw instance just for you. You connect your social media accounts from the dashboard, then start chatting with your AI assistant. Tell it what to post — it writes the content, adapts it for each platform, and publishes. That's it.",
   },
   {
     question: "What is OpenClaw?",
     answer:
-      "OpenClaw is the most popular open-source AI agent framework, with over 140K GitHub stars. PostClaw uses OpenClaw to give you a private, dedicated AI assistant that lives in your Telegram. We handle all the setup, hosting, and security — you just chat.",
+      "OpenClaw is the most popular open-source AI agent framework, with over 140K GitHub stars. PostClaw uses OpenClaw to give you a private, dedicated AI assistant you chat with directly from your dashboard. We handle all the setup, hosting, and security — you just chat.",
   },
   {
     question: "What platforms are supported?",

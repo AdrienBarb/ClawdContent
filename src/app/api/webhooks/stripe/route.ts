@@ -4,7 +4,10 @@ import Stripe from "stripe";
 import { stripe } from "@/lib/stripe/client";
 import { errorMessages } from "@/lib/constants/errorMessage";
 import { prisma } from "@/lib/db/prisma";
-import { deprovisionUser } from "@/lib/services/provisioning";
+import {
+  deprovisionUser,
+  provisionUser,
+} from "@/lib/services/provisioning";
 import { getPlanFromStripePriceId } from "@/lib/constants/plans";
 
 export async function POST(req: NextRequest) {
@@ -197,6 +200,21 @@ async function handleCheckoutCompleted(
       currentPeriodStart: period.start,
       currentPeriodEnd: period.end,
     },
+  });
+
+  // Provision user's bot container in background
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { name: true },
+  });
+
+  after(async () => {
+    try {
+      await provisionUser(userId, user?.name ?? "User");
+      console.log(`Provisioned user ${userId} after checkout`);
+    } catch (err) {
+      console.error(`Failed to provision user ${userId}:`, err);
+    }
   });
 }
 

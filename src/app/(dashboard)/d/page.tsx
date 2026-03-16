@@ -8,22 +8,14 @@ export default async function DashboardPage() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) redirect("/");
 
-  const [user, subscription, flyMachine] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { telegramBotToken: true },
-    }),
+  const [subscription, flyMachine] = await Promise.all([
     prisma.subscription.findUnique({
       where: { userId: session.user.id },
     }),
     prisma.flyMachine.findUnique({
       where: { userId: session.user.id },
-      select: { hasTelegramToken: true },
     }),
   ]);
-
-  const hasTelegramToken =
-    !!user?.telegramBotToken || !!flyMachine?.hasTelegramToken;
 
   const hasActiveSubscription =
     subscription?.status === "active" ||
@@ -32,7 +24,6 @@ export default async function DashboardPage() {
 
   return (
     <DashboardFlow
-      initialHasTelegramToken={hasTelegramToken}
       initialHasSubscription={hasActiveSubscription}
       initialHasFlyMachine={!!flyMachine}
     />

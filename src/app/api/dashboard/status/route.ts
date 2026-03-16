@@ -53,7 +53,6 @@ export async function GET() {
         socialAccountLimit: plan.socialAccountLimit,
       },
       botStatus: botStatus?.status ?? null,
-      hasTelegramToken: botStatus?.hasTelegramToken ?? false,
       accountCount: lateProfile?.socialAccounts?.length ?? 0,
       accounts:
         lateProfile?.socialAccounts?.map((a) => ({

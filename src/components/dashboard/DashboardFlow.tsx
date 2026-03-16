@@ -1,97 +1,144 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Rocket, Loader2 } from "lucide-react";
+import { Clock, Zap, BarChart3, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { appRouter } from "@/lib/constants/appRouter";
-import useApi from "@/lib/hooks/useApi";
-import TelegramSetup from "@/components/dashboard/TelegramSetup";
+import { PLATFORMS } from "@/lib/constants/platforms";
 import ChatWithLoader from "@/components/dashboard/ChatWithLoader";
 import SubscribeModal from "@/components/dashboard/SubscribeModal";
 
 interface DashboardFlowProps {
-  initialHasTelegramToken: boolean;
   initialHasSubscription: boolean;
   initialHasFlyMachine: boolean;
 }
 
+const benefits = [
+  {
+    icon: Clock,
+    title: "Hours saved every week",
+    description:
+      "Write once, publish everywhere. No more copying and pasting across platforms.",
+  },
+  {
+    icon: Zap,
+    title: "Consistent posting on autopilot",
+    description:
+      "Your AI assistant creates platform-native content adapted to each audience.",
+  },
+  {
+    icon: BarChart3,
+    title: "Grow on every platform at once",
+    description:
+      "Be present on X, LinkedIn, Instagram, TikTok, and 9 more — without the busywork.",
+  },
+];
+
+const FEATURED_PLATFORM_IDS = [
+  "twitter",
+  "linkedin",
+  "instagram",
+  "tiktok",
+  "threads",
+  "bluesky",
+  "youtube",
+  "reddit",
+  "facebook",
+];
+
 export default function DashboardFlow({
-  initialHasTelegramToken,
   initialHasSubscription,
   initialHasFlyMachine,
 }: DashboardFlowProps) {
-  const router = useRouter();
-  const { usePost } = useApi();
-  const [hasTelegramToken, setHasTelegramToken] = useState(
-    initialHasTelegramToken
-  );
-  const [showSubscribeModal, setShowSubscribeModal] = useState(
-    !initialHasSubscription
-  );
-  const [launched, setLaunched] = useState(false);
+  const [showSubscribeModal, setShowSubscribeModal] = useState(false);
 
-  const { mutate: launchBot, isPending: launching } = usePost(
-    appRouter.api.provisioningLaunch,
-    {
-      onSuccess: () => {
-        setLaunched(true);
-        router.refresh();
-      },
-    }
-  );
-
-  // Bot already provisioned → full dashboard
-  if (initialHasFlyMachine || launched) {
+  // Bot already provisioned or subscription active (provisioning triggered by webhook)
+  if (initialHasFlyMachine || initialHasSubscription) {
     return <ChatWithLoader />;
   }
 
-  // No Telegram token yet → show setup (with subscribe modal overlay if needed)
-  if (!hasTelegramToken) {
-    return (
-      <>
-        <TelegramSetup onSuccess={() => setHasTelegramToken(true)} />
-        <SubscribeModal
-          open={showSubscribeModal}
-          onOpenChange={setShowSubscribeModal}
-        />
-      </>
-    );
-  }
+  const featuredPlatforms = FEATURED_PLATFORM_IDS.map((id) =>
+    PLATFORMS.find((p) => p.id === id)
+  ).filter(Boolean);
 
-  // Has token, no bot yet → "Launch my bot"
+  // No subscription → outcome-focused deploy prompt
   return (
     <>
-      <div className="flex flex-col items-center justify-center h-[calc(100vh-10rem)]">
-        <div className="rounded-2xl border border-gray-200 bg-white p-10 max-w-md text-center shadow-sm">
-          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#e8614d]/10 mx-auto mb-4">
-            <Rocket className="h-7 w-7 text-[#e8614d]" />
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] px-4">
+        <div className="w-full max-w-2xl">
+          {/* Progress hint — Zeigarnik effect */}
+          <div className="text-center mb-2">
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#e8614d] bg-[#e8614d]/10 px-3 py-1 rounded-full">
+              Almost there — one step left
+            </span>
           </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            Ready to launch
-          </h2>
-          <p className="text-sm text-gray-500 mb-6">
-            Your Telegram bot is configured. Launch your personal AI content
-            manager.
-          </p>
-          <Button
-            className="bg-[#e8614d] hover:bg-[#d4563f] text-white"
-            disabled={launching}
-            onClick={() => {
-              if (!initialHasSubscription) {
-                setShowSubscribeModal(true);
-              } else {
-                launchBot({});
-              }
-            }}
-          >
-            {launching ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
-            ) : (
-              <Rocket className="h-4 w-4 mr-1.5" />
-            )}
-            {launching ? "Launching..." : "Launch my bot"}
-          </Button>
+
+          {/* Headline — outcome-focused, contrast effect */}
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold tracking-tight text-gray-900 mb-3">
+              Stop juggling platforms.
+              <br />
+              Start growing everywhere.
+            </h1>
+            <p className="text-gray-500 text-base max-w-md mx-auto">
+              Tell your AI assistant what to post. It writes, adapts, and
+              publishes to every platform — so you don&apos;t have to.
+            </p>
+          </div>
+
+          {/* Benefits — Jobs to Be Done framing */}
+          <div className="grid gap-4 mb-8">
+            {benefits.map((benefit) => (
+              <div
+                key={benefit.title}
+                className="flex items-start gap-4 rounded-xl border border-gray-100 bg-white p-4 shadow-sm"
+              >
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#e8614d]/10">
+                  <benefit.icon className="h-5 w-5 text-[#e8614d]" />
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {benefit.title}
+                  </p>
+                  <p className="text-sm text-gray-500 mt-0.5">
+                    {benefit.description}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Platform icons — mere exposure, makes "13+" tangible */}
+          <div className="flex items-center justify-center gap-2 mb-8">
+            {featuredPlatforms.map((platform) => (
+              <span
+                key={platform!.id}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-white"
+                style={{ backgroundColor: platform!.color }}
+                title={platform!.label}
+              >
+                {platform!.icon}
+              </span>
+            ))}
+            <span className="flex h-8 items-center text-xs font-medium text-gray-400 ml-1">
+              +4 more
+            </span>
+          </div>
+
+          {/* CTA — action + outcome, not "Get started" */}
+          <div className="text-center">
+            <Button
+              size="lg"
+              className="bg-[#e8614d] hover:bg-[#d4563f] text-white px-8 text-base h-12 cursor-pointer"
+              onClick={() => setShowSubscribeModal(true)}
+            >
+              Start posting everywhere
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+            {/* Anchoring + regret aversion */}
+            <p className="text-xs text-gray-400 mt-3">
+              Plans from $17/mo · Cancel anytime
+            </p>
+          </div>
         </div>
       </div>
 

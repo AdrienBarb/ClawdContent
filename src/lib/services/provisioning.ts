@@ -38,7 +38,6 @@ export async function provisionUser(
       onboardingRole: true,
       onboardingNiche: true,
       onboardingTopics: true,
-      telegramBotToken: true,
     },
   });
 
@@ -80,11 +79,6 @@ export async function provisionUser(
     OVERWRITE_SOUL: "true",
     NODE_OPTIONS: "--max-old-space-size=1536",
   };
-
-  // Include Telegram bot token if saved during onboarding
-  if (user.telegramBotToken) {
-    envVars.TELEGRAM_BOT_TOKEN = user.telegramBotToken;
-  }
 
   try {
     // Use try/catch on create to handle race conditions — if two concurrent
@@ -132,17 +126,9 @@ export async function provisionUser(
         volumeId: volume.id,
         gatewayToken,
         status: "running",
-        hasTelegramToken: !!user.telegramBotToken,
       },
     });
 
-    // Clear the token from User — it's now stored in the container env
-    if (user.telegramBotToken) {
-      await prisma.user.update({
-        where: { id: userId },
-        data: { telegramBotToken: null },
-      });
-    }
   } catch (error) {
     console.error(`Failed to provision Fly machine for user ${userId}:`, error);
     await prisma.flyMachine.update({

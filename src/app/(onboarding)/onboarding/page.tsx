@@ -12,10 +12,7 @@ import {
   Pen,
   Megaphone,
   ArrowRight,
-  ArrowLeft,
   Check,
-  MessageCircle,
-  ExternalLink,
 } from "lucide-react";
 
 const roles = [
@@ -66,13 +63,9 @@ const topicOptions = [
   "Lifestyle",
 ];
 
-const TOTAL_STEPS = 2;
-
 export default function OnboardingPage() {
   const router = useRouter();
   const { usePost } = useApi();
-  const [step, setStep] = useState(1);
-  const [telegramToken, setTelegramToken] = useState("");
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [niche, setNiche] = useState("");
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
@@ -89,7 +82,6 @@ export default function OnboardingPage() {
 
   const handleFinish = () => {
     saveOnboarding({
-      telegramBotToken: telegramToken.trim() || undefined,
       role: selectedRole ?? undefined,
       niche: niche || undefined,
       topics: selectedTopics.length > 0 ? selectedTopics : undefined,
@@ -97,9 +89,7 @@ export default function OnboardingPage() {
   };
 
   const handleSkip = () => {
-    saveOnboarding({
-      telegramBotToken: telegramToken.trim() || undefined,
-    });
+    saveOnboarding({});
   };
 
   const toggleTopic = (topic: string) => {
@@ -122,286 +112,179 @@ export default function OnboardingPage() {
 
   return (
     <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center px-4">
-      {/* Progress bar */}
+      {/* Skip */}
       <div className="w-full max-w-lg mb-8">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-medium text-gray-400">
-            Step {step} of {TOTAL_STEPS}
-          </span>
+        <div className="flex items-center justify-end">
           <button
-            onClick={step === 1 ? () => setStep(2) : handleSkip}
+            onClick={handleSkip}
             className="text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
             disabled={isPending}
           >
-            Skip — you can {step === 1 ? "connect later" : "update this later"}
+            Skip — you can update this later
           </button>
-        </div>
-        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-[#e8614d] rounded-full transition-all duration-500 ease-out"
-            style={{ width: `${(step / TOTAL_STEPS) * 100}%` }}
-          />
         </div>
       </div>
 
-      {/* Step 1: Telegram Bot Token */}
-      {step === 1 && (
-        <div className="w-full max-w-lg">
-          <div className="text-center mb-8">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#26A5E4]/10 mx-auto mb-4">
-              <MessageCircle className="h-7 w-7 text-[#26A5E4]" />
-            </div>
-            <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-              Connect your Telegram bot
-            </h1>
-            <p className="text-gray-500 mt-2">
-              OpenClaw works through Telegram. Create a bot and paste its token
-              below.
-            </p>
-          </div>
-
-          {/* Instructions */}
-          <div className="rounded-xl bg-gray-50 border border-gray-200 p-5 mb-6">
-            <p className="text-sm font-medium text-gray-900 mb-3">
-              How to create your bot:
-            </p>
-            <ol className="space-y-2 text-sm text-gray-600">
-              <li className="flex items-start gap-2.5">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#e8614d] text-white text-xs font-semibold mt-0.5">
-                  1
-                </span>
-                <span>
-                  Open{" "}
-                  <a
-                    href="https://t.me/BotFather"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[#26A5E4] font-medium hover:underline inline-flex items-center gap-1"
-                  >
-                    @BotFather on Telegram
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
-                </span>
-              </li>
-              <li className="flex items-start gap-2.5">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#e8614d] text-white text-xs font-semibold mt-0.5">
-                  2
-                </span>
-                <span>
-                  Send <code className="bg-gray-200 px-1.5 py-0.5 rounded text-xs font-mono">/newbot</code> and follow the steps
-                </span>
-              </li>
-              <li className="flex items-start gap-2.5">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#e8614d] text-white text-xs font-semibold mt-0.5">
-                  3
-                </span>
-                <span>Copy the token and paste it below</span>
-              </li>
-            </ol>
-          </div>
-
-          {/* Token input */}
-          <div className="space-y-2 mb-2">
-            <label
-              htmlFor="telegram-token"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Bot token
-            </label>
-            <input
-              id="telegram-token"
-              type="text"
-              value={telegramToken}
-              onChange={(e) => setTelegramToken(e.target.value)}
-              placeholder="123456:ABC-DEF1234ghIkl-zyx57W2v..."
-              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#e8614d] focus:outline-none focus:ring-1 focus:ring-[#e8614d] font-mono"
-              autoFocus
-            />
-          </div>
-
-          <div className="mt-8 flex justify-end">
-            <Button
-              onClick={() => setStep(2)}
-              className="bg-[#e8614d] hover:bg-[#d4563f] text-white"
-            >
-              Continue
-              <ArrowRight className="h-4 w-4 ml-1.5" />
-            </Button>
-          </div>
+      <div className="w-full max-w-lg">
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
+            Better context, better posts
+          </h1>
+          <p className="text-gray-500 mt-2">
+            PostClaw helps you create and publish content across 13+
+            social media platforms. The more it knows about your work,
+            the more relevant every post will be.
+          </p>
         </div>
-      )}
 
-      {/* Step 2: Context (Role + Niche + Topics) */}
-      {step === 2 && (
-        <div className="w-full max-w-lg">
-          <div className="text-center mb-8">
-            <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-              Better context, better posts
-            </h1>
-            <p className="text-gray-500 mt-2">
-              OpenClaw helps you create and publish content across 13+
-              social media platforms. The more it knows about your work,
-              the more relevant every post will be.
-            </p>
-          </div>
-
-          <div className="space-y-8">
-            {/* Role */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                What best describes you?
-              </label>
-              <div className="space-y-2">
-                {roles.map((role) => {
-                  const isSelected = selectedRole === role.id;
-                  return (
-                    <button
-                      key={role.id}
-                      onClick={() => setSelectedRole(role.id)}
-                      className={`w-full flex items-center gap-4 rounded-xl border p-4 text-left transition-all cursor-pointer ${
-                        isSelected
-                          ? "border-[#e8614d] bg-[#e8614d]/5"
-                          : "border-gray-200 bg-white hover:border-gray-300"
-                      }`}
-                    >
-                      <span
-                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
-                          isSelected
-                            ? "bg-[#e8614d] text-white"
-                            : "bg-gray-100 text-gray-500"
-                        }`}
-                      >
-                        <role.icon className="h-5 w-5" />
-                      </span>
-                      <div className="flex-1">
-                        <p className="text-sm font-semibold text-gray-900">
-                          {role.label}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {role.description}
-                        </p>
-                      </div>
-                      <span
-                        className={`h-5 w-5 shrink-0 rounded-full border-2 flex items-center justify-center ${
-                          isSelected
-                            ? "border-[#e8614d] bg-[#e8614d]"
-                            : "border-gray-300"
-                        }`}
-                      >
-                        {isSelected && (
-                          <Check className="h-3 w-3 text-white" />
-                        )}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Niche */}
-            <div>
-              <label
-                htmlFor="niche"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Describe your business or niche
-              </label>
-              <textarea
-                id="niche"
-                value={niche}
-                onChange={(e) => setNiche(e.target.value)}
-                placeholder="e.g. I run a design agency for SaaS startups"
-                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#e8614d] focus:outline-none focus:ring-1 focus:ring-[#e8614d] resize-none"
-                rows={3}
-                maxLength={200}
-              />
-              <p className="text-xs text-gray-400 mt-1 text-right">
-                {niche.length}/200
-              </p>
-            </div>
-
-            {/* Topics */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Pick your main topics{" "}
-                <span className="text-gray-400 font-normal">(up to 4)</span>
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {topicOptions.map((topic) => {
-                  const isSelected = selectedTopics.includes(topic);
-                  return (
-                    <button
-                      key={topic}
-                      onClick={() => toggleTopic(topic)}
-                      className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-all cursor-pointer ${
+        <div className="space-y-8">
+          {/* Role */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              What best describes you?
+            </label>
+            <div className="space-y-2">
+              {roles.map((role) => {
+                const isSelected = selectedRole === role.id;
+                return (
+                  <button
+                    key={role.id}
+                    onClick={() => setSelectedRole(role.id)}
+                    className={`w-full flex items-center gap-4 rounded-xl border p-4 text-left transition-all cursor-pointer ${
+                      isSelected
+                        ? "border-[#e8614d] bg-[#e8614d]/5"
+                        : "border-gray-200 bg-white hover:border-gray-300"
+                    }`}
+                  >
+                    <span
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
                         isSelected
                           ? "bg-[#e8614d] text-white"
-                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                          : "bg-gray-100 text-gray-500"
                       }`}
                     >
-                      {topic}
-                    </button>
-                  );
-                })}
-                {selectedTopics
-                  .filter((t) => !topicOptions.includes(t))
-                  .map((topic) => (
-                    <button
-                      key={topic}
-                      onClick={() => toggleTopic(topic)}
-                      className="rounded-full px-3.5 py-1.5 text-sm font-medium bg-[#e8614d] text-white cursor-pointer"
+                      <role.icon className="h-5 w-5" />
+                    </span>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-gray-900">
+                        {role.label}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {role.description}
+                      </p>
+                    </div>
+                    <span
+                      className={`h-5 w-5 shrink-0 rounded-full border-2 flex items-center justify-center ${
+                        isSelected
+                          ? "border-[#e8614d] bg-[#e8614d]"
+                          : "border-gray-300"
+                      }`}
                     >
-                      {topic}
-                    </button>
-                  ))}
-              </div>
-              <div className="flex gap-2 mt-3">
-                <input
-                  type="text"
-                  value={customTopic}
-                  onChange={(e) => setCustomTopic(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      addCustomTopic();
-                    }
-                  }}
-                  placeholder="Add custom topic..."
-                  className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#e8614d] focus:outline-none focus:ring-1 focus:ring-[#e8614d]"
-                  maxLength={50}
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={addCustomTopic}
-                  disabled={!customTopic.trim() || selectedTopics.length >= 4}
-                >
-                  Add
-                </Button>
-              </div>
+                      {isSelected && (
+                        <Check className="h-3 w-3 text-white" />
+                      )}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          <div className="mt-8 flex justify-between">
-            <Button
-              variant="ghost"
-              onClick={() => setStep(1)}
-              className="text-gray-500"
+          {/* Niche */}
+          <div>
+            <label
+              htmlFor="niche"
+              className="block text-sm font-medium text-gray-700 mb-2"
             >
-              <ArrowLeft className="h-4 w-4 mr-1.5" />
-              Back
-            </Button>
-            <Button
-              onClick={handleFinish}
-              className="bg-[#e8614d] hover:bg-[#d4563f] text-white"
-              disabled={isPending}
-            >
-              {isPending ? "Setting up..." : "Finish setup"}
-              {!isPending && <ArrowRight className="h-4 w-4 ml-1.5" />}
-            </Button>
+              Describe your business or niche
+            </label>
+            <textarea
+              id="niche"
+              value={niche}
+              onChange={(e) => setNiche(e.target.value)}
+              placeholder="e.g. I run a design agency for SaaS startups"
+              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#e8614d] focus:outline-none focus:ring-1 focus:ring-[#e8614d] resize-none"
+              rows={3}
+              maxLength={200}
+            />
+            <p className="text-xs text-gray-400 mt-1 text-right">
+              {niche.length}/200
+            </p>
+          </div>
+
+          {/* Topics */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Pick your main topics{" "}
+              <span className="text-gray-400 font-normal">(up to 4)</span>
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {topicOptions.map((topic) => {
+                const isSelected = selectedTopics.includes(topic);
+                return (
+                  <button
+                    key={topic}
+                    onClick={() => toggleTopic(topic)}
+                    className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-all cursor-pointer ${
+                      isSelected
+                        ? "bg-[#e8614d] text-white"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                  >
+                    {topic}
+                  </button>
+                );
+              })}
+              {selectedTopics
+                .filter((t) => !topicOptions.includes(t))
+                .map((topic) => (
+                  <button
+                    key={topic}
+                    onClick={() => toggleTopic(topic)}
+                    className="rounded-full px-3.5 py-1.5 text-sm font-medium bg-[#e8614d] text-white cursor-pointer"
+                  >
+                    {topic}
+                  </button>
+                ))}
+            </div>
+            <div className="flex gap-2 mt-3">
+              <input
+                type="text"
+                value={customTopic}
+                onChange={(e) => setCustomTopic(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addCustomTopic();
+                  }
+                }}
+                placeholder="Add custom topic..."
+                className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#e8614d] focus:outline-none focus:ring-1 focus:ring-[#e8614d]"
+                maxLength={50}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={addCustomTopic}
+                disabled={!customTopic.trim() || selectedTopics.length >= 4}
+              >
+                Add
+              </Button>
+            </div>
           </div>
         </div>
-      )}
+
+        <div className="mt-8 flex justify-end">
+          <Button
+            onClick={handleFinish}
+            className="bg-[#e8614d] hover:bg-[#d4563f] text-white"
+            disabled={isPending}
+          >
+            {isPending ? "Setting up..." : "Finish setup"}
+            {!isPending && <ArrowRight className="h-4 w-4 ml-1.5" />}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

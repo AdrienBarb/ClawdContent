@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 
 interface OnboardingData {
-  telegramBotToken?: string;
   role?: string;
   niche?: string;
   topics?: string[];
@@ -15,7 +14,6 @@ export async function completeOnboarding(
     where: { id: userId },
     data: {
       onboardingCompleted: true,
-      telegramBotToken: data.telegramBotToken ?? null,
       onboardingRole: data.role ?? null,
       onboardingNiche: data.niche ?? null,
       onboardingTopics: data.topics ?? [],

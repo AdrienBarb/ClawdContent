@@ -20,8 +20,7 @@ export default function DashboardUnsubscribed() {
           </h2>
           <p className="text-sm text-gray-500 mb-6">
             Subscribe to get your personal AI content manager. Create, adapt,
-            and publish posts across all your social accounts from one Telegram
-            chat.
+            and publish posts across all your social accounts from one chat.
           </p>
           <Button
             className="bg-[#e8614d] hover:bg-[#d4563f] text-white"
