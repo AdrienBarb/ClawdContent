@@ -25,7 +25,7 @@ const trustPoints = [
     icon: Zap,
     title: "Set up in under 2 minutes",
     description:
-      "Connect your accounts, link your Telegram bot, and start publishing. No complex configuration, no onboarding calls.",
+      "Connect your accounts and start publishing. No complex configuration, no onboarding calls.",
   },
 ];
 

@@ -9,7 +9,7 @@ export default function DemoSection() {
             See it in action
           </h2>
           <p className="text-center text-[#8a8f9e] text-lg mb-12 max-w-2xl mx-auto">
-            From idea to published post in seconds — all from Telegram.
+            From idea to published post in seconds — all from one chat.
           </p>
         </AnimatedSection>
 
@@ -21,7 +21,7 @@ export default function DemoSection() {
               loop
               playsInline
               className="w-full"
-              aria-label="Demo video showing how to create and publish social media posts from Telegram using PostClaw"
+              aria-label="Demo video showing how to create and publish social media posts using PostClaw"
             >
               <source src="/videos/demo.mp4" type="video/mp4" />
               Your browser does not support the video tag.

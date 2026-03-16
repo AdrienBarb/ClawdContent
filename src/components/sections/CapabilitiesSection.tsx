@@ -28,7 +28,7 @@ const capabilities = [
     icon: Send,
     title: "Publish Everywhere",
     description:
-      "Post to all your connected platforms at once, or pick specific ones. One message in Telegram, every network covered.",
+      "Post to all your connected platforms at once, or pick specific ones. One message, every network covered.",
   },
   {
     icon: CalendarClock,

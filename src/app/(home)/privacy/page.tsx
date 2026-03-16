@@ -95,13 +95,12 @@ export default function PrivacyPage() {
             </div>
             <div>
               <h3 className="text-lg font-medium mb-2">
-                3.4 Telegram Bot Data
+                3.4 Chat Data
               </h3>
               <ul className="list-disc pl-6 text-muted-foreground space-y-1">
-                <li>Your Telegram bot token</li>
                 <li>
-                  Messages exchanged with your bot (processed in your isolated
-                  container and not stored by us beyond the session)
+                  Messages exchanged with your AI assistant (processed in your
+                  isolated instance and not stored by us beyond the session)
                 </li>
               </ul>
             </div>

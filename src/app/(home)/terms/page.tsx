@@ -35,12 +35,12 @@ export default function TermsPage() {
             2. Description of the Service
           </h2>
           <p className="text-muted-foreground">
-            PostClaw provides a personal AI content manager accessible via
-            Telegram. The Service allows you to create, adapt, and publish social
-            media posts to supported platforms (including Twitter/X, LinkedIn,
-            Bluesky, and Threads) through a conversational interface with an
-            AI-powered bot. Each subscriber receives a dedicated, isolated bot
-            instance.
+            PostClaw provides an AI content manager accessible via a web-based
+            chat interface. The Service allows you to create, adapt, and publish
+            social media posts to supported platforms (including Twitter/X,
+            LinkedIn, Bluesky, and Threads) through a conversational interface
+            with an AI-powered assistant. Each subscriber receives a dedicated,
+            isolated instance.
           </p>
         </section>
 
@@ -194,7 +194,7 @@ export default function TermsPage() {
           <div className="space-y-3">
             <p className="text-muted-foreground">
               The Service integrates with third-party platforms including
-              Telegram, Twitter/X, LinkedIn, Bluesky, and Threads. You
+              Twitter/X, LinkedIn, Bluesky, and Threads. You
               acknowledge that:
             </p>
             <ul className="list-disc pl-6 text-muted-foreground space-y-1">
@@ -218,19 +218,7 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="text-2xl font-semibold mb-4">
-            8. Telegram Bot Token
-          </h2>
-          <p className="text-muted-foreground">
-            To use the Service, you must provide your own Telegram bot token. You
-            are responsible for creating and managing your Telegram bot through
-            BotFather. We store your bot token securely to operate the Service.
-            You should not share your bot token with third parties.
-          </p>
-        </section>
-
-        <section>
-          <h2 className="text-2xl font-semibold mb-4">9. Acceptable Use</h2>
+          <h2 className="text-2xl font-semibold mb-4">8. Acceptable Use</h2>
           <div className="space-y-3">
             <p className="text-muted-foreground">
               You agree not to use the Service to:
@@ -270,7 +258,7 @@ export default function TermsPage() {
 
         <section>
           <h2 className="text-2xl font-semibold mb-4">
-            10. Service Availability
+            9. Service Availability
           </h2>
           <p className="text-muted-foreground">
             We strive to maintain high availability but do not guarantee
@@ -283,7 +271,7 @@ export default function TermsPage() {
 
         <section>
           <h2 className="text-2xl font-semibold mb-4">
-            11. Limitation of Liability
+            10. Limitation of Liability
           </h2>
           <div className="space-y-3">
             <p className="text-muted-foreground">
@@ -315,7 +303,7 @@ export default function TermsPage() {
 
         <section>
           <h2 className="text-2xl font-semibold mb-4">
-            12. Indemnification
+            11. Indemnification
           </h2>
           <p className="text-muted-foreground">
             You agree to indemnify and hold PostClaw harmless from any claims,
@@ -326,7 +314,7 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="text-2xl font-semibold mb-4">13. Changes to Terms</h2>
+          <h2 className="text-2xl font-semibold mb-4">12. Changes to Terms</h2>
           <p className="text-muted-foreground">
             We may update these Terms from time to time. We will notify you of
             material changes by email or through the Service at least 30 days
@@ -337,7 +325,7 @@ export default function TermsPage() {
 
         <section>
           <h2 className="text-2xl font-semibold mb-4">
-            14. Governing Law
+            13. Governing Law
           </h2>
           <p className="text-muted-foreground">
             These Terms are governed by and construed in accordance with the laws
@@ -351,7 +339,7 @@ export default function TermsPage() {
 
         <section>
           <h2 className="text-2xl font-semibold mb-4">
-            15. Contact Information
+            14. Contact Information
           </h2>
           <p className="text-muted-foreground">
             If you have any questions about these Terms, please contact us at{" "}

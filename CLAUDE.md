@@ -2,14 +2,14 @@
 
 ## What is PostClaw?
 
-PostClaw is a SaaS ($29/mo) that gives each user a personal AI content manager on Telegram. Users chat with their bot to create, adapt, and publish social media posts across 13+ social media platforms via Late API.
+PostClaw is a SaaS that gives each user an AI content manager via a web-based chat interface. Users chat with their AI assistant to create, adapt, and publish social media posts across 13+ social media platforms via Late API.
 
 **How it works:**
 
-1. User signs up, pays $39/mo via Stripe
+1. User signs up, pays via Stripe (plans from $17/mo)
 2. We auto-provision a private OpenClaw container on Fly.io + a Late API profile
-3. User connects their Telegram bot token and social accounts
-4. User chats with their bot on Telegram to create and publish content
+3. User connects their social accounts
+4. User chats with their AI assistant in the web app to create and publish content
 
 **Key services:**
 
@@ -23,10 +23,10 @@ PostClaw is a SaaS ($29/mo) that gives each user a personal AI content manager o
 ## Architecture
 
 ```
-User ─── Telegram ─── OpenClaw Container (Fly.io)
-                            │
-                            ├── Kimi K2.5 (Moonshot API)
-                            └── Late API (social posting)
+User ─── Web Chat (Next.js) ─── OpenClaw Container (Fly.io)
+                                       │
+                                       ├── Kimi K2.5 (Moonshot API)
+                                       └── Late API (social posting)
 
 Dashboard (Next.js on Vercel)
     ├── Stripe (payments)
@@ -75,7 +75,7 @@ User (1:1) ── Subscription
 | ----------------- | -------------------------------------------------------------------------- |
 | **User**          | Authenticated user (Better Auth)                                           |
 | **Subscription**  | Stripe subscription: customerId, subscriptionId, status, period dates      |
-| **FlyMachine**    | User's container: machineId, volumeId, region, status, hasTelegramToken    |
+| **FlyMachine**    | User's container: machineId, volumeId, region, status                      |
 | **LateProfile**   | User's Late API profile: profileId, scoped API key                         |
 | **SocialAccount** | Connected social platform: accountId, platform, username, status           |
 | **Media**         | Uploaded media: cloudinaryId, url, resourceType, format, bytes, dimensions |
@@ -101,7 +101,7 @@ src/
 │   │       ├── page.tsx           # Chat with provisioning guard (default view)
 │   │       ├── accounts/          # Social accounts (connect/disconnect)
 │   │       │   └── callback/      # OAuth return handler
-│   │       ├── channels/          # Messaging channels (Telegram)
+│   │       ├── channels/          # Messaging channels
 │   │       ├── chat/              # Redirects to /d
 │   │       ├── billing/           # Subscription info
 │   │       ├── bot/               # Redirects to /d
@@ -126,7 +126,7 @@ src/
 │   │   ├── ChatWithLoader.tsx     # Provisioning guard → ChatInterface
 │   │   ├── ChatInterface.tsx      # AI chat with streaming + media upload (Cloudinary)
 │   │   ├── DashboardHome.tsx      # Legacy dashboard (kept, unused)
-│   │   ├── TelegramTokenModal.tsx # Telegram bot token setup modal
+│   │   ├── TelegramTokenModal.tsx # Legacy (Telegram removed — chat is now web-based)
 │   │   └── ConnectAccountButtons.tsx # Platform connect buttons with icons
 │   └── providers/                 # Context providers
 ├── lib/
@@ -163,7 +163,7 @@ src/
 | `/api/auth/[...all]`       | All     | Various | Better Auth                                     |
 | `/api/checkout`            | POST    | Yes     | Create Stripe Checkout session                  |
 | `/api/bot`                 | GET     | Yes     | Get bot status                                  |
-| `/api/bot`                 | POST    | Yes     | Set Telegram token                              |
+| `/api/bot`                 | POST    | Yes     | Set bot config                                  |
 | `/api/bot`                 | PUT     | Yes     | Update bot Docker image                         |
 | `/api/bot`                 | PATCH   | Yes     | Restart bot                                     |
 | `/api/media/upload`        | POST    | Yes     | Save media upload record                        |
@@ -183,15 +183,13 @@ src/
 
 The dashboard is **chat-first** — after subscribing, users land directly on the chat interface.
 
-- **Sidebar** (`Sidebar.tsx`): Dark navy sidebar (`#151929`) with coral accent (`#e8614d`), nav items: Chat, Accounts, Channels, Billing. User section at bottom. Mobile: sheet drawer.
+- **Sidebar** (`Sidebar.tsx`): Dark navy sidebar (`#151929`) with coral accent (`#e8614d`), nav items: Chat, Accounts, Billing. User section at bottom. Mobile: sheet drawer.
 - **Chat** (`/d`): `ChatWithLoader` polls `/api/dashboard/status` every 3s. During provisioning shows spinner + "Your bot is starting up...". On failure shows error + retry button. Once running, renders `ChatInterface` (streaming AI chat via `@ai-sdk/react`).
 - **Accounts** (`/d/accounts`): Client component polling dashboard status. Shows connected accounts with disconnect (X) button + `ConnectAccountButtons` to add new ones.
-- **Channels** (`/d/channels`): Telegram channel card with connected/not-connected state. Opens `TelegramTokenModal` to set or update token.
-- **Telegram modal** (`TelegramTokenModal.tsx`): Links to OpenClaw docs (`docs.openclaw.ai/channels/telegram`).
 - **Connect buttons** (`ConnectAccountButtons.tsx`): Platform icons with brand colors.
 - **Content area**: Light gray background (`#f8f9fc`), white rounded cards, `max-w-5xl`.
 
-Supported platforms: **13+ social media platforms** via Late API (Twitter/X, LinkedIn, Bluesky, Threads, Facebook, Instagram, Pinterest, TikTok, YouTube, Reddit, Mastodon, Telegram, and more). Media uploads (images/videos) supported via Cloudinary.
+Supported platforms: **13+ social media platforms** via Late API (Twitter/X, LinkedIn, Bluesky, Threads, Facebook, Instagram, Pinterest, TikTok, YouTube, Reddit, Mastodon, and more). Media uploads (images/videos) supported via Cloudinary.
 
 ---
 
@@ -298,8 +296,8 @@ npm run email:dev          # Preview email templates
 
 | Phase         | Status   | What it covers                                                           |
 | ------------- | -------- | ------------------------------------------------------------------------ |
-| **Phase 0**   | COMPLETE | Fly.io deploy + OpenClaw + Telegram + Kimi K2.5                          |
-| **Phase 0.5** | COMPLETE | Late API integration + social posting via Telegram                       |
+| **Phase 0**   | COMPLETE | Fly.io deploy + OpenClaw + Kimi K2.5                                     |
+| **Phase 0.5** | COMPLETE | Late API integration + social posting                                    |
 | **Phase 1**   | COMPLETE | DB schema, Stripe subscription, auto-provisioning, dashboard, onboarding |
 | **Phase 2**   | TODO     | Monitoring, production hardening, self-service billing portal            |
 
@@ -404,7 +402,7 @@ const { mutate } = usePost("/api/bot", { onSuccess: () => { ... } });
 - Region: `cdg` (Paris), Guest: `shared-cpu-2x, 1024MB RAM`
 - `NODE_OPTIONS=--max-old-space-size=768` set on all machines (OpenClaw needs >512MB heap)
 - Each machine gets a 1GB volume mounted at `/home/node/.openclaw/`
-- No auto-stop (Telegram bots use outbound long-polling, not HTTP)
+- No auto-stop (containers must stay running for chat availability)
 
 ### Docker Dev/Prod Tags
 
@@ -427,7 +425,7 @@ const { mutate } = usePost("/api/bot", { onSuccess: () => { ... } });
 - Config dir: `$HOME/.openclaw/` (runs as `node` user)
 - Entrypoint generates `openclaw.json` from env vars
 - `OVERWRITE_SOUL=true` forces SOUL.md regeneration on restart
-- `dmPolicy: "open"` — safe because each user has their own private bot
+- `dmPolicy: "open"` — safe because each user has their own private instance
 
 ### PostHog A/B Testing
 

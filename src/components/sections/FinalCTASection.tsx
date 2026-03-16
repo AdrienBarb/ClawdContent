@@ -33,8 +33,7 @@ export default function FinalCTASection() {
                 Day of Copy-Pasting
               </h2>
               <p className="text-[#7a7f94] text-lg mb-10 max-w-lg mx-auto">
-                Setup takes less than 2 minutes. Start publishing from Telegram
-                today.
+                Setup takes less than 2 minutes. Start publishing today.
               </p>
               <Button
                 size="lg"

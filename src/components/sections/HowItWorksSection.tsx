@@ -7,14 +7,14 @@ const steps = [
     step: "1",
     title: "Connect your accounts",
     description:
-      "Sign up, link your social platforms from the dashboard, and set up your Telegram bot. Takes less than 2 minutes.",
+      "Sign up and link your social platforms from the dashboard. Takes less than 2 minutes.",
   },
   {
     icon: MessageSquare,
     step: "2",
     title: "Chat with OpenClaw",
     description:
-      'Open Telegram and tell OpenClaw what to post. "Write about our product launch" — plain language, nothing to learn.',
+      'Tell PostClaw what to post. "Write about our product launch" — plain language, nothing to learn.',
   },
   {
     icon: Send,

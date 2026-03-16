@@ -148,7 +148,7 @@ export default async function CompetitorPageView({
   };
 
   const ctaFeatures = [
-    "Personal AI content manager on Telegram",
+    "AI content manager — just chat and publish",
     "Publish to 13+ social platforms from one chat",
     "AI-adapted content per platform",
     "Unlimited posts — no per-action fees",
@@ -419,7 +419,7 @@ export default async function CompetitorPageView({
               </h2>
               <p className="text-[#7a7f94] text-lg">
                 Join creators who use PostClaw to publish everywhere from one
-                Telegram chat.
+                chat.
               </p>
             </div>
 

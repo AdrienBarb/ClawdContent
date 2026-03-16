@@ -26,14 +26,14 @@ const features = [
     icon: Clock,
     title: "Nothing new\nto learn",
     description:
-      "If you can send a Telegram message, you already know how to use PostClaw. No dashboards to navigate, no editors to figure out. Just chat.",
+      "If you can send a message, you already know how to use PostClaw. No dashboards to navigate, no editors to figure out. Just chat.",
   },
 ];
 
 const comparisons = [
   {
     without: "45+ min/day managing multiple platforms",
-    with: "2 min/day \u2014 one Telegram message",
+    with: "2 min/day \u2014 one message",
   },
   {
     without: "Same text copy-pasted everywhere",
