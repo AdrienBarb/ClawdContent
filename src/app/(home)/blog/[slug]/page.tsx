@@ -251,7 +251,7 @@ export default async function PostPage({ params }: PostPageProps) {
                 Ready to automate your social media publishing?
               </h2>
               <p className="text-[#7a7f94] mb-6">
-                PostClaw gives you a personal AI content manager on Telegram.
+                PostClaw is your AI content manager.
                 Create, adapt, and publish to 13+ platforms — all on autopilot.
               </p>
               <Button

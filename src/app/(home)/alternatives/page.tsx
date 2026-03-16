@@ -34,7 +34,7 @@ export default async function AlternativesPage() {
           Looking for a social media automation or AI content management tool?
           Compare PostClaw with other platforms in the market. Learn what makes
           each tool unique and discover why creators choose PostClaw to publish
-          everywhere from a single Telegram chat.
+          everywhere from a single chat.
         </p>
         <Button
           asChild
@@ -102,7 +102,7 @@ export default async function AlternativesPage() {
           Why Choose PostClaw?
         </h2>
         <p className="text-[#7a7f94] mb-6">
-          Your personal AI content manager on Telegram. Create, adapt, and
+          Your AI content manager. Create, adapt, and
           publish to 13+ social platforms — all from one chat. Starting at
           Plans from $17/month.
         </p>

@@ -17,7 +17,7 @@ export const metadata: Metadata = genPageMetadata({
   title:
     "PostClaw Blog — AI Content Management, Social Media Automation & Publishing",
   description:
-    "Expert guides for content creators on AI content management, social media automation, multi-platform publishing, and Telegram bot workflows. Actionable tips to grow your social presence.",
+    "Expert guides for content creators on AI content management, social media automation, and multi-platform publishing. Actionable tips to grow your social presence.",
   url: "/blog",
 });
 
@@ -46,7 +46,7 @@ export default async function BlogPage() {
           </p>
           <p>
             Here, we break down the exact strategies, tools, and workflows used
-            by top creators to publish everywhere from a single Telegram chat.
+            by top creators to publish everywhere from a single chat.
             Whether you&apos;re automating your content, adapting posts per
             platform, or scaling your social presence — we write for people who
             want results.
@@ -98,7 +98,7 @@ export default async function BlogPage() {
           Ready to Publish Everywhere from One Chat?
         </h2>
         <p className="text-[#7a7f94] mb-6 max-w-xl mx-auto">
-          PostClaw gives you a personal AI content manager on Telegram. Create,
+          PostClaw is your AI content manager. Create,
           adapt, and publish to 13+ social platforms — all on autopilot.
         </p>
         <Button
@@ -124,7 +124,7 @@ export default async function BlogPage() {
             </h3>
             <p className="text-[#7a7f94] text-sm">
               AI content management, social media automation, multi-platform
-              publishing, Telegram bot workflows, content creation strategies,
+              publishing, content creation strategies,
               and platform-specific tips.
             </p>
           </div>
