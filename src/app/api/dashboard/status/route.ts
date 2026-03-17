@@ -6,6 +6,7 @@ import { headers } from "next/headers";
 import { prisma } from "@/lib/db/prisma";
 import { getBotStatus } from "@/lib/services/bot";
 import { getPlan, type PlanId } from "@/lib/constants/plans";
+import { getCreditBalance } from "@/lib/services/credits";
 
 export async function GET() {
   try {
@@ -21,18 +22,20 @@ export async function GET() {
 
     const userId = session.user.id;
 
-    const [user, subscription, botStatus, lateProfile] = await Promise.all([
-      prisma.user.findUnique({
-        where: { id: userId },
-        select: { timezone: true },
-      }),
-      prisma.subscription.findUnique({ where: { userId } }),
-      getBotStatus(userId),
-      prisma.lateProfile.findUnique({
-        where: { userId },
-        include: { socialAccounts: { where: { status: "active" } } },
-      }),
-    ]);
+    const [user, subscription, botStatus, lateProfile, credits] =
+      await Promise.all([
+        prisma.user.findUnique({
+          where: { id: userId },
+          select: { timezone: true },
+        }),
+        prisma.subscription.findUnique({ where: { userId } }),
+        getBotStatus(userId),
+        prisma.lateProfile.findUnique({
+          where: { userId },
+          include: { socialAccounts: { where: { status: "active" } } },
+        }),
+        getCreditBalance(userId),
+      ]);
 
     const planId = (subscription?.planId as PlanId) || "starter";
     const plan = getPlan(planId);
@@ -61,6 +64,7 @@ export async function GET() {
           username: a.username,
           status: a.status,
         })) ?? [],
+      credits,
     });
   } catch (error) {
     return errorHandler(error);

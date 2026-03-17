@@ -8,6 +8,7 @@ import {
   Share2,
   Bot,
   CreditCard,
+  Coins,
   Settings,
   LogOut,
   Menu,
@@ -29,6 +30,7 @@ const navItems = [
   { href: appRouter.accounts, label: "Accounts", icon: Share2 },
   { href: appRouter.context, label: "Context", icon: UserCircle },
   { href: appRouter.billing, label: "Billing", icon: CreditCard },
+  { href: appRouter.credits, label: "Credits", icon: Coins },
   { href: appRouter.settings, label: "Settings", icon: Settings },
 ];
 

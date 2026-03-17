@@ -22,6 +22,7 @@ export const appRouter = {
   context: "/d/context",
   settings: "/d/settings",
   billing: "/d/billing",
+  credits: "/d/credits",
   onboarding: "/onboarding",
 
   // API routes
@@ -39,6 +40,7 @@ export const appRouter = {
     provisioningRetry: "/api/provisioning/retry",
     billingPortal: "/api/billing/portal",
     billingChangePlan: "/api/billing/change-plan",
+    billingActivate: "/api/billing/activate",
     mediaUpload: "/api/media/upload",
     transcribe: "/api/transcribe",
     userTimezone: "/api/user/timezone",
@@ -46,6 +48,9 @@ export const appRouter = {
     onboarding: "/api/onboarding",
     chat: "/api/chat",
     chatHistory: "/api/chat/history",
+    credits: "/api/credits",
+    creditsCheckout: "/api/credits/checkout",
+    imageGenerate: "/api/image/generate",
     dashboardStatus: "/api/dashboard/status",
     webhooks: {
       stripe: "/api/webhooks/stripe",

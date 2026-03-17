@@ -17,4 +17,8 @@ export const errorMessages = {
   SUBSCRIPTION_REQUIRED: "An active subscription is required.",
   LATE_API_ERROR: "Failed to communicate with social media service.",
   TRANSCRIPTION_FAILED: "Failed to transcribe audio. Please try again.",
+  INSUFFICIENT_CREDITS: "Not enough credits. Purchase more to continue.",
+  GENERATION_FAILED: "Image generation failed. Please try again.",
+  TRIAL_NO_GENERATION: "Image generation is not available during trial.",
+  STARTER_NO_GENERATION: "Image generation is not available on the Starter plan.",
 };

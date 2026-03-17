@@ -8,7 +8,15 @@ import {
   deprovisionUser,
   provisionUser,
 } from "@/lib/services/provisioning";
-import { getPlanFromStripePriceId } from "@/lib/constants/plans";
+import {
+  getPlanFromStripePriceId,
+  type PlanId,
+} from "@/lib/constants/plans";
+import {
+  grantPlanCredits,
+  handleCancellation,
+  addTopUpCredits,
+} from "@/lib/services/credits";
 
 export async function POST(req: NextRequest) {
   const sig = req.headers.get("stripe-signature");
@@ -154,6 +162,16 @@ async function handleCheckoutCompleted(
     return;
   }
 
+  // Handle credit top-up (payment mode, no subscription)
+  if (session.metadata?.type === "credit_topup") {
+    const quantity = parseInt(session.metadata?.quantity || "0", 10);
+    if (quantity > 0) {
+      await addTopUpCredits(userId, quantity, session.id);
+      console.log(`Added ${quantity} top-up credits for user ${userId}`);
+    }
+    return;
+  }
+
   const planId = session.metadata?.planId || "pro";
 
   const subscriptionId =
@@ -201,6 +219,9 @@ async function handleCheckoutCompleted(
       currentPeriodEnd: period.end,
     },
   });
+
+  // Grant initial plan credits
+  await grantPlanCredits(userId, planId as PlanId);
 
   // Provision user's bot container in background
   const user = await prisma.user.findUnique({
@@ -300,6 +321,9 @@ async function handleSubscriptionDeleted(
     data: { status: "canceled" },
   });
 
+  // Zero out plan credits (top-up credits persist)
+  await handleCancellation(existing.userId);
+
   // Deprovision in background
   after(async () => {
     try {
@@ -338,6 +362,10 @@ async function handleInvoiceSucceeded(
       currentPeriodEnd: period.end,
     },
   });
+
+  // Monthly credit reset
+  const planId = (existing.planId || "pro") as PlanId;
+  await grantPlanCredits(existing.userId, planId);
 
   // Verify container is still running
   const flyMachine = await prisma.flyMachine.findUnique({

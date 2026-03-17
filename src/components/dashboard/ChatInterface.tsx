@@ -10,17 +10,16 @@ import {
   Loader2,
   Sparkles,
   AlertCircle,
-  Paperclip,
   X,
   Film,
-  Mic,
-  Square,
 } from "lucide-react";
 import { useRef, useEffect, useState, useMemo, useCallback } from "react";
+import useApi from "@/lib/hooks/useApi";
 import MediaUploadModal, {
   type UploadResult,
 } from "@/components/dashboard/MediaUploadModal";
-import { useVoiceRecorder } from "@/lib/hooks/useVoiceRecorder";
+import MediaAttachDropdown from "@/components/dashboard/MediaAttachDropdown";
+import ImageGenerateModal from "@/components/dashboard/ImageGenerateModal";
 import ReactMarkdown from "react-markdown";
 
 const SUGGESTIONS = [
@@ -180,25 +179,28 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
 
   const [input, setInput] = useState("");
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [generateModalOpen, setGenerateModalOpen] = useState(false);
   const [attachedMedia, setAttachedMedia] = useState<AttachedMedia | null>(
     null
   );
+
+  // Fetch dashboard status for subscription info (cached by React Query from ChatWithLoader)
+  const { useGet } = useApi();
+  const { data: dashboardStatus } = useGet(appRouter.api.dashboardStatus);
+  const subStatus = dashboardStatus?.subscription?.status;
+  const subPlanId = dashboardStatus?.subscription?.planId;
+  const canGenerate = subStatus === "active" && subPlanId !== "starter";
+  const blockedState = subStatus === "trialing"
+    ? ({ type: "trialing" } as const)
+    : subPlanId === "starter"
+      ? ({ type: "starter" } as const)
+      : !dashboardStatus?.subscription
+        ? ({ type: "no_subscription" } as const)
+        : null;
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const isLoading = status === "submitted" || status === "streaming";
-
-  const handleTranscript = useCallback((text: string) => {
-    setInput((prev) => (prev ? `${prev} ${text}` : text));
-    inputRef.current?.focus();
-  }, []);
-  const {
-    isRecording,
-    isTranscribing,
-    startRecording,
-    stopRecording,
-    error: voiceError,
-  } = useVoiceRecorder(handleTranscript);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({
@@ -236,6 +238,20 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
       // Silent — media record is not critical for sending
     });
   }, []);
+
+  const handleImageGenerated = useCallback(
+    (result: { imageUrl: string }) => {
+      setAttachedMedia({
+        url: result.imageUrl,
+        resourceType: "image",
+        format: "png",
+        cloudinaryId: "",
+        bytes: 0,
+        thumbnailUrl: result.imageUrl,
+      });
+    },
+    []
+  );
 
   const handleSend = () => {
     const text = input.trim();
@@ -305,6 +321,7 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
                     type="button"
                     onClick={() => handleSuggestion(s)}
                     className="flex items-start gap-2 rounded-xl bg-gray-50 hover:bg-gray-100 px-3 py-2.5 text-sm text-gray-700 text-left transition-colors cursor-pointer"
+
                   >
                     <Sparkles className="h-3.5 w-3.5 text-gray-400 shrink-0 mt-0.5" />
                     <span>{s}</span>
@@ -335,7 +352,7 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
                 type="button"
                 onClick={loadOlderMessages}
                 disabled={loadingOlder}
-                className="text-sm text-gray-500 hover:text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                className="text-sm text-gray-500 hover:text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
               >
                 {loadingOlder ? (
                   <span className="flex items-center gap-2">
@@ -423,13 +440,6 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
             )}
         </div>
 
-        {/* Voice error */}
-        {voiceError && (
-          <div className="px-4 pt-2">
-            <p className="text-xs text-red-500">{voiceError}</p>
-          </div>
-        )}
-
         {/* Media preview */}
         {attachedMedia && (
           <div className="px-4 pt-3">
@@ -451,7 +461,7 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
               <button
                 type="button"
                 onClick={() => setAttachedMedia(null)}
-                className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-gray-900 text-white flex items-center justify-center hover:bg-gray-700 transition-colors"
+                className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-gray-900 text-white flex items-center justify-center hover:bg-gray-700 transition-colors cursor-pointer"
               >
                 <X className="h-3 w-3" />
               </button>
@@ -470,37 +480,17 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
               onClose={() => setUploadModalOpen(false)}
               onUploadComplete={handleUploadComplete}
             />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={() => setUploadModalOpen(true)}
-              className="h-11 w-11 shrink-0 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100"
-            >
-              <Paperclip className="h-5 w-5" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              disabled={isTranscribing || isLoading}
-              onClick={isRecording ? stopRecording : startRecording}
-              className={`h-11 w-11 shrink-0 rounded-xl transition-colors ${
-                isRecording
-                  ? "bg-red-500 text-white hover:bg-red-600 animate-pulse"
-                  : isTranscribing
-                    ? "text-gray-300"
-                    : "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
-              }`}
-            >
-              {isTranscribing ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : isRecording ? (
-                <Square className="h-4 w-4 fill-current" />
-              ) : (
-                <Mic className="h-5 w-5" />
-              )}
-            </Button>
+            <ImageGenerateModal
+              open={generateModalOpen}
+              onClose={() => setGenerateModalOpen(false)}
+              onImageGenerated={handleImageGenerated}
+              canGenerate={canGenerate}
+              blockedState={blockedState}
+            />
+            <MediaAttachDropdown
+              onOpenUpload={() => setUploadModalOpen(true)}
+              onOpenGenerate={() => setGenerateModalOpen(true)}
+            />
             <textarea
               ref={inputRef}
               value={input}
@@ -516,7 +506,7 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
               size="icon"
               disabled={!canSend}
               onClick={handleSend}
-              className="h-11 w-11 shrink-0 rounded-xl bg-[#e8614d] hover:bg-[#d4563f] text-white disabled:opacity-50"
+              className="h-11 w-11 shrink-0 rounded-xl bg-[#e8614d] hover:bg-[#d4563f] text-white disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

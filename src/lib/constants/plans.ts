@@ -9,6 +9,7 @@ export interface Plan {
   yearlyMonthlyEquivalent: number;
   socialAccountLimit: number;
   socialAccountLabel: string;
+  imageCreditsPerMonth: number;
   hasTrial: boolean;
   trialDays: number;
   highlighted: boolean;
@@ -27,6 +28,7 @@ export const PLANS: Plan[] = [
       Math.round(((17 * 12 * YEARLY_DISCOUNT) / 12) * 100) / 100,
     socialAccountLimit: 2,
     socialAccountLabel: "2 social accounts",
+    imageCreditsPerMonth: 0,
     hasTrial: false,
     trialDays: 0,
     highlighted: false,
@@ -41,6 +43,7 @@ export const PLANS: Plan[] = [
       Math.round(((37 * 12 * YEARLY_DISCOUNT) / 12) * 100) / 100,
     socialAccountLimit: 6,
     socialAccountLabel: "6 social accounts",
+    imageCreditsPerMonth: 10,
     hasTrial: true,
     trialDays: 3,
     highlighted: true,
@@ -55,6 +58,7 @@ export const PLANS: Plan[] = [
       Math.round(((79 * 12 * YEARLY_DISCOUNT) / 12) * 100) / 100,
     socialAccountLimit: 13,
     socialAccountLabel: "All 13 social accounts",
+    imageCreditsPerMonth: 20,
     hasTrial: true,
     trialDays: 3,
     highlighted: false,
@@ -79,6 +83,7 @@ export const SHARED_FEATURES: SharedFeature[] = [
   { label: "Web research", includedIn: "all" },
   { label: "Content calendar planning", includedIn: "all" },
   { label: "Strategy advice", includedIn: "all" },
+  { label: "AI image generation", includedIn: ["pro", "business"] },
 ];
 
 export function isFeatureIncluded(
@@ -93,6 +98,10 @@ export function getPlan(planId: PlanId): Plan {
   const plan = PLANS.find((p) => p.id === planId);
   if (!plan) throw new Error(`Unknown plan: ${planId}`);
   return plan;
+}
+
+export function getPlanImageCredits(planId: PlanId): number {
+  return getPlan(planId).imageCreditsPerMonth;
 }
 
 export function getDisplayPrice(

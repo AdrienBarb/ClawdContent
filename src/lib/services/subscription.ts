@@ -5,7 +5,12 @@ import {
   type BillingInterval,
   getPlan,
   getStripePriceId,
+  getPlanImageCredits,
 } from "@/lib/constants/plans";
+import {
+  handlePlanUpgrade,
+  handlePlanDowngrade,
+} from "@/lib/services/credits";
 
 export async function createCheckoutSession(
   userId: string,
@@ -132,10 +137,57 @@ export async function changePlan(
     metadata: { userId, planId: newPlanId },
   });
 
+  const oldPlanId = subscription.planId as PlanId;
+
   // Update DB immediately (webhook will also update, idempotent)
   await prisma.subscription.update({
     where: { userId },
     data: { planId: newPlanId },
+  });
+
+  // Adjust credits based on plan change direction
+  const oldCredits = getPlanImageCredits(oldPlanId);
+  const newCredits = getPlanImageCredits(newPlanId);
+  if (newCredits > oldCredits) {
+    await handlePlanUpgrade(userId, oldPlanId, newPlanId);
+  } else if (newCredits < oldCredits) {
+    await handlePlanDowngrade(userId, newPlanId);
+  }
+}
+
+export async function activateTrialNow(userId: string): Promise<void> {
+  const subscription = await prisma.subscription.findUnique({
+    where: { userId },
+  });
+
+  if (!subscription) {
+    throw new Error("NO_SUBSCRIPTION");
+  }
+
+  if (subscription.status !== "trialing") {
+    throw new Error("NOT_TRIALING");
+  }
+
+  // End the trial immediately — Stripe will charge the customer and set status to "active"
+  const sub = await stripe.subscriptions.update(
+    subscription.stripeSubscriptionId,
+    { trial_end: "now" }
+  );
+
+  // Sync the new state to DB
+  const item = sub.items?.data?.[0];
+  const periodStart = item
+    ? new Date(item.current_period_start * 1000)
+    : null;
+  const periodEnd = item ? new Date(item.current_period_end * 1000) : null;
+
+  await prisma.subscription.update({
+    where: { userId },
+    data: {
+      status: sub.status,
+      currentPeriodStart: periodStart,
+      currentPeriodEnd: periodEnd,
+    },
   });
 }
 

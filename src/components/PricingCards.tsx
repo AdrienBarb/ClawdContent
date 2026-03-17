@@ -175,10 +175,19 @@ export default function PricingCards({
             Includes
           </p>
 
-          <div className="flex items-center gap-2 mb-5 pb-5 border-b border-[#1e2233]">
-            <span className="text-sm font-medium text-white">
-              {selectedPlan.socialAccountLabel}
-            </span>
+          <div className="space-y-2 mb-5 pb-5 border-b border-[#1e2233]">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-white">
+                {selectedPlan.socialAccountLabel}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-white">
+                {selectedPlan.imageCreditsPerMonth > 0
+                  ? `${selectedPlan.imageCreditsPerMonth} AI image credits/month`
+                  : "No AI image credits"}
+              </span>
+            </div>
           </div>
 
           <div className="space-y-4">
