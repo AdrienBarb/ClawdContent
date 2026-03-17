@@ -26,8 +26,6 @@ model User {
   onboardingRole      String?
   onboardingNiche     String?
   onboardingTopics    String[]        @default([])
-  telegramBotToken    String?
-
   @@unique([email])
   @@map("user")
 }
@@ -102,7 +100,6 @@ model FlyMachine {
   volumeId         String?
   region           String   @default("cdg")
   status           String   @default("pending") // pending, deploying, running, stopped, failed
-  hasTelegramToken Boolean  @default(false)
   gatewayToken     String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt

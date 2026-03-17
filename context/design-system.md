@@ -127,7 +127,7 @@ bg-[#e8614d] hover:bg-[#d4563f] text-white
 
 ### Dashboard buttons
 
-Dashboard buttons use a mix of theme `bg-primary` (purple on light theme) and hardcoded coral `bg-[#e8614d]` for specific actions (e.g. Configure Telegram).
+Dashboard buttons use a mix of theme `bg-primary` (purple on light theme) and hardcoded coral `bg-[#e8614d]` for specific actions.
 
 ---
 

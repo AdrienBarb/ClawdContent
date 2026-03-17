@@ -126,7 +126,6 @@ src/
 │   │   ├── ChatWithLoader.tsx     # Provisioning guard → ChatInterface
 │   │   ├── ChatInterface.tsx      # AI chat with streaming + media upload (Cloudinary)
 │   │   ├── DashboardHome.tsx      # Legacy dashboard (kept, unused)
-│   │   ├── TelegramTokenModal.tsx # Legacy (Telegram removed — chat is now web-based)
 │   │   └── ConnectAccountButtons.tsx # Platform connect buttons with icons
 │   └── providers/                 # Context providers
 ├── lib/

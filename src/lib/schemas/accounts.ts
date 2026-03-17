@@ -13,7 +13,6 @@ export const connectAccountSchema = z.object({
     "bluesky",
     "mastodon",
     "reddit",
-    "telegram",
     "discord",
   ]),
 });

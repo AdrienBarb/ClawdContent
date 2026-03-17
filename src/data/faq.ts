@@ -12,7 +12,7 @@ export const faqs = [
   {
     question: "What platforms are supported?",
     answer:
-      "We support 13 platforms: Instagram, TikTok, X (Twitter), LinkedIn, Facebook, YouTube, Pinterest, Threads, Bluesky, Reddit, Telegram, Discord, and Mastodon. You can connect as many as you want and post to all of them at once.",
+      "We support 12 platforms: Instagram, TikTok, X (Twitter), LinkedIn, Facebook, YouTube, Pinterest, Threads, Bluesky, Reddit, Discord, and Mastodon. You can connect as many as you want and post to all of them at once.",
   },
   {
     question: "Is the content actually good?",

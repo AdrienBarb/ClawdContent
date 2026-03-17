@@ -287,7 +287,7 @@ export default function PrivacyPage() {
             </ul>
             <p className="text-muted-foreground">
               When you cancel your subscription, your bot instance and associated
-              data (social account connections, bot token) are deleted at the end
+              data (social account connections) are deleted at the end
               of your billing period.
             </p>
           </div>
