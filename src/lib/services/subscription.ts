@@ -57,9 +57,6 @@ export async function createCheckoutSession(
       metadata: { userId, planId },
       ...(plan.hasTrial && { trial_period_days: plan.trialDays }),
     },
-    ...(plan.hasTrial && {
-      payment_method_collection: "if_required" as const,
-    }),
   });
 
   if (!session.url) {
