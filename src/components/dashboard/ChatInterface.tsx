@@ -17,10 +17,9 @@ import {
   Square,
 } from "lucide-react";
 import { useRef, useEffect, useState, useMemo, useCallback } from "react";
-import {
-  CldUploadWidget,
-  type CloudinaryUploadWidgetResults,
-} from "next-cloudinary";
+import MediaUploadModal, {
+  type UploadResult,
+} from "@/components/dashboard/MediaUploadModal";
 import { useVoiceRecorder } from "@/lib/hooks/useVoiceRecorder";
 import ReactMarkdown from "react-markdown";
 
@@ -180,6 +179,7 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
   }, [hasMore, loadingOlder, nextCursor]);
 
   const [input, setInput] = useState("");
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [attachedMedia, setAttachedMedia] = useState<AttachedMedia | null>(
     null
   );
@@ -207,51 +207,35 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
     });
   }, [messages]);
 
-  const handleUploadSuccess = useCallback(
-    (result: CloudinaryUploadWidgetResults) => {
-      const info = result.info;
-      if (!info || typeof info === "string") return;
+  const handleUploadComplete = useCallback((result: UploadResult) => {
+    setAttachedMedia({
+      url: result.url,
+      resourceType: result.resourceType,
+      format: result.format,
+      cloudinaryId: result.cloudinaryId,
+      bytes: result.bytes,
+      width: result.width,
+      height: result.height,
+      thumbnailUrl: result.thumbnailUrl,
+    });
 
-      const resourceType = info.resource_type === "video" ? "video" : "image";
-      const format = info.format;
-      const url = info.secure_url;
-      const cloudinaryId = info.public_id;
-      const bytes = info.bytes;
-      const width = info.height ? info.width : undefined;
-      const height = info.height || undefined;
-
-      const thumbnailUrl = info.thumbnail_url || url;
-
-      setAttachedMedia({
-        url,
-        resourceType,
-        format,
-        cloudinaryId,
-        bytes,
-        width,
-        height,
-        thumbnailUrl,
-      });
-
-      // Fire-and-forget save to DB
-      fetch(appRouter.api.mediaUpload, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          cloudinaryId,
-          url,
-          resourceType,
-          format,
-          bytes,
-          width,
-          height,
-        }),
-      }).catch(() => {
-        // Silent — media record is not critical for sending
-      });
-    },
-    []
-  );
+    // Fire-and-forget save to DB
+    fetch(appRouter.api.mediaUpload, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        cloudinaryId: result.cloudinaryId,
+        url: result.url,
+        resourceType: result.resourceType,
+        format: result.format,
+        bytes: result.bytes,
+        width: result.width,
+        height: result.height,
+      }),
+    }).catch(() => {
+      // Silent — media record is not critical for sending
+    });
+  }, []);
 
   const handleSend = () => {
     const text = input.trim();
@@ -481,35 +465,20 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
         {/* Input bar */}
         <div className="border-t border-gray-100 p-4">
           <div className="flex items-end gap-2">
-            <CldUploadWidget
-              uploadPreset="postclaw_unsigned"
-              options={{
-                multiple: false,
-                maxFileSize: 10_000_000,
-                clientAllowedFormats: [
-                  "jpg",
-                  "png",
-                  "gif",
-                  "webp",
-                  "mp4",
-                  "mov",
-                ],
-                sources: ["local", "camera"],
-              }}
-              onSuccess={handleUploadSuccess}
+            <MediaUploadModal
+              open={uploadModalOpen}
+              onClose={() => setUploadModalOpen(false)}
+              onUploadComplete={handleUploadComplete}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => setUploadModalOpen(true)}
+              className="h-11 w-11 shrink-0 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100"
             >
-              {({ open }) => (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => open()}
-                  className="h-11 w-11 shrink-0 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100"
-                >
-                  <Paperclip className="h-5 w-5" />
-                </Button>
-              )}
-            </CldUploadWidget>
+              <Paperclip className="h-5 w-5" />
+            </Button>
             <Button
               type="button"
               variant="ghost"
