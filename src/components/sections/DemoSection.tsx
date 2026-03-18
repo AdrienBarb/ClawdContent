@@ -14,18 +14,14 @@ export default function DemoSection() {
         </AnimatedSection>
 
         <AnimatedSection delay={0.2}>
-          <div className="rounded-2xl overflow-hidden border border-[#1e2233] shadow-2xl shadow-black/40">
-            <video
-              autoPlay
-              muted
-              loop
-              playsInline
-              className="w-full"
-              aria-label="Demo video showing how to create and publish social media posts using PostClaw"
-            >
-              <source src="/videos/demo.mp4" type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
+          <div className="rounded-2xl overflow-hidden border border-[#1e2233] shadow-2xl shadow-black/40 aspect-video">
+            <iframe
+              src="https://www.youtube.com/embed/SeL6y7hMyRw?rel=0"
+              title="Demo video showing how to create and publish social media posts using PostClaw"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="w-full h-full"
+            />
           </div>
         </AnimatedSection>
       </div>

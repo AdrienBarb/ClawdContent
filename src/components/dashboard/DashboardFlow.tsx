@@ -33,6 +33,13 @@ const benefits = [
   },
 ];
 
+const TUTORIAL_VIDEOS = [
+  {
+    id: "SeL6y7hMyRw",
+    title: "Getting started with PostClaw",
+  },
+];
+
 const FEATURED_PLATFORM_IDS = [
   "twitter",
   "linkedin",
@@ -138,6 +145,31 @@ export default function DashboardFlow({
             <p className="text-xs text-gray-400 mt-3">
               Plans from $17/mo · Cancel anytime
             </p>
+          </div>
+
+          {/* Tutorial videos */}
+          <div className="space-y-3 mt-10">
+            {TUTORIAL_VIDEOS.map((video) => (
+              <div
+                key={video.id}
+                className="rounded-xl overflow-hidden border border-gray-100 bg-white shadow-sm"
+              >
+                <div className="aspect-video">
+                  <iframe
+                    src={`https://www.youtube.com/embed/${video.id}?rel=0`}
+                    title={video.title}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className="w-full h-full"
+                  />
+                </div>
+                <div className="px-4 py-2.5">
+                  <p className="text-sm font-medium text-gray-700">
+                    {video.title}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
