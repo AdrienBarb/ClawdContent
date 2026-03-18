@@ -16,7 +16,7 @@ export default function DemoSection() {
         <AnimatedSection delay={0.2}>
           <div className="rounded-2xl overflow-hidden border border-[#1e2233] shadow-2xl shadow-black/40 aspect-video">
             <iframe
-              src="https://www.youtube.com/embed/SeL6y7hMyRw?rel=0"
+              src="https://www.youtube.com/embed/ypoRFsYFSQU?rel=0"
               title="Demo video showing how to create and publish social media posts using PostClaw"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen

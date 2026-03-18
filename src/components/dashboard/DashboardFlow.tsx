@@ -35,7 +35,7 @@ const benefits = [
 
 const TUTORIAL_VIDEOS = [
   {
-    id: "SeL6y7hMyRw",
+    id: "ypoRFsYFSQU",
     title: "Getting started with PostClaw",
   },
 ];
