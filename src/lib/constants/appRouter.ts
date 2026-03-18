@@ -40,7 +40,6 @@ export const appRouter = {
     provisioningRetry: "/api/provisioning/retry",
     billingPortal: "/api/billing/portal",
     billingChangePlan: "/api/billing/change-plan",
-    billingActivate: "/api/billing/activate",
     mediaUpload: "/api/media/upload",
     transcribe: "/api/transcribe",
     userTimezone: "/api/user/timezone",

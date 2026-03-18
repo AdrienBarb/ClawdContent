@@ -52,11 +52,6 @@ async function BillingContent() {
 
         <div className="flex items-center gap-3 mb-4">
           <h2 className="text-2xl font-semibold text-gray-900">{plan.name}</h2>
-          {subscription.status === "trialing" && (
-            <span className="text-xs font-medium bg-green-50 text-green-700 px-2.5 py-0.5 rounded-full">
-              Trial
-            </span>
-          )}
         </div>
 
         <div className="flex items-baseline gap-1 mb-4">

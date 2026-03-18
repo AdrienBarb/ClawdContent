@@ -24,18 +24,11 @@ interface ImageGenerateResult {
   generationId: string;
 }
 
-type BlockedState =
-  | { type: "trialing" }
-  | { type: "starter" }
-  | { type: "no_subscription" }
-  | null;
-
 interface ImageGenerateModalProps {
   open: boolean;
   onClose: () => void;
   onImageGenerated: (result: ImageGenerateResult) => void;
   canGenerate: boolean;
-  blockedState?: BlockedState;
 }
 
 export default function ImageGenerateModal({
@@ -43,15 +36,12 @@ export default function ImageGenerateModal({
   onClose,
   onImageGenerated,
   canGenerate,
-  blockedState,
 }: ImageGenerateModalProps) {
   const [prompt, setPrompt] = useState("");
   const [size, setSize] = useState<"1024x1024" | "1792x1024" | "1024x1792">(
     "1024x1024"
   );
   const [generating, setGenerating] = useState(false);
-  const [activating, setActivating] = useState(false);
-  const [activateError, setActivateError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -94,33 +84,10 @@ export default function ImageGenerateModal({
     }
   };
 
-  const handleActivate = async () => {
-    setActivating(true);
-    setActivateError(null);
-    try {
-      const res = await fetch(appRouter.api.billingActivate, {
-        method: "POST",
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to activate subscription");
-      }
-      // Reload the page so dashboard status refreshes with active subscription
-      window.location.reload();
-    } catch (err) {
-      setActivateError(
-        err instanceof Error ? err.message : "Failed to activate"
-      );
-    } finally {
-      setActivating(false);
-    }
-  };
-
   const handleReset = () => {
     setPrompt("");
     setSize("1024x1024");
     setError(null);
-    setActivateError(null);
     setPreviewUrl(null);
     setGenerating(false);
   };
@@ -145,58 +112,25 @@ export default function ImageGenerateModal({
         </DialogHeader>
 
         {!canGenerate ? (
-          /* Blocked state for starter/trial users */
+          /* Blocked state for starter users */
           <div className="text-center py-4 space-y-4">
             <div className="h-12 w-12 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto">
               <Lock className="h-6 w-6 text-gray-400" />
             </div>
-            {blockedState?.type === "trialing" ? (
-              <>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">
-                    AI image generation is not available during your free trial.
-                  </p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Activate your subscription now to start generating images.
-                    Your card will be charged and your billing cycle starts
-                    immediately.
-                  </p>
-                </div>
-                {activateError && (
-                  <p className="text-sm text-red-600">{activateError}</p>
-                )}
-                <Button
-                  onClick={handleActivate}
-                  disabled={activating}
-                  className="bg-[#e8614d] hover:bg-[#d4563f] text-white cursor-pointer disabled:cursor-not-allowed"
-                >
-                  {activating ? (
-                    <span className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Activating...
-                    </span>
-                  ) : (
-                    "Activate Subscription Now"
-                  )}
-                </Button>
-              </>
-            ) : (
-              <>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">
-                    AI image generation is only available on Pro and Business plans.
-                  </p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Upgrade your plan to generate images with AI directly in your chat.
-                  </p>
-                </div>
-                <Link href={appRouter.billing}>
-                  <Button className="bg-[#e8614d] hover:bg-[#d4563f] text-white cursor-pointer">
-                    Upgrade Plan
-                  </Button>
-                </Link>
-              </>
-            )}
+            <div>
+              <p className="text-sm font-medium text-gray-900">
+                AI image generation is only available on Pro and Business plans.
+              </p>
+              <p className="text-sm text-gray-500 mt-1">
+                Upgrade your plan to generate images with AI directly in your
+                chat.
+              </p>
+            </div>
+            <Link href={appRouter.billing}>
+              <Button className="bg-[#e8614d] hover:bg-[#d4563f] text-white cursor-pointer">
+                Upgrade Plan
+              </Button>
+            </Link>
           </div>
         ) : (
           <div className="space-y-4">
@@ -264,9 +198,7 @@ export default function ImageGenerateModal({
                   ))}
                 </div>
 
-                {error && (
-                  <p className="text-sm text-red-600">{error}</p>
-                )}
+                {error && <p className="text-sm text-red-600">{error}</p>}
 
                 <Button
                   onClick={handleGenerate}

@@ -17,20 +17,12 @@ export async function generateImage({ userId, prompt, size }: GenerateImageParam
     where: { userId },
   });
 
-  if (!subscription) {
+  if (!subscription || subscription.status !== "active") {
     throw new AccessError(errorMessages.SUBSCRIPTION_REQUIRED);
-  }
-
-  if (subscription.status === "trialing") {
-    throw new AccessError(errorMessages.TRIAL_NO_GENERATION);
   }
 
   if ((subscription.planId as PlanId) === "starter") {
     throw new AccessError(errorMessages.STARTER_NO_GENERATION);
-  }
-
-  if (subscription.status !== "active") {
-    throw new AccessError(errorMessages.SUBSCRIPTION_REQUIRED);
   }
 
   // Deduct credit

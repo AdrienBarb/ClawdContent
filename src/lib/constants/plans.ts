@@ -44,10 +44,10 @@ export const PLANS: Plan[] = [
     socialAccountLimit: 6,
     socialAccountLabel: "6 social accounts",
     imageCreditsPerMonth: 10,
-    hasTrial: true,
-    trialDays: 3,
+    hasTrial: false,
+    trialDays: 0,
     highlighted: true,
-    cta: "Try for free",
+    cta: "Get Started",
   },
   {
     id: "business",
@@ -59,10 +59,10 @@ export const PLANS: Plan[] = [
     socialAccountLimit: 13,
     socialAccountLabel: "All 13 social accounts",
     imageCreditsPerMonth: 20,
-    hasTrial: true,
-    trialDays: 3,
+    hasTrial: false,
+    trialDays: 0,
     highlighted: false,
-    cta: "Try for free",
+    cta: "Get Started",
   },
 ];
 

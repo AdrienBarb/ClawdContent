@@ -19,6 +19,5 @@ export const errorMessages = {
   TRANSCRIPTION_FAILED: "Failed to transcribe audio. Please try again.",
   INSUFFICIENT_CREDITS: "Not enough credits. Purchase more to continue.",
   GENERATION_FAILED: "Image generation failed. Please try again.",
-  TRIAL_NO_GENERATION: "Image generation is not available during trial.",
   STARTER_NO_GENERATION: "Image generation is not available on the Starter plan.",
 };

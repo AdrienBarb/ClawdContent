@@ -190,13 +190,6 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
   const subStatus = dashboardStatus?.subscription?.status;
   const subPlanId = dashboardStatus?.subscription?.planId;
   const canGenerate = subStatus === "active" && subPlanId !== "starter";
-  const blockedState = subStatus === "trialing"
-    ? ({ type: "trialing" } as const)
-    : subPlanId === "starter"
-      ? ({ type: "starter" } as const)
-      : !dashboardStatus?.subscription
-        ? ({ type: "no_subscription" } as const)
-        : null;
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -485,7 +478,6 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
               onClose={() => setGenerateModalOpen(false)}
               onImageGenerated={handleImageGenerated}
               canGenerate={canGenerate}
-              blockedState={blockedState}
             />
             <MediaAttachDropdown
               onOpenUpload={() => setUploadModalOpen(true)}

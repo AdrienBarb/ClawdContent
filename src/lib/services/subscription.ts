@@ -155,42 +155,6 @@ export async function changePlan(
   }
 }
 
-export async function activateTrialNow(userId: string): Promise<void> {
-  const subscription = await prisma.subscription.findUnique({
-    where: { userId },
-  });
-
-  if (!subscription) {
-    throw new Error("NO_SUBSCRIPTION");
-  }
-
-  if (subscription.status !== "trialing") {
-    throw new Error("NOT_TRIALING");
-  }
-
-  // End the trial immediately — Stripe will charge the customer and set status to "active"
-  const sub = await stripe.subscriptions.update(
-    subscription.stripeSubscriptionId,
-    { trial_end: "now" }
-  );
-
-  // Sync the new state to DB
-  const item = sub.items?.data?.[0];
-  const periodStart = item
-    ? new Date(item.current_period_start * 1000)
-    : null;
-  const periodEnd = item ? new Date(item.current_period_end * 1000) : null;
-
-  await prisma.subscription.update({
-    where: { userId },
-    data: {
-      status: sub.status,
-      currentPeriodStart: periodStart,
-      currentPeriodEnd: periodEnd,
-    },
-  });
-}
-
 export async function syncSubscriptionStatus(
   stripeSubscriptionId: string
 ): Promise<void> {

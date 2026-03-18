@@ -126,11 +126,6 @@ export default function PricingCards({
                       </div>
                       <p className="text-xs text-[#7a7f94] mt-0.5">
                         {plan.socialAccountLabel}
-                        {plan.hasTrial && !isExistingSubscriber && (
-                          <span className="text-green-400 ml-2">
-                            {plan.trialDays}-day free trial
-                          </span>
-                        )}
                         {isExistingSubscriber && currentPlanId === plan.id && (
                           <span className="text-[#e8614d] ml-2">
                             Current
