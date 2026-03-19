@@ -23,11 +23,13 @@ export async function GET(req: NextRequest) {
     const params = listPostsQuerySchema.parse({
       status: searchParams.get("status") || undefined,
       limit: searchParams.get("limit") || undefined,
+      page: searchParams.get("page") || undefined,
+      sortBy: searchParams.get("sortBy") || undefined,
     });
 
-    const posts = await getUserPosts(session.user.id, params);
+    const result = await getUserPosts(session.user.id, params);
 
-    return NextResponse.json({ posts }, { status: 200 });
+    return NextResponse.json(result, { status: 200 });
   } catch (error) {
     return errorHandler(error);
   }

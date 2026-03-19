@@ -14,6 +14,7 @@ import {
   Menu,
   UserCircle,
   Gift,
+  ListOrdered,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -27,6 +28,7 @@ import { useState } from "react";
 
 const navItems = [
   { href: appRouter.dashboard, label: "Bot", icon: Bot },
+  { href: appRouter.queue, label: "Queue", icon: ListOrdered },
   { href: appRouter.accounts, label: "Accounts", icon: Share2 },
   { href: appRouter.context, label: "Context", icon: UserCircle },
   { href: appRouter.billing, label: "Billing", icon: CreditCard },
