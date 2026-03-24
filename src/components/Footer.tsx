@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import config from "@/lib/config";
 import { client } from "@/lib/sanity/client";
 import { FOOTER_COMPETITORS_QUERY } from "@/lib/sanity/queries";
@@ -116,10 +117,40 @@ export default async function Footer() {
           </div>
         )}
 
-        <div className="mt-10 border-t border-[#1e2233] pt-8">
-          <p className="text-center text-sm text-[#7a7f94]">
+        <div className="mt-10 border-t border-[#1e2233] pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="text-sm text-[#7a7f94]">
             &copy; {currentYear} {config.project.name}. All rights reserved.
           </p>
+          <div className="flex items-center gap-5">
+            <a
+              href="https://openclaw.ai/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="opacity-70 hover:opacity-100 transition-opacity"
+            >
+              <Image
+                src="/images/openclaw/openclaw-seeklogo.svg"
+                alt="OpenClaw"
+                width={48}
+                height={48}
+                className="h-12 w-auto"
+              />
+            </a>
+            <a
+              href="https://zernio.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="opacity-70 hover:opacity-100 transition-opacity"
+            >
+              <Image
+                src="/images/zernio/powered-by-zernio.svg"
+                alt="Powered by Zernio"
+                width={188}
+                height={94}
+                className="h-12 w-auto"
+              />
+            </a>
+          </div>
         </div>
       </div>
     </footer>

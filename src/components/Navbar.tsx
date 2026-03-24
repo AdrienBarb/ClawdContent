@@ -63,6 +63,9 @@ export default function Navbar() {
               <a href="#how-it-works" className="text-sm text-[#8a8f9e] hover:text-white transition-colors">
                 How It Works
               </a>
+              <a href="#powered-by" className="text-sm text-[#8a8f9e] hover:text-white transition-colors">
+                Powered By
+              </a>
               <a href="#pricing" className="text-sm text-[#8a8f9e] hover:text-white transition-colors">
                 Pricing
               </a>
@@ -124,6 +127,13 @@ export default function Navbar() {
               className="block text-sm text-[#8a8f9e] hover:text-white transition-colors"
             >
               How It Works
+            </a>
+            <a
+              href="#powered-by"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="block text-sm text-[#8a8f9e] hover:text-white transition-colors"
+            >
+              Powered By
             </a>
             <a
               href="#pricing"

@@ -5,12 +5,16 @@ import WhoIsThisForSection from "@/components/sections/WhoIsThisForSection";
 import HowItWorksSection from "@/components/sections/HowItWorksSection";
 import CapabilitiesSection from "@/components/sections/CapabilitiesSection";
 import FeaturesSection from "@/components/sections/FeaturesSection";
-import SocialProofSection from "@/components/sections/SocialProofSection";
+import PoweredBySection from "@/components/sections/PoweredBySection";
 import PricingSection from "@/components/sections/PricingSection";
 import FAQSection from "@/components/sections/FAQSection";
 import FinalCTASection from "@/components/sections/FinalCTASection";
 import { faqs } from "@/data/faq";
 import config from "@/lib/config";
+import { getDistinctId } from "@/lib/tracking/distinctId";
+import { getFeatureFlag } from "@/lib/tracking/postHogClient";
+
+export const dynamic = "force-dynamic";
 
 const organizationSchema = {
   "@context": "https://schema.org",
@@ -75,7 +79,17 @@ const faqSchema = {
   })),
 };
 
-export default function Home() {
+export default async function Home() {
+  const distinctId = await getDistinctId();
+
+  let heroVariant = "control";
+  if (distinctId) {
+    const flag = await getFeatureFlag("hero-copy-experiment", distinctId);
+    if (flag === "test") {
+      heroVariant = "test";
+    }
+  }
+
   return (
     <div className="flex flex-col">
       <script
@@ -96,14 +110,14 @@ export default function Home() {
           __html: JSON.stringify(faqSchema),
         }}
       />
-      <HeroSection />
+      <HeroSection variant={heroVariant} />
       <DemoSection />
       <PainSection />
       <WhoIsThisForSection />
       <HowItWorksSection />
       <CapabilitiesSection />
       <FeaturesSection />
-      <SocialProofSection />
+      <PoweredBySection />
       <PricingSection />
       <FAQSection />
       <FinalCTASection />

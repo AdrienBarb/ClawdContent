@@ -37,6 +37,18 @@ export async function captureServerEvent(
   await client.flush();
 }
 
+// Helper function to evaluate a feature flag server-side
+export async function getFeatureFlag(
+  flagKey: string,
+  distinctId: string
+): Promise<string | boolean | undefined> {
+  const client = getPostHogClient();
+  if (!client) return undefined;
+
+  const value = await client.getFeatureFlag(flagKey, distinctId);
+  return value;
+}
+
 // Helper function to identify users
 export async function identifyUser(
   distinctId: string,

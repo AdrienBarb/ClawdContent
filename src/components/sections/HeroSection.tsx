@@ -9,7 +9,11 @@ import SignInModal from "@/components/SignInModal";
 import AnimatedSection from "@/components/sections/AnimatedSection";
 import { PLATFORMS } from "@/lib/constants/platforms";
 
-export default function HeroSection() {
+interface HeroSectionProps {
+  variant?: string;
+}
+
+export default function HeroSection({ variant = "control" }: HeroSectionProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
@@ -28,15 +32,27 @@ export default function HeroSection() {
         <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
           <AnimatedSection>
             <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-bold leading-[1.1] tracking-tight mb-8 text-white">
-              Your Social Media.
-              <br />
-              <span className="text-[#e8614d]">Done in 30 Seconds.</span>
+              {variant === "test" ? (
+                <>
+                  A Social Media Manager
+                  <br />
+                  <span className="text-[#e8614d]">That Costs $17/mo.</span>
+                </>
+              ) : (
+                <>
+                  Your Social Media.
+                  <br />
+                  <span className="text-[#e8614d]">Done in 30 Seconds.</span>
+                </>
+              )}
             </h1>
           </AnimatedSection>
 
           <AnimatedSection delay={0.15}>
             <p className="text-lg md:text-xl leading-relaxed text-[#8a8f9e] max-w-2xl mb-10">
-              PostClaw is your AI content manager. Tell it what you want to say — it writes, adapts, and publishes everywhere.
+              {variant === "test"
+                ? "Your AI content manager writes, adapts, and publishes to 13 platforms. Just chat about your ideas — it handles the rest."
+                : "PostClaw is your AI content manager. Tell it what you want to say — it writes, adapts, and publishes everywhere."}
             </p>
           </AnimatedSection>
 
@@ -46,10 +62,14 @@ export default function HeroSection() {
               onClick={handleGetStarted}
               className="text-base px-10 h-14 bg-[#e8614d] hover:bg-[#d4563f] text-white"
             >
-              Start Posting Smarter
+              {variant === "test"
+                ? "Get Your AI Content Manager"
+                : "Start Posting Smarter"}
             </Button>
             <p className="text-sm text-[#555a6b] mt-3">
-              Plans from $17/mo · Cancel anytime.
+              {variant === "test"
+                ? "Cancel anytime. No contracts."
+                : "Plans from $17/mo · Cancel anytime."}
             </p>
           </AnimatedSection>
         </div>
