@@ -21,7 +21,9 @@ fi
 # Copy skills from Docker image to OpenClaw managed directory
 # Skills are baked into /app/skills/ at build time but OpenClaw
 # looks for managed skills in ~/.openclaw/skills/
+# Clean first to remove stale skills from previous images (e.g. late-api → zernio-cli)
 echo "Syncing skills to managed directory..."
+rm -rf "$CONFIG_DIR/skills/"*
 for skill_dir in /app/skills/*/; do
   skill_name=$(basename "$skill_dir")
   if [ -d "$skill_dir" ]; then
