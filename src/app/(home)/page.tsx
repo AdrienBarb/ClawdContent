@@ -84,7 +84,7 @@ export default async function Home() {
 
   let heroVariant = "control";
   if (distinctId) {
-    const flag = await getFeatureFlag("hero-copy-experiment", distinctId);
+    const flag = await getFeatureFlag("hero-section-experiment", distinctId);
     if (flag === "test") {
       heroVariant = "test";
     }
