@@ -14,9 +14,17 @@ import {
   Menu,
   UserCircle,
   Gift,
+  ChevronsUpDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Sheet,
   SheetContent,
@@ -29,8 +37,11 @@ const navItems = [
   { href: appRouter.dashboard, label: "Bot", icon: Bot },
   { href: appRouter.accounts, label: "Accounts", icon: Share2 },
   { href: appRouter.context, label: "Context", icon: UserCircle },
-  { href: appRouter.billing, label: "Billing", icon: CreditCard },
   { href: appRouter.credits, label: "Credits", icon: Coins },
+];
+
+const userMenuItems = [
+  { href: appRouter.billing, label: "Billing", icon: CreditCard },
   { href: appRouter.settings, label: "Settings", icon: Settings },
 ];
 
@@ -143,50 +154,71 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
         </Link>
       </div>
 
-      {/* User section */}
+      {/* User section with dropdown */}
       <div
-        className="p-4 border-t"
+        className="border-t"
         style={{
           borderColor: "var(--sidebar-border)",
           background: "var(--sidebar-user-bg)",
         }}
       >
-        <div className="flex items-center gap-3">
-          <Avatar className="h-9 w-9 shrink-0">
-            <AvatarFallback
-              className="text-xs font-semibold text-white"
-              style={{ background: "var(--sidebar-accent)" }}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className="flex w-full items-center gap-3 p-4 cursor-pointer transition-colors"
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "var(--sidebar-bg-hover)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "transparent";
+              }}
             >
-              {getInitials(session?.user?.name, session?.user?.email)}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate text-white">
-              {session?.user?.name || "User"}
-            </p>
-            <p
-              className="text-xs truncate"
-              style={{ color: "var(--sidebar-text)" }}
-            >
-              {session?.user?.email}
-            </p>
-          </div>
-          <button
-            onClick={handleSignOut}
-            className="h-8 w-8 shrink-0 flex items-center justify-center rounded-md transition-colors cursor-pointer"
-            style={{ color: "var(--sidebar-text)" }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "var(--sidebar-bg-hover)";
-              e.currentTarget.style.color = "#ffffff";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "transparent";
-              e.currentTarget.style.color = "var(--sidebar-text)";
-            }}
+              <Avatar className="h-9 w-9 shrink-0">
+                <AvatarFallback
+                  className="text-xs font-semibold text-white"
+                  style={{ background: "var(--sidebar-accent)" }}
+                >
+                  {getInitials(session?.user?.name, session?.user?.email)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0 text-left">
+                <p className="text-sm font-medium truncate text-white">
+                  {session?.user?.name || "User"}
+                </p>
+                <p
+                  className="text-xs truncate"
+                  style={{ color: "var(--sidebar-text)" }}
+                >
+                  {session?.user?.email}
+                </p>
+              </div>
+              <ChevronsUpDown
+                className="h-4 w-4 shrink-0"
+                style={{ color: "var(--sidebar-text)" }}
+              />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            side="top"
+            align="start"
+            className="w-56"
+            sideOffset={4}
           >
-            <LogOut className="h-4 w-4" />
-          </button>
-        </div>
+            {userMenuItems.map((item) => (
+              <DropdownMenuItem key={item.href} asChild>
+                <Link href={item.href} onClick={onNavigate}>
+                  <item.icon className="h-4 w-4" />
+                  {item.label}
+                </Link>
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleSignOut}>
+              <LogOut className="h-4 w-4" />
+              Sign out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );
