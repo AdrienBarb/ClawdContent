@@ -1,7 +1,9 @@
 FROM ghcr.io/openclaw/openclaw:latest
 
 # Install the Zernio CLI binary globally (the bot calls `zernio` commands directly)
+USER root
 RUN npm install -g @zernio/cli && zernio --version
+USER node
 
 # Install the Zernio CLI skill from ClawHub (reference docs for the bot)
 RUN for i in 1 2 3 4 5; do npx clawhub@latest install zernio-cli --force && break || echo "Attempt $i failed, retrying in 60s..." && sleep 60; done && \
