@@ -1,7 +1,7 @@
 FROM ghcr.io/openclaw/openclaw:latest
 
 # Install the Zernio CLI skill from ClawHub (retry on rate limit)
-RUN for i in 1 2 3 4 5; do npx clawhub@latest install mikipalet/zernio-cli --force && break || echo "Attempt $i failed, retrying in 60s..." && sleep 60; done && \
+RUN for i in 1 2 3 4 5; do npx clawhub@latest install zernio-cli --force && break || echo "Attempt $i failed, retrying in 60s..." && sleep 60; done && \
     test -d /app/skills/zernio-cli && echo "zernio-cli skill installed successfully" || (echo "FATAL: zernio-cli skill not installed" && exit 1)
 
 # Install content quality pipeline skills
