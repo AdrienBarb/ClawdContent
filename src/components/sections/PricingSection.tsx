@@ -42,8 +42,7 @@ export default function PricingSection() {
 
           <AnimatedSection delay={0.2}>
             <p className="text-center text-xs text-[#555a6b] mt-8">
-              Powered by OpenClaw, the open-source AI agent with 140K+ GitHub
-              stars
+              Powered by open-source AI technology
             </p>
           </AnimatedSection>
         </div>

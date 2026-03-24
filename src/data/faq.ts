@@ -2,12 +2,12 @@ export const faqs = [
   {
     question: "How does it actually work?",
     answer:
-      "After you sign up and subscribe, we deploy a private OpenClaw instance just for you. You connect your social media accounts from the dashboard, then start chatting with your AI assistant. Tell it what to post — it writes the content, adapts it for each platform, and publishes. That's it.",
+      "After you sign up and subscribe, we deploy a private AI content manager just for you. You connect your social media accounts from the dashboard, then start chatting with it. Tell it what to post — it writes the content, adapts it for each platform, and publishes. That's it.",
   },
   {
-    question: "What is OpenClaw?",
+    question: "What technology powers PostClaw?",
     answer:
-      "OpenClaw is the most popular open-source AI agent framework, with over 140K GitHub stars. PostClaw uses OpenClaw to give you a private, dedicated AI assistant you chat with directly from your dashboard. We handle all the setup, hosting, and security — you just chat.",
+      "PostClaw runs on OpenClaw, the most popular open-source AI agent framework with over 140K GitHub stars. Each user gets a private, dedicated AI assistant running on its own isolated server. We handle all the setup, hosting, and security — you just chat.",
   },
   {
     question: "What platforms are supported?",
@@ -17,7 +17,7 @@ export const faqs = [
   {
     question: "Is the content actually good?",
     answer:
-      "Yes. OpenClaw uses advanced AI to write original content, not generic templates. It understands each platform's format, tone, and best practices — so your LinkedIn post sounds professional while your tweet is punchy and concise. You can also review and edit before publishing.",
+      "Yes. PostClaw uses advanced AI to write original content, not generic templates. It understands each platform's format, tone, and best practices — so your LinkedIn post sounds professional while your tweet is punchy and concise. You can also review and edit before publishing.",
   },
   {
     question: "Is my data private?",

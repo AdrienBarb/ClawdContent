@@ -12,7 +12,7 @@ const personas = [
     icon: Palette,
     title: "Small Content Creators",
     description:
-      "You have ideas but no team. OpenClaw turns one idea into 13 platform-ready posts while you focus on what you're actually good at.",
+      "You have ideas but no team. Your AI content manager turns one idea into 13 platform-ready posts while you focus on what you're actually good at.",
   },
   {
     icon: Users,

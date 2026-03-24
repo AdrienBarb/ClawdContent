@@ -3,7 +3,7 @@ import { Github, Lock, Zap } from "lucide-react";
 
 const stats = [
   { value: "13", label: "Platforms Supported" },
-  { value: "140K+", label: "OpenClaw GitHub Stars" },
+  { value: "140K+", label: "GitHub Stars" },
   { value: "< 2 min", label: "Setup Time" },
   { value: "24/7", label: "Always-On Bot" },
 ];
@@ -11,9 +11,9 @@ const stats = [
 const trustPoints = [
   {
     icon: Github,
-    title: "Built on OpenClaw",
+    title: "Open-Source & Transparent",
     description:
-      "The most popular open-source AI agent framework with 140K+ GitHub stars. Battle-tested, transparent, community-driven.",
+      "Built on battle-tested open-source technology with 140K+ GitHub stars. Public code, active community, proven reliability.",
   },
   {
     icon: Lock,

@@ -12,16 +12,16 @@ const steps = [
   {
     icon: MessageSquare,
     step: "2",
-    title: "Chat with OpenClaw",
+    title: "Chat with your AI content manager",
     description:
-      'Tell PostClaw what to post. "Write about our product launch" — plain language, nothing to learn.',
+      'Tell it what to post. "Write about our product launch" — plain language, nothing to learn.',
   },
   {
     icon: Send,
     step: "3",
     title: "It writes, adapts, and publishes",
     description:
-      "OpenClaw rewrites the content for each platform\u2019s tone and format, then publishes everywhere. You\u2019re done.",
+      "Your AI content manager rewrites the content for each platform\u2019s tone and format, then publishes everywhere. You\u2019re done.",
   },
 ];
 
