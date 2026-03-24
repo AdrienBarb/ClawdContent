@@ -80,7 +80,7 @@ export default function DashboardFlow({
           </div>
 
           {/* Headline — outcome-focused, contrast effect */}
-          <div className="text-center mb-8">
+          <div className="text-center mb-6">
             <h1 className="text-3xl font-bold tracking-tight text-gray-900 mb-3">
               Stop juggling platforms.
               <br />
@@ -89,6 +89,22 @@ export default function DashboardFlow({
             <p className="text-gray-500 text-base max-w-md mx-auto">
               Tell your AI assistant what to post. It writes, adapts, and
               publishes to every platform — so you don&apos;t have to.
+            </p>
+          </div>
+
+          {/* CTA — moved above the fold, pulse glow animation */}
+          <div className="text-center mb-10 animate-fade-in-up">
+            <Button
+              size="lg"
+              className="bg-[#e8614d] hover:bg-[#d4563f] text-white px-8 text-base h-12 cursor-pointer animate-pulse-glow"
+              onClick={() => setShowSubscribeModal(true)}
+            >
+              Start posting everywhere
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+            {/* Anchoring + regret aversion */}
+            <p className="text-xs text-gray-400 mt-3">
+              Plans from $17/mo · Cancel anytime
             </p>
           </div>
 
@@ -129,22 +145,6 @@ export default function DashboardFlow({
             <span className="flex h-8 items-center text-xs font-medium text-gray-400 ml-1">
               +4 more
             </span>
-          </div>
-
-          {/* CTA — action + outcome, not "Get started" */}
-          <div className="text-center">
-            <Button
-              size="lg"
-              className="bg-[#e8614d] hover:bg-[#d4563f] text-white px-8 text-base h-12 cursor-pointer"
-              onClick={() => setShowSubscribeModal(true)}
-            >
-              Start posting everywhere
-              <ArrowRight className="h-4 w-4 ml-2" />
-            </Button>
-            {/* Anchoring + regret aversion */}
-            <p className="text-xs text-gray-400 mt-3">
-              Plans from $17/mo · Cancel anytime
-            </p>
           </div>
 
           {/* Tutorial videos */}
