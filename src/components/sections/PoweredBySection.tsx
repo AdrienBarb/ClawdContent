@@ -21,7 +21,7 @@ const technologies = [
     stat: "13+ Platforms",
     description:
       "Unified social media API for publishing, scheduling, and account management across every major platform.",
-    url: "https://zernio.com/",
+    url: "https://zernio.com/?utm_source=postclaw",
   },
 ];
 

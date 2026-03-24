@@ -137,7 +137,7 @@ export default async function Footer() {
               />
             </a>
             <a
-              href="https://zernio.com/"
+              href="https://zernio.com/?utm_source=postclaw"
               target="_blank"
               rel="noopener noreferrer"
               className="opacity-70 hover:opacity-100 transition-opacity"
