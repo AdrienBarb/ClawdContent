@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Test script for Late API integration
+ * Test script for Zernio API integration (formerly Late API)
  * Usage:
  *   node scripts/test-late-api.mjs profiles:list
  *   node scripts/test-late-api.mjs profiles:create "My Brand"
@@ -14,16 +14,18 @@
 import { readFileSync } from "fs";
 import { resolve } from "path";
 
-// Load LATE_API_KEY from .env
+// Load ZERNIO_API_KEY (or legacy LATE_API_KEY) from .env
 const envPath = resolve(process.cwd(), ".env");
 const envContent = readFileSync(envPath, "utf-8");
-const apiKeyMatch = envContent.match(/^LATE_API_KEY=(.+)$/m);
+const apiKeyMatch =
+  envContent.match(/^ZERNIO_API_KEY=(.+)$/m) ||
+  envContent.match(/^LATE_API_KEY=(.+)$/m);
 if (!apiKeyMatch) {
-  console.error("LATE_API_KEY not found in .env");
+  console.error("ZERNIO_API_KEY (or LATE_API_KEY) not found in .env");
   process.exit(1);
 }
 const API_KEY = apiKeyMatch[1].trim();
-const BASE_URL = "https://getlate.dev/api/v1";
+const BASE_URL = "https://zernio.com/api/v1";
 
 async function api(method, path, body) {
   const url = `${BASE_URL}${path}`;
@@ -148,7 +150,7 @@ switch (command) {
   }
 
   default: {
-    console.log(`Late API Test Script
+    console.log(`Zernio API Test Script
 
 Commands:
   profiles:list                          List all profiles

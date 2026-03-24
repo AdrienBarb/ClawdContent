@@ -11,9 +11,9 @@ mkdir -p "$CONFIG_DIR"
 mkdir -p "$WORKSPACE_DIR"
 mkdir -p "$CONFIG_DIR/skills"
 
-# Verify late-api skill is installed (baked into Docker image)
-if [ ! -d "/app/skills/late-api" ]; then
-  echo "FATAL: late-api skill not found at /app/skills/late-api"
+# Verify zernio-cli skill is installed (baked into Docker image)
+if [ ! -d "/app/skills/zernio-cli" ]; then
+  echo "FATAL: zernio-cli skill not found at /app/skills/zernio-cli"
   echo "The Docker image may have been built without the skill."
   exit 1
 fi
@@ -30,8 +30,14 @@ for skill_dir in /app/skills/*/; do
   fi
 done
 
+# Backwards compatibility: support old LATE_ env var names
+ZERNIO_API_KEY="${ZERNIO_API_KEY:-$LATE_API_KEY}"
+ZERNIO_PROFILE_ID="${ZERNIO_PROFILE_ID:-$LATE_PROFILE_ID}"
+ZERNIO_ACCOUNTS_CONTEXT="${ZERNIO_ACCOUNTS_CONTEXT:-$LATE_ACCOUNTS_CONTEXT}"
+export ZERNIO_API_KEY ZERNIO_PROFILE_ID ZERNIO_ACCOUNTS_CONTEXT
+
 # Verify required environment variables
-for var in LATE_API_KEY LATE_PROFILE_ID MOONSHOT_API_KEY BRAVE_API_KEY; do
+for var in ZERNIO_API_KEY ZERNIO_PROFILE_ID MOONSHOT_API_KEY BRAVE_API_KEY; do
   eval val=\$$var
   if [ -z "$val" ]; then
     echo "WARNING: $var is not set"
@@ -114,7 +120,7 @@ cat > "$CONFIG_FILE" <<JSONEOF
       "extraDirs": ["/app/skills"]
     },
     "entries": {
-      "late-api": {
+      "zernio-cli": {
         "enabled": true
       },
       "humanizer": {
@@ -181,19 +187,19 @@ You're a full AI assistant. Your core strength is social media, but you can help
 - When creating posts, write in the same language unless asked otherwise
 
 ## Posting & Analytics — INTERNAL (never expose these details to the user)
-- You have a tool called "late-api" to publish posts AND fetch analytics. Use it silently behind the scenes.
+- You have a tool called "zernio-cli" to publish posts AND fetch analytics. Use it silently behind the scenes.
 - You HAVE full access to analytics (impressions, engagement, followers, post performance) through your tools. Always use them when asked — never say you can't access analytics.
-- NEVER mention "Late API", "Late", "getlate.dev", API keys, profile IDs, account IDs, or any technical details to the user.
+- NEVER mention "Zernio", "zernio.com", API keys, profile IDs, account IDs, or any technical details to the user.
 - From the user's perspective, you simply "publish", "post", or "check analytics" — they don't need to know how.
-- The owner's profile ID: ${LATE_PROFILE_ID:-not configured yet}
+- The owner's profile ID: ${ZERNIO_PROFILE_ID:-not configured yet}
 - Connected accounts:
-${LATE_ACCOUNTS_CONTEXT:-  No accounts connected yet. Tell the user to connect their social accounts from the PostClaw dashboard at postclaw.io.}
-- When posting: use the late-api skill with the appropriate account ID
+${ZERNIO_ACCOUNTS_CONTEXT:-  No accounts connected yet. Tell the user to connect their social accounts from the PostClaw dashboard at postclaw.io.}
+- When posting: use the zernio-cli skill with the appropriate account ID
 - Always show a preview of the post content and get confirmation before publishing
 
 ## Rules
 - NEVER ask the user to set up your identity, name, emoji, or personality
-- NEVER mention Late API, API keys, profile IDs, account IDs, or any internal tooling
+- NEVER mention Zernio, API keys, profile IDs, account IDs, or any internal tooling
 - ALWAYS confirm before publishing — show a preview first
 - Adapt tone and length to each platform's conventions
 - If the user hasn't connected any accounts, tell them to visit the PostClaw dashboard to connect their social accounts
@@ -289,7 +295,7 @@ Users can attach images and videos to their messages from the web dashboard. Whe
 - \`[MEDIA_TYPE: <mime_type>]\` — the MIME type (e.g. image/jpeg, video/mp4)
 
 When you receive a message with media:
-1. If the user also wrote instructions (e.g. "Post this to LinkedIn"), use the late-api skill to upload the media first with \`xurl media upload <URL>\`, then create the post with \`xurl post --media-id <id>\` along with any text content.
+1. If the user also wrote instructions (e.g. "Post this to LinkedIn"), use the zernio-cli skill to upload the media first with \`zernio media:upload <URL>\`, then create the post with \`zernio posts:create --media-id <id>\` along with any text content.
 2. If the user sent media without any context or instructions, ask what they'd like to do with it (e.g. "Nice photo! Want me to post this somewhere? Which platform?").
 3. NEVER show or repeat the Cloudinary URL or media ID to the user — just refer to it as "your image" or "your video".
 4. Note: some platforms have video length/size limits. If a video post fails, let the user know they may need a shorter or smaller file.

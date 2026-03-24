@@ -44,7 +44,7 @@ PostClaw provides each user with their own private AI assistant via a web chat i
 - AI Agent: OpenClaw (open-source)
 - LLM: Kimi K2.5 by Moonshot
 - Interface: Web chat via OpenClaw Gateway API
-- Social Media API: Late API (getlate.dev)
+- Social Media API: Zernio (zernio.com)
 - Hosting: Fly.io (isolated container per user)
 
 ## Important Pages

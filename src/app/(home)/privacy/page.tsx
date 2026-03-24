@@ -206,7 +206,7 @@ export default function PrivacyPage() {
                 instance (Europe)
               </li>
               <li>
-                <strong>Late API (getlate.dev)</strong> — social media posting
+                <strong>Zernio (zernio.com)</strong> — social media posting
                 (OAuth tokens and post data)
               </li>
               <li>

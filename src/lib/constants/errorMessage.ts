@@ -15,7 +15,7 @@ export const errorMessages = {
   PROVISIONING_FAILED: "Failed to set up your bot. Please contact support.",
   BOT_NOT_FOUND: "Bot not found. Please set up your bot first.",
   SUBSCRIPTION_REQUIRED: "An active subscription is required.",
-  LATE_API_ERROR: "Failed to communicate with social media service.",
+  ZERNIO_API_ERROR: "Failed to communicate with social media service.",
   TRANSCRIPTION_FAILED: "Failed to transcribe audio. Please try again.",
   INSUFFICIENT_CREDITS: "Not enough credits. Purchase more to continue.",
   GENERATION_FAILED: "Image generation failed. Please try again.",

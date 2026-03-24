@@ -85,7 +85,7 @@ export async function syncAccountsFromLate(userId: string): Promise<void> {
   // Update container with new accounts context
   const context = await buildAccountsContext(userId);
   await updateContainerEnvVars(userId, {
-    LATE_ACCOUNTS_CONTEXT: context,
+    ZERNIO_ACCOUNTS_CONTEXT: context,
   }).catch((err) =>
     console.error(`Failed to update container env vars: ${err}`)
   );
@@ -114,7 +114,7 @@ export async function disconnectAccount(
   // Update container with new accounts context
   const context = await buildAccountsContext(userId);
   await updateContainerEnvVars(userId, {
-    LATE_ACCOUNTS_CONTEXT: context,
+    ZERNIO_ACCOUNTS_CONTEXT: context,
   }).catch((err) =>
     console.error(`Failed to update container env vars: ${err}`)
   );

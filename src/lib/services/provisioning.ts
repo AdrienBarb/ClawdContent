@@ -67,9 +67,9 @@ export async function provisionUser(
   const accountsContext = formatAccountsContext(lateProfile.socialAccounts);
   const userContext = formatUserContext(user);
   const envVars: Record<string, string> = {
-    LATE_API_KEY: lateProfile.lateApiKey,
-    LATE_PROFILE_ID: lateProfile.lateProfileId,
-    LATE_ACCOUNTS_CONTEXT: accountsContext,
+    ZERNIO_API_KEY: lateProfile.lateApiKey,
+    ZERNIO_PROFILE_ID: lateProfile.lateProfileId,
+    ZERNIO_ACCOUNTS_CONTEXT: accountsContext,
     USER_CONTEXT: userContext,
     MOONSHOT_API_KEY: process.env.MOONSHOT_API_KEY ?? "",
     BRAVE_API_KEY: process.env.BRAVE_API_KEY ?? "",

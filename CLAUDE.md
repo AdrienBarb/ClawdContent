@@ -2,19 +2,19 @@
 
 ## What is PostClaw?
 
-PostClaw is a SaaS that gives each user an AI content manager via a web-based chat interface. Users chat with their AI assistant to create, adapt, and publish social media posts across 13+ social media platforms via Late API.
+PostClaw is a SaaS that gives each user an AI content manager via a web-based chat interface. Users chat with their AI assistant to create, adapt, and publish social media posts across 13+ social media platforms via Zernio API.
 
 **How it works:**
 
 1. User signs up, pays via Stripe (plans from $17/mo)
-2. We auto-provision a private OpenClaw container on Fly.io + a Late API profile
+2. We auto-provision a private OpenClaw container on Fly.io + a Zernio profile
 3. User connects their social accounts
 4. User chats with their AI assistant in the web app to create and publish content
 
 **Key services:**
 
 - **OpenClaw** — Open-source AI agent framework (runs in Docker on Fly.io)
-- **Late API** (getlate.dev) — Unified social media API
+- **Zernio** (zernio.com) — Unified social media API
 - **Kimi K2.5** (Moonshot) — LLM powering the bot
 - **Fly.io** — Container hosting (one machine per user)
 
@@ -26,22 +26,22 @@ PostClaw is a SaaS that gives each user an AI content manager via a web-based ch
 User ─── Web Chat (Next.js) ─── OpenClaw Container (Fly.io)
                                        │
                                        ├── Kimi K2.5 (Moonshot API)
-                                       └── Late API (social posting)
+                                       └── Zernio API (social posting)
 
 Dashboard (Next.js on Vercel)
     ├── Stripe (payments)
     ├── Fly.io Machines API (container management)
-    ├── Late API (account connections)
+    ├── Zernio API (account connections)
     └── PostgreSQL (Supabase)
 ```
 
-**Per-user isolation:** Each user gets their own Fly.io machine with a **profile-scoped Late API key** that can only access their own social accounts. One master Late account, many scoped keys.
+**Per-user isolation:** Each user gets their own Fly.io machine with a **profile-scoped Zernio API key** that can only access their own social accounts. One master Zernio account, many scoped keys.
 
 **Custom Docker image:** `ghcr.io/adrienbarb/postclaw-agent`
 
 - Tags: `:latest` (production, built from `main`) and `:dev` (testing, built from `dev` branch)
 - Entrypoint generates `openclaw.json` + `SOUL.md` from env vars
-- Pre-installs the `late-api` skill from ClawHub
+- Pre-installs the `zernio-cli` skill from ClawHub
 - GitHub Action auto-builds on changes to `docker/openclaw/`
 - `OPENCLAW_DOCKER_IMAGE` env var overrides image used in provisioning (defaults to `:latest`)
 
@@ -76,7 +76,7 @@ User (1:1) ── Subscription
 | **User**          | Authenticated user (Better Auth)                                           |
 | **Subscription**  | Stripe subscription: customerId, subscriptionId, status, period dates      |
 | **FlyMachine**    | User's container: machineId, volumeId, region, status                      |
-| **LateProfile**   | User's Late API profile: profileId, scoped API key                         |
+| **LateProfile**   | User's Zernio profile: profileId, scoped API key (model name is legacy)    |
 | **SocialAccount** | Connected social platform: accountId, platform, username, status           |
 | **Media**         | Uploaded media: cloudinaryId, url, resourceType, format, bytes, dimensions |
 | **Session**       | Auth session                                                               |
@@ -129,7 +129,7 @@ src/
 │   │   └── ConnectAccountButtons.tsx # Platform connect buttons with icons
 │   └── providers/                 # Context providers
 ├── lib/
-│   ├── late/                      # Late API client + mutations
+│   ├── late/                      # Zernio API client + mutations (directory name is legacy)
 │   ├── fly/                       # Fly.io Machines API client + mutations
 │   ├── services/                  # Business logic
 │   │   ├── provisioning.ts        # Create/destroy/retry user containers
@@ -188,7 +188,7 @@ The dashboard is **chat-first** — after subscribing, users land directly on th
 - **Connect buttons** (`ConnectAccountButtons.tsx`): Platform icons with brand colors.
 - **Content area**: Light gray background (`#f8f9fc`), white rounded cards, `max-w-5xl`.
 
-Supported platforms: **13+ social media platforms** via Late API (Twitter/X, LinkedIn, Bluesky, Threads, Facebook, Instagram, Pinterest, TikTok, YouTube, Reddit, Mastodon, and more). Media uploads (images/videos) supported via Cloudinary.
+Supported platforms: **13+ social media platforms** via Zernio (Twitter/X, LinkedIn, Bluesky, Threads, Facebook, Instagram, Pinterest, TikTok, YouTube, Reddit, Mastodon, and more). Media uploads (images/videos) supported via Cloudinary.
 
 ---
 
@@ -200,9 +200,9 @@ Services live in `src/lib/services/`. Routes call services, services call adapte
 
 **Provisioning (on checkout.session.completed):**
 
-1. Create Late profile → scoped API key
+1. Create Zernio profile → scoped API key
 2. Create Fly.io volume + machine with env vars (single API call for machine)
-3. Save FlyMachine + LateProfile to DB
+3. Save FlyMachine + LateProfile (legacy name) to DB
 
 **Deprovisioning (on subscription.deleted):**
 
@@ -211,8 +211,8 @@ Services live in `src/lib/services/`. Routes call services, services call adapte
 
 **Social account connection:**
 
-1. Get Late OAuth URL → redirect user
-2. On callback, sync accounts from Late API → upsert DB → update container env vars
+1. Get Zernio OAuth URL → redirect user
+2. On callback, sync accounts from Zernio API → upsert DB → update container env vars
 
 ---
 
@@ -253,8 +253,8 @@ RESEND_API_KEY=
 FLY_API_TOKEN=
 FLY_APP_NAME=
 
-# Late API (master key — not per-user)
-LATE_API_KEY=
+# Zernio (master key — not per-user, formerly LATE_API_KEY)
+ZERNIO_API_KEY=
 
 # LLM (Moonshot/Kimi K2.5)
 MOONSHOT_API_KEY=
@@ -296,7 +296,7 @@ npm run email:dev          # Preview email templates
 | Phase         | Status   | What it covers                                                           |
 | ------------- | -------- | ------------------------------------------------------------------------ |
 | **Phase 0**   | COMPLETE | Fly.io deploy + OpenClaw + Kimi K2.5                                     |
-| **Phase 0.5** | COMPLETE | Late API integration + social posting                                    |
+| **Phase 0.5** | COMPLETE | Zernio (formerly Late API) integration + social posting                  |
 | **Phase 1**   | COMPLETE | DB schema, Stripe subscription, auto-provisioning, dashboard, onboarding |
 | **Phase 2**   | TODO     | Monitoring, production hardening, self-service billing portal            |
 
@@ -385,11 +385,12 @@ const { mutate } = usePost("/api/bot", { onSuccess: () => { ... } });
 - Period dates on subscription **items** (`sub.items.data[0].current_period_start`), not on subscription
 - Invoice subscription via `invoice.parent?.subscription_details?.subscription`
 
-### Late API
+### Zernio API (formerly Late API)
 
-- Base URL: `https://getlate.dev/api/v1` (changed from old `api.getlate.dev` domain)
-- Client: `src/lib/late/client.ts`
+- Base URL: `https://zernio.com/api/v1`
+- Client: `src/lib/late/client.ts` (directory name is legacy)
 - Profile-scoped API keys for per-user isolation
+- ClawHub skill: `mikipalet/zernio-cli` (commands: `zernio posts:create`, `zernio media:upload`, etc.)
 
 ### Fly.io
 
@@ -417,7 +418,7 @@ const { mutate } = usePost("/api/bot", { onSuccess: () => { ... } });
 - Unsigned upload preset: `postclaw_unsigned`, cloud: `postclaw`
 - Media saved to `Media` table via `/api/media/upload` (fire-and-forget from client)
 - Chat messages include `[MEDIA: <url>]` + `[MEDIA_TYPE: <mime>]` tags
-- SOUL.md teaches bot to handle media via Late API skill (`xurl media upload` + `xurl post --media-id`)
+- SOUL.md teaches bot to handle media via Zernio CLI skill (`zernio media:upload` + `zernio posts:create --media-id`)
 
 ### OpenClaw Container
 
