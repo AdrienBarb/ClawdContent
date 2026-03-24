@@ -5,11 +5,9 @@ import { prisma } from "@/lib/db/prisma";
 import { resendClient } from "@/lib/resend/resendClient";
 import { MagicLinkEmail } from "@/lib/emails/MagicLinkEmail";
 import config from "@/lib/config";
-import {
-  captureServerEvent,
-  identifyUser,
-} from "@/lib/tracking/postHogClient";
+import { captureServerEvent, identifyUser } from "@/lib/tracking/postHogClient";
 import { getDistinctIdFromHeader } from "@/lib/tracking/distinctId";
+import { getUtmFromCookieHeader } from "@/lib/tracking/utm";
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -57,8 +55,7 @@ export const auth = betterAuth({
     user: {
       create: {
         after: async (user, ctx) => {
-          const cookieHeader =
-            ctx?.headers?.get?.("cookie") ?? "";
+          const cookieHeader = ctx?.headers?.get?.("cookie") ?? "";
           const anonId = getDistinctIdFromHeader(cookieHeader);
           const distinctId = anonId ?? user.id;
 
@@ -70,12 +67,21 @@ export const auth = betterAuth({
             });
           }
 
+          const utmData = getUtmFromCookieHeader(cookieHeader);
+          console.log("🚀 ~ utmData:", utmData);
+
           await captureServerEvent(distinctId, "user_signed_up", {
             userId: user.id,
             email: user.email,
-            authMethod: ctx?.path?.includes("callback")
-              ? "oauth"
-              : "email",
+            authMethod: ctx?.path?.includes("callback") ? "oauth" : "email",
+            ...(utmData && {
+              utm_source: utmData.utm_source,
+              utm_medium: utmData.utm_medium,
+              utm_campaign: utmData.utm_campaign,
+              utm_content: utmData.utm_content,
+              utm_term: utmData.utm_term,
+              $referrer: utmData.referrer,
+            }),
           });
         },
       },
@@ -88,9 +94,7 @@ export const auth = betterAuth({
   secret: (() => {
     const secret = process.env.BETTER_AUTH_SECRET;
     if (!secret) {
-      throw new Error(
-        "BETTER_AUTH_SECRET environment variable is required"
-      );
+      throw new Error("BETTER_AUTH_SECRET environment variable is required");
     }
     return secret;
   })(),
