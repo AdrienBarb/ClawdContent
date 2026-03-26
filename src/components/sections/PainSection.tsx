@@ -1,12 +1,12 @@
 import AnimatedSection from "@/components/sections/AnimatedSection";
-import { RotateCw } from "lucide-react";
 
 const steps = [
-  "Open LinkedIn. Write a post. Publish.",
-  "Open Twitter. Rewrite it shorter. Publish.",
-  "Open Threads. Rewrite again. Publish.",
-  "Open Bluesky. One more time. Publish.",
-  "Open Instagram. Rethink the format. Publish.",
+  "Wake up. Realize you haven't posted in 3 days.",
+  "Open LinkedIn. Stare at a blank editor. Write something. Delete it.",
+  "Copy it to Twitter. Too long. Rewrite.",
+  "Open Threads. Rewrite again, different tone.",
+  "Instagram needs a visual. You don't have one.",
+  "Give up on Bluesky, TikTok, and Pinterest entirely.",
 ];
 
 export default function PainSection() {
@@ -15,12 +15,11 @@ export default function PainSection() {
       <div className="container mx-auto">
         <div className="mx-auto max-w-3xl">
           <AnimatedSection>
-            <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 text-white">
-              Sound Familiar?
+            <h2 className="text-4xl md:text-5xl font-bold text-center mb-16 text-white leading-tight">
+              You didn&apos;t start your business
+              <br />
+              to be a social media manager.
             </h2>
-            <p className="text-center text-[#7a7f94] text-lg mb-12">
-              This is what managing social media looks like today.
-            </p>
           </AnimatedSection>
 
           <div className="space-y-3 mb-8">
@@ -38,16 +37,20 @@ export default function PainSection() {
 
           <AnimatedSection delay={0.5}>
             <div className="flex items-center gap-4 bg-[#151929] border border-[#e8614d]/20 rounded-2xl px-6 py-4">
-              <RotateCw className="h-4 w-4 text-[#555a6b] shrink-0" />
-              <span className="text-[#555a6b] text-[0.95rem] italic">
-                Repeat tomorrow. And the next day. And the next...
+              <span className="text-[#555a6b] font-mono text-sm shrink-0">
+                7.
+              </span>
+              <span className="text-[#8a8f9e] text-[0.95rem] italic">
+                Tell yourself you&apos;ll &ldquo;batch content this
+                weekend.&rdquo; You won&apos;t.
               </span>
             </div>
           </AnimatedSection>
 
           <AnimatedSection delay={0.6}>
             <p className="text-center text-[#e8614d] font-semibold text-lg mt-12">
-              What if one message could replace all of that?
+              What if you could hand all of this to someone who actually wants to
+              do it?
             </p>
           </AnimatedSection>
         </div>

@@ -16,13 +16,13 @@ const capabilities = [
     icon: PenLine,
     title: "Write Posts",
     description:
-      '\u201CWrite about our new feature launch.\u201D Get a ready-to-publish post in seconds. No prompts to engineer, no templates to fill.',
+      '\u201CWrite about our new feature launch.\u201D Get a ready-to-publish post in seconds. No prompts to engineer, no templates to fill \u2014 just tell it what you want to say.',
   },
   {
     icon: Languages,
     title: "Adapt for Every Platform",
     description:
-      "One idea becomes 13 native posts. Professional on LinkedIn, punchy on X, visual on Instagram, casual on Threads \u2014 automatically.",
+      "One idea becomes 13 native posts. Professional on LinkedIn, punchy on X, visual on Instagram, casual on Threads \u2014 automatically. No copy-pasting, no reformatting.",
   },
   {
     icon: Send,
@@ -34,19 +34,25 @@ const capabilities = [
     icon: CalendarClock,
     title: "Schedule & Automate",
     description:
-      '\u201CPost this tomorrow at 9am.\u201D Schedule one-off posts or set up recurring content. It handles the timing, even while you sleep.',
+      '\u201CPost this tomorrow at 9am.\u201D \u201CPublish my thread on Tuesday and Thursday.\u201D Schedule one-off posts or set up recurring content. It handles the timing \u2014 even while you sleep.',
   },
   {
     icon: Brain,
     title: "Remember Your Brand Voice",
     description:
-      "Your AI content manager learns your tone, style, and preferences over time. The more you use it, the more it sounds like you \u2014 not a generic AI.",
+      "This is the part other tools can\u2019t do. Your AI social media manager learns your tone, your style, your preferences, and what resonates with your audience. The more you use it, the more it sounds like you \u2014 not a generic AI.",
+  },
+  {
+    icon: CalendarDays,
+    title: "Plan Your Content Calendar",
+    description:
+      '\u201CPlan my content for the next 2 weeks.\u201D Get a full calendar with post ideas, topics, angles, and suggested publish dates across all platforms. No more staring at a blank editor.',
   },
   {
     icon: Globe,
     title: "Research the Web",
     description:
-      "It browses the web to find trending topics, competitor activity, and industry news \u2014 then turns it into content ideas for you.",
+      "It browses the web to find trending topics, competitor activity, and industry news \u2014 then turns it into content ideas tailored to your niche.",
   },
   {
     icon: ImagePlus,
@@ -55,16 +61,10 @@ const capabilities = [
       "Need a visual for your post? It creates images tailored for each platform \u2014 square for Instagram, vertical for Stories, landscape for X.",
   },
   {
-    icon: CalendarDays,
-    title: "Plan Your Content Calendar",
-    description:
-      '\u201CPlan my content for the next 2 weeks.\u201D Get a full calendar with post ideas, topics, and suggested publish dates across all platforms.',
-  },
-  {
     icon: Lightbulb,
     title: "Advise Your Strategy",
     description:
-      "Stuck on what to post? Ask for ideas. It suggests content based on your niche, what\u2019s working, and what your audience engages with.",
+      "Stuck on what to post? Ask for ideas. It suggests content based on your niche, what\u2019s performing, and what your audience engages with.",
   },
 ];
 
@@ -75,11 +75,11 @@ export default function CapabilitiesSection() {
         <div className="mx-auto max-w-5xl">
           <AnimatedSection>
             <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 text-white">
-              What Your AI Content Manager Can Do
+              What Your AI Social Media Manager Can Do
             </h2>
             <p className="text-center text-[#7a7f94] text-lg mb-16">
-              More than a posting tool. It&apos;s your full content team in one
-              chat.
+              More than a posting tool. It&apos;s the social media hire
+              you&apos;ve been putting off.
             </p>
           </AnimatedSection>
 

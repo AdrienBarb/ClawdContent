@@ -9,7 +9,7 @@ export default function DemoSection() {
             See it in action
           </h2>
           <p className="text-center text-[#8a8f9e] text-lg mb-12 max-w-2xl mx-auto">
-            From idea to published post in seconds — all from one chat.
+            From idea to 13 published posts — one conversation.
           </p>
         </AnimatedSection>
 

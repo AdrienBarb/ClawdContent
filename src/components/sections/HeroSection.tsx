@@ -18,6 +18,9 @@ export default function HeroSection({ variant = "control" }: HeroSectionProps) {
   const router = useRouter();
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
 
+  // Keep variant prop for PostHog infrastructure; copy is unified post-repositioning
+  void variant;
+
   const handleGetStarted = () => {
     if (session?.user) {
       router.push(appRouter.dashboard);
@@ -32,27 +35,17 @@ export default function HeroSection({ variant = "control" }: HeroSectionProps) {
         <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
           <AnimatedSection>
             <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-bold leading-[1.1] tracking-tight mb-8 text-white">
-              {variant === "test" ? (
-                <>
-                  Stop Spending Hours
-                  <br />
-                  <span className="text-[#e8614d]">on Social Media.</span>
-                </>
-              ) : (
-                <>
-                  Your Social Media.
-                  <br />
-                  <span className="text-[#e8614d]">Done in 30 Seconds.</span>
-                </>
-              )}
+              Your AI Social Media
+              <br />
+              <span className="text-[#e8614d]">Manager.</span>
             </h1>
           </AnimatedSection>
 
           <AnimatedSection delay={0.15}>
             <p className="text-lg md:text-xl leading-relaxed text-[#8a8f9e] max-w-2xl mb-10">
-              {variant === "test"
-                ? "Tell PostClaw what you want to say. It writes, adapts, and publishes to 13 platforms — while you do literally anything else."
-                : "PostClaw is your AI content manager. Tell it what you want to say — it writes, adapts, and publishes everywhere."}
+              PostClaw learns your brand, plans your content, and publishes to
+              13 platforms. No learning curve. Just tell it what matters — it
+              handles the rest.
             </p>
           </AnimatedSection>
 
@@ -62,14 +55,10 @@ export default function HeroSection({ variant = "control" }: HeroSectionProps) {
               onClick={handleGetStarted}
               className="text-base px-10 h-14 bg-[#e8614d] hover:bg-[#d4563f] text-white"
             >
-              {variant === "test"
-                ? "Get Your Time Back"
-                : "Start Posting Smarter"}
+              Get Started
             </Button>
             <p className="text-sm text-[#555a6b] mt-3">
-              {variant === "test"
-                ? "Plans from $17/mo · Cancel anytime."
-                : "Plans from $17/mo · Cancel anytime."}
+              Plans from $17/mo · Cancel anytime · Setup in 2 minutes
             </p>
           </AnimatedSection>
         </div>

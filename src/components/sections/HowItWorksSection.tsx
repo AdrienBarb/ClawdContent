@@ -7,21 +7,21 @@ const steps = [
     step: "1",
     title: "Connect your accounts",
     description:
-      "Sign up and link your social platforms from the dashboard. Takes less than 2 minutes.",
+      "Sign up, link your social platforms from the dashboard. Takes less than 2 minutes.",
   },
   {
     icon: MessageSquare,
     step: "2",
-    title: "Chat with your AI content manager",
+    title: "Talk to your AI social media manager",
     description:
-      'Tell it what to post. "Write about our product launch" — plain language, nothing to learn.',
+      'Tell it what to post. "Write about our product launch." "Plan my content for next week." "Make a thread about what I learned this month." Plain language, nothing to learn.',
   },
   {
     icon: Send,
     step: "3",
     title: "It writes, adapts, and publishes",
     description:
-      "Your AI content manager rewrites the content for each platform\u2019s tone and format, then publishes everywhere. You\u2019re done.",
+      "Your AI social media manager rewrites the content for each platform\u2019s tone and format, schedules it at the right time, and publishes everywhere. You\u2019re done.",
   },
 ];
 
@@ -35,7 +35,7 @@ export default function HowItWorksSection() {
               How It Works
             </h2>
             <p className="text-center text-[#7a7f94] mb-16 text-lg">
-              Three steps. No learning curve.
+              Three steps. No learning curve. No dashboard to figure out.
             </p>
           </AnimatedSection>
 

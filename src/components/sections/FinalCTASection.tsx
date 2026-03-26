@@ -27,13 +27,13 @@ export default function FinalCTASection() {
         <div className="mx-auto max-w-4xl">
           <AnimatedSection>
             <div className="rounded-[2rem] border border-[#e8614d]/20 bg-gradient-to-br from-[#1a1020] to-[#0d0f17] p-12 md:p-20 text-center">
-              <h2 className="text-4xl md:text-5xl font-bold mb-5 text-white">
-                Every Day You Wait Is Another
-                <br />
-                Day of Copy-Pasting
+              <h2 className="text-4xl md:text-5xl font-bold mb-5 text-white leading-tight">
+                Every day without PostClaw is another day of copy-pasting,
+                rewriting, and staring at blank editors.
               </h2>
               <p className="text-[#7a7f94] text-lg mb-10 max-w-lg mx-auto">
-                Setup takes less than 2 minutes. Start publishing today.
+                Setup takes 2 minutes. Your AI social media manager starts
+                learning your brand immediately.
               </p>
               <Button
                 size="lg"

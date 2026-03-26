@@ -1,24 +1,24 @@
 import AnimatedSection from "@/components/sections/AnimatedSection";
-import { Rocket, Palette, Users } from "lucide-react";
+import { Rocket, Users, Palette } from "lucide-react";
 
 const personas = [
   {
     icon: Rocket,
-    title: "Indie Hackers & Solopreneurs",
+    title: "Solo Founders & Indie Hackers",
     description:
-      "You're shipping features, talking to users, and building in public. But writing 5 platform-native posts a day? That's a full-time job you didn't sign up for.",
-  },
-  {
-    icon: Palette,
-    title: "Small Content Creators",
-    description:
-      "You have ideas but no team. Your AI content manager turns one idea into 13 platform-ready posts while you focus on what you're actually good at.",
+      "You're shipping features, closing deals, and talking to users. Writing 5 platform-native posts a day is a full-time job you didn't sign up for — and can't afford to hire for. PostClaw is the social media manager that fits your budget and your bandwidth.",
   },
   {
     icon: Users,
     title: "Small Teams & Startups",
     description:
-      "Your startup has 3 people and none of them is a social media manager. Now you don't need one.",
+      "Your team has 3 people and none of them is a social media manager. You don't need to hire one. PostClaw plans your content calendar, writes every post, adapts for each platform, and publishes on schedule — while your team builds the product.",
+  },
+  {
+    icon: Palette,
+    title: "Creators Who'd Rather Create",
+    description:
+      "You have ideas, not time. PostClaw turns one idea into 13 platform-ready posts, remembers your style, and handles publishing. You focus on the work that actually matters to you.",
   },
 ];
 
@@ -28,13 +28,13 @@ export default function WhoIsThisForSection() {
       <div className="container mx-auto">
         <div className="mx-auto max-w-5xl">
           <AnimatedSection>
-            <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 text-white">
-              You Didn't Start a Company
+            <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 text-white leading-tight">
+              Built for people who have a business to run
               <br />
-              to Manage Social Media.
+              — not a feed to manage.
             </h2>
             <p className="text-center text-[#7a7f94] text-lg mb-16">
-              Built for people who'd rather build than post.
+              &nbsp;
             </p>
           </AnimatedSection>
 
