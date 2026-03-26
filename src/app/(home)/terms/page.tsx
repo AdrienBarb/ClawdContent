@@ -35,12 +35,12 @@ export default function TermsPage() {
             2. Description of the Service
           </h2>
           <p className="text-muted-foreground">
-            PostClaw provides an AI content manager accessible via a web-based
-            chat interface. The Service allows you to create, adapt, and publish
-            social media posts to supported platforms (including Twitter/X,
-            LinkedIn, Bluesky, and Threads) through a conversational interface
-            with an AI-powered assistant. Each subscriber receives a dedicated,
-            isolated instance.
+            PostClaw provides an AI social media manager accessible via a
+            web-based chat interface. The Service allows you to create, adapt,
+            and publish social media posts to supported platforms (including
+            Twitter/X, LinkedIn, Bluesky, and Threads) through a conversational
+            interface with an AI-powered social media manager. Each subscriber
+            receives a dedicated, isolated instance.
           </p>
         </section>
 
@@ -110,8 +110,8 @@ export default function TermsPage() {
                 billing period
               </li>
               <li>
-                Your bot instance and connected accounts will be deprovisioned
-                after the billing period ends
+                Your AI social media manager and connected accounts will be
+                deprovisioned after the billing period ends
               </li>
               <li>
                 No partial refunds are provided for unused portions of a billing
@@ -148,8 +148,8 @@ export default function TermsPage() {
             <p className="text-muted-foreground">
               This guarantee applies only to your first billing cycle. Subsequent
               months are not eligible for the money-back guarantee. Upon refund,
-              your subscription will be canceled and your bot instance will be
-              deprovisioned immediately.
+              your subscription will be canceled and your AI social media manager
+              will be deprovisioned immediately.
             </p>
           </div>
         </section>

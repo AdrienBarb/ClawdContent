@@ -98,8 +98,8 @@ export default async function BlogPage() {
           Ready to Publish Everywhere from One Chat?
         </h2>
         <p className="text-[#7a7f94] mb-6 max-w-xl mx-auto">
-          PostClaw is your AI content manager. Create,
-          adapt, and publish to 13+ social platforms — all on autopilot.
+          PostClaw is your AI social media manager. It learns your brand, plans
+          your content, and publishes to 13+ social platforms.
         </p>
         <Button
           asChild

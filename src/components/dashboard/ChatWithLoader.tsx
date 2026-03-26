@@ -67,7 +67,7 @@ export default function ChatWithLoader() {
       <div className="flex flex-col items-center justify-center h-[calc(100vh-4rem)]">
         <Loader2 className="h-8 w-8 animate-spin text-[#e8614d] mb-4" />
         <h2 className="text-lg font-semibold text-gray-900 mb-1">
-          Your bot is starting up...
+          Your AI social media manager is starting up...
         </h2>
         <p className="text-sm text-gray-500">
           This usually takes a minute or two.
@@ -85,7 +85,7 @@ export default function ChatWithLoader() {
             Something went wrong
           </h2>
           <p className="text-sm text-red-700 mb-4">
-            Your bot failed to start. You can retry the setup.
+            Your AI social media manager failed to start. You can retry the setup.
           </p>
           <Button
             className="bg-red-500 hover:bg-red-600 text-white"

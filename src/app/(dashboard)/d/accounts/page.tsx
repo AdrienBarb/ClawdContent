@@ -130,7 +130,7 @@ export default function AccountsPage() {
           <Lock className="h-5 w-5 text-amber-600 shrink-0" />
           <div className="flex-1">
             <p className="text-sm font-medium text-amber-900">
-              Launch your bot to connect accounts
+              Subscribe to connect accounts
             </p>
             <p className="text-xs text-amber-700 mt-0.5">
               You need an active subscription to connect social media accounts.
@@ -140,7 +140,7 @@ export default function AccountsPage() {
             onClick={() => setShowSubscribeModal(true)}
             className="text-sm font-semibold text-[#e8614d] hover:underline cursor-pointer shrink-0"
           >
-            Launch bot
+            Subscribe
           </button>
         </div>
       )}
@@ -241,12 +241,12 @@ export default function AccountsPage() {
         />
         {isDeploying && hasActiveSubscription && (
           <p className="text-xs text-amber-500 mt-2">
-            Available once your bot finishes deploying.
+            Available once your AI social media manager finishes deploying.
           </p>
         )}
         {!hasActiveSubscription && (
           <p className="text-xs text-amber-500 mt-2">
-            Launch your bot to connect social accounts.
+            Subscribe to connect social accounts.
           </p>
         )}
         {isAtLimit && hasActiveSubscription && (

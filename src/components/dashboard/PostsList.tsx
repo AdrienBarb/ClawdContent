@@ -196,7 +196,7 @@ export default function PostsList() {
             No posts yet
           </p>
           <p className="text-xs text-gray-400">
-            Posts created through your AI assistant will appear here.
+            Posts created through your AI social media manager will appear here.
           </p>
         </div>
       )}

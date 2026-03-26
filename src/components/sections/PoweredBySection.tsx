@@ -10,7 +10,7 @@ const technologies = [
     label: "AI Agent Framework",
     stat: "140K+ GitHub Stars",
     description:
-      "The most popular open-source AI agent framework. Battle-tested, community-driven, and the AI brain powering your content manager.",
+      "The most popular open-source AI agent framework. Battle-tested, community-driven, and the AI brain powering your social media manager.",
     url: "https://openclaw.ai/",
   },
   {

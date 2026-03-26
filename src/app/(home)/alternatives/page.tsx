@@ -102,9 +102,9 @@ export default async function AlternativesPage() {
           Why Choose PostClaw?
         </h2>
         <p className="text-[#7a7f94] mb-6">
-          Your AI content manager. Create, adapt, and
-          publish to 13+ social platforms — all from one chat. Starting at
-          Plans from $17/month.
+          Your AI social media manager. It learns your brand, plans your content,
+          and publishes to 13+ social platforms — all from one chat. Plans from
+          $17/month.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Button

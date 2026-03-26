@@ -23,7 +23,7 @@ const benefits = [
     icon: Zap,
     title: "Consistent posting on autopilot",
     description:
-      "Your AI assistant creates platform-native content adapted to each audience.",
+      "Your AI social media manager creates platform-native content adapted to each audience.",
   },
   {
     icon: BarChart3,
@@ -87,8 +87,8 @@ export default function DashboardFlow({
               Start growing everywhere.
             </h1>
             <p className="text-gray-500 text-base max-w-md mx-auto">
-              Tell your AI assistant what to post. It writes, adapts, and
-              publishes to every platform — so you don&apos;t have to.
+              Tell your AI social media manager what to post. It writes, adapts,
+              and publishes to every platform — so you don&apos;t have to.
             </p>
           </div>
 

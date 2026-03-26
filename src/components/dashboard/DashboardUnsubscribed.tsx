@@ -16,18 +16,18 @@ export default function DashboardUnsubscribed() {
             <Rocket className="h-7 w-7 text-[#e8614d]" />
           </div>
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            Launch your bot
+            Get your AI social media manager
           </h2>
           <p className="text-sm text-gray-500 mb-6">
-            Subscribe to get your personal AI content manager. Create, adapt,
-            and publish posts across all your social accounts from one chat.
+            Subscribe to get your personal AI social media manager. It creates,
+            adapts, and publishes posts across all your platforms from one chat.
           </p>
           <Button
             className="bg-[#e8614d] hover:bg-[#d4563f] text-white"
             onClick={() => setShowModal(true)}
           >
             <Rocket className="h-4 w-4 mr-1.5" />
-            Launch my bot
+            Get started
           </Button>
         </div>
       </div>

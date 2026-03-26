@@ -72,9 +72,9 @@ export interface SharedFeature {
 }
 
 export const SHARED_FEATURES: SharedFeature[] = [
-  { label: "Personal AI content manager", includedIn: "all" },
+  { label: "Personal AI social media manager", includedIn: "all" },
   { label: "Private, isolated instance", includedIn: "all" },
-  { label: "24/7 always-on bot", includedIn: "all" },
+  { label: "24/7 always-on", includedIn: "all" },
   { label: "Unlimited posts", includedIn: "all" },
   { label: "AI-adapted content per platform", includedIn: "all" },
   { label: "AI content generation", includedIn: "all" },

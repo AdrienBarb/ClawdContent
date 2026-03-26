@@ -49,7 +49,7 @@ export default function SubscribeModal({
               Choose your plan
             </h1>
             <p className="text-sm text-[#7a7f94]">
-              Start publishing everywhere with your AI content manager.
+              Start publishing everywhere with your AI social media manager.
             </p>
           </div>
 

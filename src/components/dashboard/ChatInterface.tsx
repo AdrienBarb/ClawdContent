@@ -125,7 +125,7 @@ function ChatSkeleton() {
           Chat
         </h1>
         <p className="text-gray-500 mt-1">
-          Chat with your AI content manager directly from the dashboard.
+          Chat with your AI social media manager directly from the dashboard.
         </p>
       </div>
       <div className="flex-1 flex flex-col rounded-2xl bg-white shadow-sm border border-gray-100 overflow-hidden">
@@ -288,7 +288,7 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
           Chat
         </h1>
         <p className="text-gray-500 mt-1">
-          Chat with your AI content manager directly from the dashboard.
+          Chat with your AI social media manager directly from the dashboard.
         </p>
       </div>
 
@@ -304,8 +304,8 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
                 Start a conversation
               </h2>
               <p className="text-sm text-gray-500 mb-6 max-w-sm">
-                Ask your AI content manager to create, adapt, or publish social
-                media posts.
+                Ask your AI social media manager to create, adapt, or publish
+                posts across all your platforms.
               </p>
               <div className="grid gap-2 sm:grid-cols-2 w-full max-w-md">
                 {SUGGESTIONS.map((s) => (
@@ -333,7 +333,7 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
                 </p>
                 <p className="text-sm text-red-700 mt-0.5">
                   {error.message ||
-                    "Make sure your bot is running and try again."}
+                    "Make sure your AI social media manager is running and try again."}
                 </p>
               </div>
             </div>

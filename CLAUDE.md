@@ -2,14 +2,14 @@
 
 ## What is PostClaw?
 
-PostClaw is a SaaS that gives each user an AI content manager via a web-based chat interface. Users chat with their AI assistant to create, adapt, and publish social media posts across 13+ social media platforms via Zernio API.
+PostClaw is a SaaS that gives each user a private AI social media manager via a web-based chat interface. Users chat with their AI social media manager to create, adapt, and publish social media posts across 13+ platforms via Zernio API. Positioned as "Your AI Social Media Manager" — competing against the cost of hiring a human, not against other tools.
 
 **How it works:**
 
 1. User signs up, pays via Stripe (plans from $17/mo)
 2. We auto-provision a private OpenClaw container on Fly.io + a Zernio profile
 3. User connects their social accounts
-4. User chats with their AI assistant in the web app to create and publish content
+4. User chats with their AI social media manager in the web app to create and publish content
 
 **Key services:**
 
@@ -436,7 +436,7 @@ const { mutate } = usePost("/api/bot", { onSuccess: () => { ... } });
 - Home page (`src/app/(home)/page.tsx`) evaluates feature flags server-side via `getFeatureFlag()`, passes variant as prop
 - `user_signed_up` event captured in Better Auth `databaseHooks.user.create.after` — linked to anonymous distinct ID for conversion tracking
 - Experiments must be created in PostHog dashboard (feature flag key + goal metric)
-- Active experiment: `hero-copy-experiment` (control vs test hero copy)
+- Previous experiment: `hero-copy-experiment` — now inactive, hero copy unified to "AI Social Media Manager" positioning (Mar 2026)
 
 ### Dashboard Layout
 
@@ -451,8 +451,8 @@ const { mutate } = usePost("/api/bot", { onSuccess: () => { ... } });
 
 App config is centralized in `config.json`:
 
-- Project name, description, tagline, URL
-- SEO metadata
+- Project name, description ("Your AI social media manager powered by OpenClaw"), tagline, URL
+- SEO metadata (title: "PostClaw — Your AI Social Media Manager")
 - Contact info
-- Single pricing plan ($39/mo)
+- Pricing tiers (Starter $17/mo, Pro $37/mo, Business $79/mo)
 - Feature flags

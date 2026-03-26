@@ -25,7 +25,7 @@ export default function BillingUnsubscribed() {
             No active subscription
           </p>
           <p className="text-xs text-gray-400 mb-4">
-            Subscribe to get your personal AI content manager.
+            Subscribe to get your personal AI social media manager.
           </p>
           <button
             className="inline-flex items-center justify-center rounded-md bg-[#e8614d] hover:bg-[#d4563f] text-white px-6 py-2.5 text-sm font-medium transition-colors cursor-pointer"

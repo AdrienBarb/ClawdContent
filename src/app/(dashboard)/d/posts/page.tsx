@@ -14,7 +14,7 @@ export default async function PostsPage() {
           Posts
         </h1>
         <p className="text-gray-500 mt-1">
-          View and manage posts created through your AI assistant.
+          View and manage posts created through your AI social media manager.
         </p>
       </div>
       <PostsList />

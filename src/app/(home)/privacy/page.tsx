@@ -99,8 +99,9 @@ export default function PrivacyPage() {
               </h3>
               <ul className="list-disc pl-6 text-muted-foreground space-y-1">
                 <li>
-                  Messages exchanged with your AI assistant (processed in your
-                  isolated instance and not stored by us beyond the session)
+                  Messages exchanged with your AI social media manager (processed
+                  in your isolated instance and not stored by us beyond the
+                  session)
                 </li>
               </ul>
             </div>
@@ -202,8 +203,8 @@ export default function PrivacyPage() {
                 <strong>Supabase</strong> — database hosting (PostgreSQL)
               </li>
               <li>
-                <strong>Fly.io</strong> — container hosting for your bot
-                instance (Europe)
+                <strong>Fly.io</strong> — container hosting for your AI social
+                media manager (Europe)
               </li>
               <li>
                 <strong>Zernio (zernio.com)</strong> — social media posting
@@ -286,9 +287,9 @@ export default function PrivacyPage() {
               </li>
             </ul>
             <p className="text-muted-foreground">
-              When you cancel your subscription, your bot instance and associated
-              data (social account connections) are deleted at the end
-              of your billing period.
+              When you cancel your subscription, your AI social media manager
+              and associated data (social account connections) are deleted at
+              the end of your billing period.
             </p>
           </div>
         </section>

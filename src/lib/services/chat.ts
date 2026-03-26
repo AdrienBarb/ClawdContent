@@ -86,13 +86,13 @@ export async function getChatConfig(userId: string): Promise<ChatConfig> {
 
   if (!flyMachine || flyMachine.machineId === "pending") {
     throw new Error(
-      "Your bot is not set up yet. Please wait for provisioning to complete."
+      "Your AI social media manager is not set up yet. Please wait for provisioning to complete."
     );
   }
 
   if (flyMachine.status !== "running") {
     throw new Error(
-      `Your bot is currently ${flyMachine.status}. It needs to be running to chat.`
+      `Your AI social media manager is currently ${flyMachine.status}. It needs to be running to chat.`
     );
   }
 
