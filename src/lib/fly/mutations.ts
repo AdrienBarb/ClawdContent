@@ -54,8 +54,13 @@ const HTTP_SERVICES = [
     ],
     internal_port: 18789,
     protocol: "tcp",
-    auto_stop: "stop",
-    auto_start: true,
+    autostop: "stop",
+    autostart: true,
+    concurrency: {
+      type: "requests",
+      soft_limit: 10,
+      hard_limit: 25,
+    },
   },
 ];
 
