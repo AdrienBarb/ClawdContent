@@ -30,6 +30,7 @@ export const appRouter = {
     auth: "/api/auth",
     checkout: "/api/checkout",
     bot: "/api/bot",
+    botWake: "/api/bot/wake",
     accounts: "/api/accounts",
     accountsConnect: "/api/accounts/connect",
     accountsDisconnect: "/api/accounts/disconnect",

@@ -54,6 +54,8 @@ const HTTP_SERVICES = [
     ],
     internal_port: 18789,
     protocol: "tcp",
+    auto_stop: "stop",
+    auto_start: true,
   },
 ];
 
@@ -106,7 +108,7 @@ export async function createMachine({
           cpus: 2,
           memory_mb: 2048,
         },
-        restart: { policy: "always" },
+        restart: { policy: "on-failure" },
         mounts: [{ volume: volumeId, path: VOLUME_MOUNT_PATH }],
         services: HTTP_SERVICES,
         metadata: { managed_by: "postclaw" },
@@ -206,7 +208,7 @@ export function mapFlyState(flyState: string): string {
     case "stopped":
     case "stopping":
     case "suspended":
-      return "stopped";
+      return "sleeping";
     case "destroyed":
       return "failed";
     default:
