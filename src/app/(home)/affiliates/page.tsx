@@ -3,18 +3,18 @@ import { genPageMetadata } from "@/lib/seo/genPageMetadata";
 import { DollarSign, Share2, BarChart3, Zap } from "lucide-react";
 
 export const metadata = genPageMetadata({
-  title: "Affiliate Program — Earn 40% Recurring Commission",
+  title: "Affiliate Program — Earn 30% Recurring Commission",
   description:
-    "Join the PostClaw affiliate program and earn 40% recurring commission on every referral. Share your link, earn monthly income.",
+    "Join the PostClaw affiliate program and earn 30% recurring commission on every referral. Share your link, earn monthly income.",
   url: "/affiliates",
 });
 
 const benefits = [
   {
     icon: DollarSign,
-    title: "40% Recurring Commission",
+    title: "30% Recurring Commission",
     description:
-      "Earn 40% of every payment, every month, for as long as your referral stays subscribed.",
+      "Earn 30% of every payment, every month, for as long as your referral stays subscribed.",
   },
   {
     icon: Share2,
@@ -46,10 +46,10 @@ export default function AffiliatesPage() {
             Affiliate Program
           </p>
           <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
-            Earn 40% recurring commission
+            Earn 30% recurring commission
           </h1>
           <p className="mt-6 text-lg text-[#8a8f9e] max-w-2xl mx-auto">
-            Recommend PostClaw to your audience and earn 40% of every payment —
+            Recommend PostClaw to your audience and earn 30% of every payment —
             not just the first one. As long as they stay subscribed, you keep
             earning.
           </p>
@@ -100,7 +100,7 @@ export default function AffiliatesPage() {
               {
                 step: "3",
                 title: "Earn every month",
-                desc: "Get 40% of every payment your referrals make — recurring, forever.",
+                desc: "Get 30% of every payment your referrals make — recurring, forever.",
               },
             ].map((item) => (
               <div key={item.step} className="flex gap-5">
@@ -151,7 +151,7 @@ export default function AffiliatesPage() {
             Ready to start earning?
           </h2>
           <p className="mt-4 text-[#8a8f9e]">
-            Join the PostClaw affiliate program today and start earning 40%
+            Join the PostClaw affiliate program today and start earning 30%
             recurring commission on every referral.
           </p>
           <div className="mt-8">
