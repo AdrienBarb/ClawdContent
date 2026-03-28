@@ -136,7 +136,8 @@ src/
 │   │   ├── subscription.ts        # Stripe checkout + sync
 │   │   ├── bot.ts                 # Bot status, token, restart, image update
 │   │   ├── media.ts               # Media upload save + list
-│   │   └── accounts.ts            # Social account CRUD
+│   │   ├── accounts.ts            # Social account CRUD
+│   │   └── email.ts               # Brevo email automation (contacts, events)
 │   ├── schemas/                   # Zod validation schemas
 │   ├── better-auth/               # Auth config
 │   ├── stripe/                    # Stripe client
@@ -147,6 +148,7 @@ src/
 │   │   └── platforms.tsx          # Social platform icons + brand colors
 │   ├── errors/                    # Error handler
 │   ├── hooks/                     # useApi (React Query)
+│   ├── brevo/                     # Brevo API client (email automation)
 │   ├── resend/                    # Email client
 │   └── emails/                    # React Email templates
 ├── middleware.ts                   # Auth guard for /d/* routes
@@ -248,6 +250,10 @@ STRIPE_PRICE_ID=
 
 # Email (Resend)
 RESEND_API_KEY=
+
+# Email Automation (Brevo)
+BREVO_API_KEY=
+BREVO_LIST_ID=
 
 # Fly.io
 FLY_API_TOKEN=

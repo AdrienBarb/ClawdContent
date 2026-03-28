@@ -8,6 +8,10 @@ import config from "@/lib/config";
 import { captureServerEvent, identifyUser } from "@/lib/tracking/postHogClient";
 import { getDistinctIdFromHeader } from "@/lib/tracking/distinctId";
 import { getUtmFromCookieHeader } from "@/lib/tracking/utm";
+import {
+  createBrevoContact,
+  trackSignupCompleted,
+} from "@/lib/services/email";
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -83,6 +87,13 @@ export const auth = betterAuth({
               $referrer: utmData.referrer,
             }),
           });
+
+          // Brevo: create contact + trigger onboarding automation
+          await createBrevoContact({
+            email: user.email,
+            name: user.name,
+          });
+          await trackSignupCompleted(user.email);
         },
       },
     },

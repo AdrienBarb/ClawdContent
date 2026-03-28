@@ -17,6 +17,10 @@ import {
   handleCancellation,
   addTopUpCredits,
 } from "@/lib/services/credits";
+import {
+  trackSubscriptionStarted,
+  updateBrevoContact,
+} from "@/lib/services/email";
 
 export async function POST(req: NextRequest) {
   const sig = req.headers.get("stripe-signature");
@@ -226,8 +230,15 @@ async function handleCheckoutCompleted(
   // Provision user's bot container in background
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { name: true },
+    select: { name: true, email: true },
   });
+
+  // Brevo: fire subscription_started (exits onboarding automation)
+  if (user?.email) {
+    after(async () => {
+      await trackSubscriptionStarted(user.email, planId);
+    });
+  }
 
   after(async () => {
     try {
@@ -323,6 +334,20 @@ async function handleSubscriptionDeleted(
 
   // Zero out plan credits (top-up credits persist)
   await handleCancellation(existing.userId);
+
+  // Brevo: mark contact as canceled
+  const canceledUser = await prisma.user.findUnique({
+    where: { id: existing.userId },
+    select: { email: true },
+  });
+  if (canceledUser?.email) {
+    after(async () => {
+      await updateBrevoContact(canceledUser.email, {
+        SUBSCRIPTION_STATUS: "canceled",
+        PLAN_NAME: "",
+      });
+    });
+  }
 
   // Deprovision in background
   after(async () => {
