@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { appRouter } from "@/lib/constants/appRouter";
 import useApi from "@/lib/hooks/useApi";
 import { Button } from "@/components/ui/button";
-import { Loader2, RefreshCw, AlertCircle } from "lucide-react";
+import { Loader2, RefreshCw, AlertCircle, Power } from "lucide-react";
 import ChatInterface from "@/components/dashboard/ChatInterface";
 
 declare global {
@@ -62,6 +62,16 @@ export default function ChatWithLoader() {
     { onSuccess: () => refetch() }
   );
 
+  const { mutate: wakeBot, isPending: waking } = usePost(
+    appRouter.api.botWake,
+    {
+      onSuccess: () => {
+        setBotReady(false);
+        refetch();
+      },
+    }
+  );
+
   if (isLoading || isProvisioning) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-4rem)]">
@@ -72,6 +82,34 @@ export default function ChatWithLoader() {
         <p className="text-sm text-gray-500">
           This usually takes a minute or two.
         </p>
+      </div>
+    );
+  }
+
+  if (botStatus === "sleeping") {
+    return (
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-4rem)]">
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 max-w-md text-center shadow-sm">
+          <Power className="h-8 w-8 text-gray-400 mx-auto mb-3" />
+          <h2 className="text-lg font-semibold text-gray-900 mb-1">
+            Your agent is sleeping
+          </h2>
+          <p className="text-sm text-gray-500 mb-4">
+            It paused to save resources. Wake it up to start chatting again.
+          </p>
+          <Button
+            className="bg-[#e8614d] hover:bg-[#d4543f] text-white"
+            onClick={() => wakeBot({})}
+            disabled={waking}
+          >
+            {waking ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
+            ) : (
+              <Power className="h-4 w-4 mr-1.5" />
+            )}
+            {waking ? "Waking up..." : "Wake up my agent"}
+          </Button>
+        </div>
       </div>
     );
   }

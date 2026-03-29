@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db/prisma";
 import {
   getMachine,
   mapFlyState,
+  startMachine,
   updateMachineEnv,
   updateMachineImage,
 } from "@/lib/fly/mutations";
@@ -49,6 +50,23 @@ export async function updateBotImage(
   }
 
   await updateMachineImage(flyMachine.machineId, image);
+
+  await prisma.flyMachine.update({
+    where: { userId },
+    data: { status: "deploying" },
+  });
+}
+
+export async function wakeBot(userId: string): Promise<void> {
+  const flyMachine = await prisma.flyMachine.findUnique({
+    where: { userId },
+  });
+
+  if (!flyMachine || flyMachine.machineId === "pending") {
+    throw new Error("No active Fly machine found for user");
+  }
+
+  await startMachine(flyMachine.machineId);
 
   await prisma.flyMachine.update({
     where: { userId },
