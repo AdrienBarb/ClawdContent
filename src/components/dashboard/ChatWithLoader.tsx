@@ -17,6 +17,7 @@ declare global {
 
 interface DashboardStatus {
   botStatus: string | null;
+  plan?: { id: string };
 }
 
 export default function ChatWithLoader() {
@@ -47,6 +48,7 @@ export default function ChatWithLoader() {
   };
 
   const botStatus = status?.botStatus ?? null;
+  const planId = status?.plan?.id ?? null;
   const isProvisioning =
     botStatus === null || botStatus === "pending" || botStatus === "deploying";
 
@@ -109,6 +111,15 @@ export default function ChatWithLoader() {
             )}
             {waking ? "Waking up..." : "Wake up my agent"}
           </Button>
+          {planId === "starter" && (
+            <p className="text-xs text-gray-400 mt-3">
+              Don&apos;t want your agent to sleep?{" "}
+              <a href="/d/billing" className="underline text-[#e8614d]">
+                Upgrade to Pro
+              </a>{" "}
+              for an always-on agent.
+            </p>
+          )}
         </div>
       </div>
     );

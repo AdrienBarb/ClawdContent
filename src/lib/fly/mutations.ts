@@ -92,12 +92,14 @@ export async function createMachine({
   env,
   volumeId,
   region = DEFAULT_REGION,
+  autoStop = true,
 }: {
   name: string;
   image: string;
   env: Record<string, string>;
   volumeId: string;
   region?: string;
+  autoStop?: boolean;
 }): Promise<FlyMachineResponse> {
   const app = getAppName();
   return flyRequest<FlyMachineResponse>(`/apps/${app}/machines`, {
@@ -115,7 +117,7 @@ export async function createMachine({
         },
         restart: { policy: "on-failure" },
         mounts: [{ volume: volumeId, path: VOLUME_MOUNT_PATH }],
-        services: HTTP_SERVICES,
+        services: [{ ...HTTP_SERVICES[0], autostop: autoStop ? "stop" : "off" }],
         metadata: { managed_by: "postclaw" },
       },
     },

@@ -242,7 +242,7 @@ async function handleCheckoutCompleted(
 
   after(async () => {
     try {
-      await provisionUser(userId, user?.name ?? "User");
+      await provisionUser(userId, user?.name ?? "User", planId);
       console.log(`Provisioned user ${userId} after checkout`);
     } catch (err) {
       console.error(`Failed to provision user ${userId}:`, err);

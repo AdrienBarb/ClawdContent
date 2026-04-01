@@ -19,7 +19,8 @@ const DOCKER_IMAGE =
 
 export async function provisionUser(
   userId: string,
-  userName: string
+  userName: string,
+  planId?: string
 ): Promise<void> {
   // Guard against double provisioning
   const existing = await prisma.flyMachine.findUnique({
@@ -117,6 +118,7 @@ export async function provisionUser(
       image: DOCKER_IMAGE,
       env: envVars,
       volumeId: volume.id,
+      autoStop: planId !== "pro" && planId !== "business",
     });
 
     await prisma.flyMachine.update({
@@ -158,7 +160,11 @@ export async function retryProvisionUser(
     await prisma.flyMachine.delete({ where: { userId } });
   }
 
-  await provisionUser(userId, userName);
+  const sub = await prisma.subscription.findUnique({
+    where: { userId },
+    select: { planId: true },
+  });
+  await provisionUser(userId, userName, sub?.planId ?? undefined);
 }
 
 export async function deprovisionUser(userId: string): Promise<void> {
