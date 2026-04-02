@@ -12,10 +12,19 @@ export function getPostHogClient(): PostHog | null {
       host: process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://app.posthog.com",
       flushAt: 1,
       flushInterval: 0,
+      requestTimeout: 10_000,
     });
   }
 
   return postHogClient;
+}
+
+async function safeFlush(client: PostHog): Promise<void> {
+  try {
+    await client.flush();
+  } catch {
+    // PostHog flush failures are non-critical — don't crash the request
+  }
 }
 
 // Helper function to capture server-side events
@@ -33,8 +42,7 @@ export async function captureServerEvent(
     properties,
   });
 
-  // Ensure events are flushed
-  await client.flush();
+  await safeFlush(client);
 }
 
 // Helper function to evaluate a feature flag server-side
@@ -62,5 +70,5 @@ export async function identifyUser(
     properties,
   });
 
-  await client.flush();
+  await safeFlush(client);
 }
