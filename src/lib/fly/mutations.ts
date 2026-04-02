@@ -42,6 +42,21 @@ export interface FlyMachineResponse {
   config: FlyMachineConfig;
 }
 
+// ─── Helpers ────────────────────────────────────────────────────
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+async function waitForMachine(
+  machineId: string,
+  timeout = 30
+): Promise<void> {
+  const app = getAppName();
+  await flyRequest(
+    `/apps/${app}/machines/${machineId}/wait?state=started&timeout=${timeout}`,
+    { method: "GET" }
+  );
+}
+
 // ─── Constants ──────────────────────────────────────────────────
 
 const DEFAULT_REGION = "cdg";
@@ -138,23 +153,36 @@ export async function updateMachineEnv(
   env: Record<string, string>
 ): Promise<FlyMachineResponse> {
   const app = getAppName();
+  const MAX_RETRIES = 3;
 
-  // Fetch current config, merge env vars, POST back
-  const current = await getMachine(machineId);
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      // Wait for machine to be ready before reading config
+      await waitForMachine(machineId).catch(() => {});
 
-  return flyRequest<FlyMachineResponse>(
-    `/apps/${app}/machines/${machineId}`,
-    {
-      method: "POST",
-      body: {
-        config: {
-          ...current.config,
-          env: { ...current.config.env, ...env },
-          services: current.config.services ?? HTTP_SERVICES,
-        },
-      },
+      // Fetch current config, merge env vars, POST back
+      const current = await getMachine(machineId);
+
+      return await flyRequest<FlyMachineResponse>(
+        `/apps/${app}/machines/${machineId}`,
+        {
+          method: "POST",
+          body: {
+            config: {
+              ...current.config,
+              env: { ...current.config.env, ...env },
+              services: current.config.services ?? HTTP_SERVICES,
+            },
+          },
+        }
+      );
+    } catch (err) {
+      if (attempt === MAX_RETRIES - 1) throw err;
+      await sleep(2000 * (attempt + 1));
     }
-  );
+  }
+
+  throw new Error("updateMachineEnv: unreachable");
 }
 
 export async function updateMachineImage(
