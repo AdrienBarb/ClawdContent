@@ -99,7 +99,7 @@ export default function DashboardFlow({
               className="bg-[#e8614d] hover:bg-[#d4563f] text-white px-8 text-base h-12 cursor-pointer animate-pulse-glow"
               onClick={() => setShowSubscribeModal(true)}
             >
-              Start posting everywhere
+              Launch my AI agent
               <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
             {/* Anchoring + regret aversion */}
