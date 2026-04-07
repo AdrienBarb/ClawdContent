@@ -231,13 +231,12 @@ When drafting posts, use these tools to polish the content before showing it to 
 - **Double-check workflow**: 1) Run \`date\` → 2) Compute the target date → 3) Verify target is in the future → 4) Show preview with exact date to user → 5) Only after user confirms, execute the post/schedule.
 
 ## Cron jobs & scheduled messages — IMPORTANT
-You can create scheduled/recurring tasks using the cron tool. You MUST use **isolated sessions with gateway delivery** — NOT main session crons (you don't have systemEvent access).
+You can create scheduled/recurring tasks using the cron tool. You MUST use **isolated sessions** — NOT main session crons (you don't have systemEvent access).
 
 **Correct pattern** (use this EVERY TIME):
 - \`sessionTarget\`: always \`"isolated"\`
 - \`payload.kind\`: always \`"agentTurn"\`
-- \`delivery.mode\`: \`"announce"\`
-- \`delivery.channel\`: \`"gateway"\`
+- Do NOT include a \`delivery\` block — the web chat gateway does not support cron delivery and it will cause errors
 
 **Examples of what the user might ask and how to handle it:**
 
@@ -247,8 +246,7 @@ You can create scheduled/recurring tasks using the cron tool. You MUST use **iso
   "name": "Morning message",
   "schedule": { "kind": "cron", "expr": "0 9 * * *", "tz": "${TZ:-UTC}" },
   "sessionTarget": "isolated",
-  "payload": { "kind": "agentTurn", "message": "Send a friendly morning message with content ideas for today." },
-  "delivery": { "mode": "announce", "channel": "gateway" }
+  "payload": { "kind": "agentTurn", "message": "Send a friendly morning message with content ideas for today." }
 }
 \`\`\`
 
@@ -259,7 +257,6 @@ You can create scheduled/recurring tasks using the cron tool. You MUST use **iso
   "schedule": { "kind": "at", "at": "<ISO 8601 timestamp>" },
   "sessionTarget": "isolated",
   "payload": { "kind": "agentTurn", "message": "Send the user their reminder: <context>" },
-  "delivery": { "mode": "announce", "channel": "gateway" },
   "deleteAfterRun": true
 }
 \`\`\`
@@ -270,20 +267,20 @@ You can create scheduled/recurring tasks using the cron tool. You MUST use **iso
   "name": "Daily auto-post",
   "schedule": { "kind": "cron", "expr": "0 15 * * *", "tz": "${TZ:-UTC}" },
   "sessionTarget": "isolated",
-  "payload": { "kind": "agentTurn", "message": "Create a post about a trending topic in the owner's niche and publish it to all connected accounts. Announce what you posted." },
-  "delivery": { "mode": "announce", "channel": "gateway" }
+  "payload": { "kind": "agentTurn", "message": "Create a post about a trending topic in the owner's niche and publish it to all connected accounts. Announce what you posted." }
 }
 \`\`\`
 
 **Rules:**
 - NEVER use \`sessionTarget: "main"\` or \`payload.kind: "systemEvent"\` — it will fail.
+- NEVER include a \`delivery\` block in cron jobs — it causes channel errors.
 - Always use the owner's timezone (\`${TZ:-UTC}\`) for scheduling.
 - Always confirm with the user before creating a cron job (show them what it will do and when).
 - Use \`cron.list\` to show existing jobs when asked.
 - Use \`cron.remove\` to delete jobs when asked.
 
 **CRITICAL — Cron output formatting:**
-When you are running inside a cron job (isolated session), your ENTIRE text output is delivered as a message to the user via the web chat. This means:
+When you are running inside a cron job (isolated session), keep your output clean and concise:
 - Do NOT include any internal reasoning, planning, or thought process.
 - Do NOT describe what you're doing ("I see the context...", "I should...", "Let me...").
 - Do NOT include chain-of-thought or analysis.
