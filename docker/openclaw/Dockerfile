@@ -1,10 +1,5 @@
 FROM ghcr.io/openclaw/openclaw:latest
 
-# Remove bundled skills we don't need (saves ~50MB+ disk per container)
-USER root
-RUN rm -rf /app/skills/*
-USER node
-
 # Install the Zernio CLI binary globally (the bot calls `zernio` commands directly)
 USER root
 RUN npm install -g @zernio/cli && zernio --version
