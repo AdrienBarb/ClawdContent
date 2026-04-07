@@ -5,7 +5,7 @@ import { appRouter } from "@/lib/constants/appRouter";
 import { getPlatform } from "@/lib/constants/platforms";
 import useApi from "@/lib/hooks/useApi";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Share2, Plus, X, Loader2, Lock } from "lucide-react";
+import { Share2, Plus, X, Loader2, Lock, RefreshCw } from "lucide-react";
 import ConnectAccountButtons from "@/components/dashboard/ConnectAccountButtons";
 import SubscribeModal from "@/components/dashboard/SubscribeModal";
 import UpgradeModal from "@/components/dashboard/UpgradeModal";
@@ -26,6 +26,7 @@ interface DashboardStatus {
 export default function AccountsPage() {
   const { useGet, usePost } = useApi();
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
+  const [reconnectingId, setReconnectingId] = useState<string | null>(null);
   const [showSubscribeModal, setShowSubscribeModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
@@ -58,6 +59,32 @@ export default function AccountsPage() {
   const handleDisconnect = (accountId: string) => {
     setDisconnectingId(accountId);
     disconnectAccount({ accountId });
+  };
+
+  const { mutate: getConnectUrl } = usePost(appRouter.api.accountsConnect, {
+    onSuccess: (data: { url: string }) => {
+      const popup = window.open(
+        data.url,
+        "connect-account",
+        "width=600,height=700"
+      );
+      const interval = setInterval(() => {
+        if (popup?.closed) {
+          clearInterval(interval);
+          setReconnectingId(null);
+          refetch();
+        }
+      }, 500);
+    },
+    onError: () => {
+      toast.error("Failed to reconnect account. Please try again.");
+      setReconnectingId(null);
+    },
+  });
+
+  const handleReconnect = (accountId: string, platform: string) => {
+    setReconnectingId(accountId);
+    getConnectUrl({ platform });
   };
 
   const subStatus = status?.subscription?.status;
@@ -155,6 +182,8 @@ export default function AccountsPage() {
             {accounts.map((account) => {
               const platform = getPlatform(account.platform);
               const isDisconnecting = disconnectingId === account.id;
+              const isReconnecting = reconnectingId === account.id;
+              const isDisconnected = account.status !== "active";
               return (
                 <div
                   key={account.id}
@@ -162,7 +191,9 @@ export default function AccountsPage() {
                 >
                   <div className="flex items-center gap-3">
                     <span
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white"
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white ${
+                        isDisconnected ? "opacity-50" : ""
+                      }`}
                       style={{
                         backgroundColor: platform?.color ?? "#6b7280",
                       }}
@@ -170,7 +201,7 @@ export default function AccountsPage() {
                       {platform?.icon ?? <Share2 className="h-4 w-4" />}
                     </span>
                     <div>
-                      <span className="text-sm font-medium text-gray-900">
+                      <span className={`text-sm font-medium ${isDisconnected ? "text-gray-400" : "text-gray-900"}`}>
                         {platform?.label ?? account.platform}
                       </span>
                       <p className="text-xs text-gray-500">
@@ -183,24 +214,40 @@ export default function AccountsPage() {
                       className={`inline-block h-2.5 w-2.5 rounded-full ${
                         account.status === "active"
                           ? "bg-emerald-400"
-                          : "bg-gray-300"
+                          : "bg-amber-400"
                       }`}
                     />
-                    <span className="text-xs text-gray-400 capitalize">
+                    <span className={`text-xs capitalize ${isDisconnected ? "text-amber-500" : "text-gray-400"}`}>
                       {account.status}
                     </span>
-                    <button
-                      className="ml-1 rounded-md p-1 text-gray-300 transition-colors hover:bg-gray-100 hover:text-gray-500 disabled:opacity-50 cursor-pointer"
-                      onClick={() => handleDisconnect(account.id)}
-                      disabled={isDisconnecting}
-                      title="Disconnect account"
-                    >
-                      {isDisconnecting ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <X className="h-3.5 w-3.5" />
-                      )}
-                    </button>
+                    {isDisconnected ? (
+                      <button
+                        className="ml-1 flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-[#e8614d] transition-colors hover:bg-red-50 disabled:opacity-50 cursor-pointer"
+                        onClick={() => handleReconnect(account.id, account.platform)}
+                        disabled={isReconnecting}
+                        title="Reconnect account"
+                      >
+                        {isReconnecting ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-3 w-3" />
+                        )}
+                        Reconnect
+                      </button>
+                    ) : (
+                      <button
+                        className="ml-1 rounded-md p-1 text-gray-300 transition-colors hover:bg-gray-100 hover:text-gray-500 disabled:opacity-50 cursor-pointer"
+                        onClick={() => handleDisconnect(account.id)}
+                        disabled={isDisconnecting}
+                        title="Disconnect account"
+                      >
+                        {isDisconnecting ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <X className="h-3.5 w-3.5" />
+                        )}
+                      </button>
+                    )}
                   </div>
                 </div>
               );

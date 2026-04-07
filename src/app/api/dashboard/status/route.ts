@@ -32,7 +32,7 @@ export async function GET() {
         getBotStatus(userId),
         prisma.lateProfile.findUnique({
           where: { userId },
-          include: { socialAccounts: { where: { status: "active" } } },
+          include: { socialAccounts: true },
         }),
         getCreditBalance(userId),
       ]);
@@ -56,7 +56,9 @@ export async function GET() {
         socialAccountLimit: plan.socialAccountLimit,
       },
       botStatus: botStatus?.status ?? null,
-      accountCount: lateProfile?.socialAccounts?.length ?? 0,
+      accountCount:
+        lateProfile?.socialAccounts?.filter((a) => a.status === "active")
+          .length ?? 0,
       accounts:
         lateProfile?.socialAccounts?.map((a) => ({
           id: a.id,
