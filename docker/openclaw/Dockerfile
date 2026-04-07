@@ -1,4 +1,4 @@
-FROM ghcr.io/openclaw/openclaw:latest
+FROM ghcr.io/openclaw/openclaw:2026.3.23
 
 # Install the Zernio CLI binary globally (the bot calls `zernio` commands directly)
 USER root
