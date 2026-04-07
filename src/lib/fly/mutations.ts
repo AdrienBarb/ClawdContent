@@ -46,7 +46,7 @@ export interface FlyMachineResponse {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-async function waitForMachine(
+export async function waitForMachine(
   machineId: string,
   timeout = 30
 ): Promise<void> {
@@ -130,7 +130,7 @@ export async function createMachine({
           cpus: 2,
           memory_mb: 2048,
         },
-        restart: { policy: "on-failure" },
+        restart: { policy: "always" },
         mounts: [{ volume: volumeId, path: VOLUME_MOUNT_PATH }],
         services: [{ ...HTTP_SERVICES[0], autostop: autoStop ? "stop" : "off" }],
         metadata: { managed_by: "postclaw" },
@@ -247,6 +247,38 @@ export function mapFlyState(flyState: string): string {
     case "destroyed":
       return "failed";
     default:
-      return "running";
+      return "deploying";
   }
+}
+
+export async function updateMachineAutoStop(
+  userId: string,
+  autoStop: boolean
+): Promise<void> {
+  // Import prisma dynamically to avoid circular deps
+  const { prisma } = await import("@/lib/db/prisma");
+  const flyMachine = await prisma.flyMachine.findUnique({
+    where: { userId },
+  });
+
+  if (!flyMachine || flyMachine.machineId === "pending") return;
+
+  const app = getAppName();
+  const current = await getMachine(flyMachine.machineId);
+
+  const services = current.config.services ?? HTTP_SERVICES;
+  const updatedServices = services.map((s: Record<string, unknown>) => ({
+    ...s,
+    autostop: autoStop ? "stop" : "off",
+  }));
+
+  await flyRequest(`/apps/${app}/machines/${flyMachine.machineId}`, {
+    method: "POST",
+    body: {
+      config: {
+        ...current.config,
+        services: updatedServices,
+      },
+    },
+  });
 }

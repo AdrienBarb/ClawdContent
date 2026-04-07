@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db/prisma";
 import {
   getConnectUrl as lateGetConnectUrl,
   listAccounts as lateListAccounts,
+  deleteAccount as lateDeleteAccount,
 } from "@/lib/late/mutations";
 import {
   buildAccountsContext,
@@ -100,6 +101,23 @@ export async function disconnectAccount(
   if (!lateProfile) {
     throw new Error("Late profile not found");
   }
+
+  // Find the account to get the Zernio account ID
+  const account = await prisma.socialAccount.findUnique({
+    where: {
+      id: accountId,
+      lateProfileId: lateProfile.id,
+    },
+  });
+
+  if (!account) {
+    throw new Error("Account not found");
+  }
+
+  // Revoke OAuth token in Zernio
+  await lateDeleteAccount(account.lateAccountId, lateProfile.lateApiKey).catch(
+    (err) => console.error(`Failed to revoke Zernio account: ${err}`)
+  );
 
   await prisma.socialAccount.update({
     where: {

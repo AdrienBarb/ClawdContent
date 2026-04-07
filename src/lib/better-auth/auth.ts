@@ -72,7 +72,6 @@ export const auth = betterAuth({
           }
 
           const utmData = getUtmFromCookieHeader(cookieHeader);
-          console.log("🚀 ~ utmData:", utmData);
 
           await captureServerEvent(distinctId, "user_signed_up", {
             userId: user.id,

@@ -11,6 +11,7 @@ import {
   updateMachineEnv,
   deleteMachine,
   deleteVolume,
+  waitForMachine,
 } from "@/lib/fly/mutations";
 
 const DOCKER_IMAGE =
@@ -111,25 +112,40 @@ export async function provisionUser(
     const volumeName = `pc_${sanitizedId.slice(0, 26)}`;
     const volume = await createVolume(volumeName);
 
-    // 4. Create machine — starts automatically with all config
-    const machineName = `postclaw_${sanitizedId.slice(0, 20)}`;
-    const machine = await createMachine({
-      name: machineName,
-      image: DOCKER_IMAGE,
-      env: envVars,
-      volumeId: volume.id,
-      autoStop: planId !== "pro" && planId !== "business",
-    });
-
-    await prisma.flyMachine.update({
-      where: { userId },
-      data: {
-        machineId: machine.id,
+    let machineCreated = false;
+    try {
+      // 4. Create machine — starts automatically with all config
+      const machineName = `postclaw_${sanitizedId.slice(0, 20)}`;
+      const machine = await createMachine({
+        name: machineName,
+        image: DOCKER_IMAGE,
+        env: envVars,
         volumeId: volume.id,
-        gatewayToken,
-        status: "running",
-      },
-    });
+        autoStop: planId !== "pro" && planId !== "business",
+      });
+      machineCreated = true;
+
+      // Wait for machine to actually start before marking as running
+      await waitForMachine(machine.id, 60).catch(() => {});
+
+      await prisma.flyMachine.update({
+        where: { userId },
+        data: {
+          machineId: machine.id,
+          volumeId: volume.id,
+          gatewayToken,
+          status: "running",
+        },
+      });
+    } catch (innerError) {
+      // Clean up orphaned volume if machine creation failed
+      if (!machineCreated) {
+        await deleteVolume(volume.id).catch((err) =>
+          console.error(`Failed to clean up orphaned volume: ${err}`)
+        );
+      }
+      throw innerError;
+    }
 
   } catch (error) {
     console.error(`Failed to provision Fly machine for user ${userId}:`, error);

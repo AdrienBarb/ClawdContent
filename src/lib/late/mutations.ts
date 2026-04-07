@@ -140,3 +140,13 @@ export async function listAccounts(
       username: a.username,
     }));
 }
+
+export async function deleteAccount(
+  accountId: string,
+  apiKey: string
+): Promise<void> {
+  await lateRequest(`/accounts/${accountId}`, {
+    method: "DELETE",
+    apiKey,
+  });
+}

@@ -6,7 +6,7 @@ import { headers } from "next/headers";
 import { getChatHistory } from "@/lib/services/chatMessages";
 import type { UIMessage } from "ai";
 
-const DEFAULT_LIMIT = 5;
+const DEFAULT_LIMIT = 25;
 
 export async function GET(req: NextRequest) {
   try {

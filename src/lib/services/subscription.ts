@@ -11,6 +11,7 @@ import {
   handlePlanUpgrade,
   handlePlanDowngrade,
 } from "@/lib/services/credits";
+import { updateMachineAutoStop } from "@/lib/fly/mutations";
 
 export async function createCheckoutSession(
   userId: string,
@@ -154,6 +155,13 @@ export async function changePlan(
   } else if (newCredits < oldCredits) {
     await handlePlanDowngrade(userId, newPlanId);
   }
+
+  // Update container auto-stop based on new plan
+  const alwaysOnPlans: PlanId[] = ["pro", "business"];
+  const shouldAutoStop = !alwaysOnPlans.includes(newPlanId);
+  await updateMachineAutoStop(userId, shouldAutoStop).catch((err) =>
+    console.error(`Failed to update auto-stop for user ${userId}:`, err)
+  );
 }
 
 export async function syncSubscriptionStatus(
