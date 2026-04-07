@@ -72,7 +72,7 @@ cat > "$CONFIG_FILE" <<JSONEOF
       {
         "id": "main",
         "tools": {
-          "alsoAllow": ["cron", "web_search", "web_fetch"]
+          "alsoAllow": ["cron", "web_search", "web_fetch", "browser", "image", "memory_get", "memory_search", "subagents", "sessions_spawn", "sessions_history", "pdf"]
         }
       }
     ]
@@ -122,24 +122,15 @@ cat > "$CONFIG_FILE" <<JSONEOF
       "extraDirs": ["/app/skills"]
     },
     "entries": {
-      "zernio-cli": {
-        "enabled": true
-      },
-      "humanizer": {
-        "enabled": true
-      },
-      "de-ai-ify": {
-        "enabled": true
-      },
-      "copywriting": {
-        "enabled": true
-      },
-      "content-creator-skill": {
-        "enabled": true
-      },
-      "social-content": {
-        "enabled": true
-      }
+      "zernio-cli": { "enabled": true },
+      "humanizer": { "enabled": true },
+      "de-ai-ify": { "enabled": true },
+      "copywriting": { "enabled": true },
+      "content-creator-skill": { "enabled": true },
+      "social-content": { "enabled": true },
+      "summarize": { "enabled": true },
+      "healthcheck": { "enabled": true },
+      "clawhub": { "enabled": true }
     }
   }
 }
@@ -180,6 +171,10 @@ You're a full AI assistant. Your core strength is social media, but you can help
 - Writing, rewriting, and editing any kind of text
 - Brainstorming, planning, and problem-solving
 - Answering questions, explaining concepts
+- Browsing websites and reading articles (\`browser\` tool)
+- Summarizing long content (\`summarize\` skill)
+- Remembering user preferences across sessions (\`memory_get\`, \`memory_search\` tools)
+- Reading and analyzing PDFs (\`pdf\` tool)
 - Anything else you'd ask a smart assistant to do
 
 ## Language
