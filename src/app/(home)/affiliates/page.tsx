@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { genPageMetadata } from "@/lib/seo/genPageMetadata";
 import { DollarSign, Share2, BarChart3, Zap } from "lucide-react";
+import RevenueSimulator from "@/components/affiliates/RevenueSimulator";
 
 export const metadata = genPageMetadata({
   title: "Affiliate Program — Earn 40% Recurring Commission",
@@ -33,6 +34,59 @@ const benefits = [
     title: "30-Day Cookie",
     description:
       "Your referrals are tracked for 30 days — plenty of time to convert.",
+  },
+];
+
+const faqs = [
+  {
+    question: "When do I get paid?",
+    answer:
+      "Payouts are processed monthly. In the first week of each month, all approved commissions from the previous month (that have cleared the hold period) are queued for payment. You typically receive your payment within 7\u201314 days of the month start.",
+  },
+  {
+    question: "What\u2019s the minimum payout?",
+    answer:
+      "$50. If your balance is below $50 at month-end, it rolls over to the next month until you cross the threshold.",
+  },
+  {
+    question: "In what currency am I paid?",
+    answer:
+      "All payouts are in USD, regardless of the currency the referred customer paid in. Conversions use the exchange rate on invoice creation day.",
+  },
+  {
+    question: "How am I paid?",
+    answer:
+      "PayPal or bank wire transfer. You choose your preferred method in your affiliate dashboard at postclaw.affonso.io.",
+  },
+  {
+    question: "Are there any fees?",
+    answer:
+      "Any fees charged by your bank or PayPal to receive the payment are your responsibility (industry standard). PostClaw covers all sending-side costs.",
+  },
+  {
+    question: "Do I need to send an invoice?",
+    answer:
+      "No. Affonso handles all invoicing and tax compliance automatically. If you\u2019re based in the US or deal with US tax law, you may be asked to submit a W9 or W8-BEN form through Affonso \u2014 just a one-time thing.",
+  },
+  {
+    question: "How does recurring commission work?",
+    answer:
+      "You earn 40% of every payment your referral makes, for as long as they stay subscribed. Example: Refer someone on the Pro plan ($37/mo) = $14.80/month, every month, forever (as long as they\u2019re a customer). 20 active Pro referrals = $296/month recurring ($3,552/year).",
+  },
+  {
+    question: "What happens if my referral cancels or gets refunded?",
+    answer:
+      "The commission for that specific payment is reversed. You keep all commissions from previous months they paid for.",
+  },
+  {
+    question: "When does the 30-day cookie start?",
+    answer:
+      "The moment someone clicks your affiliate link. If they sign up within 30 days, the sale is attributed to you.",
+  },
+  {
+    question: "Question about a specific commission?",
+    answer:
+      "Email admin@postclaw.io with your affiliate email and the referral details. We\u2019ll investigate within 2 business days.",
   },
 ];
 
@@ -138,6 +192,40 @@ export default function AffiliatesPage() {
               </h3>
               <p className="mt-2 text-sm text-[#8a8f9e]">
                 {benefit.description}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Revenue Simulator */}
+      <section className="container mx-auto px-6 py-16">
+        <h2 className="text-center text-2xl font-bold text-white sm:text-3xl mb-4">
+          How much can you earn?
+        </h2>
+        <p className="text-center text-[#8a8f9e] mb-10 max-w-xl mx-auto">
+          Drag the slider and pick a plan to see your potential recurring
+          income.
+        </p>
+        <RevenueSimulator />
+      </section>
+
+      {/* FAQ */}
+      <section className="container mx-auto px-6 py-16">
+        <h2 className="text-center text-2xl font-bold text-white sm:text-3xl mb-12">
+          Affiliate Payouts FAQ
+        </h2>
+        <div className="mx-auto max-w-3xl space-y-6">
+          {faqs.map((faq) => (
+            <div
+              key={faq.question}
+              className="rounded-2xl border border-[#1e2233] bg-[#0d0f17] p-6"
+            >
+              <h3 className="text-base font-semibold text-white">
+                {faq.question}
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-[#8a8f9e]">
+                {faq.answer}
               </p>
             </div>
           ))}
