@@ -133,3 +133,48 @@ export async function disconnectAccount(
     ZERNIO_ACCOUNTS_CONTEXT: context,
   });
 }
+
+export async function removeAccount(
+  userId: string,
+  accountId: string
+): Promise<void> {
+  const lateProfile = await prisma.lateProfile.findUnique({
+    where: { userId },
+  });
+
+  if (!lateProfile) {
+    throw new Error("Late profile not found");
+  }
+
+  const account = await prisma.socialAccount.findUnique({
+    where: {
+      id: accountId,
+      lateProfileId: lateProfile.id,
+    },
+  });
+
+  if (!account) {
+    throw new Error("Account not found");
+  }
+
+  // Revoke OAuth in Zernio if still active
+  if (account.status === "active") {
+    await lateDeleteAccount(account.lateAccountId, lateProfile.lateApiKey).catch(
+      (err) => console.error(`Failed to revoke Zernio account: ${err}`)
+    );
+  }
+
+  // Delete from DB
+  await prisma.socialAccount.delete({
+    where: {
+      id: accountId,
+      lateProfileId: lateProfile.id,
+    },
+  });
+
+  // Update container with new accounts context
+  const context = await buildAccountsContext(userId);
+  await updateContainerEnvVars(userId, {
+    ZERNIO_ACCOUNTS_CONTEXT: context,
+  });
+}

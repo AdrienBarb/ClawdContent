@@ -5,7 +5,7 @@ import { appRouter } from "@/lib/constants/appRouter";
 import { getPlatform } from "@/lib/constants/platforms";
 import useApi from "@/lib/hooks/useApi";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Share2, Plus, X, Loader2, Lock, RefreshCw } from "lucide-react";
+import { Share2, Plus, X, Loader2, Lock, RefreshCw, Trash2 } from "lucide-react";
 import ConnectAccountButtons from "@/components/dashboard/ConnectAccountButtons";
 import SubscribeModal from "@/components/dashboard/SubscribeModal";
 import UpgradeModal from "@/components/dashboard/UpgradeModal";
@@ -27,6 +27,7 @@ export default function AccountsPage() {
   const { useGet, usePost } = useApi();
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
   const [reconnectingId, setReconnectingId] = useState<string | null>(null);
+  const [removingId, setRemovingId] = useState<string | null>(null);
   const [showSubscribeModal, setShowSubscribeModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
@@ -56,9 +57,28 @@ export default function AccountsPage() {
     }
   );
 
+  const { mutate: removeAccountMutate } = usePost(
+    appRouter.api.accountsRemove,
+    {
+      onSuccess: () => {
+        setRemovingId(null);
+        refetch();
+      },
+      onError: () => {
+        setRemovingId(null);
+        toast.error("Failed to remove account.");
+      },
+    }
+  );
+
   const handleDisconnect = (accountId: string) => {
     setDisconnectingId(accountId);
     disconnectAccount({ accountId });
+  };
+
+  const handleRemove = (accountId: string) => {
+    setRemovingId(accountId);
+    removeAccountMutate({ accountId });
   };
 
   const { mutate: getConnectUrl } = usePost(appRouter.api.accountsConnect, {
@@ -183,6 +203,7 @@ export default function AccountsPage() {
               const platform = getPlatform(account.platform);
               const isDisconnecting = disconnectingId === account.id;
               const isReconnecting = reconnectingId === account.id;
+              const isRemoving = removingId === account.id;
               const isDisconnected = account.status !== "active";
               return (
                 <div
@@ -221,19 +242,34 @@ export default function AccountsPage() {
                       {account.status}
                     </span>
                     {isDisconnected ? (
-                      <button
-                        className="ml-1 flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-[#e8614d] transition-colors hover:bg-red-50 disabled:opacity-50 cursor-pointer"
-                        onClick={() => handleReconnect(account.id, account.platform)}
-                        disabled={isReconnecting}
-                        title="Reconnect account"
-                      >
-                        {isReconnecting ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                          <RefreshCw className="h-3 w-3" />
-                        )}
-                        Reconnect
-                      </button>
+                      <>
+                        <button
+                          className="ml-1 flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-[#e8614d] transition-colors hover:bg-red-50 disabled:opacity-50 cursor-pointer"
+                          onClick={() => handleReconnect(account.id, account.platform)}
+                          disabled={isReconnecting || isRemoving}
+                          title="Reconnect account"
+                        >
+                          {isReconnecting ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <RefreshCw className="h-3 w-3" />
+                          )}
+                          Reconnect
+                        </button>
+                        <button
+                          className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-50 cursor-pointer"
+                          onClick={() => handleRemove(account.id)}
+                          disabled={isRemoving || isReconnecting}
+                          title="Remove account"
+                        >
+                          {isRemoving ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3 w-3" />
+                          )}
+                          Remove
+                        </button>
+                      </>
                     ) : (
                       <button
                         className="ml-1 rounded-md p-1 text-gray-300 transition-colors hover:bg-gray-100 hover:text-gray-500 disabled:opacity-50 cursor-pointer"

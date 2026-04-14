@@ -34,6 +34,7 @@ export const appRouter = {
     accounts: "/api/accounts",
     accountsConnect: "/api/accounts/connect",
     accountsDisconnect: "/api/accounts/disconnect",
+    accountsRemove: "/api/accounts/remove",
     posts: "/api/posts",
     postsDelete: "/api/posts/delete",
     accountsCallback: "/api/accounts/callback",
