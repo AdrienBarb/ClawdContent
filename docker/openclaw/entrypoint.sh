@@ -422,6 +422,30 @@ ${TZ:-UTC}
 USEREOF
 fi
 
+# Clean up broken cron jobs: remove "delivery" blocks that cause
+# "Channel is required (no configured channels detected)" errors.
+# The web chat gateway doesn't support cron delivery — these blocks
+# poison the bot's conversation when they fail repeatedly.
+CRON_FILE="$CONFIG_DIR/cron/jobs.json"
+if [ -f "$CRON_FILE" ]; then
+  python3 -c "
+import json, sys
+with open('$CRON_FILE', 'r') as f:
+    data = json.load(f)
+fixed = 0
+for job in data.get('jobs', []):
+    if 'delivery' in job:
+        del job['delivery']
+        fixed += 1
+if fixed > 0:
+    with open('$CRON_FILE', 'w') as f:
+        json.dump(data, f, indent=2)
+    print(f'Cron cleanup: removed delivery block from {fixed} job(s)')
+else:
+    print('Cron cleanup: no fixes needed')
+" 2>/dev/null || echo "Cron cleanup: skipped (python3 not available)"
+fi
+
 echo "PostClaw OpenClaw config generated."
 echo "Starting OpenClaw..."
 
