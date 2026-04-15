@@ -80,6 +80,7 @@ export async function provisionUser(
     TZ: user.timezone ?? "UTC",
     OVERWRITE_SOUL: "true",
     NODE_OPTIONS: "--max-old-space-size=1536",
+    PLAN_ID: planId ?? "starter",
   };
 
   try {

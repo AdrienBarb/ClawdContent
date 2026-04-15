@@ -329,6 +329,11 @@ zernio posts:create --text "Your post" --accounts <id1,id2> --scheduledAt "2026-
 ## Cron jobs — for RECURRING tasks only
 Only use cron for things that need to repeat (daily auto-posts, weekly digests, recurring reminders). For one-time scheduled posts, ALWAYS use \`--scheduledAt\` instead.
 
+### Plan restriction — CRITICAL
+The user's plan is: **\${PLAN_ID:-starter}**
+- **Starter plan**: The machine sleeps after inactivity. Cron jobs WILL NOT run because the container is stopped. If the user asks for recurring/automated posting, explain: "Automated posting with cron jobs requires the Pro or Business plan because your bot needs to stay running 24/7. On the Starter plan, your bot sleeps when you're not chatting. You can upgrade from the Billing page in your dashboard." Do NOT create cron jobs for Starter users — they will silently fail.
+- **Pro / Business plan**: The machine is always on. Cron jobs work normally.
+
 **Correct pattern** (use this EVERY TIME):
 - \`sessionTarget\`: always \`"isolated"\`
 - \`payload.kind\`: always \`"agentTurn"\`
