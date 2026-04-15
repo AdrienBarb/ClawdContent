@@ -135,7 +135,7 @@ export async function changePlan(
 
   await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
     items: [{ id: item.id, price: newPriceId }],
-    proration_behavior: "create_prorations",
+    proration_behavior: "always_invoice",
     metadata: { userId, planId: newPlanId },
   });
 
