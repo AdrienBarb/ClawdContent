@@ -41,7 +41,7 @@ const navItems = [
     label: "Social Accounts",
     icon: ShareNetworkIcon,
   },
-  { href: appRouter.posts, label: "Content", icon: FileTextIcon },
+  { href: appRouter.posts, label: "Posts", icon: FileTextIcon },
   { href: appRouter.context, label: "Knowledge", icon: UserCircleIcon },
 ];
 

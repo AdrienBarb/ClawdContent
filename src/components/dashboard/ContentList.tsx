@@ -383,7 +383,7 @@ export default function ContentList() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-          Content
+          Posts
         </h1>
         <Link
           href={appRouter.dashboard}
