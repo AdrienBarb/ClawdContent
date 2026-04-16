@@ -221,3 +221,118 @@ export async function updatePost(
     apiKey,
   });
 }
+
+// ---------------------------------------------------------------------------
+// Analytics
+// ---------------------------------------------------------------------------
+
+export interface PostAnalytics {
+  postId: string;
+  platform: string;
+  impressions: number;
+  reach: number;
+  likes: number;
+  comments: number;
+  shares: number;
+  saves: number;
+  clicks: number;
+  views: number;
+}
+
+export interface AnalyticsPagination {
+  limit: number;
+  offset: number;
+  total: number;
+}
+
+export interface DailyMetric {
+  date: string;
+  postCount: number;
+  platformDistribution: Record<string, number>;
+  totalImpressions: number;
+  totalReach: number;
+  totalLikes: number;
+  totalComments: number;
+  totalShares: number;
+  totalSaves: number;
+  totalClicks: number;
+  totalViews: number;
+}
+
+export interface FollowerStat {
+  accountId: string;
+  platform: string;
+  followers: { date: string; count: number }[];
+}
+
+export interface BestTime {
+  dayOfWeek: string;
+  hour: number;
+  averageEngagement: number;
+}
+
+export async function getAnalytics(
+  apiKey: string,
+  options?: {
+    postId?: string;
+    fromDate?: string;
+    toDate?: string;
+    limit?: number;
+    offset?: number;
+  }
+): Promise<{ data: PostAnalytics[]; pagination: AnalyticsPagination }> {
+  const params = new URLSearchParams();
+  if (options?.postId) params.set("postId", options.postId);
+  if (options?.fromDate) params.set("fromDate", options.fromDate);
+  if (options?.toDate) params.set("toDate", options.toDate);
+  if (options?.limit) params.set("limit", String(options.limit));
+  if (options?.offset) params.set("offset", String(options.offset));
+
+  const qs = params.toString();
+  return lateRequest(`/analytics/get-analytics${qs ? `?${qs}` : ""}`, {
+    apiKey,
+  });
+}
+
+export async function getDailyMetrics(
+  apiKey: string,
+  options?: { startDate?: string; endDate?: string; platform?: string }
+): Promise<{ dailyMetrics: DailyMetric[] }> {
+  const params = new URLSearchParams();
+  if (options?.startDate) params.set("startDate", options.startDate);
+  if (options?.endDate) params.set("endDate", options.endDate);
+  if (options?.platform) params.set("platform", options.platform);
+
+  const qs = params.toString();
+  return lateRequest(`/analytics/daily-metrics${qs ? `?${qs}` : ""}`, {
+    apiKey,
+  });
+}
+
+export async function getFollowerStats(
+  apiKey: string,
+  options?: { accountId?: string; platform?: string }
+): Promise<{ followerStats: FollowerStat[] }> {
+  const params = new URLSearchParams();
+  if (options?.accountId) params.set("accountId", options.accountId);
+  if (options?.platform) params.set("platform", options.platform);
+
+  const qs = params.toString();
+  return lateRequest(`/accounts/follower-stats${qs ? `?${qs}` : ""}`, {
+    apiKey,
+  });
+}
+
+export async function getBestTimeToPost(
+  apiKey: string,
+  options?: { platform?: string }
+): Promise<{ bestTimes: BestTime[] }> {
+  const params = new URLSearchParams();
+  if (options?.platform) params.set("platform", options.platform);
+
+  const qs = params.toString();
+  return lateRequest(
+    `/analytics/get-best-time-to-post${qs ? `?${qs}` : ""}`,
+    { apiKey }
+  );
+}
