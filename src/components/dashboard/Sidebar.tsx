@@ -15,6 +15,7 @@ import {
   UserCircleIcon,
   GiftIcon,
   CaretUpDownIcon,
+  FileTextIcon,
 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -40,6 +41,7 @@ const navItems = [
     label: "Social Accounts",
     icon: ShareNetworkIcon,
   },
+  { href: appRouter.posts, label: "Content", icon: FileTextIcon },
   { href: appRouter.context, label: "Knowledge", icon: UserCircleIcon },
 ];
 

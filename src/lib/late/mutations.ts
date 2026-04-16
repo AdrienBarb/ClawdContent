@@ -70,10 +70,25 @@ export async function getConnectUrl(
   return data.authUrl;
 }
 
+export interface LatePostPlatform {
+  platform: string;
+  accountId?: string;
+  profileId?: string;
+  status?: string;
+  scheduledFor?: string | null;
+  [key: string]: unknown;
+}
+
+export interface LateMediaItem {
+  url: string;
+  type: string;
+}
+
 export interface LatePost {
   id: string;
   content: string;
-  platforms: string[];
+  platforms: LatePostPlatform[];
+  mediaItems: LateMediaItem[];
   status: string;
   scheduledAt: string | null;
   publishedAt: string | null;
@@ -89,9 +104,10 @@ export interface LatePostDetail extends LatePost {
 interface LatePostRaw {
   _id: string;
   content: string;
-  platforms: string[];
+  platforms: LatePostPlatform[];
+  mediaItems?: LateMediaItem[];
   status: string;
-  scheduledAt: string | null;
+  scheduledFor: string | null;
   publishedAt: string | null;
   createdAt: string;
 }
@@ -113,8 +129,9 @@ export async function listPosts(
     id: p._id,
     content: p.content,
     platforms: p.platforms,
+    mediaItems: p.mediaItems ?? [],
     status: p.status,
-    scheduledAt: p.scheduledAt,
+    scheduledAt: p.scheduledFor,
     publishedAt: p.publishedAt,
     createdAt: p.createdAt,
   }));
@@ -127,9 +144,10 @@ export async function getPost(
   const data = await lateRequest<{
     _id: string;
     content: string;
-    platforms: string[];
+    platforms: LatePostPlatform[];
+    mediaItems?: LateMediaItem[];
     status: string;
-    scheduledAt: string | null;
+    scheduledFor: string | null;
     publishedAt: string | null;
     createdAt: string;
     errorMessage?: string;
@@ -140,8 +158,9 @@ export async function getPost(
     id: data._id,
     content: data.content,
     platforms: data.platforms,
+    mediaItems: data.mediaItems ?? [],
     status: data.status,
-    scheduledAt: data.scheduledAt,
+    scheduledAt: data.scheduledFor,
     publishedAt: data.publishedAt,
     createdAt: data.createdAt,
     errorMessage: data.errorMessage ?? null,
@@ -191,9 +210,8 @@ export async function retryPost(
   postId: string,
   apiKey: string
 ): Promise<void> {
-  await lateRequest("/posts/retry-post", {
+  await lateRequest(`/posts/${postId}/retry`, {
     method: "POST",
-    body: { id: postId },
     apiKey,
   });
 }
@@ -203,9 +221,9 @@ export async function unpublishPost(
   platform: string,
   apiKey: string
 ): Promise<void> {
-  await lateRequest("/posts/unpublish-post", {
+  await lateRequest(`/posts/${postId}/unpublish`, {
     method: "POST",
-    body: { id: postId, platform },
+    body: { platform },
     apiKey,
   });
 }
@@ -215,9 +233,13 @@ export async function updatePost(
   data: { content?: string; scheduledAt?: string },
   apiKey: string
 ): Promise<void> {
-  await lateRequest("/posts/update-post", {
+  const { scheduledAt, ...rest } = data;
+  await lateRequest(`/posts/${postId}`, {
     method: "PUT",
-    body: { id: postId, ...data },
+    body: {
+      ...rest,
+      ...(scheduledAt !== undefined && { scheduledFor: scheduledAt }),
+    },
     apiKey,
   });
 }
