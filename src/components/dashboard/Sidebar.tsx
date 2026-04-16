@@ -35,7 +35,11 @@ import { useState } from "react";
 
 const navItems = [
   { href: appRouter.dashboard, label: "Chat", icon: RobotIcon },
-  { href: appRouter.accounts, label: "Social Accounts", icon: ShareNetworkIcon },
+  {
+    href: appRouter.accounts,
+    label: "Social Accounts",
+    icon: ShareNetworkIcon,
+  },
   { href: appRouter.context, label: "Knowledge", icon: UserCircleIcon },
 ];
 
