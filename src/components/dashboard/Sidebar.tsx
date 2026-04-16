@@ -34,15 +34,15 @@ import {
 import { useState } from "react";
 
 const navItems = [
-  { href: appRouter.dashboard, label: "Bot", icon: Bot },
-  { href: appRouter.accounts, label: "Accounts", icon: Share2 },
-  { href: appRouter.context, label: "Context", icon: UserCircle },
-  { href: appRouter.credits, label: "Credits", icon: Coins },
+  { href: appRouter.dashboard, label: "Chat", icon: Bot },
+  { href: appRouter.accounts, label: "Social Accounts", icon: Share2 },
+  { href: appRouter.context, label: "Knowledge", icon: UserCircle },
 ];
 
 const userMenuItems = [
   { href: appRouter.billing, label: "Billing", icon: CreditCard },
   { href: appRouter.settings, label: "Settings", icon: Settings },
+  { href: appRouter.credits, label: "Credits", icon: Coins },
 ];
 
 function getInitials(name?: string | null, email?: string | null) {
