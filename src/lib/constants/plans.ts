@@ -32,7 +32,7 @@ export const PLANS: Plan[] = [
     hasTrial: false,
     trialDays: 0,
     highlighted: false,
-    cta: "Get Started",
+    cta: "Start posting today",
   },
   {
     id: "pro",
@@ -47,7 +47,7 @@ export const PLANS: Plan[] = [
     hasTrial: false,
     trialDays: 0,
     highlighted: true,
-    cta: "Get Started",
+    cta: "Start posting today",
   },
   {
     id: "business",
@@ -62,7 +62,7 @@ export const PLANS: Plan[] = [
     hasTrial: false,
     trialDays: 0,
     highlighted: false,
-    cta: "Get Started",
+    cta: "Start posting today",
   },
 ];
 

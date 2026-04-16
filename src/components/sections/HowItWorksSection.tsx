@@ -1,4 +1,3 @@
-import AnimatedSection from "@/components/sections/AnimatedSection";
 import { UserPlus, MessageSquare, Send } from "lucide-react";
 
 const steps = [
@@ -14,7 +13,7 @@ const steps = [
     step: "2",
     title: "Talk to your AI social media manager",
     description:
-      'Tell it what to post. "Write about our product launch." "Plan my content for next week." "Make a thread about what I learned this month." Plain language, nothing to learn.',
+      '"Write about our product launch." "Plan my content for next week." "Make a thread about what I learned this month." Plain language, nothing to learn.',
   },
   {
     icon: Send,
@@ -30,35 +29,31 @@ export default function HowItWorksSection() {
     <section id="how-it-works" className="py-20 md:py-28 px-6">
       <div className="container mx-auto">
         <div className="mx-auto max-w-5xl">
-          <AnimatedSection>
-            <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 text-white">
-              How It Works
-            </h2>
-            <p className="text-center text-[#7a7f94] mb-16 text-lg">
-              Three steps. No learning curve. No dashboard to figure out.
-            </p>
-          </AnimatedSection>
+          <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 text-foreground">
+            How It Works
+          </h2>
+          <p className="text-center text-secondary-foreground mb-16 text-lg">
+            Three steps. No learning curve. No dashboard to figure out.
+          </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {steps.map((item, index) => (
-              <AnimatedSection key={item.step} delay={index * 0.15}>
-                <div className="bg-[#151929] border border-[#1e2233] rounded-2xl p-8 h-full hover:border-[#e8614d]/20 transition-colors">
-                  <div className="flex items-center gap-3 mb-5">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e8614d]/10">
-                      <item.icon className="h-5 w-5 text-[#e8614d]" />
-                    </div>
-                    <span className="text-[#555a6b] font-mono text-sm">
-                      Step {item.step}
-                    </span>
+              <div key={item.step} className="bg-card border border-border rounded-2xl p-8 h-full hover:border-primary/30 transition-colors shadow-sm">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+                    <item.icon className="h-5 w-5 text-primary" />
                   </div>
-                  <h3 className="text-xl font-semibold mb-3 text-white">
-                    {item.title}
-                  </h3>
-                  <p className="text-[#7a7f94] leading-relaxed text-[0.95rem]">
-                    {item.description}
-                  </p>
+                  <span className="text-muted-foreground font-mono text-sm">
+                    Step {item.step}
+                  </span>
                 </div>
-              </AnimatedSection>
+                <h3 className="text-xl font-semibold mb-3 text-foreground">
+                  {item.title}
+                </h3>
+                <p className="text-secondary-foreground leading-relaxed text-[0.95rem]">
+                  {item.description}
+                </p>
+              </div>
             ))}
           </div>
         </div>

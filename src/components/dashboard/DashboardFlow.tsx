@@ -74,7 +74,7 @@ export default function DashboardFlow({
         <div className="w-full max-w-2xl">
           {/* Progress hint — Zeigarnik effect */}
           <div className="text-center mb-2">
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#e8614d] bg-[#e8614d]/10 px-3 py-1 rounded-full">
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary bg-primary/10 px-3 py-1 rounded-full">
               Almost there — one step left
             </span>
           </div>
@@ -96,7 +96,7 @@ export default function DashboardFlow({
           <div className="text-center mb-10 animate-fade-in-up">
             <Button
               size="lg"
-              className="bg-[#e8614d] hover:bg-[#d4563f] text-white px-8 text-base h-12 cursor-pointer animate-pulse-glow"
+              className="bg-primary hover:bg-[#E84A36] text-white px-8 text-base h-12 cursor-pointer animate-pulse-glow"
               onClick={() => setShowSubscribeModal(true)}
             >
               Launch my AI agent
@@ -115,8 +115,8 @@ export default function DashboardFlow({
                 key={benefit.title}
                 className="flex items-start gap-4 rounded-xl border border-gray-100 bg-white p-4 shadow-sm"
               >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#e8614d]/10">
-                  <benefit.icon className="h-5 w-5 text-[#e8614d]" />
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                  <benefit.icon className="h-5 w-5 text-primary" />
                 </span>
                 <div>
                   <p className="text-sm font-semibold text-gray-900">

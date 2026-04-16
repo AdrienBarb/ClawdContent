@@ -34,10 +34,10 @@ export default async function BlogPage() {
     <div className="max-w-7xl mx-auto px-6 py-16">
       {/* Header */}
       <header className="max-w-3xl mb-16">
-        <h1 className="text-4xl lg:text-5xl font-bold text-white mb-6">
+        <h1 className="text-4xl lg:text-5xl font-bold text-foreground mb-6">
           PostClaw Blog — AI Content Management & Social Media Automation
         </h1>
-        <div className="text-lg text-[#7a7f94] leading-relaxed space-y-4">
+        <div className="text-lg text-muted-foreground leading-relaxed space-y-4">
           <p>
             The PostClaw Blog is your go-to resource for AI-powered content
             management, social media automation, and multi-platform publishing.
@@ -58,7 +58,7 @@ export default async function BlogPage() {
       {categories.length > 0 && (
         <section className="mb-20">
           <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl font-bold text-white">Explore Topics</h2>
+            <h2 className="text-2xl font-bold text-foreground">Explore Topics</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {categories.map((category) => (
@@ -71,7 +71,7 @@ export default async function BlogPage() {
       {/* Featured Posts Section */}
       {featuredPosts.length > 0 && (
         <section className="mb-20">
-          <h2 className="text-2xl font-bold text-white mb-8">Most Popular</h2>
+          <h2 className="text-2xl font-bold text-foreground mb-8">Most Popular</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {featuredPosts.map((post, index) => (
               <BlogPostCard key={post._id} post={post} featured={index === 0} />
@@ -83,7 +83,7 @@ export default async function BlogPage() {
       {/* Latest Posts Section */}
       {latestPosts.length > 0 && (
         <section className="mb-20">
-          <h2 className="text-2xl font-bold text-white mb-8">Latest Posts</h2>
+          <h2 className="text-2xl font-bold text-foreground mb-8">Latest Posts</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {latestPosts.map((post) => (
               <BlogPostCard key={post._id} post={post} />
@@ -93,20 +93,20 @@ export default async function BlogPage() {
       )}
 
       {/* CTA Section */}
-      <section className="bg-[#151929] rounded-3xl border border-[#1e2233] p-8 md:p-12 text-center">
-        <h2 className="text-2xl font-bold text-white mb-4">
+      <section className="bg-card rounded-3xl border border-border p-8 md:p-12 text-center">
+        <h2 className="text-2xl font-bold text-foreground mb-4">
           Ready to Publish Everywhere from One Chat?
         </h2>
-        <p className="text-[#7a7f94] mb-6 max-w-xl mx-auto">
+        <p className="text-muted-foreground mb-6 max-w-xl mx-auto">
           PostClaw is your AI social media manager. It learns your brand, plans
           your content, and publishes to 13+ social platforms.
         </p>
         <Button
           asChild
-          className="bg-[#e8614d] hover:bg-[#d4563f] text-white rounded-full px-8"
+          className="bg-primary hover:bg-primary text-foreground rounded-full px-8"
         >
           <Link href="/">
-            Get Started
+            Start posting today
             <ArrowRight className="w-4 h-4 ml-2" />
           </Link>
         </Button>
@@ -114,25 +114,25 @@ export default async function BlogPage() {
 
       {/* FAQ Section */}
       <section className="mt-20">
-        <h2 className="text-2xl font-bold text-white mb-8">
+        <h2 className="text-2xl font-bold text-foreground mb-8">
           Frequently Asked Questions
         </h2>
         <div className="grid md:grid-cols-2 gap-8">
           <div>
-            <h3 className="font-semibold text-white mb-2">
+            <h3 className="font-semibold text-foreground mb-2">
               What topics does this blog cover?
             </h3>
-            <p className="text-[#7a7f94] text-sm">
+            <p className="text-muted-foreground text-sm">
               AI content management, social media automation, multi-platform
               publishing, content creation strategies,
               and platform-specific tips.
             </p>
           </div>
           <div>
-            <h3 className="font-semibold text-white mb-2">
+            <h3 className="font-semibold text-foreground mb-2">
               Who is this blog for?
             </h3>
-            <p className="text-[#7a7f94] text-sm">
+            <p className="text-muted-foreground text-sm">
               Content creators, social media managers, and businesses who want to
               automate their publishing workflow and grow their presence across
               multiple platforms.

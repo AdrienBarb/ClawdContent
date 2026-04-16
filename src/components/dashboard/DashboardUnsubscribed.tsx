@@ -12,8 +12,8 @@ export default function DashboardUnsubscribed() {
     <>
       <div className="flex flex-col items-center justify-center h-[calc(100vh-10rem)]">
         <div className="rounded-2xl border border-gray-200 bg-white p-10 max-w-md text-center shadow-sm">
-          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#e8614d]/10 mx-auto mb-4">
-            <Rocket className="h-7 w-7 text-[#e8614d]" />
+          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 mx-auto mb-4">
+            <Rocket className="h-7 w-7 text-primary" />
           </div>
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
             Get your AI social media manager
@@ -23,7 +23,7 @@ export default function DashboardUnsubscribed() {
             adapts, and publishes posts across all your platforms from one chat.
           </p>
           <Button
-            className="bg-[#e8614d] hover:bg-[#d4563f] text-white"
+            className="bg-primary hover:bg-[#E84A36] text-white"
             onClick={() => setShowModal(true)}
           >
             <Rocket className="h-4 w-4 mr-1.5" />

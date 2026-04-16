@@ -2,29 +2,29 @@
 @plugin "@tailwindcss/typography";
 
 @theme {
-  --color-background: oklch(0.98 0.01 70);
-  --color-foreground: oklch(0.22 0.05 280);
-  --color-card: oklch(1 0 0);
-  --color-card-foreground: oklch(0.22 0.05 280);
-  --color-popover: oklch(1 0 0);
-  --color-popover-foreground: oklch(0.22 0.05 280);
-  --color-primary: oklch(0.42 0.2 280);
-  --color-primary-foreground: oklch(1 0 0);
-  --color-secondary: oklch(0.94 0.01 70);
-  --color-secondary-foreground: oklch(0.22 0.05 280);
-  --color-muted: oklch(0.95 0.008 70);
-  --color-muted-foreground: oklch(0.55 0.03 280);
-  --color-accent: oklch(0.94 0.01 70);
-  --color-accent-foreground: oklch(0.22 0.05 280);
-  --color-destructive: oklch(0.58 0.22 25);
-  --color-destructive-foreground: oklch(0.98 0 0);
-  --color-border: oklch(0.92 0.008 70);
-  --color-input: oklch(0.92 0.008 70);
-  --color-ring: oklch(0.42 0.2 280);
+  --color-background: #ededf5;
+  --color-foreground: #0f1437;
+  --color-card: #ffffff;
+  --color-card-foreground: #0f1437;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #0f1437;
+  --color-primary: #FF5E48;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f5f5fa;
+  --color-secondary-foreground: #4a5073;
+  --color-muted: #f0f0f6;
+  --color-muted-foreground: #5d6180;
+  --color-accent: #f5f5fa;
+  --color-accent-foreground: #0f1437;
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #ffffff;
+  --color-border: #d4d6e5;
+  --color-input: #d4d6e5;
+  --color-ring: #FF5E48;
   --radius: 0.75rem;
-  --font-sans: var(--font-dm-sans);
-  --font-serif: var(--font-dm-sans);
-  --font-mono: var(--font-dm-sans);
+  --font-sans: var(--font-inter);
+  --font-serif: var(--font-instrument-serif);
+  --font-mono: var(--font-inter);
 }
 
 :root {
@@ -38,27 +38,27 @@
   --sidebar-user-bg: #1a1d2e;
 }
 
-/* Dark theme for landing pages */
-.dark-theme {
-  --color-background: #0d0f17;
-  --color-foreground: #e8e9f0;
-  --color-card: #151929;
-  --color-card-foreground: #e8e9f0;
-  --color-popover: #1c2035;
-  --color-popover-foreground: #e8e9f0;
-  --color-primary: #e8614d;
+/* Landing page theme — editorial lavender */
+.landing-theme {
+  --color-background: #ededf5;
+  --color-foreground: #0f1437;
+  --color-card: #ffffff;
+  --color-card-foreground: #0f1437;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #0f1437;
+  --color-primary: #FF5E48;
   --color-primary-foreground: #ffffff;
-  --color-secondary: #1c2035;
-  --color-secondary-foreground: #e8e9f0;
-  --color-muted: #1a1d2e;
-  --color-muted-foreground: #7a7f94;
-  --color-accent: #1c2035;
-  --color-accent-foreground: #e8e9f0;
-  --color-destructive: #e8614d;
+  --color-secondary: #f5f5fa;
+  --color-secondary-foreground: #4a5073;
+  --color-muted: #f0f0f6;
+  --color-muted-foreground: #5d6180;
+  --color-accent: #f5f5fa;
+  --color-accent-foreground: #0f1437;
+  --color-destructive: #FF5E48;
   --color-destructive-foreground: #ffffff;
-  --color-border: #1e2233;
-  --color-input: #1e2233;
-  --color-ring: #e8614d;
+  --color-border: #d4d6e5;
+  --color-input: #d4d6e5;
+  --color-ring: #FF5E48;
 }
 
 * {
@@ -71,40 +71,28 @@ body {
   font-family: var(--font-sans);
 }
 
-/* Hero dark glow — warm coral radial from top */
-.hero-dark-glow {
+/* Hero mesh gradient — lavender glow top-left, peach-coral glow bottom-right */
+.hero-landing-glow {
   background:
-    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(232, 97, 77, 0.15) 0%, transparent 60%),
-    radial-gradient(ellipse 40% 30% at 85% 15%, rgba(232, 97, 77, 0.08) 0%, transparent 50%),
-    var(--color-background);
+    radial-gradient(ellipse 70% 60% at 15% 10%, rgba(224, 220, 255, 0.35) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 70%, rgba(255, 232, 224, 0.25) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 40% at 50% 0%, rgba(224, 220, 255, 0.15) 0%, transparent 50%),
+    #ededf5;
 }
 
-/* Starfield dots */
-.starfield {
-  position: relative;
-}
-
-.starfield::before {
+/* Subtle grain overlay for premium texture */
+.grain-overlay::after {
   content: '';
   position: absolute;
   inset: 0;
-  background-image:
-    radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.15), transparent),
-    radial-gradient(1px 1px at 25% 55%, rgba(255,255,255,0.08), transparent),
-    radial-gradient(1.5px 1.5px at 50% 8%, rgba(255,255,255,0.2), transparent),
-    radial-gradient(1px 1px at 65% 35%, rgba(255,255,255,0.06), transparent),
-    radial-gradient(1px 1px at 88% 72%, rgba(255,255,255,0.12), transparent),
-    radial-gradient(1.5px 1.5px at 40% 85%, rgba(255,255,255,0.1), transparent),
-    radial-gradient(1px 1px at 12% 45%, rgba(255,255,255,0.08), transparent),
-    radial-gradient(1px 1px at 78% 12%, rgba(255,255,255,0.14), transparent),
-    radial-gradient(1px 1px at 95% 50%, rgba(255,255,255,0.06), transparent),
-    radial-gradient(1px 1px at 35% 30%, rgba(255,255,255,0.1), transparent);
-  background-size: 500px 350px;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
   pointer-events: none;
   z-index: 0;
 }
 
-.starfield > * {
+.grain-overlay > * {
   position: relative;
   z-index: 1;
 }

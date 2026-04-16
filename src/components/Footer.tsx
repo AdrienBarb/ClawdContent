@@ -22,7 +22,7 @@ export default async function Footer() {
   }
 
   return (
-    <footer className="bg-[#0a0c14] border-t border-[#1e2233]">
+    <footer className="bg-[#0f172a] border-t border-[#1e293b]">
       <div className="container mx-auto px-6 py-12">
         <div className="grid grid-cols-1 gap-10 md:grid-cols-3">
           {/* Brand */}
@@ -30,12 +30,12 @@ export default async function Footer() {
             <h3 className="text-lg font-semibold text-white">
               {config.project.name}
             </h3>
-            <p className="text-sm text-[#7a7f94]">
+            <p className="text-sm text-[#94a3b8]">
               {config.project.description}
             </p>
             <a
               href={`mailto:${config.contact.supportEmail}`}
-              className="inline-block text-sm text-[#7a7f94] hover:text-[#e8614d] transition-colors"
+              className="inline-block text-sm text-[#94a3b8] hover:text-primary transition-colors"
             >
               {config.contact.supportEmail}
             </a>
@@ -44,11 +44,11 @@ export default async function Footer() {
           {/* Product */}
           <div>
             <h4 className="mb-3 text-sm font-semibold text-white">Product</h4>
-            <ul className="space-y-2 text-sm text-[#7a7f94]">
+            <ul className="space-y-2 text-sm text-[#94a3b8]">
               <li>
                 <Link
                   href="/#pricing"
-                  className="hover:text-[#e8614d] transition-colors"
+                  className="hover:text-primary transition-colors"
                 >
                   Pricing
                 </Link>
@@ -56,7 +56,7 @@ export default async function Footer() {
               <li>
                 <Link
                   href="/blog"
-                  className="hover:text-[#e8614d] transition-colors"
+                  className="hover:text-primary transition-colors"
                 >
                   Blog
                 </Link>
@@ -64,7 +64,7 @@ export default async function Footer() {
               <li>
                 <Link
                   href="/affiliates"
-                  className="hover:text-[#e8614d] transition-colors"
+                  className="hover:text-primary transition-colors"
                 >
                   Affiliates
                 </Link>
@@ -75,11 +75,11 @@ export default async function Footer() {
           {/* Legal */}
           <div>
             <h4 className="mb-3 text-sm font-semibold text-white">Legal</h4>
-            <ul className="space-y-2 text-sm text-[#7a7f94]">
+            <ul className="space-y-2 text-sm text-[#94a3b8]">
               <li>
                 <Link
                   href="/privacy"
-                  className="hover:text-[#e8614d] transition-colors"
+                  className="hover:text-primary transition-colors"
                 >
                   Privacy Policy
                 </Link>
@@ -87,7 +87,7 @@ export default async function Footer() {
               <li>
                 <Link
                   href="/terms"
-                  className="hover:text-[#e8614d] transition-colors"
+                  className="hover:text-primary transition-colors"
                 >
                   Terms of Service
                 </Link>
@@ -98,16 +98,16 @@ export default async function Footer() {
 
         {/* Alternatives */}
         {competitors.length > 0 && (
-          <div className="mt-10 border-t border-[#1e2233] pt-8">
+          <div className="mt-10 border-t border-[#1e293b] pt-8">
             <h4 className="mb-4 text-sm font-semibold text-white">
               Alternatives
             </h4>
-            <ul className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-[#7a7f94]">
+            <ul className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-[#94a3b8]">
               {competitors.map((c) => (
                 <li key={c.slug}>
                   <Link
                     href={`/alternatives/${c.slug}`}
-                    className="hover:text-[#e8614d] transition-colors"
+                    className="hover:text-primary transition-colors"
                   >
                     {c.primaryKeyword || `PostClaw vs ${c.competitorName}`}
                   </Link>
@@ -117,8 +117,8 @@ export default async function Footer() {
           </div>
         )}
 
-        <div className="mt-10 border-t border-[#1e2233] pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-[#7a7f94]">
+        <div className="mt-10 border-t border-[#1e293b] pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="text-sm text-[#94a3b8]">
             &copy; {currentYear} {config.project.name}. All rights reserved.
           </p>
           <div className="flex items-center gap-5">

@@ -7,7 +7,7 @@ export default function HomeLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="dark-theme bg-background text-foreground flex-1 flex flex-col min-h-screen">
+    <div className="landing-theme bg-background text-foreground flex-1 flex flex-col min-h-screen">
       <Navbar />
       <main className="flex-1">{children}</main>
       <Footer />

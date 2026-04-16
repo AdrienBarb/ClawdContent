@@ -236,7 +236,7 @@ export default function MediaUploadModal({
             onClick={() => !uploading && fileInputRef.current?.click()}
             className={`relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed py-10 px-4 transition-colors cursor-pointer ${
               dragOver
-                ? "border-[#e8614d] bg-[#e8614d]/5"
+                ? "border-primary bg-primary/5"
                 : "border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-gray-100/50"
             } ${uploading ? "pointer-events-none opacity-60" : ""}`}
           >
@@ -245,7 +245,7 @@ export default function MediaUploadModal({
             </div>
             <p className="text-sm text-gray-600">
               Drop your file(s) here or{" "}
-              <span className="text-[#e8614d] font-medium">browse</span>
+              <span className="text-primary font-medium">browse</span>
             </p>
             <p className="text-xs text-gray-400 mt-1">Max: 25 MB images, 200 MB videos</p>
           </div>
@@ -295,7 +295,7 @@ export default function MediaUploadModal({
               </div>
               <div className="h-1.5 w-full rounded-full bg-gray-200 overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-[#e8614d] transition-all duration-300"
+                  className="h-full rounded-full bg-primary transition-all duration-300"
                   style={{ width: `${progress.percent}%` }}
                 />
               </div>

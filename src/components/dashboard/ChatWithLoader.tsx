@@ -77,7 +77,7 @@ export default function ChatWithLoader() {
   if (isLoading || isProvisioning) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-4rem)]">
-        <Loader2 className="h-8 w-8 animate-spin text-[#e8614d] mb-4" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
         <h2 className="text-lg font-semibold text-gray-900 mb-1">
           Your AI social media manager is starting up...
         </h2>
@@ -100,7 +100,7 @@ export default function ChatWithLoader() {
             It paused to save resources. Wake it up to start chatting again.
           </p>
           <Button
-            className="bg-[#e8614d] hover:bg-[#d4543f] text-white"
+            className="bg-primary hover:bg-[#E84A36] text-white"
             onClick={() => wakeBot({})}
             disabled={waking}
           >
@@ -114,7 +114,7 @@ export default function ChatWithLoader() {
           {planId === "starter" && (
             <p className="text-xs text-gray-400 mt-3">
               Don&apos;t want your agent to sleep?{" "}
-              <a href="/d/billing" className="underline text-[#e8614d]">
+              <a href="/d/billing" className="underline text-primary">
                 Upgrade to Pro
               </a>{" "}
               for an always-on agent.

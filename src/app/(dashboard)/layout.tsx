@@ -42,7 +42,7 @@ export default async function DashboardLayout({
         </div>
 
         {/* Main content */}
-        <main className="flex-1 bg-[#f8f9fc]">
+        <main className="flex-1 bg-background">
           <div className="mx-auto max-w-5xl px-6 py-8">{children}</div>
         </main>
       </div>

@@ -169,14 +169,14 @@ export default function ContextPage() {
                 onClick={() => setSelectedRole(role.id)}
                 className={`w-full flex items-center gap-4 rounded-xl border p-4 text-left transition-all cursor-pointer ${
                   isSelected
-                    ? "border-[#e8614d] bg-[#e8614d]/5"
+                    ? "border-primary bg-primary/5"
                     : "border-gray-200 bg-white hover:border-gray-300"
                 }`}
               >
                 <span
                   className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
                     isSelected
-                      ? "bg-[#e8614d] text-white"
+                      ? "bg-primary text-white"
                       : "bg-gray-100 text-gray-500"
                   }`}
                 >
@@ -191,7 +191,7 @@ export default function ContextPage() {
                 <span
                   className={`h-5 w-5 shrink-0 rounded-full border-2 flex items-center justify-center ${
                     isSelected
-                      ? "border-[#e8614d] bg-[#e8614d]"
+                      ? "border-primary bg-primary"
                       : "border-gray-300"
                   }`}
                 >
@@ -225,7 +225,7 @@ export default function ContextPage() {
               value={niche}
               onChange={(e) => setNiche(e.target.value)}
               placeholder="e.g. I run a design agency for SaaS startups"
-              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#e8614d] focus:outline-none focus:ring-1 focus:ring-[#e8614d] resize-none"
+              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary resize-none"
               rows={3}
               maxLength={200}
             />
@@ -248,7 +248,7 @@ export default function ContextPage() {
                     onClick={() => toggleTopic(topic)}
                     className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-all cursor-pointer ${
                       isSelected
-                        ? "bg-[#e8614d] text-white"
+                        ? "bg-primary text-white"
                         : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                     }`}
                   >
@@ -262,7 +262,7 @@ export default function ContextPage() {
                   <button
                     key={topic}
                     onClick={() => toggleTopic(topic)}
-                    className="rounded-full px-3.5 py-1.5 text-sm font-medium bg-[#e8614d] text-white cursor-pointer"
+                    className="rounded-full px-3.5 py-1.5 text-sm font-medium bg-primary text-white cursor-pointer"
                   >
                     {topic}
                   </button>
@@ -280,7 +280,7 @@ export default function ContextPage() {
                   }
                 }}
                 placeholder="Add custom topic..."
-                className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#e8614d] focus:outline-none focus:ring-1 focus:ring-[#e8614d]"
+                className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 maxLength={50}
               />
               <Button
@@ -300,7 +300,7 @@ export default function ContextPage() {
       <div className="flex justify-end">
         <Button
           onClick={handleSave}
-          className="bg-[#e8614d] hover:bg-[#d4563f] text-white"
+          className="bg-primary hover:bg-[#E84A36] text-white"
           disabled={isPending}
         >
           {saved ? (

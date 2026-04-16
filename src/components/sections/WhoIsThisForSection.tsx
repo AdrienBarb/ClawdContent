@@ -1,4 +1,3 @@
-import AnimatedSection from "@/components/sections/AnimatedSection";
 import { Rocket, Users, Palette } from "lucide-react";
 
 const personas = [
@@ -27,32 +26,28 @@ export default function WhoIsThisForSection() {
     <section id="who-is-this-for" className="py-20 md:py-28 px-6">
       <div className="container mx-auto">
         <div className="mx-auto max-w-5xl">
-          <AnimatedSection>
-            <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 text-white leading-tight">
-              Built for people who have a business to run
-              <br />
-              — not a feed to manage.
-            </h2>
-            <p className="text-center text-[#7a7f94] text-lg mb-16">
-              &nbsp;
-            </p>
-          </AnimatedSection>
+          <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 text-foreground leading-tight">
+            Built for people who have a business to run
+            <br />
+            — not a feed to manage.
+          </h2>
+          <p className="text-center text-secondary-foreground text-lg mb-16">
+            &nbsp;
+          </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {personas.map((persona, index) => (
-              <AnimatedSection key={persona.title} delay={index * 0.15}>
-                <div className="bg-[#151929] border border-[#1e2233] rounded-2xl p-8 h-full hover:border-[#e8614d]/20 transition-colors">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e8614d]/10 mb-5">
-                    <persona.icon className="h-5 w-5 text-[#e8614d]" />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-3 text-white">
-                    {persona.title}
-                  </h3>
-                  <p className="text-[#7a7f94] leading-relaxed text-[0.95rem]">
-                    {persona.description}
-                  </p>
+              <div key={persona.title} className="bg-card border border-border rounded-2xl p-8 h-full hover:border-primary/30 transition-colors shadow-sm">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 mb-5">
+                  <persona.icon className="h-5 w-5 text-primary" />
                 </div>
-              </AnimatedSection>
+                <h3 className="text-xl font-semibold mb-3 text-foreground">
+                  {persona.title}
+                </h3>
+                <p className="text-secondary-foreground leading-relaxed text-[0.95rem]">
+                  {persona.description}
+                </p>
+              </div>
             ))}
           </div>
         </div>

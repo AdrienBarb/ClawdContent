@@ -378,7 +378,7 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
                 <div
                   className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm ${
                     isUser
-                      ? "bg-[#e8614d] text-white"
+                      ? "bg-primary text-white"
                       : "bg-gray-100 text-gray-900"
                   }`}
                 >
@@ -490,7 +490,7 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
               onKeyDown={handleKeyDown}
               placeholder="Type a message..."
               rows={1}
-              className="flex-1 resize-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#e8614d]/30 focus:border-[#e8614d] placeholder:text-gray-400"
+              className="flex-1 resize-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400"
               style={{ maxHeight: "120px" }}
             />
             <Button
@@ -498,7 +498,7 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
               size="icon"
               disabled={!canSend}
               onClick={handleSend}
-              className="h-11 w-11 shrink-0 rounded-xl bg-[#e8614d] hover:bg-[#d4563f] text-white disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+              className="h-11 w-11 shrink-0 rounded-xl bg-primary hover:bg-[#E84A36] text-white disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

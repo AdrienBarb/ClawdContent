@@ -73,7 +73,7 @@ async function BillingContent() {
               className={`h-full rounded-full ${
                 activeAccountCount >= plan.socialAccountLimit
                   ? "bg-amber-400"
-                  : "bg-[#e8614d]"
+                  : "bg-primary"
               }`}
               style={{
                 width: `${Math.min(

@@ -17,7 +17,7 @@ export default function BlogPostCard({
 
   return (
     <article
-      className={`group bg-[#151929] rounded-2xl border border-[#1e2233] overflow-hidden hover:border-[#e8614d]/30 transition-all ${
+      className={`group bg-card rounded-2xl border border-border overflow-hidden hover:border-primary/30 transition-all ${
         featured ? "md:col-span-2 md:grid md:grid-cols-2" : ""
       }`}
     >
@@ -35,8 +35,8 @@ export default function BlogPostCard({
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
-          <div className="w-full h-full bg-[#1a1d2e] flex items-center justify-center min-h-[200px]">
-            <span className="text-[#555a6b]">No image</span>
+          <div className="w-full h-full bg-muted flex items-center justify-center min-h-[200px]">
+            <span className="text-muted-foreground">No image</span>
           </div>
         )}
       </Link>
@@ -46,14 +46,14 @@ export default function BlogPostCard({
         {/* Category */}
         <Link
           href={`/blog/category/${post.category.slug.current}`}
-          className="text-xs font-medium text-[#e8614d] hover:text-[#f07563] uppercase tracking-wide"
+          className="text-xs font-medium text-primary hover:text-primary uppercase tracking-wide"
         >
           {post.category.title}
         </Link>
 
         {/* Title */}
         <h3
-          className={`mt-2 font-bold text-white group-hover:text-[#e8614d] transition-colors line-clamp-2 ${
+          className={`mt-2 font-bold text-foreground group-hover:text-primary transition-colors line-clamp-2 ${
             featured ? "text-2xl" : "text-lg"
           }`}
         >
@@ -65,7 +65,7 @@ export default function BlogPostCard({
         {/* Excerpt */}
         {post.excerpt && (
           <p
-            className={`mt-2 text-[#7a7f94] line-clamp-2 ${
+            className={`mt-2 text-muted-foreground line-clamp-2 ${
               featured ? "text-base" : "text-sm"
             }`}
           >
@@ -74,7 +74,7 @@ export default function BlogPostCard({
         )}
 
         {/* Meta */}
-        <div className="mt-4 flex items-center gap-3 text-xs text-[#555a6b]">
+        <div className="mt-4 flex items-center gap-3 text-xs text-muted-foreground">
           <span>{post.authorName}</span>
           <span>&middot;</span>
           <time dateTime={post.publishedAt}>

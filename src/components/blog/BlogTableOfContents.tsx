@@ -57,7 +57,7 @@ export default function BlogTableOfContents({
               href={`#${heading.id}`}
               className={cn(
                 "block py-1 text-[#555a6b] hover:text-white transition-colors",
-                activeId === heading.id && "text-[#e8614d] font-medium"
+                activeId === heading.id && "text-primary font-medium"
               )}
             >
               {heading.text}

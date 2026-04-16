@@ -41,35 +41,35 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full bg-[#0d0f17]/80 backdrop-blur-md border-b border-[#1e2233]/50">
+      <header className="sticky top-0 z-50 w-full bg-background/80 backdrop-blur-md border-b border-border/40">
         <nav className="container mx-auto flex h-20 items-center justify-between px-6">
           <div className="flex items-center gap-8">
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden text-[#8a8f9e] hover:text-white transition-colors cursor-pointer"
+              className="md:hidden text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             >
               {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
             <Link
               href="/"
-              className="hidden md:block text-2xl font-bold text-white hover:text-[#e8614d] transition-colors"
+              className="hidden md:block text-2xl font-bold text-foreground hover:text-primary transition-colors"
             >
               {config.project.shortName || config.project.name}
             </Link>
             <div className="hidden md:flex items-center gap-6">
-              <a href="#who-is-this-for" className="text-sm text-[#8a8f9e] hover:text-white transition-colors">
+              <a href="#who-is-this-for" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Who It's For
               </a>
-              <a href="#how-it-works" className="text-sm text-[#8a8f9e] hover:text-white transition-colors">
+              <a href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 How It Works
               </a>
-              <a href="#powered-by" className="text-sm text-[#8a8f9e] hover:text-white transition-colors">
+              <a href="#powered-by" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Powered By
               </a>
-              <a href="#pricing" className="text-sm text-[#8a8f9e] hover:text-white transition-colors">
+              <a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Pricing
               </a>
-              <Link href="/affiliates" className="text-sm text-[#8a8f9e] hover:text-white transition-colors">
+              <Link href="/affiliates" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Affiliates
               </Link>
             </div>
@@ -81,20 +81,20 @@ export default function Navbar() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button className="cursor-pointer">
-                      <Avatar className="h-9 w-9 border-2 border-[#e8614d]/30">
-                        <AvatarFallback className="bg-[#e8614d]/10 text-[#e8614d] font-medium text-sm">
+                      <Avatar className="h-9 w-9 border-2 border-primary/30">
+                        <AvatarFallback className="bg-primary/10 text-primary font-medium text-sm">
                           {getInitials(session.user.name, session.user.email)}
                         </AvatarFallback>
                       </Avatar>
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-[#151929] border-[#1e2233] rounded-xl shadow-lg">
-                    <DropdownMenuItem asChild className="cursor-pointer text-[#e8e9f0] focus:bg-[#1c2035] focus:text-white">
+                  <DropdownMenuContent align="end" className="bg-card border-border rounded-xl shadow-lg">
+                    <DropdownMenuItem asChild className="cursor-pointer text-foreground focus:bg-muted focus:text-foreground">
                       <Link href="/d">Dashboard</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={handleSignOut}
-                      className="cursor-pointer text-[#e8e9f0] focus:bg-[#1c2035] focus:text-white"
+                      className="cursor-pointer text-foreground focus:bg-muted focus:text-foreground"
                     >
                       Sign Out
                     </DropdownMenuItem>
@@ -103,9 +103,10 @@ export default function Navbar() {
               ) : (
                 <Button
                   onClick={() => setIsSignInModalOpen(true)}
-                  className="hidden md:inline-flex px-7 py-5 text-sm font-medium cursor-pointer bg-[#e8614d] hover:bg-[#d4563f] text-white"
+                  variant="outline"
+                  className="hidden md:inline-flex px-5 py-2 text-sm font-medium cursor-pointer border-foreground/20 text-foreground hover:bg-foreground hover:text-primary-foreground rounded-full transition-all"
                 >
-                  Get Started
+                  Start posting today
                 </Button>
               )}
             </>
@@ -113,39 +114,39 @@ export default function Navbar() {
         </nav>
 
         {isMobileMenuOpen && (
-          <div className="md:hidden border-t border-[#1e2233]/50 bg-[#0d0f17]/95 backdrop-blur-md px-6 py-4 space-y-4">
+          <div className="md:hidden border-t border-border/40 bg-background/95 backdrop-blur-md px-6 py-4 space-y-4">
             <a
               href="#who-is-this-for"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="block text-sm text-[#8a8f9e] hover:text-white transition-colors"
+              className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               Who It's For
             </a>
             <a
               href="#how-it-works"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="block text-sm text-[#8a8f9e] hover:text-white transition-colors"
+              className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               How It Works
             </a>
             <a
               href="#powered-by"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="block text-sm text-[#8a8f9e] hover:text-white transition-colors"
+              className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               Powered By
             </a>
             <a
               href="#pricing"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="block text-sm text-[#8a8f9e] hover:text-white transition-colors"
+              className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               Pricing
             </a>
             <Link
               href="/affiliates"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="block text-sm text-[#8a8f9e] hover:text-white transition-colors"
+              className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               Affiliates
             </Link>
@@ -155,9 +156,9 @@ export default function Navbar() {
                   setIsMobileMenuOpen(false);
                   setIsSignInModalOpen(true);
                 }}
-                className="w-full text-sm font-medium cursor-pointer bg-[#e8614d] hover:bg-[#d4563f] text-white"
+                className="w-full text-sm font-medium cursor-pointer bg-primary hover:bg-[#E84A36] text-primary-foreground rounded-full"
               >
-                Get Started
+                Start posting today
               </Button>
             )}
           </div>

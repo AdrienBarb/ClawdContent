@@ -92,17 +92,17 @@ const faqs = [
 
 export default function AffiliatesPage() {
   return (
-    <div className="bg-[#0a0c14]">
+    <div>
       {/* Hero */}
       <section className="container mx-auto px-6 pt-24 pb-16 text-center">
         <div className="mx-auto max-w-3xl">
-          <p className="mb-4 text-sm font-semibold uppercase tracking-wider text-[#e8614d]">
+          <p className="mb-4 text-sm font-semibold uppercase tracking-wider text-primary">
             Affiliate Program
           </p>
-          <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
+          <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
             Earn 40% recurring commission
           </h1>
-          <p className="mt-6 text-lg text-[#8a8f9e] max-w-2xl mx-auto">
+          <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto">
             Recommend PostClaw to your audience and earn 40% of every payment —
             not just the first one. As long as they stay subscribed, you keep
             earning.
@@ -112,7 +112,7 @@ export default function AffiliatesPage() {
               href="https://postclaw.affonso.io"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-lg bg-[#e8614d] px-8 py-4 text-base font-semibold text-white transition-colors hover:bg-[#d4563f]"
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-8 py-4 text-base font-semibold text-white transition-colors hover:bg-primary"
             >
               Join the Affiliate Program
               <svg
@@ -135,7 +135,7 @@ export default function AffiliatesPage() {
 
       {/* How it works */}
       <section className="container mx-auto px-6 py-16">
-        <h2 className="text-center text-2xl font-bold text-white sm:text-3xl mb-12">
+        <h2 className="text-center text-2xl font-bold text-foreground sm:text-3xl mb-12">
           How it works
         </h2>
         <div className="mx-auto max-w-3xl">
@@ -158,14 +158,14 @@ export default function AffiliatesPage() {
               },
             ].map((item) => (
               <div key={item.step} className="flex gap-5">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#e8614d]/10 text-[#e8614d] font-bold text-sm">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-sm">
                   {item.step}
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-white">
+                  <h3 className="text-lg font-semibold text-foreground">
                     {item.title}
                   </h3>
-                  <p className="mt-1 text-[#8a8f9e]">{item.desc}</p>
+                  <p className="mt-1 text-muted-foreground">{item.desc}</p>
                 </div>
               </div>
             ))}
@@ -175,22 +175,22 @@ export default function AffiliatesPage() {
 
       {/* Benefits */}
       <section className="container mx-auto px-6 py-16">
-        <h2 className="text-center text-2xl font-bold text-white sm:text-3xl mb-12">
+        <h2 className="text-center text-2xl font-bold text-foreground sm:text-3xl mb-12">
           Why join?
         </h2>
         <div className="mx-auto grid max-w-4xl grid-cols-1 gap-6 sm:grid-cols-2">
           {benefits.map((benefit) => (
             <div
               key={benefit.title}
-              className="rounded-2xl border border-[#1e2233] bg-[#0d0f17] p-6"
+              className="rounded-2xl border border-border bg-card p-6"
             >
-              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-[#e8614d]/10">
-                <benefit.icon className="h-5 w-5 text-[#e8614d]" />
+              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                <benefit.icon className="h-5 w-5 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold text-white">
+              <h3 className="text-lg font-semibold text-foreground">
                 {benefit.title}
               </h3>
-              <p className="mt-2 text-sm text-[#8a8f9e]">
+              <p className="mt-2 text-sm text-muted-foreground">
                 {benefit.description}
               </p>
             </div>
@@ -200,10 +200,10 @@ export default function AffiliatesPage() {
 
       {/* Revenue Simulator */}
       <section className="container mx-auto px-6 py-16">
-        <h2 className="text-center text-2xl font-bold text-white sm:text-3xl mb-4">
+        <h2 className="text-center text-2xl font-bold text-foreground sm:text-3xl mb-4">
           How much can you earn?
         </h2>
-        <p className="text-center text-[#8a8f9e] mb-10 max-w-xl mx-auto">
+        <p className="text-center text-muted-foreground mb-10 max-w-xl mx-auto">
           Drag the slider and pick a plan to see your potential recurring
           income.
         </p>
@@ -212,19 +212,19 @@ export default function AffiliatesPage() {
 
       {/* FAQ */}
       <section className="container mx-auto px-6 py-16">
-        <h2 className="text-center text-2xl font-bold text-white sm:text-3xl mb-12">
+        <h2 className="text-center text-2xl font-bold text-foreground sm:text-3xl mb-12">
           Affiliate Payouts FAQ
         </h2>
         <div className="mx-auto max-w-3xl space-y-6">
           {faqs.map((faq) => (
             <div
               key={faq.question}
-              className="rounded-2xl border border-[#1e2233] bg-[#0d0f17] p-6"
+              className="rounded-2xl border border-border bg-card p-6"
             >
-              <h3 className="text-base font-semibold text-white">
+              <h3 className="text-base font-semibold text-foreground">
                 {faq.question}
               </h3>
-              <p className="mt-2 text-sm leading-relaxed text-[#8a8f9e]">
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 {faq.answer}
               </p>
             </div>
@@ -234,11 +234,11 @@ export default function AffiliatesPage() {
 
       {/* CTA */}
       <section className="container mx-auto px-6 py-20 text-center">
-        <div className="mx-auto max-w-2xl rounded-2xl border border-[#1e2233] bg-[#0d0f17] p-10">
-          <h2 className="text-2xl font-bold text-white sm:text-3xl">
+        <div className="mx-auto max-w-2xl rounded-2xl border border-border bg-card p-10">
+          <h2 className="text-2xl font-bold text-foreground sm:text-3xl">
             Ready to start earning?
           </h2>
-          <p className="mt-4 text-[#8a8f9e]">
+          <p className="mt-4 text-muted-foreground">
             Join the PostClaw affiliate program today and start earning 40%
             recurring commission on every referral.
           </p>
@@ -247,7 +247,7 @@ export default function AffiliatesPage() {
               href="https://postclaw.affonso.io"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-lg bg-[#e8614d] px-8 py-4 text-base font-semibold text-white transition-colors hover:bg-[#d4563f]"
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-8 py-4 text-base font-semibold text-white transition-colors hover:bg-primary"
             >
               Join the Affiliate Program
             </Link>

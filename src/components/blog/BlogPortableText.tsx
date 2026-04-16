@@ -26,7 +26,7 @@ const components: PortableTextComponents = {
       return (
         <h2
           id={id}
-          className="text-2xl font-bold text-white mt-10 mb-4 scroll-mt-24"
+          className="text-2xl font-bold text-foreground mt-10 mb-4 scroll-mt-24"
         >
           {children}
         </h2>
@@ -38,34 +38,34 @@ const components: PortableTextComponents = {
       return (
         <h3
           id={id}
-          className="text-xl font-semibold text-white mt-8 mb-3 scroll-mt-24"
+          className="text-xl font-semibold text-foreground mt-8 mb-3 scroll-mt-24"
         >
           {children}
         </h3>
       );
     },
     h4: ({ children }) => (
-      <h4 className="text-lg font-semibold text-white mt-6 mb-2">
+      <h4 className="text-lg font-semibold text-foreground mt-6 mb-2">
         {children}
       </h4>
     ),
     normal: ({ children }) => (
-      <p className="text-[#c0c4d0] leading-relaxed mb-4">{children}</p>
+      <p className="text-foreground leading-relaxed mb-4">{children}</p>
     ),
     blockquote: ({ children }) => (
-      <blockquote className="border-l-4 border-[#e8614d] pl-4 italic text-[#7a7f94] my-6">
+      <blockquote className="border-l-4 border-primary pl-4 italic text-muted-foreground my-6">
         {children}
       </blockquote>
     ),
   },
   list: {
     bullet: ({ children }) => (
-      <ul className="list-disc list-inside space-y-2 mb-4 text-[#c0c4d0]">
+      <ul className="list-disc list-inside space-y-2 mb-4 text-foreground">
         {children}
       </ul>
     ),
     number: ({ children }) => (
-      <ol className="list-decimal list-inside space-y-2 mb-4 text-[#c0c4d0]">
+      <ol className="list-decimal list-inside space-y-2 mb-4 text-foreground">
         {children}
       </ol>
     ),
@@ -76,11 +76,11 @@ const components: PortableTextComponents = {
   },
   marks: {
     strong: ({ children }) => (
-      <strong className="font-semibold text-white">{children}</strong>
+      <strong className="font-semibold text-foreground">{children}</strong>
     ),
     em: ({ children }) => <em className="italic">{children}</em>,
     code: ({ children }) => (
-      <code className="bg-[#1e2233] px-1.5 py-0.5 rounded text-sm font-mono text-[#e8e9f0]">
+      <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono text-foreground">
         {children}
       </code>
     ),
@@ -90,7 +90,7 @@ const components: PortableTextComponents = {
       return (
         <Link
           href={href}
-          className="text-[#e8614d] hover:text-[#f07563] underline underline-offset-2"
+          className="text-primary hover:text-primary underline underline-offset-2"
           {...(isExternal && { target: "_blank", rel: "noopener noreferrer" })}
         >
           {children}
@@ -117,7 +117,7 @@ const components: PortableTextComponents = {
             className="rounded-xl w-full"
           />
           {value.caption && (
-            <figcaption className="text-center text-sm text-[#555a6b] mt-2">
+            <figcaption className="text-center text-sm text-muted-foreground mt-2">
               {value.caption}
             </figcaption>
           )}

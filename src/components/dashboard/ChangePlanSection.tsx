@@ -40,8 +40,8 @@ export default function ChangePlanSection({
   };
 
   return (
-    <div className="rounded-2xl bg-[#0d0f17] p-6 shadow-sm border border-[#1e2233]">
-      <p className="text-xs font-semibold uppercase tracking-wider text-[#7a7f94] mb-5">
+    <div className="rounded-2xl bg-card p-6 shadow-sm border border-border">
+      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-5">
         Change Plan
       </p>
       <PricingCards

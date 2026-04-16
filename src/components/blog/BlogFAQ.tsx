@@ -37,22 +37,22 @@ export default function BlogFAQ({ faq }: BlogFAQProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqStructuredData) }}
       />
 
-      <h2 className="text-2xl font-bold text-white mb-6">{faq.title}</h2>
+      <h2 className="text-2xl font-bold text-foreground mb-6">{faq.title}</h2>
 
       <Accordion type="single" collapsible className="space-y-3">
         {faq.items.map((item) => (
           <AccordionItem
             key={item._key}
             value={item._key}
-            className="bg-[#151929] rounded-xl border border-[#1e2233] px-5 overflow-hidden"
+            className="bg-card rounded-xl border border-border px-5 overflow-hidden"
           >
             <AccordionTrigger className="hover:no-underline py-4">
-              <h3 className="text-base font-medium text-[#e8e9f0] text-left pr-4">
+              <h3 className="text-base font-medium text-foreground text-left pr-4">
                 {item.question}
               </h3>
             </AccordionTrigger>
             <AccordionContent className="pb-4">
-              <p className="text-[#7a7f94] leading-relaxed">{item.answer}</p>
+              <p className="text-muted-foreground leading-relaxed">{item.answer}</p>
             </AccordionContent>
           </AccordionItem>
         ))}

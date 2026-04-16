@@ -14,7 +14,7 @@ export default function BlogCategoryCard({ category }: BlogCategoryCardProps) {
   return (
     <Link
       href={`/blog/category/${category.slug.current}`}
-      className="group block bg-[#151929] rounded-2xl border border-[#1e2233] overflow-hidden hover:border-[#e8614d]/30 transition-all"
+      className="group block bg-card rounded-2xl border border-border overflow-hidden hover:border-primary/30 transition-all"
     >
       {/* Image */}
       {imageUrl ? (
@@ -28,8 +28,8 @@ export default function BlogCategoryCard({ category }: BlogCategoryCardProps) {
           />
         </div>
       ) : (
-        <div className="aspect-video bg-gradient-to-br from-[#e8614d]/20 to-[#e8614d]/5 flex items-center justify-center">
-          <span className="text-4xl font-bold text-[#e8614d]/40">
+        <div className="aspect-video bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+          <span className="text-4xl font-bold text-primary/40">
             {category.title.charAt(0)}
           </span>
         </div>
@@ -38,20 +38,20 @@ export default function BlogCategoryCard({ category }: BlogCategoryCardProps) {
       {/* Content */}
       <div className="p-5">
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-lg text-white group-hover:text-[#e8614d] transition-colors">
+          <h3 className="font-semibold text-lg text-foreground group-hover:text-primary transition-colors">
             {category.title}
           </h3>
-          <ArrowRight className="w-4 h-4 text-[#555a6b] group-hover:text-[#e8614d] group-hover:translate-x-1 transition-all" />
+          <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
         </div>
 
         {category.description && (
-          <p className="mt-2 text-sm text-[#7a7f94] line-clamp-2">
+          <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
             {category.description}
           </p>
         )}
 
         {category.postCount !== undefined && (
-          <p className="mt-3 text-xs text-[#555a6b]">
+          <p className="mt-3 text-xs text-muted-foreground">
             {category.postCount}{" "}
             {category.postCount === 1 ? "article" : "articles"}
           </p>

@@ -1,4 +1,3 @@
-import AnimatedSection from "@/components/sections/AnimatedSection";
 import Image from "next/image";
 import { ArrowUpRight } from "lucide-react";
 
@@ -30,24 +29,21 @@ export default function PoweredBySection() {
     <section id="powered-by" className="py-20 md:py-28">
       <div className="container mx-auto px-6">
         <div className="mx-auto max-w-5xl">
-          <AnimatedSection>
-            <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 text-white">
-              Powered By
-            </h2>
-            <p className="text-center text-[#7a7f94] text-lg mb-16">
-              Built on proven, open-source infrastructure trusted by thousands
-              of developers.
-            </p>
-          </AnimatedSection>
+          <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 text-foreground">
+            Powered By
+          </h2>
+          <p className="text-center text-secondary-foreground text-lg mb-16">
+            Built on proven, open-source infrastructure trusted by thousands
+            of developers.
+          </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {technologies.map((tech, index) => (
-              <AnimatedSection key={tech.name} delay={index * 0.15}>
-                <a
+              <a
                   href={tech.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block bg-[#151929] border border-[#1e2233] rounded-2xl p-8 h-full hover:border-[#e8614d]/20 transition-colors group"
+                  className="block bg-card border border-border rounded-2xl p-8 h-full hover:border-primary/30 transition-colors group shadow-sm"
                 >
                   <div className="flex items-center justify-between mb-6">
                     <div className="h-12 flex items-center">
@@ -59,22 +55,21 @@ export default function PoweredBySection() {
                         className="h-12 w-auto"
                       />
                     </div>
-                    <ArrowUpRight className="h-5 w-5 text-[#555a6b] group-hover:text-[#e8614d] transition-colors" />
+                    <ArrowUpRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
                   </div>
                   <div className="flex items-center gap-3 mb-4">
-                    <span className="text-xs font-medium text-[#e8614d] bg-[#e8614d]/10 px-3 py-1 rounded-full">
+                    <span className="text-xs font-medium text-primary bg-primary/10 px-3 py-1 rounded-full">
                       {tech.label}
                     </span>
-                    <span className="text-xs text-[#555a6b]">{tech.stat}</span>
+                    <span className="text-xs text-muted-foreground">{tech.stat}</span>
                   </div>
-                  <h3 className="text-xl font-semibold text-white mb-3">
+                  <h3 className="text-xl font-semibold text-foreground mb-3">
                     {tech.name}
                   </h3>
-                  <p className="text-[#7a7f94] leading-relaxed text-[0.92rem]">
+                  <p className="text-secondary-foreground leading-relaxed text-[0.92rem]">
                     {tech.description}
                   </p>
                 </a>
-              </AnimatedSection>
             ))}
           </div>
         </div>

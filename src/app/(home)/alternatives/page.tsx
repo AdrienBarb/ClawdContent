@@ -27,10 +27,10 @@ export default async function AlternativesPage() {
     <div className="max-w-7xl mx-auto px-6 py-16">
       {/* Header */}
       <div className="max-w-3xl mx-auto text-center mb-16">
-        <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">
+        <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
           PostClaw Alternatives & Comparisons
         </h1>
-        <p className="text-lg text-[#7a7f94] leading-relaxed mb-8">
+        <p className="text-lg text-muted-foreground leading-relaxed mb-8">
           Looking for a social media automation or AI content management tool?
           Compare PostClaw with other platforms in the market. Learn what makes
           each tool unique and discover why creators choose PostClaw to publish
@@ -39,10 +39,10 @@ export default async function AlternativesPage() {
         <Button
           asChild
           size="lg"
-          className="bg-[#e8614d] hover:bg-[#d4563f] text-white rounded-full px-8"
+          className="bg-primary hover:bg-primary text-foreground rounded-full px-8"
         >
           <Link href="/">
-            Get Started
+            Start posting today
             <ArrowRight className="w-4 h-4 ml-2" />
           </Link>
         </Button>
@@ -57,7 +57,7 @@ export default async function AlternativesPage() {
               <Link
                 key={competitor._id}
                 href={`/alternatives/${competitor.slug.current}`}
-                className="group bg-[#151929] border border-[#1e2233] rounded-xl p-6 hover:border-[#e8614d]/30 transition-all"
+                className="group bg-card border border-border rounded-xl p-6 hover:border-primary/30 transition-all"
               >
                 <div className="flex items-start gap-4">
                   {logoUrl && (
@@ -70,17 +70,17 @@ export default async function AlternativesPage() {
                     />
                   )}
                   <div className="flex-1 min-w-0">
-                    <h2 className="text-lg font-semibold text-white group-hover:text-[#e8614d] transition-colors">
+                    <h2 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
                       {competitor.title} Alternative
                     </h2>
                     {competitor.excerpt && (
-                      <p className="text-sm text-[#7a7f94] mt-1 line-clamp-2">
+                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                         {competitor.excerpt}
                       </p>
                     )}
                   </div>
                 </div>
-                <div className="mt-4 flex items-center text-sm text-[#e8614d] font-medium">
+                <div className="mt-4 flex items-center text-sm text-primary font-medium">
                   Compare with PostClaw
                   <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
                 </div>
@@ -90,18 +90,18 @@ export default async function AlternativesPage() {
         </div>
       ) : (
         <div className="text-center py-12">
-          <p className="text-[#7a7f94]">
+          <p className="text-muted-foreground">
             No comparisons available yet. Check back soon!
           </p>
         </div>
       )}
 
       {/* CTA Section */}
-      <div className="max-w-2xl mx-auto mt-20 text-center bg-[#e8614d]/10 rounded-2xl border border-[#e8614d]/20 p-8 md:p-12">
-        <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
+      <div className="max-w-2xl mx-auto mt-20 text-center bg-primary/10 rounded-2xl border border-primary/20 p-8 md:p-12">
+        <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
           Why Choose PostClaw?
         </h2>
-        <p className="text-[#7a7f94] mb-6">
+        <p className="text-muted-foreground mb-6">
           Your AI social media manager. It learns your brand, plans your content,
           and publishes to 13+ social platforms — all from one chat. Plans from
           $17/month.
@@ -110,10 +110,10 @@ export default async function AlternativesPage() {
           <Button
             asChild
             size="lg"
-            className="bg-[#e8614d] hover:bg-[#d4563f] text-white rounded-full px-8 w-full sm:w-auto"
+            className="bg-primary hover:bg-primary text-foreground rounded-full px-8 w-full sm:w-auto"
           >
             <Link href="/">
-              Get Started
+              Start posting today
               <ArrowRight className="w-4 h-4 ml-2" />
             </Link>
           </Button>
@@ -121,7 +121,7 @@ export default async function AlternativesPage() {
             asChild
             variant="outline"
             size="lg"
-            className="rounded-full px-8 w-full sm:w-auto border-[#1e2233] text-[#c0c4d0] hover:bg-[#151929] hover:text-white"
+            className="rounded-full px-8 w-full sm:w-auto border-border text-muted-foreground hover:bg-muted hover:text-foreground"
           >
             <Link href="/#how-it-works">See How It Works</Link>
           </Button>

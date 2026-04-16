@@ -1,4 +1,3 @@
-import AnimatedSection from "@/components/sections/AnimatedSection";
 import { Github, Lock, Zap } from "lucide-react";
 
 const stats = [
@@ -34,45 +33,39 @@ export default function SocialProofSection() {
     <section className="py-20 md:py-28">
       <div className="container mx-auto px-6">
         <div className="mx-auto max-w-5xl">
-          <AnimatedSection>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-20">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-20">
               {stats.map((stat) => (
                 <div
                   key={stat.label}
-                  className="text-center bg-[#151929] border border-[#1e2233] rounded-2xl p-6"
+                  className="text-center bg-card border border-border rounded-2xl p-6"
                 >
-                  <div className="text-3xl md:text-4xl font-bold text-[#e8614d] mb-1">
+                  <div className="text-3xl md:text-4xl font-bold text-primary mb-1">
                     {stat.value}
                   </div>
-                  <div className="text-sm text-[#7a7f94] font-medium">
+                  <div className="text-sm text-muted-foreground font-medium">
                     {stat.label}
                   </div>
                 </div>
               ))}
             </div>
-          </AnimatedSection>
 
-          <AnimatedSection>
-            <h2 className="text-4xl md:text-5xl font-bold text-center mb-14 text-white">
+          <h2 className="text-4xl md:text-5xl font-bold text-center mb-14 text-foreground">
               Why You Can Trust PostClaw
             </h2>
-          </AnimatedSection>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {trustPoints.map((point, index) => (
-              <AnimatedSection key={point.title} delay={index * 0.12}>
-                <div className="bg-[#151929] border border-[#1e2233] rounded-2xl p-8 h-full flex flex-col hover:border-[#e8614d]/20 transition-colors">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e8614d]/10 mb-5">
-                    <point.icon className="h-5 w-5 text-[#e8614d]" />
+              <div key={point.title} className="bg-card border border-border rounded-2xl p-8 h-full flex flex-col hover:border-primary/20 transition-colors">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 mb-5">
+                    <point.icon className="h-5 w-5 text-primary" />
                   </div>
-                  <h3 className="text-lg font-semibold text-white mb-3">
+                  <h3 className="text-lg font-semibold text-foreground mb-3">
                     {point.title}
                   </h3>
-                  <p className="text-[#7a7f94] leading-relaxed text-[0.92rem] flex-1">
+                  <p className="text-muted-foreground leading-relaxed text-[0.92rem] flex-1">
                     {point.description}
                   </p>
                 </div>
-              </AnimatedSection>
             ))}
           </div>
         </div>

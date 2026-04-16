@@ -6,7 +6,6 @@ import { useSession } from "@/lib/better-auth/auth-client";
 import { useRouter } from "next/navigation";
 import { appRouter } from "@/lib/constants/appRouter";
 import SignInModal from "@/components/SignInModal";
-import AnimatedSection from "@/components/sections/AnimatedSection";
 import { Brain, Shield, Sparkles, Clock } from "lucide-react";
 
 const features = [
@@ -76,37 +75,32 @@ export default function FeaturesSection() {
     <section className="py-20 md:py-28">
       <div className="container mx-auto px-6">
         <div className="mx-auto max-w-5xl">
-          <AnimatedSection>
-            <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 text-white">
-              Why PostClaw
-            </h2>
-            <p className="text-center text-[#7a7f94] text-lg mb-20">
-              Not another scheduling tool. An AI that actually works for you.
-            </p>
-          </AnimatedSection>
+          <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 text-foreground">
+            Why PostClaw
+          </h2>
+          <p className="text-center text-secondary-foreground text-lg mb-20">
+            Not another scheduling tool. An AI that actually works for you.
+          </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-20">
             {features.map((feature, index) => (
-              <AnimatedSection key={feature.title} delay={index * 0.15}>
-                <div className="bg-[#151929] border border-[#1e2233] rounded-2xl p-8 h-full hover:border-[#e8614d]/20 transition-colors">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e8614d]/10 mb-5">
-                    <feature.icon className="h-5 w-5 text-[#e8614d]" />
-                  </div>
-                  <h3 className="text-xl md:text-2xl font-semibold mb-4 whitespace-pre-line leading-snug text-white">
-                    {feature.title}
-                  </h3>
-                  <p className="text-[#7a7f94] leading-relaxed text-[0.95rem]">
-                    {feature.description}
-                  </p>
+              <div key={feature.title} className="bg-card border border-border rounded-2xl p-8 h-full hover:border-primary/30 transition-colors shadow-sm">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 mb-5">
+                  <feature.icon className="h-5 w-5 text-primary" />
                 </div>
-              </AnimatedSection>
+                <h3 className="text-xl md:text-2xl font-semibold mb-4 whitespace-pre-line leading-snug text-foreground">
+                  {feature.title}
+                </h3>
+                <p className="text-secondary-foreground leading-relaxed text-[0.95rem]">
+                  {feature.description}
+                </p>
+              </div>
             ))}
           </div>
 
           {/* Before / After comparison */}
-          <AnimatedSection>
-            <div className="rounded-[2rem] border border-[#1e2233] bg-[#111320] p-8 md:p-12 mb-16">
-              <h3 className="text-2xl md:text-3xl font-bold text-center mb-10 text-white">
+          <div className="rounded-[2rem] border border-border bg-card p-8 md:p-12 mb-16 shadow-sm">
+              <h3 className="text-2xl md:text-3xl font-bold text-center mb-10 text-foreground">
                 Before PostClaw vs. After PostClaw
               </h3>
               <div className="space-y-4">
@@ -115,19 +109,19 @@ export default function FeaturesSection() {
                     key={index}
                     className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4"
                   >
-                    <div className="flex items-center gap-3 bg-[#151929] border border-[#1e2233] rounded-xl px-5 py-3.5">
+                    <div className="flex items-center gap-3 bg-secondary border border-border rounded-xl px-5 py-3.5">
                       <span className="text-red-400/70 text-lg shrink-0">
                         &times;
                       </span>
-                      <span className="text-[#7a7f94] text-[0.92rem]">
+                      <span className="text-secondary-foreground text-[0.92rem]">
                         {row.without}
                       </span>
                     </div>
-                    <div className="flex items-center gap-3 bg-[#151929] border border-[#e8614d]/15 rounded-xl px-5 py-3.5">
-                      <span className="text-[#e8614d] text-lg shrink-0">
+                    <div className="flex items-center gap-3 bg-[#fef7f6] border border-primary/15 rounded-xl px-5 py-3.5">
+                      <span className="text-primary text-lg shrink-0">
                         &#10003;
                       </span>
-                      <span className="text-[#c0c4d0] text-[0.92rem]">
+                      <span className="text-foreground text-[0.92rem]">
                         {row.with}
                       </span>
                     </div>
@@ -135,19 +129,16 @@ export default function FeaturesSection() {
                 ))}
               </div>
             </div>
-          </AnimatedSection>
 
-          <AnimatedSection delay={0.2}>
-            <div className="text-center">
+          <div className="text-center">
               <Button
                 size="lg"
                 onClick={handleGetStarted}
-                className="text-base px-10 h-14 bg-[#e8614d] hover:bg-[#d4563f] text-white"
+                className="text-base px-10 h-14 bg-primary hover:bg-[#E84A36] text-white rounded-full"
               >
-                Get Started
+                Launch my AI manager
               </Button>
             </div>
-          </AnimatedSection>
         </div>
       </div>
       <SignInModal

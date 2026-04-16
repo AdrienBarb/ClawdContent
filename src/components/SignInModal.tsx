@@ -65,10 +65,10 @@ export default function SignInModal({ open, onOpenChange }: SignInModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-[#151929] border-[#1e2233] text-[#e8e9f0] [&>button]:text-[#7a7f94] [&>button]:hover:text-white">
+      <DialogContent className="bg-card border-border text-foreground [&>button]:text-muted-foreground [&>button]:hover:text-foreground">
         <DialogHeader>
-          <DialogTitle className="text-white">Sign In</DialogTitle>
-          <DialogDescription className="text-[#7a7f94]">
+          <DialogTitle className="text-foreground">Sign In</DialogTitle>
+          <DialogDescription className="text-muted-foreground">
             Enter your email address and we&apos;ll send you a magic link to
             sign in.
           </DialogDescription>
@@ -77,7 +77,7 @@ export default function SignInModal({ open, onOpenChange }: SignInModalProps) {
           <Button
             type="button"
             variant="outline"
-            className="w-full border-[#1e2233] bg-transparent text-[#e8e9f0] hover:bg-[#1c2035] hover:text-white"
+            className="w-full border-foreground/20 bg-foreground text-primary-foreground hover:bg-foreground/90 hover:text-primary-foreground font-medium"
             disabled={isLoading}
             onClick={async () => {
               setIsLoading(true);
@@ -111,10 +111,10 @@ export default function SignInModal({ open, onOpenChange }: SignInModalProps) {
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-[#1e2233]" />
+              <span className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-[#151929] px-2 text-[#555a6b]">
+              <span className="bg-card px-2 text-muted-foreground">
                 Or
               </span>
             </div>
@@ -122,24 +122,24 @@ export default function SignInModal({ open, onOpenChange }: SignInModalProps) {
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-[#e8e9f0]">Email</Label>
+              <Label htmlFor="email" className="text-foreground">Email</Label>
               <Input
                 id="email"
                 type="email"
                 placeholder="you@example.com"
-                className="bg-[#0d0f17] border-[#1e2233] text-[#e8e9f0] placeholder:text-[#555a6b] focus-visible:ring-[#e8614d]"
+                className="bg-muted border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-primary"
                 {...register("email")}
                 disabled={isLoading}
               />
               {errors.email && (
-                <p className="text-sm text-[#e8614d]">
+                <p className="text-sm text-primary">
                   {errors.email.message}
                 </p>
               )}
             </div>
             <Button
               type="submit"
-              className="w-full bg-[#e8614d] hover:bg-[#d4563f] text-white"
+              className="w-full bg-primary hover:bg-[#E84A36] text-white"
               disabled={isLoading}
             >
               {isLoading ? "Sending..." : "Send Magic Link"}

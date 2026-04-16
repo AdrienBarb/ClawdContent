@@ -79,26 +79,26 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   return (
     <div className="max-w-7xl mx-auto px-6 py-16">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-2 text-sm text-[#555a6b] mb-8">
+      <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-8">
         <Link
           href="/blog"
-          className="hover:text-white transition-colors"
+          className="hover:text-foreground transition-colors"
         >
           Blog
         </Link>
         <ChevronRight className="w-4 h-4" />
-        <span className="text-[#7a7f94]">{category.title}</span>
+        <span className="text-muted-foreground">{category.title}</span>
       </nav>
 
       {/* Header */}
       <header className="max-w-3xl mb-12">
-        <h1 className="text-4xl lg:text-5xl font-bold text-white mb-6">
+        <h1 className="text-4xl lg:text-5xl font-bold text-foreground mb-6">
           {category.title}
         </h1>
 
         {/* Intro content from Sanity */}
         {category.intro && category.intro.length > 0 && (
-          <div className="text-[#7a7f94] leading-relaxed [&_p]:text-[#7a7f94]">
+          <div className="text-muted-foreground leading-relaxed [&_p]:text-muted-foreground">
             <PortableText value={category.intro} />
           </div>
         )}
@@ -106,13 +106,13 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         {/* Fallback description */}
         {(!category.intro || category.intro.length === 0) &&
           category.description && (
-            <p className="text-lg text-[#7a7f94]">{category.description}</p>
+            <p className="text-lg text-muted-foreground">{category.description}</p>
           )}
       </header>
 
       {/* Posts */}
       <section>
-        <h2 className="text-2xl font-bold text-white mb-8">
+        <h2 className="text-2xl font-bold text-foreground mb-8">
           All Articles in {category.title}
         </h2>
 
@@ -123,11 +123,11 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
             ))}
           </div>
         ) : (
-          <div className="text-center py-16 text-[#7a7f94]">
+          <div className="text-center py-16 text-muted-foreground">
             <p>No articles in this category yet.</p>
             <Link
               href="/blog"
-              className="text-[#e8614d] hover:text-[#f07563] mt-2 inline-block"
+              className="text-primary hover:text-primary mt-2 inline-block"
             >
               &larr; Back to Blog
             </Link>

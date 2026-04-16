@@ -34,21 +34,21 @@ export default function SubscribeModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-black/50 overflow-y-auto">
       <div className="min-h-full flex items-start justify-center px-4 py-10">
-        <div className="relative w-full max-w-4xl rounded-2xl border border-[#1e2233] bg-[#0d0f17] shadow-xl p-6 md:p-8">
+        <div className="relative w-full max-w-4xl rounded-2xl border border-border bg-card shadow-xl p-6 md:p-8">
           <button
             onClick={() => onOpenChange(false)}
-            className="absolute top-4 right-4 text-[#7a7f94] hover:text-white transition-colors cursor-pointer z-10"
+            className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors cursor-pointer z-10"
           >
             <X className="h-5 w-5" />
           </button>
 
           <div className="text-center mb-6">
-            <h1 className="text-xl font-semibold tracking-tight text-white mb-1">
+            <h1 className="text-xl font-semibold tracking-tight text-foreground mb-1">
               Choose your plan
             </h1>
-            <p className="text-sm text-[#7a7f94]">
+            <p className="text-sm text-muted-foreground">
               Start publishing everywhere with your AI social media manager.
             </p>
           </div>

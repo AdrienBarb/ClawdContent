@@ -1,4 +1,3 @@
-import AnimatedSection from "@/components/sections/AnimatedSection";
 import {
   PenLine,
   Languages,
@@ -73,31 +72,27 @@ export default function CapabilitiesSection() {
     <section className="py-20 md:py-28 px-6">
       <div className="container mx-auto">
         <div className="mx-auto max-w-5xl">
-          <AnimatedSection>
-            <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 text-white">
-              What Your AI Social Media Manager Can Do
-            </h2>
-            <p className="text-center text-[#7a7f94] text-lg mb-16">
-              More than a posting tool. It&apos;s the social media hire
-              you&apos;ve been putting off.
-            </p>
-          </AnimatedSection>
+          <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 text-foreground">
+            What Your AI Social Media Manager Can Do
+          </h2>
+          <p className="text-center text-secondary-foreground text-lg mb-16">
+            More than a posting tool. It&apos;s the social media hire
+            you&apos;ve been putting off.
+          </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {capabilities.map((cap, index) => (
-              <AnimatedSection key={cap.title} delay={index * 0.08}>
-                <div className="bg-[#151929] border border-[#1e2233] rounded-2xl p-7 h-full hover:border-[#e8614d]/20 transition-colors">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e8614d]/10 mb-5">
-                    <cap.icon className="h-5 w-5 text-[#e8614d]" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-white mb-2">
-                    {cap.title}
-                  </h3>
-                  <p className="text-[#7a7f94] leading-relaxed text-[0.9rem]">
-                    {cap.description}
-                  </p>
+              <div key={cap.title} className="bg-card border border-border rounded-2xl p-7 h-full hover:border-primary/30 transition-colors shadow-sm">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 mb-5">
+                  <cap.icon className="h-5 w-5 text-primary" />
                 </div>
-              </AnimatedSection>
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  {cap.title}
+                </h3>
+                <p className="text-secondary-foreground leading-relaxed text-[0.9rem]">
+                  {cap.description}
+                </p>
+              </div>
             ))}
           </div>
         </div>

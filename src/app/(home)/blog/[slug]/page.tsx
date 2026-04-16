@@ -127,22 +127,22 @@ export default async function PostPage({ params }: PostPageProps) {
 
       <article className="max-w-7xl mx-auto px-6 py-16">
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-2 text-sm text-[#555a6b] mb-8">
+        <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-8">
           <Link
             href="/blog"
-            className="hover:text-white transition-colors"
+            className="hover:text-foreground transition-colors"
           >
             Blog
           </Link>
           <ChevronRight className="w-4 h-4" />
           <Link
             href={`/blog/category/${post.category.slug.current}`}
-            className="hover:text-white transition-colors"
+            className="hover:text-foreground transition-colors"
           >
             {post.category.title}
           </Link>
           <ChevronRight className="w-4 h-4" />
-          <span className="text-[#7a7f94] truncate max-w-[200px]">
+          <span className="text-muted-foreground truncate max-w-[200px]">
             {post.title}
           </span>
         </nav>
@@ -165,19 +165,19 @@ export default async function PostPage({ params }: PostPageProps) {
           {/* Category */}
           <Link
             href={`/blog/category/${post.category.slug.current}`}
-            className="inline-block text-xs font-medium text-[#e8614d] hover:text-[#f07563] uppercase tracking-wide mb-4"
+            className="inline-block text-xs font-medium text-primary hover:text-primary uppercase tracking-wide mb-4"
           >
             {post.category.title}
           </Link>
 
           {/* Title */}
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6 leading-tight">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-6 leading-tight">
             {post.title}
           </h1>
 
           {/* Meta */}
-          <div className="flex items-center justify-center gap-4 text-sm text-[#555a6b] flex-wrap">
-            <span className="font-medium text-[#c0c4d0]">
+          <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground flex-wrap">
+            <span className="font-medium text-foreground">
               {post.authorName}
             </span>
             <span>&middot;</span>
@@ -199,13 +199,13 @@ export default async function PostPage({ params }: PostPageProps) {
           </div>
 
           {post.authorBio && (
-            <p className="mt-3 text-sm text-[#7a7f94] italic">
+            <p className="mt-3 text-sm text-muted-foreground italic">
               {post.authorBio}
             </p>
           )}
 
           {post.updatedAt && (
-            <p className="mt-2 text-xs text-[#555a6b]">
+            <p className="mt-2 text-xs text-muted-foreground">
               Updated: {format(new Date(post.updatedAt), "MMM d, yyyy")}
             </p>
           )}
@@ -217,10 +217,10 @@ export default async function PostPage({ params }: PostPageProps) {
           <div className="max-w-3xl">
             {/* Key Takeaways / TL;DR */}
             {post.keyTakeaways && post.keyTakeaways.length > 0 && (
-              <div className="mb-10 p-6 bg-[#e8614d]/10 border border-[#e8614d]/20 rounded-xl">
+              <div className="mb-10 p-6 bg-primary/10 border border-primary/20 rounded-xl">
                 <div className="flex items-center gap-2 mb-4">
-                  <Lightbulb className="w-5 h-5 text-[#e8614d]" />
-                  <h2 className="text-lg font-semibold text-white">
+                  <Lightbulb className="w-5 h-5 text-primary" />
+                  <h2 className="text-lg font-semibold text-foreground">
                     Key Takeaways
                   </h2>
                 </div>
@@ -228,9 +228,9 @@ export default async function PostPage({ params }: PostPageProps) {
                   {post.keyTakeaways.map((takeaway, index) => (
                     <li
                       key={index}
-                      className="flex items-start gap-3 text-[#c0c4d0]"
+                      className="flex items-start gap-3 text-foreground"
                     >
-                      <span className="text-[#e8614d] font-medium mt-0.5">
+                      <span className="text-primary font-medium mt-0.5">
                         &bull;
                       </span>
                       <span>{takeaway}</span>
@@ -246,20 +246,20 @@ export default async function PostPage({ params }: PostPageProps) {
             {post.faq && <BlogFAQ faq={post.faq} />}
 
             {/* CTA */}
-            <div className="mt-16 bg-[#151929] rounded-2xl border border-[#1e2233] p-8 text-center">
-              <h2 className="text-xl font-bold text-white mb-3">
+            <div className="mt-16 bg-card rounded-2xl border border-border p-8 text-center">
+              <h2 className="text-xl font-bold text-foreground mb-3">
                 Ready to automate your social media publishing?
               </h2>
-              <p className="text-[#7a7f94] mb-6">
+              <p className="text-muted-foreground mb-6">
                 PostClaw is your AI social media manager.
                 It learns your brand, plans your content, and publishes to 13+ platforms.
               </p>
               <Button
                 asChild
-                className="bg-[#e8614d] hover:bg-[#d4563f] text-white rounded-full px-8"
+                className="bg-primary hover:bg-primary text-foreground rounded-full px-8"
               >
                 <Link href="/">
-                  Get Started
+                  Start posting today
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Link>
               </Button>
@@ -274,26 +274,26 @@ export default async function PostPage({ params }: PostPageProps) {
 
         {/* Related Posts */}
         {relatedPosts.length > 0 && (
-          <section className="max-w-3xl mx-auto mt-16 p-6 bg-[#151929] rounded-xl border border-[#1e2233]">
-            <h2 className="text-xl font-bold text-white mb-2">
+          <section className="max-w-3xl mx-auto mt-16 p-6 bg-card rounded-xl border border-border">
+            <h2 className="text-xl font-bold text-foreground mb-2">
               Related Articles
             </h2>
-            <p className="text-[#7a7f94] mb-4">
+            <p className="text-muted-foreground mb-4">
               If you found this article useful, you might also enjoy:
             </p>
             <ul className="space-y-2">
               {relatedPosts.map((relatedPost) => (
                 <li key={relatedPost._id} className="flex items-start gap-2">
-                  <span className="text-[#e8614d]">&bull;</span>
+                  <span className="text-primary">&bull;</span>
                   <div>
                     <Link
                       href={`/blog/${relatedPost.slug.current}`}
-                      className="text-[#e8e9f0] font-medium hover:text-[#e8614d] transition-colors underline underline-offset-2"
+                      className="text-foreground font-medium hover:text-primary transition-colors underline underline-offset-2"
                     >
                       {relatedPost.primaryKeyword || relatedPost.title}
                     </Link>
                     {relatedPost.excerpt && (
-                      <span className="text-[#7a7f94]">
+                      <span className="text-muted-foreground">
                         {" "}
                         &ndash; {relatedPost.excerpt}
                       </span>

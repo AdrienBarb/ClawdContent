@@ -56,13 +56,13 @@ export default function PricingCards({
     <div className="w-full">
       {/* Monthly/Yearly toggle */}
       <div className="flex justify-center mb-10">
-        <div className="inline-flex rounded-full p-1 bg-[#1e2233] border border-[#2a2f45]">
+        <div className="inline-flex rounded-full p-1 bg-border border border-border">
           <button
             onClick={() => setInterval("monthly")}
             className={`px-5 py-2 rounded-full text-sm font-medium transition-all cursor-pointer ${
               interval === "monthly"
-                ? "bg-[#e8614d] text-white"
-                : "text-[#7a7f94] hover:text-white"
+                ? "bg-primary text-primary-foreground"
+                : "text-secondary-foreground hover:text-foreground"
             }`}
           >
             Monthly
@@ -71,8 +71,8 @@ export default function PricingCards({
             onClick={() => setInterval("yearly")}
             className={`px-5 py-2 rounded-full text-sm font-medium transition-all cursor-pointer ${
               interval === "yearly"
-                ? "bg-[#e8614d] text-white"
-                : "text-[#7a7f94] hover:text-white"
+                ? "bg-primary text-primary-foreground"
+                : "text-secondary-foreground hover:text-foreground"
             }`}
           >
             Yearly
@@ -95,8 +95,8 @@ export default function PricingCards({
                 onClick={() => setSelectedPlanId(plan.id)}
                 className={`w-full text-left rounded-2xl p-5 transition-all cursor-pointer ${
                   isSelected
-                    ? "bg-[#151929] border-2 border-[#e8614d]/60 shadow-[0_0_20px_rgba(232,97,77,0.08)]"
-                    : "bg-[#151929] border border-[#1e2233] hover:border-[#2a2f45]"
+                    ? "bg-white border-2 border-primary/60 shadow-md"
+                    : "bg-white border border-border hover:border-border shadow-sm"
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -105,29 +105,29 @@ export default function PricingCards({
                     <div
                       className={`h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
                         isSelected
-                          ? "border-[#e8614d] bg-[#e8614d]"
-                          : "border-[#3a3f52]"
+                          ? "border-primary bg-primary"
+                          : "border-[#c5c8de]"
                       }`}
                     >
                       {isSelected && (
-                        <Check className="h-3 w-3 text-white" strokeWidth={3} />
+                        <Check className="h-3 w-3 text-primary-foreground" strokeWidth={3} />
                       )}
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-white">
+                        <span className="font-semibold text-foreground">
                           {plan.name}
                         </span>
                         {plan.highlighted && (
-                          <span className="text-[10px] font-semibold bg-[#e8614d] text-white px-2 py-0.5 rounded-full">
+                          <span className="text-[10px] font-semibold bg-primary text-primary-foreground px-2 py-0.5 rounded-full">
                             Popular
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-[#7a7f94] mt-0.5">
+                      <p className="text-xs text-secondary-foreground mt-0.5">
                         {plan.socialAccountLabel}
                         {isExistingSubscriber && currentPlanId === plan.id && (
-                          <span className="text-[#e8614d] ml-2">
+                          <span className="text-primary ml-2">
                             Current
                           </span>
                         )}
@@ -135,12 +135,12 @@ export default function PricingCards({
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className="text-xl font-bold text-white">
+                    <span className="text-xl font-bold text-foreground">
                       ${price % 1 === 0 ? price : price.toFixed(2)}
                     </span>
-                    <span className="text-[#7a7f94] text-sm">/mo</span>
+                    <span className="text-secondary-foreground text-sm">/mo</span>
                     {interval === "yearly" && (
-                      <p className="text-[11px] text-green-400">Save 30%</p>
+                      <p className="text-[11px] text-emerald-600">Save 30%</p>
                     )}
                   </div>
                 </div>
@@ -150,7 +150,7 @@ export default function PricingCards({
 
           {/* CTA button */}
           <Button
-            className={`w-full bg-[#e8614d] hover:bg-[#d4563f] text-white mt-2 ${
+            className={`w-full bg-primary hover:bg-primary text-primary-foreground mt-2 rounded-full ${
               isModal ? "h-10" : "h-12"
             }`}
             onClick={() => onSelectPlan(selectedPlanId, interval)}
@@ -159,25 +159,25 @@ export default function PricingCards({
             {getCtaLabel()}
           </Button>
 
-          <p className="text-center text-xs text-[#555a6b]">
+          <p className="text-center text-xs text-muted-foreground">
             Cancel anytime. No contracts.
           </p>
         </div>
 
         {/* Right: Features */}
-        <div className="rounded-2xl bg-[#151929] border border-[#1e2233] p-6">
-          <p className="text-xs font-semibold uppercase tracking-wider text-[#7a7f94] mb-5">
+        <div className="rounded-2xl bg-white border border-border p-6 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wider text-secondary-foreground mb-5">
             Includes
           </p>
 
-          <div className="space-y-2 mb-5 pb-5 border-b border-[#1e2233]">
+          <div className="space-y-2 mb-5 pb-5 border-b border-border">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-white">
+              <span className="text-sm font-medium text-foreground">
                 {selectedPlan.socialAccountLabel}
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-white">
+              <span className="text-sm font-medium text-foreground">
                 {selectedPlan.imageCreditsPerMonth > 0
                   ? `${selectedPlan.imageCreditsPerMonth} AI image credits/month`
                   : "No AI image credits"}
@@ -192,18 +192,18 @@ export default function PricingCards({
                 <div key={i} className="flex items-center justify-between">
                   <span
                     className={`text-sm ${
-                      included ? "text-[#c0c4d0]" : "text-[#3a3f52]"
+                      included ? "text-foreground" : "text-border"
                     }`}
                   >
                     {feature.label}
                   </span>
                   {included ? (
                     <Check
-                      className="h-4 w-4 text-[#e8614d] shrink-0"
+                      className="h-4 w-4 text-primary shrink-0"
                       strokeWidth={2.5}
                     />
                   ) : (
-                    <Minus className="h-4 w-4 text-[#3a3f52] shrink-0" />
+                    <Minus className="h-4 w-4 text-border shrink-0" />
                   )}
                 </div>
               );

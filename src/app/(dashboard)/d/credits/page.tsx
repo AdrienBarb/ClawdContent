@@ -58,7 +58,7 @@ export default function CreditsPage() {
       {/* Balance card */}
       <div className="rounded-2xl bg-white shadow-sm border border-gray-100 p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-[#e8614d]" />
+          <Sparkles className="h-5 w-5 text-primary" />
           Your Balance
         </h2>
 
@@ -87,7 +87,7 @@ export default function CreditsPage() {
               <span className="text-sm font-semibold text-gray-900">
                 Total available
               </span>
-              <span className="text-lg font-bold text-[#e8614d]">{total}</span>
+              <span className="text-lg font-bold text-primary">{total}</span>
             </div>
           </div>
         )}
@@ -144,7 +144,7 @@ export default function CreditsPage() {
         <Button
           onClick={() => buyCredits({ quantity })}
           disabled={buying}
-          className="w-full bg-[#e8614d] hover:bg-[#d4563f] text-white cursor-pointer disabled:cursor-not-allowed"
+          className="w-full bg-primary hover:bg-[#E84A36] text-white cursor-pointer disabled:cursor-not-allowed"
         >
           {buying ? (
             <span className="flex items-center gap-2">

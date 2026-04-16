@@ -161,7 +161,7 @@ export default function AccountsPage() {
           <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all ${
-                isAtLimit ? "bg-amber-400" : "bg-[#e8614d]"
+                isAtLimit ? "bg-amber-400" : "bg-primary"
               }`}
               style={{
                 width: `${Math.min((activeCount / accountLimit) * 100, 100)}%`,
@@ -185,7 +185,7 @@ export default function AccountsPage() {
           </div>
           <button
             onClick={() => setShowSubscribeModal(true)}
-            className="text-sm font-semibold text-[#e8614d] hover:underline cursor-pointer shrink-0"
+            className="text-sm font-semibold text-primary hover:underline cursor-pointer shrink-0"
           >
             Subscribe
           </button>
@@ -244,7 +244,7 @@ export default function AccountsPage() {
                     {isDisconnected ? (
                       <>
                         <button
-                          className="ml-1 flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-[#e8614d] transition-colors hover:bg-red-50 disabled:opacity-50 cursor-pointer"
+                          className="ml-1 flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-primary transition-colors hover:bg-red-50 disabled:opacity-50 cursor-pointer"
                           onClick={() => handleReconnect(account.id, account.platform)}
                           disabled={isReconnecting || isRemoving}
                           title="Reconnect account"
@@ -337,7 +337,7 @@ export default function AccountsPage() {
             You&apos;ve reached your {plan?.name} plan limit.{" "}
             <button
               onClick={() => setShowUpgradeModal(true)}
-              className="text-[#e8614d] font-medium hover:underline cursor-pointer"
+              className="text-primary font-medium hover:underline cursor-pointer"
             >
               Upgrade for more accounts
             </button>

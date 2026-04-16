@@ -106,7 +106,7 @@ export default function ImageGenerateModal({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-[#e8614d]" />
+            <Sparkles className="h-5 w-5 text-primary" />
             Generate Image
           </DialogTitle>
         </DialogHeader>
@@ -127,7 +127,7 @@ export default function ImageGenerateModal({
               </p>
             </div>
             <Link href={appRouter.billing}>
-              <Button className="bg-[#e8614d] hover:bg-[#d4563f] text-white cursor-pointer">
+              <Button className="bg-primary hover:bg-primary text-white cursor-pointer">
                 Upgrade Plan
               </Button>
             </Link>
@@ -150,7 +150,7 @@ export default function ImageGenerateModal({
                 <div className="flex gap-2">
                   <Button
                     onClick={handleAttach}
-                    className="flex-1 bg-[#e8614d] hover:bg-[#d4563f] text-white cursor-pointer"
+                    className="flex-1 bg-primary hover:bg-primary text-white cursor-pointer"
                   >
                     Attach to message
                   </Button>
@@ -171,7 +171,7 @@ export default function ImageGenerateModal({
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder="Describe the image you want to create..."
                   rows={3}
-                  className="w-full resize-none rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#e8614d]/30 focus:border-[#e8614d] placeholder:text-gray-400"
+                  className="w-full resize-none rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400"
                   maxLength={1000}
                   disabled={generating}
                 />
@@ -186,7 +186,7 @@ export default function ImageGenerateModal({
                       disabled={generating}
                       className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors cursor-pointer ${
                         size === opt.value
-                          ? "border-[#e8614d] bg-[#e8614d]/5 text-[#e8614d]"
+                          ? "border-primary bg-primary/5 text-primary"
                           : "border-gray-200 text-gray-600 hover:border-gray-300"
                       } disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
@@ -203,7 +203,7 @@ export default function ImageGenerateModal({
                 <Button
                   onClick={handleGenerate}
                   disabled={!prompt.trim() || generating || totalCredits === 0}
-                  className="w-full bg-[#e8614d] hover:bg-[#d4563f] text-white cursor-pointer disabled:cursor-not-allowed"
+                  className="w-full bg-primary hover:bg-primary text-white cursor-pointer disabled:cursor-not-allowed"
                 >
                   {generating ? (
                     <span className="flex items-center gap-2">
