@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import { generateAndStoreSuggestions } from "@/lib/services/suggestions";
 
 interface OnboardingData {
   role?: string;
@@ -19,4 +20,16 @@ export async function completeOnboarding(
       onboardingTopics: data.topics ?? [],
     },
   });
+
+  // Generate personalized chat suggestions (non-blocking)
+  if (data.role || data.niche || (data.topics && data.topics.length > 0)) {
+    generateAndStoreSuggestions(
+      userId,
+      data.role ?? null,
+      data.niche ?? null,
+      data.topics ?? []
+    ).catch((err) =>
+      console.error(`Failed to generate suggestions for user ${userId}:`, err)
+    );
+  }
 }

@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { appRouter } from "@/lib/constants/appRouter";
 import useApi from "@/lib/hooks/useApi";
-import { ExternalLink, Loader2 } from "lucide-react";
+import { ArrowSquareOutIcon, CircleNotchIcon } from "@phosphor-icons/react";
 
 export function ManageSubscriptionButton() {
   const { usePost } = useApi();
@@ -21,9 +21,9 @@ export function ManageSubscriptionButton() {
       disabled={isPending}
     >
       {isPending ? (
-        <Loader2 className="animate-spin" />
+        <CircleNotchIcon className="animate-spin" />
       ) : (
-        <ExternalLink />
+        <ArrowSquareOutIcon />
       )}
       Manage Subscription
     </Button>

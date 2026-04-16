@@ -1,6 +1,6 @@
 "use client";
 
-import { X, ArrowUpRight } from "lucide-react";
+import { XIcon, ArrowUpRightIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { appRouter } from "@/lib/constants/appRouter";
@@ -30,11 +30,11 @@ export default function UpgradeModal({
             onClick={() => onOpenChange(false)}
             className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
           >
-            <X className="h-5 w-5" />
+            <XIcon className="h-5 w-5" weight="bold" />
           </button>
 
           <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 mx-auto mb-4">
-            <ArrowUpRight className="h-7 w-7 text-primary" />
+            <ArrowUpRightIcon className="h-7 w-7 text-primary" />
           </div>
 
           <h2 className="text-xl font-semibold text-foreground mb-2">

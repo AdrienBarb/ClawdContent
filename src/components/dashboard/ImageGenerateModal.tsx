@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, Sparkles, Lock } from "lucide-react";
+import { CircleNotchIcon, SparkleIcon, LockIcon } from "@phosphor-icons/react";
 import useApi from "@/lib/hooks/useApi";
 import { appRouter } from "@/lib/constants/appRouter";
 import Link from "next/link";
@@ -106,7 +106,7 @@ export default function ImageGenerateModal({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
+            <SparkleIcon className="h-5 w-5 text-primary" />
             Generate Image
           </DialogTitle>
         </DialogHeader>
@@ -115,7 +115,7 @@ export default function ImageGenerateModal({
           /* Blocked state for starter users */
           <div className="text-center py-4 space-y-4">
             <div className="h-12 w-12 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto">
-              <Lock className="h-6 w-6 text-gray-400" />
+              <LockIcon className="h-6 w-6 text-gray-400" />
             </div>
             <div>
               <p className="text-sm font-medium text-gray-900">
@@ -207,7 +207,7 @@ export default function ImageGenerateModal({
                 >
                   {generating ? (
                     <span className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <CircleNotchIcon className="h-4 w-4 animate-spin" />
                       Generating your image...
                     </span>
                   ) : (

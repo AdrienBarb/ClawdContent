@@ -26,7 +26,13 @@ export async function GET() {
       await Promise.all([
         prisma.user.findUnique({
           where: { id: userId },
-          select: { timezone: true },
+          select: {
+            timezone: true,
+            chatSuggestions: true,
+            onboardingRole: true,
+            onboardingNiche: true,
+            onboardingTopics: true,
+          },
         }),
         prisma.subscription.findUnique({ where: { userId } }),
         getBotStatus(userId),
@@ -42,6 +48,12 @@ export async function GET() {
 
     return NextResponse.json({
       timezone: user?.timezone ?? null,
+      chatSuggestions: user?.chatSuggestions ?? [],
+      userContext: {
+        role: user?.onboardingRole ?? null,
+        niche: user?.onboardingNiche ?? null,
+        topics: user?.onboardingTopics ?? [],
+      },
       subscription: subscription
         ? {
             status: subscription.status,

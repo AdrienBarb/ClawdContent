@@ -14,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { FileText, Trash2, Loader2, Share2 } from "lucide-react";
+import { FileTextIcon, TrashIcon, CircleNotchIcon, ShareNetworkIcon } from "@phosphor-icons/react";
 import toast from "react-hot-toast";
 
 interface Post {
@@ -154,7 +154,7 @@ export default function PostsList() {
                             title={platform?.label ?? platformId}
                           >
                             {platform?.icon ?? (
-                              <Share2 className="h-3 w-3" />
+                              <ShareNetworkIcon className="h-3 w-3" />
                             )}
                           </span>
                         );
@@ -183,7 +183,7 @@ export default function PostsList() {
                   className="shrink-0 flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
                   title="Delete post"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <TrashIcon className="h-4 w-4" />
                 </button>
               </div>
             </div>
@@ -191,7 +191,7 @@ export default function PostsList() {
         </div>
       ) : (
         <div className="rounded-2xl border-2 border-dashed border-gray-200 bg-white/50 p-10 text-center">
-          <FileText className="h-8 w-8 text-gray-300 mx-auto mb-3" />
+          <FileTextIcon className="h-8 w-8 text-gray-300 mx-auto mb-3" />
           <p className="text-sm font-medium text-gray-500 mb-1">
             No posts yet
           </p>
@@ -234,7 +234,7 @@ export default function PostsList() {
             >
               {isDeleting ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <CircleNotchIcon className="h-4 w-4 animate-spin mr-2" />
                   Deleting...
                 </>
               ) : (

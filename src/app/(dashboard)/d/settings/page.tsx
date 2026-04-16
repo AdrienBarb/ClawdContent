@@ -5,7 +5,7 @@ import { appRouter } from "@/lib/constants/appRouter";
 import useApi from "@/lib/hooks/useApi";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
-import { Globe, Check } from "lucide-react";
+import { GlobeIcon, CheckIcon } from "@phosphor-icons/react";
 
 const ALL_TIMEZONES = Intl.supportedValuesOf("timeZone");
 
@@ -76,7 +76,7 @@ export default function SettingsPage() {
       <div className="rounded-2xl bg-white p-6 shadow-sm border border-gray-100">
         <div className="flex items-center gap-3 mb-4">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-            <Globe className="h-5 w-5" />
+            <GlobeIcon className="h-5 w-5" />
           </span>
           <div>
             <h3 className="text-sm font-semibold text-gray-900">Timezone</h3>
@@ -123,7 +123,7 @@ export default function SettingsPage() {
                       {tz.replaceAll("_", " ")}
                     </span>
                     {tz === currentTimezone && (
-                      <Check className="h-4 w-4 text-emerald-500 shrink-0" />
+                      <CheckIcon className="h-4 w-4 text-emerald-500 shrink-0" />
                     )}
                   </button>
                 ))

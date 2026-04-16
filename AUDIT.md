@@ -13,7 +13,7 @@
 
 ---
 
-### 1. Le "Time to Value" est catastrophique
+### 1. Le "Time to Value" est catastrophique — ✅ RESOLU
 
 C'est **le** probleme #1. Aujourd'hui le parcours est :
 
@@ -21,11 +21,14 @@ C'est **le** probleme #1. Aujourd'hui le parcours est :
 
 Un petit createur qui vient de payer ne sait pas quoi dire a son bot. Les suggestions ("Write a LinkedIn post about my latest project") sont trop generiques — elles ne refletent pas le niche du user qu'on a pourtant collecte a l'onboarding.
 
-**Ce qu'il faut faire :**
-- **Le bot doit parler en premier.** Des que le container est pret, le bot envoie un message proactif :
-  > "Hey ! Je vois que tu es [role] dans [niche]. Avant de commencer, connecte tes comptes sociaux depuis l'onglet Accounts, et partage-moi ton site web ou un post que t'as bien aime — je vais analyser ton style."
-- **Les suggestions doivent etre personnalisees** en fonction du niche/topics de l'onboarding (pas les memes pour un founder SaaS et un coach fitness)
-- **Un "First Post in 5 minutes" flow** guide : le bot pose 3 questions -> genere un post -> le publie. L'utilisateur voit de la valeur immediate.
+**Ce qu'on a fait :**
+- ✅ **Le bot parle en premier.** Message de bienvenue contextuel dans le chat (3 cas : pas de comptes connectes → CTA "Connect my accounts", comptes sans contexte → message generique, comptes + contexte → message personnalise avec suggestions)
+- ✅ **Suggestions personnalisees par IA.** A chaque sauvegarde du contexte utilisateur (onboarding ou page Context), Claude Haiku genere 4 suggestions adaptees au role/niche/topics. Stockees en DB (`chatSuggestions` sur User), servies via dashboard status. Fallback sur suggestions generiques si pas de contexte.
+- ✅ **Contexte injecte au premier message.** Le premier message envoye a OpenClaw inclut un prefixe `[CONTEXT: ...]` invisible pour l'utilisateur, avec role/niche/topics/plateformes — le bot repond de maniere personnalisee des le depart.
+- ✅ **Chat UX premium.** Nouveau design du chat input (card-style, auto-grow), avatars bot (logo) sur les messages, typing indicator anime (bouncing dots), migration vers Phosphor Icons.
+
+**Ce qu'il reste a faire :**
+- **"First Post in 5 minutes" flow** guide : le bot pose 3 questions -> genere un post -> le publie. L'utilisateur voit de la valeur immediate. (Pourrait etre un bouton CTA dans le welcome message.)
 
 ---
 
@@ -48,7 +51,7 @@ C'est ca qui transforme un "outil" en "manager". C'est ca qui justifie l'abonnem
 
 ---
 
-### 3. Il n'y a aucune strategie de contenu — juste de l'execution
+### 3. Il n'y a aucune strategie de contenu — juste de l'execution — ✅ PARTIELLEMENT RESOLU
 
 Le bot sait ecrire des posts. Mais il ne sait pas **planifier**. Il n'y a pas de :
 
@@ -57,8 +60,11 @@ Le bot sait ecrire des posts. Mais il ne sait pas **planifier**. Il n'y a pas de
 - **Performance learning** — le bot ne sait pas quels sujets/formats marchent le mieux pour CE user
 - **Strategie long-terme** — pas de "plan de croissance sur 3 mois"
 
-**Ce qu'il faut faire :**
-- **Content Calendar dans le dashboard** (pas juste en chat) : une vraie page `/d/calendar` avec vue semaine/mois, posts programmes, drafts en attente
+**Ce qu'on a fait :**
+- ✅ **Content page `/d/posts`** avec vue timeline groupee par date, status, edition inline — premier pas vers la vue d'ensemble du contenu
+
+**Ce qu'il reste a faire :**
+- Vue Calendar (semaine/mois) dans la Content page
 - **Weekly planning session** : le bot propose proactivement un plan de contenu chaque semaine base sur ce qui a marche, les trending topics, et le content mix
 - **Brand bible** : une page `/d/brand` ou le user voit (et edite) ce que le bot a appris sur son ton, ses sujets, ses preferences. Rend le "it learns you" tangible et verifiable.
 
@@ -90,7 +96,7 @@ Le Starter doit donner assez de valeur pour que le user se dise "wow, imagine av
 
 ---
 
-### 5. Le chat seul ne suffit pas pour tout
+### 5. Le chat seul ne suffit pas pour tout — ✅ PARTIELLEMENT RESOLU
 
 Le chat est parfait pour : ecrire un post, brainstormer, demander conseil. Mais il est **terrible** pour :
 
@@ -100,12 +106,14 @@ Le chat est parfait pour : ecrire un post, brainstormer, demander conseil. Mais 
 - **Approuver plusieurs posts programmes** (on veut une liste avec des checkboxes, pas un dialogue)
 - **Retrouver un post ecrit il y a 3 semaines** (pas de search dans le chat)
 
-**Ce qu'il faut faire :**
-- **3 pages structurees** en plus du chat :
-  - `/d/calendar` — Content Calendar (semaine/mois, drag & drop pour reprogrammer)
-  - `/d/analytics` — Dashboard analytics (engagement trends, best posts, growth by platform)
-  - `/d/posts` — Post history (search, filter by platform/date/status)
-- Le chat reste le hub principal, mais ces pages donnent la **vue d'ensemble** qu'un manager doit avoir.
+**Ce qu'on a fait :**
+- ✅ **`/d/posts` — Content page** : vue timeline groupee par date, filtres par status (All/Scheduled/Published/Failed) avec compteurs, edition inline, retry des posts failed (avec detail d'erreur Zernio), unpublish, delete. Lien "Create post" redirige vers le chat.
+- ✅ **"Content" dans la sidebar** entre Chat et Social Accounts
+
+**Ce qu'il reste a faire :**
+- `/d/posts` vue Calendar (semaine/mois, drag & drop) — prevu, pas encore implemente
+- `/d/analytics` — Dashboard analytics (engagement trends, best posts, growth by platform)
+- Search dans les posts
 
 ---
 
@@ -146,13 +154,13 @@ Pour un petit business qui hesite entre $17 et rien, c'est un mur.
 
 ## Les 5 features a ajouter (par priorite business)
 
-| Priorite | Feature | Pourquoi | Impact |
-|----------|---------|----------|--------|
-| **P0** | Bot proactif (weekly plans, nudges, alerts) | Transforme un "outil" en "manager". Justifie l'abonnement. Reduit le churn. | Retention x2 |
-| **P0** | Free trial 7j (plan Pro) | Enleve la friction #1 a l'achat. Laisse les gens experimenter la magie. | Conversion x2-3 |
-| **P1** | Content Calendar (page dashboard) | Donne la vue d'ensemble. Rend le produit "collant". | Retention, NPS |
-| **P1** | RSS/Blog auto-repurpose | Killer feature pour founders/creators qui ont deja du contenu. Differentiateur. | Acquisition |
-| **P2** | Analytics dashboard | "Voila ce que je fais pour toi". Rend la valeur visible et mesurable. | Retention, upsell |
+| Priorite | Feature | Pourquoi | Impact | Status |
+|----------|---------|----------|--------|--------|
+| **P0** | Bot proactif (weekly plans, nudges, alerts) | Transforme un "outil" en "manager". Justifie l'abonnement. Reduit le churn. | Retention x2 | TODO |
+| **P0** | Free trial 7j (plan Pro) | Enleve la friction #1 a l'achat. Laisse les gens experimenter la magie. | Conversion x2-3 | TODO |
+| **P1** | Content page (dashboard) | Donne la vue d'ensemble. Rend le produit "collant". | Retention, NPS | **DONE** |
+| **P1** | RSS/Blog auto-repurpose | Killer feature pour founders/creators qui ont deja du contenu. Differentiateur. | Acquisition | TODO |
+| **P2** | Analytics dashboard | "Voila ce que je fais pour toi". Rend la valeur visible et mesurable. | Retention, upsell | TODO |
 
 ---
 

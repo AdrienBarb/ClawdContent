@@ -5,7 +5,7 @@ import { appRouter } from "@/lib/constants/appRouter";
 import { PLATFORMS } from "@/lib/constants/platforms";
 import useApi from "@/lib/hooks/useApi";
 import toast from "react-hot-toast";
-import { Check } from "lucide-react";
+import { CheckIcon } from "@phosphor-icons/react";
 
 interface ConnectAccountButtonsProps {
   onAccountConnected?: () => void;
@@ -88,7 +88,7 @@ export default function ConnectAccountButtons({
               }
             >
               {isConnected ? (
-                <Check className="h-4 w-4" />
+                <CheckIcon className="h-4 w-4" />
               ) : (
                 platform.icon
               )}

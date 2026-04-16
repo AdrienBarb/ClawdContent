@@ -5,7 +5,7 @@ import { appRouter } from "@/lib/constants/appRouter";
 import { getPlatform } from "@/lib/constants/platforms";
 import useApi from "@/lib/hooks/useApi";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Share2, Plus, X, Loader2, Lock, RefreshCw, Trash2 } from "lucide-react";
+import { ShareNetworkIcon, PlusIcon, XIcon, CircleNotchIcon, LockIcon, ArrowsClockwiseIcon, TrashIcon } from "@phosphor-icons/react";
 import ConnectAccountButtons from "@/components/dashboard/ConnectAccountButtons";
 import SubscribeModal from "@/components/dashboard/SubscribeModal";
 import UpgradeModal from "@/components/dashboard/UpgradeModal";
@@ -174,7 +174,7 @@ export default function AccountsPage() {
       {/* Subscription gate banner */}
       {!hasActiveSubscription && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 flex items-center gap-3">
-          <Lock className="h-5 w-5 text-amber-600 shrink-0" />
+          <LockIcon className="h-5 w-5 text-amber-600 shrink-0" />
           <div className="flex-1">
             <p className="text-sm font-medium text-amber-900">
               Subscribe to connect accounts
@@ -219,7 +219,7 @@ export default function AccountsPage() {
                         backgroundColor: platform?.color ?? "#6b7280",
                       }}
                     >
-                      {platform?.icon ?? <Share2 className="h-4 w-4" />}
+                      {platform?.icon ?? <ShareNetworkIcon className="h-4 w-4" />}
                     </span>
                     <div>
                       <span className={`text-sm font-medium ${isDisconnected ? "text-gray-400" : "text-gray-900"}`}>
@@ -250,9 +250,9 @@ export default function AccountsPage() {
                           title="Reconnect account"
                         >
                           {isReconnecting ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
+                            <CircleNotchIcon className="h-3 w-3 animate-spin" />
                           ) : (
-                            <RefreshCw className="h-3 w-3" />
+                            <ArrowsClockwiseIcon className="h-3 w-3" />
                           )}
                           Reconnect
                         </button>
@@ -263,9 +263,9 @@ export default function AccountsPage() {
                           title="Remove account"
                         >
                           {isRemoving ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
+                            <CircleNotchIcon className="h-3 w-3 animate-spin" />
                           ) : (
-                            <Trash2 className="h-3 w-3" />
+                            <TrashIcon className="h-3 w-3" />
                           )}
                           Remove
                         </button>
@@ -278,9 +278,9 @@ export default function AccountsPage() {
                         title="Disconnect account"
                       >
                         {isDisconnecting ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          <CircleNotchIcon className="h-3.5 w-3.5 animate-spin" />
                         ) : (
-                          <X className="h-3.5 w-3.5" />
+                          <XIcon className="h-3.5 w-3.5" />
                         )}
                       </button>
                     )}
@@ -292,7 +292,7 @@ export default function AccountsPage() {
         </div>
       ) : (
         <div className="rounded-2xl border-2 border-dashed border-gray-200 bg-white/50 p-10 text-center">
-          <Share2 className="h-8 w-8 text-gray-300 mx-auto mb-3" />
+          <ShareNetworkIcon className="h-8 w-8 text-gray-300 mx-auto mb-3" />
           <p className="text-sm font-medium text-gray-500 mb-1">
             No accounts connected yet
           </p>
@@ -305,7 +305,7 @@ export default function AccountsPage() {
       {/* Connect new */}
       <div className="rounded-2xl bg-white p-5 shadow-sm border border-gray-100">
         <div className="flex items-center gap-2 mb-4">
-          <Plus className="h-4 w-4 text-gray-400" />
+          <PlusIcon className="h-4 w-4 text-gray-400" />
           <h3 className="text-sm font-semibold text-gray-900">
             Connect a platform
           </h3>

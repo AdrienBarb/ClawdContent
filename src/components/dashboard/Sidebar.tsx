@@ -5,17 +5,17 @@ import { usePathname, useRouter } from "next/navigation";
 import { appRouter } from "@/lib/constants/appRouter";
 import { useSession, signOut } from "@/lib/better-auth/auth-client";
 import {
-  Share2,
-  Bot,
-  CreditCard,
-  Coins,
-  Settings,
-  LogOut,
-  Menu,
-  UserCircle,
-  Gift,
-  ChevronsUpDown,
-} from "lucide-react";
+  ShareNetworkIcon,
+  RobotIcon,
+  CreditCardIcon,
+  CoinsIcon,
+  GearSixIcon,
+  SignOutIcon,
+  ListIcon,
+  UserCircleIcon,
+  GiftIcon,
+  CaretUpDownIcon,
+} from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -34,15 +34,15 @@ import {
 import { useState } from "react";
 
 const navItems = [
-  { href: appRouter.dashboard, label: "Chat", icon: Bot },
-  { href: appRouter.accounts, label: "Social Accounts", icon: Share2 },
-  { href: appRouter.context, label: "Knowledge", icon: UserCircle },
+  { href: appRouter.dashboard, label: "Chat", icon: RobotIcon },
+  { href: appRouter.accounts, label: "Social Accounts", icon: ShareNetworkIcon },
+  { href: appRouter.context, label: "Knowledge", icon: UserCircleIcon },
 ];
 
 const userMenuItems = [
-  { href: appRouter.billing, label: "Billing", icon: CreditCard },
-  { href: appRouter.settings, label: "Settings", icon: Settings },
-  { href: appRouter.credits, label: "Credits", icon: Coins },
+  { href: appRouter.billing, label: "Billing", icon: CreditCardIcon },
+  { href: appRouter.settings, label: "Settings", icon: GearSixIcon },
+  { href: appRouter.credits, label: "Credits", icon: CoinsIcon },
 ];
 
 function getInitials(name?: string | null, email?: string | null) {
@@ -149,7 +149,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
             e.currentTarget.style.color = "var(--sidebar-text)";
           }}
         >
-          <Gift className="h-[18px] w-[18px] shrink-0" />
+          <GiftIcon className="h-[18px] w-[18px] shrink-0" />
           Affiliates
         </Link>
       </div>
@@ -192,7 +192,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                   {session?.user?.email}
                 </p>
               </div>
-              <ChevronsUpDown
+              <CaretUpDownIcon
                 className="h-4 w-4 shrink-0"
                 style={{ color: "var(--sidebar-text)" }}
               />
@@ -214,7 +214,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
             ))}
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut}>
-              <LogOut className="h-4 w-4" />
+              <SignOutIcon className="h-4 w-4" />
               Sign out
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -231,7 +231,7 @@ export function MobileSidebarTrigger() {
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="md:hidden">
-          <Menu className="h-5 w-5" />
+          <ListIcon className="h-5 w-5" />
         </Button>
       </SheetTrigger>
       <SheetContent

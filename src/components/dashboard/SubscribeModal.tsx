@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X } from "lucide-react";
+import { XIcon } from "@phosphor-icons/react";
 import { appRouter } from "@/lib/constants/appRouter";
 import useApi from "@/lib/hooks/useApi";
 import PricingCards from "@/components/PricingCards";
@@ -41,7 +41,7 @@ export default function SubscribeModal({
             onClick={() => onOpenChange(false)}
             className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors cursor-pointer z-10"
           >
-            <X className="h-5 w-5" />
+            <XIcon className="h-5 w-5" weight="bold" />
           </button>
 
           <div className="text-center mb-6">

@@ -9,6 +9,7 @@ import {
   updateContainerEnvVars,
   formatUserContextFromData,
 } from "@/lib/services/provisioning";
+import { generateAndStoreSuggestions } from "@/lib/services/suggestions";
 
 export async function GET() {
   try {
@@ -85,6 +86,19 @@ export async function PUT(req: NextRequest) {
         )
       );
     }
+
+    // Regenerate personalized chat suggestions (non-blocking)
+    generateAndStoreSuggestions(
+      session.user.id,
+      data.role ?? null,
+      data.niche ?? null,
+      data.topics ?? []
+    ).catch((err) =>
+      console.error(
+        `Failed to regenerate suggestions for user ${session.user.id}:`,
+        err
+      )
+    );
 
     return NextResponse.json({ success: true });
   } catch (error) {

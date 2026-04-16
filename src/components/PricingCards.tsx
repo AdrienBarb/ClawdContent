@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Minus } from "lucide-react";
+import { CheckIcon, MinusIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import {
   PLANS,
@@ -110,7 +110,7 @@ export default function PricingCards({
                       }`}
                     >
                       {isSelected && (
-                        <Check className="h-3 w-3 text-primary-foreground" strokeWidth={3} />
+                        <CheckIcon className="h-3 w-3 text-primary-foreground" strokeWidth={3} />
                       )}
                     </div>
                     <div>
@@ -198,12 +198,12 @@ export default function PricingCards({
                     {feature.label}
                   </span>
                   {included ? (
-                    <Check
+                    <CheckIcon
                       className="h-4 w-4 text-primary shrink-0"
                       strokeWidth={2.5}
                     />
                   ) : (
-                    <Minus className="h-4 w-4 text-border shrink-0" />
+                    <MinusIcon className="h-4 w-4 text-border shrink-0" />
                   )}
                 </div>
               );

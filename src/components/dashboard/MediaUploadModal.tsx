@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { X, ImageIcon, Film, Loader2 } from "lucide-react";
+import { XIcon, ImageIcon, FilmStripIcon, CircleNotchIcon } from "@phosphor-icons/react";
 
 const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!;
 const UPLOAD_PRESET = "postclaw_unsigned";
@@ -220,7 +220,7 @@ export default function MediaUploadModal({
             onClick={handleClose}
             className="h-8 w-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
           >
-            <X className="h-5 w-5" />
+            <XIcon className="h-5 w-5" weight="bold" />
           </button>
         </div>
 
@@ -289,7 +289,7 @@ export default function MediaUploadModal({
                     className="h-7 w-7 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
                     title="Cancel upload"
                   >
-                    <X className="h-4 w-4" />
+                    <XIcon className="h-4 w-4" weight="bold" />
                   </button>
                 </div>
               </div>

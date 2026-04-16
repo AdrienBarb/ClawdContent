@@ -1,7 +1,6 @@
 "use client";
 
-import { Paperclip, ImageIcon, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ImageIcon, SparkleIcon } from "@phosphor-icons/react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,14 +20,12 @@ export default function MediaAttachDropdown({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
+        <button
           type="button"
-          variant="ghost"
-          size="icon"
-          className="h-11 w-11 shrink-0 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 cursor-pointer"
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 text-gray-400 transition-colors hover:text-gray-600 hover:border-gray-300 hover:bg-gray-50 cursor-pointer"
         >
-          <Paperclip className="h-5 w-5" />
-        </Button>
+          <ImageIcon className="h-4 w-4" />
+        </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-48">
         <DropdownMenuItem onClick={onOpenUpload} className="cursor-pointer">
@@ -36,7 +33,7 @@ export default function MediaAttachDropdown({
           Upload media
         </DropdownMenuItem>
         <DropdownMenuItem onClick={onOpenGenerate} className="cursor-pointer">
-          <Sparkles className="h-4 w-4 mr-2" />
+          <SparkleIcon className="h-4 w-4 mr-2" />
           Generate image
         </DropdownMenuItem>
       </DropdownMenuContent>

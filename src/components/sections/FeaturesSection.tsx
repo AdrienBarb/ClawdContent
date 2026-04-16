@@ -6,29 +6,29 @@ import { useSession } from "@/lib/better-auth/auth-client";
 import { useRouter } from "next/navigation";
 import { appRouter } from "@/lib/constants/appRouter";
 import SignInModal from "@/components/SignInModal";
-import { Brain, Shield, Sparkles, Clock } from "lucide-react";
+import { BrainIcon, ShieldCheckIcon, SparkleIcon, ClockIcon } from "@phosphor-icons/react";
 
 const features = [
   {
-    icon: Brain,
+    icon: BrainIcon,
     title: "It learns you.",
     description:
       "Most AI tools start from zero every time. PostClaw remembers your brand voice, your audience, your content history, and what works. Week 1 is good. Week 8 is indistinguishable from you writing it yourself.",
   },
   {
-    icon: Shield,
+    icon: ShieldCheckIcon,
     title: "It\u2019s yours alone.",
     description:
       "Every PostClaw user gets a private, dedicated AI instance running 24/7 on its own server. Your brand knowledge, conversations, and content strategy stay isolated and protected. No shared data. No shared infrastructure. No access from other users.",
   },
   {
-    icon: Sparkles,
+    icon: SparkleIcon,
     title: "It thinks,\nnot just posts.",
     description:
       "PostClaw doesn\u2019t wait for you to have an idea. It suggests content based on your niche, monitors trends, and plans ahead. It\u2019s the difference between a tool that does what you say and a social media manager that knows what to do.",
   },
   {
-    icon: Clock,
+    icon: ClockIcon,
     title: "Nothing new\nto learn.",
     description:
       "If you can send a message, you already know how to use PostClaw. No dashboards to navigate. No editors to figure out. No 30-minute onboarding tutorials. Just chat.",

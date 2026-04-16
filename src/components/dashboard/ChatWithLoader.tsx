@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { appRouter } from "@/lib/constants/appRouter";
 import useApi from "@/lib/hooks/useApi";
 import { Button } from "@/components/ui/button";
-import { Loader2, RefreshCw, AlertCircle, Power } from "lucide-react";
+import { CircleNotchIcon, ArrowsClockwiseIcon, WarningCircleIcon, PowerIcon } from "@phosphor-icons/react";
 import ChatInterface from "@/components/dashboard/ChatInterface";
 
 declare global {
@@ -77,7 +77,7 @@ export default function ChatWithLoader() {
   if (isLoading || isProvisioning) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-4rem)]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+        <CircleNotchIcon className="h-8 w-8 animate-spin text-primary mb-4" />
         <h2 className="text-lg font-semibold text-gray-900 mb-1">
           Your AI social media manager is starting up...
         </h2>
@@ -92,7 +92,7 @@ export default function ChatWithLoader() {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-4rem)]">
         <div className="rounded-2xl border border-gray-200 bg-white p-6 max-w-md text-center shadow-sm">
-          <Power className="h-8 w-8 text-gray-400 mx-auto mb-3" />
+          <PowerIcon className="h-8 w-8 text-gray-400 mx-auto mb-3" />
           <h2 className="text-lg font-semibold text-gray-900 mb-1">
             Your agent is sleeping
           </h2>
@@ -105,9 +105,9 @@ export default function ChatWithLoader() {
             disabled={waking}
           >
             {waking ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
+              <CircleNotchIcon className="h-4 w-4 animate-spin mr-1.5" />
             ) : (
-              <Power className="h-4 w-4 mr-1.5" />
+              <PowerIcon className="h-4 w-4 mr-1.5" />
             )}
             {waking ? "Waking up..." : "Wake up my agent"}
           </Button>
@@ -129,7 +129,7 @@ export default function ChatWithLoader() {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-4rem)]">
         <div className="rounded-2xl border border-red-200 bg-red-50 p-6 max-w-md text-center">
-          <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-3" />
+          <WarningCircleIcon className="h-8 w-8 text-red-500 mx-auto mb-3" />
           <h2 className="text-lg font-semibold text-red-900 mb-1">
             Something went wrong
           </h2>
@@ -142,9 +142,9 @@ export default function ChatWithLoader() {
             disabled={retrying}
           >
             {retrying ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
+              <CircleNotchIcon className="h-4 w-4 animate-spin mr-1.5" />
             ) : (
-              <RefreshCw className="h-4 w-4 mr-1.5" />
+              <ArrowsClockwiseIcon className="h-4 w-4 mr-1.5" />
             )}
             Retry
           </Button>

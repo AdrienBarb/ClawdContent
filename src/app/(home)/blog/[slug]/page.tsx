@@ -16,7 +16,7 @@ import BlogFAQ from "@/components/blog/BlogFAQ";
 import { Button } from "@/components/ui/button";
 import {
   ChevronRight,
-  Calendar,
+  CalendarDays,
   Clock,
   ArrowRight,
   Lightbulb,
@@ -182,7 +182,7 @@ export default async function PostPage({ params }: PostPageProps) {
             </span>
             <span>&middot;</span>
             <div className="flex items-center gap-1">
-              <Calendar className="w-4 h-4" />
+              <CalendarDays className="w-4 h-4" />
               <time dateTime={post.publishedAt}>
                 {format(new Date(post.publishedAt), "MMM d, yyyy")}
               </time>

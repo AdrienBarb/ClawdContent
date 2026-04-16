@@ -6,45 +6,45 @@ import useApi from "@/lib/hooks/useApi";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Rocket,
-  Lightbulb,
-  Briefcase,
-  Pen,
-  Megaphone,
-  Check,
-  Save,
-} from "lucide-react";
+  RocketIcon,
+  LightbulbIcon,
+  BriefcaseIcon,
+  PencilSimpleIcon,
+  MegaphoneIcon,
+  CheckIcon,
+  FloppyDiskIcon,
+} from "@phosphor-icons/react";
 
 const roles = [
   {
     id: "solopreneur",
     label: "Solopreneur / Indie Maker",
     description: "I'm building a product and growing my audience.",
-    icon: Rocket,
+    icon: RocketIcon,
   },
   {
     id: "startup_founder",
     label: "Startup Founder",
     description: "I'm raising awareness for my company.",
-    icon: Lightbulb,
+    icon: LightbulbIcon,
   },
   {
     id: "freelancer",
     label: "Freelancer / Consultant",
     description: "I want to attract clients through content.",
-    icon: Briefcase,
+    icon: BriefcaseIcon,
   },
   {
     id: "content_creator",
     label: "Content Creator",
     description: "I'm building a personal brand.",
-    icon: Pen,
+    icon: PencilSimpleIcon,
   },
   {
     id: "marketing_manager",
     label: "Marketing Manager",
     description: "I handle content for a company.",
-    icon: Megaphone,
+    icon: MegaphoneIcon,
   },
 ];
 
@@ -147,7 +147,7 @@ export default function ContextPage() {
           Context
         </h1>
         <p className="text-gray-500 mt-1">
-          Tell OpenClaw about yourself so it helps you create content that fits you.
+          Tell your AI manager about yourself so it creates content that fits you.
         </p>
       </div>
 
@@ -157,7 +157,7 @@ export default function ContextPage() {
           What best describes you?
         </h3>
         <p className="text-xs text-gray-500 mb-4">
-          OpenClaw adapts its content strategy to your role.
+          Your AI manager adapts its content strategy to your role.
         </p>
 
         <div className="space-y-2">
@@ -195,7 +195,7 @@ export default function ContextPage() {
                       : "border-gray-300"
                   }`}
                 >
-                  {isSelected && <Check className="h-3 w-3 text-white" />}
+                  {isSelected && <CheckIcon className="h-3 w-3 text-white" />}
                 </span>
               </button>
             );
@@ -209,7 +209,7 @@ export default function ContextPage() {
           What do you talk about?
         </h3>
         <p className="text-xs text-gray-500 mb-4">
-          OpenClaw needs to know your world to help you create on-brand content.
+          This helps your AI manager create on-brand content.
         </p>
 
         <div className="space-y-6">
@@ -305,14 +305,14 @@ export default function ContextPage() {
         >
           {saved ? (
             <>
-              <Check className="h-4 w-4 mr-1.5" />
+              <CheckIcon className="h-4 w-4 mr-1.5" />
               Saved
             </>
           ) : isPending ? (
             "Saving..."
           ) : (
             <>
-              <Save className="h-4 w-4 mr-1.5" />
+              <FloppyDiskIcon className="h-4 w-4 mr-1.5" />
               Save context
             </>
           )}

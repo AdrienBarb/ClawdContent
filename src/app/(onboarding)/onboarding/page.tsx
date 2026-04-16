@@ -6,45 +6,45 @@ import { Button } from "@/components/ui/button";
 import { appRouter } from "@/lib/constants/appRouter";
 import useApi from "@/lib/hooks/useApi";
 import {
-  Lightbulb,
-  Rocket,
-  Briefcase,
-  Pen,
-  Megaphone,
-  ArrowRight,
-  Check,
-} from "lucide-react";
+  LightbulbIcon,
+  RocketIcon,
+  BriefcaseIcon,
+  PencilSimpleIcon,
+  MegaphoneIcon,
+  ArrowRightIcon,
+  CheckIcon,
+} from "@phosphor-icons/react";
 
 const roles = [
   {
     id: "solopreneur",
     label: "Solopreneur / Indie Maker",
     description: "I'm building a product and growing my audience.",
-    icon: Rocket,
+    icon: RocketIcon,
   },
   {
     id: "startup_founder",
     label: "Startup Founder",
     description: "I'm raising awareness for my company.",
-    icon: Lightbulb,
+    icon: LightbulbIcon,
   },
   {
     id: "freelancer",
     label: "Freelancer / Consultant",
     description: "I want to attract clients through content.",
-    icon: Briefcase,
+    icon: BriefcaseIcon,
   },
   {
     id: "content_creator",
     label: "Content Creator",
     description: "I'm building a personal brand.",
-    icon: Pen,
+    icon: PencilSimpleIcon,
   },
   {
     id: "marketing_manager",
     label: "Marketing Manager",
     description: "I handle content for a company.",
-    icon: Megaphone,
+    icon: MegaphoneIcon,
   },
 ];
 
@@ -181,7 +181,7 @@ export default function OnboardingPage() {
                       }`}
                     >
                       {isSelected && (
-                        <Check className="h-3 w-3 text-white" />
+                        <CheckIcon className="h-3 w-3 text-white" />
                       )}
                     </span>
                   </button>
@@ -281,7 +281,7 @@ export default function OnboardingPage() {
             disabled={isPending}
           >
             {isPending ? "Setting up..." : "Finish setup"}
-            {!isPending && <ArrowRight className="h-4 w-4 ml-1.5" />}
+            {!isPending && <ArrowRightIcon className="h-4 w-4 ml-1.5" />}
           </Button>
         </div>
       </div>

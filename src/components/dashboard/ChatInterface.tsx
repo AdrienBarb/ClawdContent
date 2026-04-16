@@ -4,17 +4,19 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import type { UIMessage } from "ai";
 import { appRouter } from "@/lib/constants/appRouter";
-import { Button } from "@/components/ui/button";
 import {
-  Send,
-  Loader2,
-  Sparkles,
-  AlertCircle,
-  X,
-  Film,
-} from "lucide-react";
+  PaperPlaneTiltIcon,
+  CircleNotchIcon,
+  SparkleIcon,
+  WarningCircleIcon,
+  XIcon,
+  FilmStripIcon,
+  ArrowRightIcon,
+} from "@phosphor-icons/react";
 import { useRef, useEffect, useState, useMemo, useCallback } from "react";
+import Link from "next/link";
 import useApi from "@/lib/hooks/useApi";
+import { getPlatform } from "@/lib/constants/platforms";
 import MediaUploadModal, {
   type UploadResult,
 } from "@/components/dashboard/MediaUploadModal";
@@ -73,6 +75,7 @@ function extractMediaFromText(text: string): {
     });
   }
 
+  cleanText = cleanText.replace(/\[CONTEXT:[^\]]*\]\n*/g, "");
   cleanText = cleanText.replace(/\[MEDIA:\s*https?:\/\/[^\]]+\]\n?/g, "");
   cleanText = cleanText.replace(/\[MEDIA_TYPE:\s*[^\]]+\]\n?/g, "");
   cleanText = cleanText.trim();
@@ -120,17 +123,9 @@ export default function ChatInterface() {
 function ChatSkeleton() {
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] max-w-3xl mx-auto">
-      <div className="mb-4">
-        <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-          Chat
-        </h1>
-        <p className="text-gray-500 mt-1">
-          Chat with your AI social media manager directly from the dashboard.
-        </p>
-      </div>
       <div className="flex-1 flex flex-col rounded-2xl bg-white shadow-sm border border-gray-100 overflow-hidden">
         <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin text-gray-300" />
+          <CircleNotchIcon className="h-6 w-6 animate-spin text-gray-300" />
         </div>
       </div>
     </div>
@@ -190,6 +185,31 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
   const subStatus = dashboardStatus?.subscription?.status;
   const subPlanId = dashboardStatus?.subscription?.planId;
   const canGenerate = subStatus === "active" && subPlanId !== "starter";
+  const accountCount: number = dashboardStatus?.accountCount ?? 0;
+  const chatSuggestions: string[] = dashboardStatus?.chatSuggestions ?? [];
+  const userContext = dashboardStatus?.userContext as
+    | { role: string | null; niche: string | null; topics: string[] }
+    | undefined;
+  const hasContext = !!(userContext?.role || userContext?.niche);
+
+  const platformLabels = useMemo(() => {
+    const accts: { platform: string }[] = dashboardStatus?.accounts ?? [];
+    return accts
+      .map((a) => getPlatform(a.platform)?.label)
+      .filter(Boolean) as string[];
+  }, [dashboardStatus?.accounts]);
+
+  const platformsText = useMemo(() => {
+    if (platformLabels.length === 0) return "";
+    if (platformLabels.length === 1) return platformLabels[0];
+    if (platformLabels.length === 2)
+      return `${platformLabels[0]} and ${platformLabels[1]}`;
+    return `${platformLabels.slice(0, -1).join(", ")}, and ${platformLabels[platformLabels.length - 1]}`;
+  }, [platformLabels]);
+
+  const suggestions =
+    chatSuggestions.length > 0 ? chatSuggestions : SUGGESTIONS;
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -262,6 +282,21 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
       messageText += `\n\n[MEDIA: ${attachedMedia.url}]\n[MEDIA_TYPE: ${mimeType}]`;
     }
 
+    // Prepend hidden context on first message so OpenClaw knows the user's profile
+    if (allMessages.length === 0) {
+      const contextParts: string[] = [];
+      if (userContext?.role) contextParts.push(`Role: ${userContext.role}`);
+      if (userContext?.niche) contextParts.push(`Niche: ${userContext.niche}`);
+      if (userContext?.topics && userContext.topics.length > 0)
+        contextParts.push(`Topics: ${userContext.topics.join(", ")}`);
+      if (platformLabels.length > 0)
+        contextParts.push(`Connected platforms: ${platformLabels.join(", ")}`);
+
+      if (contextParts.length > 0) {
+        messageText = `[CONTEXT: User just started chatting. ${contextParts.join(". ")}. Be welcoming and guide them.]\n\n${messageText}`;
+      }
+    }
+
     setInput("");
     setAttachedMedia(null);
     sendMessage({ text: messageText });
@@ -283,50 +318,82 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] max-w-3xl mx-auto">
-      <div className="mb-4">
-        <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-          Chat
-        </h1>
-        <p className="text-gray-500 mt-1">
-          Chat with your AI social media manager directly from the dashboard.
-        </p>
-      </div>
-
       <div className="flex-1 flex flex-col rounded-2xl bg-white shadow-sm border border-gray-100 overflow-hidden">
         {/* Messages area */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto p-5 space-y-4">
           {allMessages.length === 0 && !error && (
-            <div className="flex flex-col items-center justify-center h-full text-center px-4">
-              <div className="h-12 w-12 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
-                <Sparkles className="h-6 w-6 text-gray-400" />
-              </div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-1">
-                Start a conversation
-              </h2>
-              <p className="text-sm text-gray-500 mb-6 max-w-sm">
-                Ask your AI social media manager to create, adapt, or publish
-                posts across all your platforms.
-              </p>
-              <div className="grid gap-2 sm:grid-cols-2 w-full max-w-md">
-                {SUGGESTIONS.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => handleSuggestion(s)}
-                    className="flex items-start gap-2 rounded-xl bg-gray-50 hover:bg-gray-100 px-3 py-2.5 text-sm text-gray-700 text-left transition-colors cursor-pointer"
+            <div className="flex flex-col justify-end h-full gap-4 animate-fade-in">
+              {/* Welcome card */}
+              <div className="flex items-end gap-2.5">
+                {/* Bot avatar */}
+                <img
+                  src="/logo.svg"
+                  alt="PostClaw"
+                  className="shrink-0 h-8 w-8 rounded-full shadow-sm"
+                />
 
-                  >
-                    <Sparkles className="h-3.5 w-3.5 text-gray-400 shrink-0 mt-0.5" />
-                    <span>{s}</span>
-                  </button>
-                ))}
+                <div
+                  className="max-w-[80%] rounded-2xl rounded-bl-md px-5 py-4 text-sm leading-relaxed"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #f8f7ff 0%, #fff5f3 100%)",
+                    border: "1px solid rgba(255, 94, 72, 0.1)",
+                  }}
+                >
+                  {accountCount === 0 ? (
+                    <>
+                      <p className="text-gray-800">
+                        Hey! I&apos;m your AI social media manager. Before we
+                        start creating content, connect your social accounts so
+                        I can publish for you.
+                      </p>
+                      <Link
+                        href={appRouter.accounts}
+                        className="inline-flex items-center gap-2 mt-3 px-4 py-2 rounded-full bg-primary text-white text-sm font-medium hover:bg-[#E84A36] transition-all hover:shadow-md cursor-pointer"
+                      >
+                        Connect my accounts
+                        <ArrowRightIcon className="h-3.5 w-3.5" />
+                      </Link>
+                    </>
+                  ) : (
+                    <p className="text-gray-800">
+                      {hasContext
+                        ? `You're all set on ${platformsText}! Ready to create your first post? Here are some ideas:`
+                        : `You're all set on ${platformsText}! Tell me what you'd like to post — I can write, adapt, and publish to all your platforms.`}
+                    </p>
+                  )}
+                </div>
               </div>
+
+              {/* Suggestion chips */}
+              {accountCount > 0 && (
+                <div className="flex flex-wrap gap-2 pl-11">
+                  {suggestions.map((s, i) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => handleSuggestion(s)}
+                      className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm text-gray-700 transition-all cursor-pointer hover:scale-[1.03] hover:shadow-md active:scale-[0.98]"
+                      style={{
+                        background:
+                          "linear-gradient(135deg, #ffffff 0%, #faf9ff 100%)",
+                        border: "1px solid rgba(212, 214, 229, 0.6)",
+                        animationDelay: `${i * 80}ms`,
+                        animationFillMode: "both",
+                      }}
+                    >
+                      <SparkleIcon className="h-3 w-3 text-primary/60 shrink-0" />
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
           {error && (
             <div className="rounded-xl border border-red-200 bg-red-50 p-4 flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+              <WarningCircleIcon className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-medium text-red-900">
                   Failed to send message
@@ -349,7 +416,7 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
               >
                 {loadingOlder ? (
                   <span className="flex items-center gap-2">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <CircleNotchIcon className="h-3.5 w-3.5 animate-spin" />
                     Loading...
                   </span>
                 ) : (
@@ -373,13 +440,20 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
             return (
               <div
                 key={message.id}
-                className={`flex ${isUser ? "justify-end" : "justify-start"}`}
+                className={`flex items-end gap-2.5 ${isUser ? "justify-end" : "justify-start"}`}
               >
+                {!isUser && (
+                  <img
+                    src="/logo.svg"
+                    alt="PostClaw"
+                    className="shrink-0 h-7 w-7 rounded-full"
+                  />
+                )}
                 <div
                   className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm ${
                     isUser
-                      ? "bg-primary text-white"
-                      : "bg-gray-100 text-gray-900"
+                      ? "bg-primary text-white rounded-br-md"
+                      : "bg-gray-100 text-gray-900 rounded-bl-md"
                   }`}
                 >
                   {media.length > 0 && (
@@ -403,7 +477,7 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
                                 : "bg-gray-200 text-gray-700"
                             }`}
                           >
-                            <Film className="h-4 w-4" />
+                            <FilmStripIcon className="h-4 w-4" />
                             Video attached
                           </div>
                         )
@@ -425,9 +499,16 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
 
           {status === "submitted" &&
             messages[messages.length - 1]?.role === "user" && (
-              <div className="flex justify-start">
-                <div className="bg-gray-100 rounded-2xl px-4 py-3">
-                  <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+              <div className="flex justify-start items-end gap-2.5">
+                <img
+                  src="/logo.svg"
+                  alt="PostClaw"
+                  className="shrink-0 h-7 w-7 rounded-full"
+                />
+                <div className="bg-gray-100 rounded-2xl rounded-bl-md px-5 py-4 flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce-dot" style={{ animationDelay: "0ms" }} />
+                  <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce-dot" style={{ animationDelay: "150ms" }} />
+                  <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce-dot" style={{ animationDelay: "300ms" }} />
                 </div>
               </div>
             )}
@@ -445,7 +526,7 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
                 />
               ) : (
                 <div className="h-20 w-20 rounded-lg bg-gray-100 border border-gray-200 flex flex-col items-center justify-center">
-                  <Film className="h-6 w-6 text-gray-400" />
+                  <FilmStripIcon className="h-6 w-6 text-gray-400" />
                   <span className="text-[10px] text-gray-500 mt-1 uppercase font-medium">
                     {attachedMedia.format}
                   </span>
@@ -456,7 +537,7 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
                 onClick={() => setAttachedMedia(null)}
                 className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-gray-900 text-white flex items-center justify-center hover:bg-gray-700 transition-colors cursor-pointer"
               >
-                <X className="h-3 w-3" />
+                <XIcon className="h-3 w-3" />
               </button>
               <span className="absolute bottom-1 right-1 rounded bg-black/60 px-1 py-0.5 text-[9px] font-medium text-white uppercase">
                 {attachedMedia.format}
@@ -466,46 +547,54 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
         )}
 
         {/* Input bar */}
-        <div className="border-t border-gray-100 p-4">
-          <div className="flex items-end gap-2">
-            <MediaUploadModal
-              open={uploadModalOpen}
-              onClose={() => setUploadModalOpen(false)}
-              onUploadComplete={handleUploadComplete}
-            />
-            <ImageGenerateModal
-              open={generateModalOpen}
-              onClose={() => setGenerateModalOpen(false)}
-              onImageGenerated={handleImageGenerated}
-              canGenerate={canGenerate}
-            />
-            <MediaAttachDropdown
-              onOpenUpload={() => setUploadModalOpen(true)}
-              onOpenGenerate={() => setGenerateModalOpen(true)}
-            />
+        <div className="p-4 pt-2">
+          <MediaUploadModal
+            open={uploadModalOpen}
+            onClose={() => setUploadModalOpen(false)}
+            onUploadComplete={handleUploadComplete}
+          />
+          <ImageGenerateModal
+            open={generateModalOpen}
+            onClose={() => setGenerateModalOpen(false)}
+            onImageGenerated={handleImageGenerated}
+            canGenerate={canGenerate}
+          />
+          <div className="rounded-2xl border border-gray-200 bg-white shadow-sm transition-shadow focus-within:shadow-md focus-within:border-gray-300">
             <textarea
               ref={inputRef}
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => {
+                setInput(e.target.value);
+                // Auto-grow
+                e.target.style.height = "auto";
+                e.target.style.height = `${Math.min(e.target.scrollHeight, 160)}px`;
+              }}
               onKeyDown={handleKeyDown}
-              placeholder="Type a message..."
+              placeholder="Type your thoughts..."
               rows={1}
-              className="flex-1 resize-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-gray-400"
-              style={{ maxHeight: "120px" }}
+              className="w-full resize-none bg-transparent px-5 pt-4 pb-2 text-base leading-relaxed focus:outline-none placeholder:text-gray-400"
+              style={{ minHeight: "44px", maxHeight: "160px" }}
             />
-            <Button
-              type="button"
-              size="icon"
-              disabled={!canSend}
-              onClick={handleSend}
-              className="h-11 w-11 shrink-0 rounded-xl bg-primary hover:bg-[#E84A36] text-white disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
-            >
-              {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-            </Button>
+            <div className="flex items-center justify-between px-3 pb-3">
+              <div className="flex items-center gap-1">
+                <MediaAttachDropdown
+                  onOpenUpload={() => setUploadModalOpen(true)}
+                  onOpenGenerate={() => setGenerateModalOpen(true)}
+                />
+              </div>
+              <button
+                type="button"
+                disabled={!canSend}
+                onClick={handleSend}
+                className="grid h-10 w-10 place-items-center rounded-full bg-primary text-white transition-all hover:bg-[#E84A36] disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+              >
+                {isLoading ? (
+                  <CircleNotchIcon className="h-4 w-4 animate-spin" />
+                ) : (
+                  <PaperPlaneTiltIcon className="h-4 w-4" />
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>

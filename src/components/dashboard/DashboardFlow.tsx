@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Clock, Zap, BarChart3, ArrowRight } from "lucide-react";
+import { ClockIcon, LightningIcon, ChartBarIcon, ArrowRightIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { PLATFORMS } from "@/lib/constants/platforms";
 import ChatWithLoader from "@/components/dashboard/ChatWithLoader";
@@ -14,19 +14,19 @@ interface DashboardFlowProps {
 
 const benefits = [
   {
-    icon: Clock,
+    icon: ClockIcon,
     title: "Hours saved every week",
     description:
       "Write once, publish everywhere. No more copying and pasting across platforms.",
   },
   {
-    icon: Zap,
+    icon: LightningIcon,
     title: "Consistent posting on autopilot",
     description:
       "Your AI social media manager creates platform-native content adapted to each audience.",
   },
   {
-    icon: BarChart3,
+    icon: ChartBarIcon,
     title: "Grow on every platform at once",
     description:
       "Be present on X, LinkedIn, Instagram, TikTok, and 9 more — without the busywork.",
@@ -100,7 +100,7 @@ export default function DashboardFlow({
               onClick={() => setShowSubscribeModal(true)}
             >
               Launch my AI agent
-              <ArrowRight className="h-4 w-4 ml-2" />
+              <ArrowRightIcon className="h-4 w-4 ml-2" />
             </Button>
             {/* Anchoring + regret aversion */}
             <p className="text-xs text-gray-400 mt-3">

@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useSession, signOut } from "@/lib/better-auth/auth-client";
 import SignInModal from "@/components/SignInModal";
-import { Menu, X } from "lucide-react";
+import { ListIcon, XIcon } from "@phosphor-icons/react";
 
 export default function Navbar() {
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
@@ -48,7 +48,7 @@ export default function Navbar() {
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="md:hidden text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             >
-              {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {isMobileMenuOpen ? <XIcon className="h-6 w-6" /> : <ListIcon className="h-6 w-6" />}
             </button>
             <Link
               href="/"

@@ -20,7 +20,7 @@ import {
   ArrowRight,
   CheckCircle,
   Lightbulb,
-  Calendar,
+  CalendarDays,
   Check,
   X,
 } from "lucide-react";
@@ -216,7 +216,7 @@ export default async function CompetitorPageView({
             </span>
             <span>&middot;</span>
             <div className="flex items-center gap-1">
-              <Calendar className="w-4 h-4" />
+              <CalendarDays className="w-4 h-4" />
               <time dateTime={competitor.publishedAt}>
                 {format(new Date(competitor.publishedAt), "MMM d, yyyy")}
               </time>

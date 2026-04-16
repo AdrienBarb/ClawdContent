@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import useApi from "@/lib/hooks/useApi";
 import { appRouter } from "@/lib/constants/appRouter";
 import { Button } from "@/components/ui/button";
-import { Loader2, Sparkles, Plus, Minus, CheckCircle } from "lucide-react";
+import { CircleNotchIcon, SparkleIcon, PlusIcon, MinusIcon, CheckCircleIcon } from "@phosphor-icons/react";
 
 export default function CreditsPage() {
   const { useGet, usePost } = useApi();
@@ -48,7 +48,7 @@ export default function CreditsPage() {
 
       {paymentSuccess && (
         <div className="rounded-xl border border-green-200 bg-green-50 p-4 flex items-center gap-3">
-          <CheckCircle className="h-5 w-5 text-green-600 shrink-0" />
+          <CheckCircleIcon className="h-5 w-5 text-green-600 shrink-0" />
           <p className="text-sm text-green-800">
             Credits purchased successfully!
           </p>
@@ -58,13 +58,13 @@ export default function CreditsPage() {
       {/* Balance card */}
       <div className="rounded-2xl bg-white shadow-sm border border-gray-100 p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-primary" />
+          <SparkleIcon className="h-5 w-5 text-primary" />
           Your Balance
         </h2>
 
         {isLoading ? (
           <div className="flex justify-center py-6">
-            <Loader2 className="h-6 w-6 animate-spin text-gray-300" />
+            <CircleNotchIcon className="h-6 w-6 animate-spin text-gray-300" />
           </div>
         ) : (
           <div className="space-y-3">
@@ -113,7 +113,7 @@ export default function CreditsPage() {
             disabled={quantity <= 1}
             className="h-10 w-10 rounded-xl cursor-pointer disabled:cursor-not-allowed"
           >
-            <Minus className="h-4 w-4" />
+            <MinusIcon className="h-4 w-4" />
           </Button>
           <div className="text-center">
             <div className="text-3xl font-bold text-gray-900">{quantity}</div>
@@ -128,7 +128,7 @@ export default function CreditsPage() {
             disabled={quantity >= 50}
             className="h-10 w-10 rounded-xl cursor-pointer disabled:cursor-not-allowed"
           >
-            <Plus className="h-4 w-4" />
+            <PlusIcon className="h-4 w-4" />
           </Button>
         </div>
 
@@ -148,7 +148,7 @@ export default function CreditsPage() {
         >
           {buying ? (
             <span className="flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <CircleNotchIcon className="h-4 w-4 animate-spin" />
               Redirecting...
             </span>
           ) : (
