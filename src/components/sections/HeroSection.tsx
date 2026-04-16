@@ -36,20 +36,28 @@ export default function HeroSection({ variant = "control" }: HeroSectionProps) {
           <div className="flex flex-col items-center gap-2 mb-10">
               <div className="flex -space-x-2">
                 {[
-                  { src: "/images/avatars/avatar-1.jpg", alt: "PostClaw user" },
-                  { src: "/images/avatars/avatar-2.jpg", alt: "PostClaw user" },
-                  { src: "/images/avatars/avatar-3.jpg", alt: "PostClaw user" },
-                  { src: "/images/avatars/avatar-4.jpg", alt: "PostClaw user" },
-                  { src: "/images/avatars/avatar-5.jpg", alt: "PostClaw user" },
-                ].map((avatar, i) => (
-                  <Image
-                    key={i}
-                    src={avatar.src}
-                    alt={avatar.alt}
-                    width={32}
-                    height={32}
-                    className="h-8 w-8 rounded-full object-cover ring-2 ring-[#ededf5]"
-                  />
+                  { src: "/images/reassurance/kaya.jpeg", name: "Kaya", linkedin: "https://www.linkedin.com/in/kayayurieff/" },
+                  { src: "/images/reassurance/jorje.jpeg", name: "Jorge", linkedin: "https://www.linkedin.com/in/jorge-zuloaga/" },
+                  { src: "/images/reassurance/Sheryl.jpeg", name: "Sheryl", linkedin: "https://www.linkedin.com/in/sheryl-sandberg-5126652/" },
+                  { src: "/images/reassurance/abhilaksh.jpeg", name: "Abhilaksh", linkedin: "https://www.linkedin.com/in/abhilaksh-sharma-39821696/" },
+                  { src: "/images/reassurance/sawyer.jpeg", name: "Sawyer", linkedin: "https://www.linkedin.com/in/sawyer-hemsley-6b9449111/" },
+                ].map((person) => (
+                  <a
+                    key={person.name}
+                    href={person.linkedin}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={person.name}
+                    className="relative h-8 w-8 rounded-full overflow-hidden ring-2 ring-[#ededf5] hover:scale-110 hover:z-10 transition-transform"
+                  >
+                    <Image
+                      src={person.src}
+                      alt={person.name}
+                      width={32}
+                      height={32}
+                      className="h-8 w-8 rounded-full object-cover"
+                    />
+                  </a>
                 ))}
               </div>
               <span className="text-sm text-muted-foreground">
