@@ -15,6 +15,7 @@ import {
   UserCircle,
   Gift,
   ChevronsUpDown,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -35,6 +36,7 @@ import { useState } from "react";
 
 const navItems = [
   { href: appRouter.dashboard, label: "Chat", icon: Bot },
+  { href: appRouter.posts, label: "Content", icon: FileText },
   { href: appRouter.accounts, label: "Social Accounts", icon: Share2 },
   { href: appRouter.context, label: "Knowledge", icon: UserCircle },
 ];

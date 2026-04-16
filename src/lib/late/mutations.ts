@@ -150,3 +150,38 @@ export async function deleteAccount(
     apiKey,
   });
 }
+
+export async function retryPost(
+  postId: string,
+  apiKey: string
+): Promise<void> {
+  await lateRequest("/posts/retry-post", {
+    method: "POST",
+    body: { id: postId },
+    apiKey,
+  });
+}
+
+export async function unpublishPost(
+  postId: string,
+  platform: string,
+  apiKey: string
+): Promise<void> {
+  await lateRequest("/posts/unpublish-post", {
+    method: "POST",
+    body: { id: postId, platform },
+    apiKey,
+  });
+}
+
+export async function updatePost(
+  postId: string,
+  data: { content?: string; scheduledAt?: string },
+  apiKey: string
+): Promise<void> {
+  await lateRequest("/posts/update-post", {
+    method: "PUT",
+    body: { id: postId, ...data },
+    apiKey,
+  });
+}
