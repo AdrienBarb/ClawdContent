@@ -37,6 +37,7 @@ export const appRouter = {
     accountsRemove: "/api/accounts/remove",
     posts: "/api/posts",
     postsDelete: "/api/posts/delete",
+    postsDetail: "/api/posts/detail",
     postsRetry: "/api/posts/retry",
     postsUnpublish: "/api/posts/unpublish",
     postsUpdate: "/api/posts/update",

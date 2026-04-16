@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { appRouter } from "@/lib/constants/appRouter";
 import { getPlatform } from "@/lib/constants/platforms";
-import useApi from "@/lib/hooks/useApi";
+import useApi, { fetchData } from "@/lib/hooks/useApi";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -26,6 +26,11 @@ import {
   EyeOff,
   ChevronDown,
   ChevronUp,
+  AlertCircle,
+  Link2,
+  ShieldAlert,
+  Clock,
+  ServerCrash,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -52,6 +57,12 @@ interface PostCounts {
   failed: number;
 }
 
+interface PostErrorDetail {
+  errorMessage: string | null;
+  errorCategory: string | null;
+  errorSource: string | null;
+}
+
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
@@ -70,6 +81,16 @@ const STATUS_TABS: {
 const MAX_PREVIEW_LENGTH = 280;
 
 const UNSUPPORTED_UNPUBLISH_PLATFORMS = ["instagram", "tiktok", "snapchat"];
+
+const ERROR_HINTS: Record<string, { icon: typeof AlertCircle; hint: string }> = {
+  auth_expired: { icon: Link2, hint: "Reconnect your account in Social Accounts." },
+  user_content: { icon: Pencil, hint: "Edit the content — it may be too long or in the wrong format." },
+  user_abuse: { icon: Clock, hint: "Rate limited. Wait a bit then retry." },
+  account_issue: { icon: ShieldAlert, hint: "Check your account settings on the platform." },
+  platform_rejected: { icon: ShieldAlert, hint: "The platform rejected this content. Edit and retry." },
+  platform_error: { icon: ServerCrash, hint: "Platform outage. Try again later." },
+  system_error: { icon: ServerCrash, hint: "Temporary system issue. Retry should work." },
+};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -166,6 +187,10 @@ export default function ContentList() {
   const [deleteTarget, setDeleteTarget] = useState<Post | null>(null);
   const [unpublishTarget, setUnpublishTarget] = useState<Post | null>(null);
 
+  // Error details (fetched on demand for failed posts)
+  const [errorDetails, setErrorDetails] = useState<Record<string, PostErrorDetail>>({});
+  const [loadingErrors, setLoadingErrors] = useState<Set<string>>(new Set());
+
   // ---------- Data ----------
 
   const { data, isLoading, refetch } = useGet(
@@ -241,6 +266,32 @@ export default function ContentList() {
 
   function handleSave(postId: string) {
     updateMutation.mutate({ postId, content: editContent });
+  }
+
+  async function fetchErrorDetail(postId: string) {
+    if (errorDetails[postId] || loadingErrors.has(postId)) return;
+    setLoadingErrors((prev) => new Set(prev).add(postId));
+    try {
+      const res = await fetchData(
+        `${appRouter.api.postsDetail}?postId=${postId}`
+      );
+      setErrorDetails((prev) => ({
+        ...prev,
+        [postId]: {
+          errorMessage: res.post.errorMessage ?? null,
+          errorCategory: res.post.errorCategory ?? null,
+          errorSource: res.post.errorSource ?? null,
+        },
+      }));
+    } catch {
+      // Silently fail — the card still works without error details
+    } finally {
+      setLoadingErrors((prev) => {
+        const next = new Set(prev);
+        next.delete(postId);
+        return next;
+      });
+    }
   }
 
   function toggleExpanded(postId: string) {
@@ -423,6 +474,60 @@ export default function ContentList() {
                             )}
                           </div>
                         )}
+
+                        {/* Error detail for failed posts */}
+                        {post.status === "failed" && !isEditing && (() => {
+                          const detail = errorDetails[post.id];
+                          const isLoadingError = loadingErrors.has(post.id);
+
+                          if (!detail && !isLoadingError) {
+                            return (
+                              <button
+                                onClick={() => fetchErrorDetail(post.id)}
+                                className="mt-3 inline-flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 transition-colors cursor-pointer"
+                              >
+                                <AlertCircle className="h-3.5 w-3.5" />
+                                Show error details
+                              </button>
+                            );
+                          }
+
+                          if (isLoadingError) {
+                            return (
+                              <div className="mt-3 flex items-center gap-1.5 text-xs text-gray-400">
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                Loading error details...
+                              </div>
+                            );
+                          }
+
+                          if (detail) {
+                            const hintConfig = detail.errorCategory
+                              ? ERROR_HINTS[detail.errorCategory]
+                              : undefined;
+                            const HintIcon = hintConfig?.icon ?? AlertCircle;
+
+                            return (
+                              <div className="mt-3 rounded-xl bg-red-50 border border-red-100 p-3 space-y-1.5">
+                                <div className="flex items-start gap-2">
+                                  <HintIcon className="h-4 w-4 text-red-400 mt-0.5 shrink-0" />
+                                  <div className="min-w-0">
+                                    <p className="text-xs font-medium text-red-700">
+                                      {detail.errorMessage ?? "Publishing failed"}
+                                    </p>
+                                    {hintConfig && (
+                                      <p className="text-xs text-red-500 mt-0.5">
+                                        {hintConfig.hint}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          return null;
+                        })()}
 
                         {/* Bottom: platforms + actions */}
                         {!isEditing && (

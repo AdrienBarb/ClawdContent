@@ -80,6 +80,12 @@ export interface LatePost {
   createdAt: string;
 }
 
+export interface LatePostDetail extends LatePost {
+  errorMessage: string | null;
+  errorCategory: string | null;
+  errorSource: string | null;
+}
+
 interface LatePostRaw {
   _id: string;
   content: string;
@@ -112,6 +118,36 @@ export async function listPosts(
     publishedAt: p.publishedAt,
     createdAt: p.createdAt,
   }));
+}
+
+export async function getPost(
+  postId: string,
+  apiKey: string
+): Promise<LatePostDetail> {
+  const data = await lateRequest<{
+    _id: string;
+    content: string;
+    platforms: string[];
+    status: string;
+    scheduledAt: string | null;
+    publishedAt: string | null;
+    createdAt: string;
+    errorMessage?: string;
+    errorCategory?: string;
+    errorSource?: string;
+  }>(`/posts/${postId}`, { apiKey });
+  return {
+    id: data._id,
+    content: data.content,
+    platforms: data.platforms,
+    status: data.status,
+    scheduledAt: data.scheduledAt,
+    publishedAt: data.publishedAt,
+    createdAt: data.createdAt,
+    errorMessage: data.errorMessage ?? null,
+    errorCategory: data.errorCategory ?? null,
+    errorSource: data.errorSource ?? null,
+  };
 }
 
 export async function deletePost(

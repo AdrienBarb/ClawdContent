@@ -1,11 +1,13 @@
 import { prisma } from "@/lib/db/prisma";
 import {
   listPosts as lateListPosts,
+  getPost as lateGetPost,
   deletePost as lateDeletePost,
   retryPost as lateRetryPost,
   unpublishPost as lateUnpublishPost,
   updatePost as lateUpdatePost,
   LatePost,
+  LatePostDetail,
 } from "@/lib/late/mutations";
 
 export async function getUserPosts(
@@ -25,6 +27,21 @@ export async function getUserPosts(
     lateProfile.lateApiKey,
     options
   );
+}
+
+export async function getUserPost(
+  userId: string,
+  postId: string
+): Promise<LatePostDetail> {
+  const lateProfile = await prisma.lateProfile.findUnique({
+    where: { userId },
+  });
+
+  if (!lateProfile) {
+    throw new Error("Late profile not found. Please wait for provisioning to complete.");
+  }
+
+  return lateGetPost(postId, lateProfile.lateApiKey);
 }
 
 export async function deleteUserPost(
