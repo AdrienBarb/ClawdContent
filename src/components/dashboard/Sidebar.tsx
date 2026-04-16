@@ -16,6 +16,7 @@ import {
   GiftIcon,
   CaretUpDownIcon,
   FileTextIcon,
+  ChartLineUpIcon,
 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -34,7 +35,9 @@ import {
 } from "@/components/ui/sheet";
 import { useState } from "react";
 
-const navItems = [
+const ANALYTICS_WHITELIST = ["adrien-barbier@hotmail.fr"];
+
+const baseNavItems = [
   { href: appRouter.dashboard, label: "Chat", icon: RobotIcon },
   {
     href: appRouter.accounts,
@@ -44,6 +47,12 @@ const navItems = [
   { href: appRouter.posts, label: "Posts", icon: FileTextIcon },
   { href: appRouter.context, label: "Knowledge", icon: UserCircleIcon },
 ];
+
+const analyticsNavItem = {
+  href: appRouter.analytics,
+  label: "Analytics",
+  icon: ChartLineUpIcon,
+};
 
 const userMenuItems = [
   { href: appRouter.billing, label: "Billing", icon: CreditCardIcon },
@@ -68,6 +77,10 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const { data: session } = useSession();
+
+  const navItems = ANALYTICS_WHITELIST.includes(session?.user?.email ?? "")
+    ? [...baseNavItems.slice(0, 2), analyticsNavItem, ...baseNavItems.slice(2)]
+    : baseNavItems;
 
   const handleSignOut = async () => {
     await signOut();

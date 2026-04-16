@@ -19,6 +19,7 @@ export const appRouter = {
   accounts: "/d/accounts",
   posts: "/d/posts",
   accountsCallback: "/d/accounts/callback",
+  analytics: "/d/analytics",
   context: "/d/context",
   settings: "/d/settings",
   billing: "/d/billing",
@@ -56,6 +57,10 @@ export const appRouter = {
     credits: "/api/credits",
     creditsCheckout: "/api/credits/checkout",
     imageGenerate: "/api/image/generate",
+    analytics: "/api/analytics",
+    analyticsPosts: "/api/analytics/posts",
+    analyticsBestTimes: "/api/analytics/best-times",
+    analyticsFollowers: "/api/analytics/followers",
     dashboardStatus: "/api/dashboard/status",
     webhooks: {
       stripe: "/api/webhooks/stripe",
