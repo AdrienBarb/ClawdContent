@@ -3,10 +3,16 @@ import { errorHandler } from "@/lib/errors/errorHandler";
 import { auth } from "@/lib/better-auth/auth";
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
+import { after } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { getBotStatus } from "@/lib/services/bot";
 import { getPlan, type PlanId } from "@/lib/constants/plans";
 import { getCreditBalance } from "@/lib/services/credits";
+import { syncAccountsFromLate } from "@/lib/services/accounts";
+
+// Throttle account sync: once per user per 60 seconds
+const lastSyncMap = new Map<string, number>();
+const SYNC_INTERVAL_MS = 60_000;
 
 export async function GET() {
   try {
@@ -45,6 +51,22 @@ export async function GET() {
 
     const planId = (subscription?.planId as PlanId) || "starter";
     const plan = getPlan(planId);
+
+    // Background sync: check Zernio account statuses periodically
+    if (lateProfile) {
+      const now = Date.now();
+      const lastSync = lastSyncMap.get(userId) ?? 0;
+      if (now - lastSync > SYNC_INTERVAL_MS) {
+        lastSyncMap.set(userId, now);
+        after(async () => {
+          try {
+            await syncAccountsFromLate(userId);
+          } catch (e) {
+            console.error("[Dashboard] Background account sync failed:", e);
+          }
+        });
+      }
+    }
 
     return NextResponse.json({
       timezone: user?.timezone ?? null,

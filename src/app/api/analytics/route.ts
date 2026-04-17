@@ -3,7 +3,7 @@ import { errorHandler } from "@/lib/errors/errorHandler";
 import { auth } from "@/lib/better-auth/auth";
 import { NextResponse, NextRequest } from "next/server";
 import { headers } from "next/headers";
-import { getOverviewMetrics } from "@/lib/services/analytics";
+import { getOverviewMetrics, isAnalyticsEnabled } from "@/lib/services/analytics";
 import { analyticsQuerySchema } from "@/lib/schemas/analytics";
 
 export async function GET(req: NextRequest) {
@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
       headers: await headers(),
     });
 
-    if (!session?.user) {
+    if (!session?.user || !isAnalyticsEnabled(session.user.email)) {
       return NextResponse.json(
         { error: errorMessages.UNAUTHORIZED },
         { status: 401 }
@@ -25,7 +25,11 @@ export async function GET(req: NextRequest) {
       platform: searchParams.get("platform") || undefined,
     });
 
-    const data = await getOverviewMetrics(session.user.id, params.period);
+    const data = await getOverviewMetrics(
+      session.user.id,
+      params.period,
+      params.platform
+    );
 
     return NextResponse.json(data, { status: 200 });
   } catch (error) {

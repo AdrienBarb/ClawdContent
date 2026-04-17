@@ -182,18 +182,17 @@ export async function deletePost(
 export async function listAccounts(
   profileId: string,
   apiKey: string
-): Promise<LateAccount[]> {
+): Promise<(LateAccount & { isActive: boolean })[]> {
   const data = await lateRequest<{ accounts: LateAccountRaw[] }>(
     `/accounts?profileId=${profileId}`,
     { apiKey }
   );
-  return data.accounts
-    .filter((a) => a.isActive)
-    .map((a) => ({
-      id: a._id,
-      platform: a.platform,
-      username: a.username,
-    }));
+  return data.accounts.map((a) => ({
+    id: a._id,
+    platform: a.platform,
+    username: a.username,
+    isActive: a.isActive,
+  }));
 }
 
 export async function deleteAccount(
@@ -248,99 +247,159 @@ export async function updatePost(
 // Analytics
 // ---------------------------------------------------------------------------
 
-export interface PostAnalytics {
-  postId: string;
+// GET /v1/analytics — post-level metrics
+export interface AnalyticsPost {
+  _id: string;
+  latePostId: string | null;
+  content: string;
+  publishedAt: string | null;
+  status: string;
+  analytics: {
+    impressions: number;
+    reach: number;
+    likes: number;
+    comments: number;
+    shares: number;
+    saves: number;
+    clicks: number;
+    views: number;
+    engagementRate: number;
+  };
   platform: string;
-  impressions: number;
-  reach: number;
-  likes: number;
-  comments: number;
-  shares: number;
-  saves: number;
-  clicks: number;
-  views: number;
+  platformPostUrl: string | null;
+  isExternal: boolean;
 }
 
-export interface AnalyticsPagination {
-  limit: number;
-  offset: number;
-  total: number;
+export interface AnalyticsResponse {
+  overview: {
+    totalPosts: number;
+    publishedPosts: number;
+    scheduledPosts: number;
+  };
+  posts: AnalyticsPost[];
+  pagination: { page: number; limit: number; total: number; pages: number };
 }
 
+// GET /v1/analytics/daily-metrics
 export interface DailyMetric {
   date: string;
   postCount: number;
-  platformDistribution: Record<string, number>;
-  totalImpressions: number;
-  totalReach: number;
-  totalLikes: number;
-  totalComments: number;
-  totalShares: number;
-  totalSaves: number;
-  totalClicks: number;
-  totalViews: number;
+  platforms: Record<string, number>;
+  metrics: {
+    impressions: number;
+    reach: number;
+    likes: number;
+    comments: number;
+    shares: number;
+    saves: number;
+    clicks: number;
+    views: number;
+  };
 }
 
-export interface FollowerStat {
-  accountId: string;
+export interface DailyMetricsResponse {
+  dailyData: DailyMetric[];
+  platformBreakdown: {
+    platform: string;
+    postCount: number;
+    impressions: number;
+    reach: number;
+    likes: number;
+    comments: number;
+    shares: number;
+    saves: number;
+    clicks: number;
+    views: number;
+  }[];
+}
+
+// GET /v1/accounts/follower-stats
+export interface FollowerAccount {
+  _id: string;
   platform: string;
-  followers: { date: string; count: number }[];
+  username: string;
+  currentFollowers: number;
+  growth: number;
+  growthPercentage: number;
+  dataPoints: number;
 }
 
-export interface BestTime {
-  dayOfWeek: string;
-  hour: number;
-  averageEngagement: number;
+export interface FollowerStatsResponse {
+  accounts: FollowerAccount[];
+  stats: Record<string, { date: string; followers: number }[]>;
+  dateRange: { from: string; to: string };
+  granularity: string;
+}
+
+// GET /v1/analytics/best-time
+export interface BestTimeSlot {
+  day_of_week: number; // 0=Sunday, 6=Saturday
+  hour: number; // 0-23 UTC
+  avg_engagement: number;
+  post_count: number;
+}
+
+export interface BestTimeResponse {
+  slots: BestTimeSlot[];
 }
 
 export async function getAnalytics(
   apiKey: string,
   options?: {
     postId?: string;
+    platform?: string;
     fromDate?: string;
     toDate?: string;
     limit?: number;
-    offset?: number;
+    page?: number;
+    sortBy?: string;
+    order?: string;
     source?: string;
   }
-): Promise<{ data: PostAnalytics[]; pagination: AnalyticsPagination }> {
+): Promise<AnalyticsResponse> {
   const params = new URLSearchParams();
   params.set("source", options?.source ?? "all");
   if (options?.postId) params.set("postId", options.postId);
+  if (options?.platform) params.set("platform", options.platform);
   if (options?.fromDate) params.set("fromDate", options.fromDate);
   if (options?.toDate) params.set("toDate", options.toDate);
   if (options?.limit) params.set("limit", String(options.limit));
-  if (options?.offset) params.set("offset", String(options.offset));
+  if (options?.page) params.set("page", String(options.page));
+  if (options?.sortBy) params.set("sortBy", options.sortBy);
+  if (options?.order) params.set("order", options.order);
 
   const qs = params.toString();
-  return lateRequest(`/analytics/get-analytics${qs ? `?${qs}` : ""}`, {
-    apiKey,
-  });
+  return lateRequest(`/analytics?${qs}`, { apiKey });
 }
 
 export async function getDailyMetrics(
   apiKey: string,
-  options?: { startDate?: string; endDate?: string; platform?: string; source?: string }
-): Promise<{ dailyMetrics: DailyMetric[] }> {
+  options?: {
+    fromDate?: string;
+    toDate?: string;
+    platform?: string;
+    source?: string;
+  }
+): Promise<DailyMetricsResponse> {
   const params = new URLSearchParams();
   params.set("source", options?.source ?? "all");
-  if (options?.startDate) params.set("startDate", options.startDate);
-  if (options?.endDate) params.set("endDate", options.endDate);
+  if (options?.fromDate) params.set("fromDate", options.fromDate);
+  if (options?.toDate) params.set("toDate", options.toDate);
   if (options?.platform) params.set("platform", options.platform);
 
   const qs = params.toString();
-  return lateRequest(`/analytics/daily-metrics${qs ? `?${qs}` : ""}`, {
-    apiKey,
-  });
+  return lateRequest(`/analytics/daily-metrics?${qs}`, { apiKey });
 }
 
 export async function getFollowerStats(
   apiKey: string,
-  options?: { accountId?: string; platform?: string }
-): Promise<{ followerStats: FollowerStat[] }> {
+  options?: { accountIds?: string; platform?: string; fromDate?: string; toDate?: string }
+): Promise<FollowerStatsResponse> {
   const params = new URLSearchParams();
-  if (options?.accountId) params.set("accountId", options.accountId);
+  if (options?.accountIds) params.set("accountIds", options.accountIds);
   if (options?.platform) params.set("platform", options.platform);
+  if (options?.fromDate) params.set("fromDate", options.fromDate);
+  if (options?.toDate) params.set("toDate", options.toDate);
 
   const qs = params.toString();
   return lateRequest(`/accounts/follower-stats${qs ? `?${qs}` : ""}`, {
@@ -350,14 +409,12 @@ export async function getFollowerStats(
 
 export async function getBestTimeToPost(
   apiKey: string,
-  options?: { platform?: string }
-): Promise<{ bestTimes: BestTime[] }> {
+  options?: { platform?: string; source?: string }
+): Promise<BestTimeResponse> {
   const params = new URLSearchParams();
   if (options?.platform) params.set("platform", options.platform);
+  if (options?.source) params.set("source", options.source);
 
   const qs = params.toString();
-  return lateRequest(
-    `/analytics/get-best-time-to-post${qs ? `?${qs}` : ""}`,
-    { apiKey }
-  );
+  return lateRequest(`/analytics/best-time${qs ? `?${qs}` : ""}`, { apiKey });
 }

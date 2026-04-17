@@ -3,7 +3,7 @@ import { errorHandler } from "@/lib/errors/errorHandler";
 import { auth } from "@/lib/better-auth/auth";
 import { NextResponse, NextRequest } from "next/server";
 import { headers } from "next/headers";
-import { getTopPosts } from "@/lib/services/analytics";
+import { getTopPosts, isAnalyticsEnabled } from "@/lib/services/analytics";
 import { analyticsPostsQuerySchema } from "@/lib/schemas/analytics";
 
 export async function GET(req: NextRequest) {
@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
       headers: await headers(),
     });
 
-    if (!session?.user) {
+    if (!session?.user || !isAnalyticsEnabled(session.user.email)) {
       return NextResponse.json(
         { error: errorMessages.UNAUTHORIZED },
         { status: 401 }
@@ -24,6 +24,7 @@ export async function GET(req: NextRequest) {
       limit: searchParams.get("limit") || undefined,
       fromDate: searchParams.get("fromDate") || undefined,
       toDate: searchParams.get("toDate") || undefined,
+      platform: searchParams.get("platform") || undefined,
     });
 
     const posts = await getTopPosts(session.user.id, params);

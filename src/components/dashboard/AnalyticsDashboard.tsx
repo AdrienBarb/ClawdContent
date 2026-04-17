@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { appRouter } from "@/lib/constants/appRouter";
 import { getPlatform } from "@/lib/constants/platforms";
@@ -40,6 +40,18 @@ interface KpiValue {
   change: number | null;
 }
 
+interface DailyChartPoint {
+  date: string;
+  impressions: number;
+  likes: number;
+  comments: number;
+  shares: number;
+  saves: number;
+  clicks: number;
+  posts: number;
+  platforms: Record<string, number>;
+}
+
 interface OverviewData {
   kpis: {
     impressions: KpiValue;
@@ -47,41 +59,49 @@ interface OverviewData {
     posts: KpiValue;
     followerGrowth: KpiValue;
   };
-  dailyMetrics: {
-    date: string;
-    postCount: number;
-    platformDistribution: Record<string, number>;
-    totalImpressions: number;
-    totalLikes: number;
-    totalComments: number;
-    totalShares: number;
-    totalSaves: number;
-  }[];
+  dailyMetrics: DailyChartPoint[];
+  connectedPlatforms: string[];
 }
 
-interface PostAnalytics {
-  postId: string;
+interface AnalyticsPost {
+  _id: string;
+  content: string;
+  publishedAt: string | null;
+  analytics: {
+    impressions: number;
+    reach: number;
+    likes: number;
+    comments: number;
+    shares: number;
+    saves: number;
+    clicks: number;
+    views: number;
+    engagementRate: number;
+  };
   platform: string;
-  impressions: number;
-  reach: number;
-  likes: number;
-  comments: number;
-  shares: number;
-  saves: number;
-  clicks: number;
-  views: number;
+  platformPostUrl: string | null;
+  isExternal: boolean;
 }
 
-interface BestTime {
-  dayOfWeek: string;
+interface BestTimeSlot {
+  day_of_week: number;
   hour: number;
-  averageEngagement: number;
+  avg_engagement: number;
+  post_count: number;
 }
 
-interface FollowerStat {
-  accountId: string;
+interface FollowerAccount {
+  _id: string;
   platform: string;
-  followers: { date: string; count: number }[];
+  username: string;
+  currentFollowers: number;
+  growth: number;
+  growthPercentage: number;
+}
+
+interface FollowersData {
+  accounts: FollowerAccount[];
+  stats: Record<string, { date: string; followers: number }[]>;
 }
 
 // ---------------------------------------------------------------------------
@@ -94,15 +114,16 @@ const PERIODS: { value: Period; label: string }[] = [
   { value: "90d", label: "90 days" },
 ];
 
-const DAYS_ORDER = [
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-  "Sunday",
-];
+const DAYS_ORDER = [1, 2, 3, 4, 5, 6, 0]; // Mon-Sun
+const DAY_LABELS: Record<number, string> = {
+  0: "Sun",
+  1: "Mon",
+  2: "Tue",
+  3: "Wed",
+  4: "Thu",
+  5: "Fri",
+  6: "Sat",
+};
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
@@ -127,9 +148,9 @@ const KPI_CONFIG = [
   },
   {
     key: "followerGrowth" as const,
-    label: "Follower Growth",
+    label: "Followers",
     icon: UsersThreeIcon,
-    format: formatSignedNumber,
+    format: (n: number) => (n === 0 ? "—" : formatNumber(n)),
   },
 ];
 
@@ -156,7 +177,7 @@ function formatChartDate(dateStr: string): string {
 }
 
 function getHeatmapColor(value: number, max: number): string {
-  if (max === 0 || value === 0) return "bg-gray-50";
+  if (max === 0 || value === 0) return "bg-gray-100";
   const ratio = value / max;
   if (ratio > 0.75) return "bg-[var(--sidebar-accent)] opacity-90";
   if (ratio > 0.5) return "bg-[var(--sidebar-accent)] opacity-60";
@@ -165,13 +186,11 @@ function getHeatmapColor(value: number, max: number): string {
 }
 
 function buildPlatformBreakdown(
-  dailyMetrics: OverviewData["dailyMetrics"]
+  dailyMetrics: DailyChartPoint[]
 ): { platform: string; posts: number; color: string }[] {
   const totals: Record<string, number> = {};
   for (const day of dailyMetrics) {
-    for (const [platform, count] of Object.entries(
-      day.platformDistribution ?? {}
-    )) {
+    for (const [platform, count] of Object.entries(day.platforms ?? {})) {
       totals[platform] = (totals[platform] ?? 0) + count;
     }
   }
@@ -187,6 +206,38 @@ function buildPlatformBreakdown(
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
+
+function PillSelector<T extends string>({
+  options,
+  value,
+  onChange,
+  ariaLabel,
+}: {
+  options: { value: T; label: string; icon?: React.ReactNode }[];
+  value: T;
+  onChange: (v: T) => void;
+  ariaLabel: string;
+}) {
+  return (
+    <div className="flex flex-wrap gap-1.5 rounded-xl bg-gray-100 p-1" role="group" aria-label={ariaLabel}>
+      {options.map((o) => (
+        <button
+          key={o.value}
+          onClick={() => onChange(o.value)}
+          aria-pressed={value === o.value}
+          className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-sm font-medium transition-all cursor-pointer ${
+            value === o.value
+              ? "bg-white text-gray-900 shadow-sm"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          {o.icon}
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 function KpiCard({
   label,
@@ -232,10 +283,10 @@ function KpiCard({
   );
 }
 
-function TopPostCard({ post }: { post: PostAnalytics }) {
+function TopPostCard({ post }: { post: AnalyticsPost }) {
   const platform = getPlatform(post.platform);
-  const totalEngagement =
-    post.likes + post.comments + post.shares + post.saves;
+  const a = post.analytics;
+  const totalEngagement = a.likes + a.comments + a.shares + a.saves;
 
   return (
     <div className="flex items-start gap-4 py-3 border-b border-gray-50 last:border-0">
@@ -246,16 +297,18 @@ function TopPostCard({ post }: { post: PostAnalytics }) {
         {platform?.icon}
       </span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-gray-900 line-clamp-2">{post.postId}</p>
+        <p className="text-sm text-gray-900 line-clamp-2">
+          {post.content?.slice(0, 120) || "Untitled post"}
+        </p>
         <div className="flex items-center gap-3 mt-1.5">
           <span className="text-xs text-gray-400">
-            {formatNumber(post.impressions)} views
+            {formatNumber(a.impressions)} views
           </span>
           <span className="text-xs text-gray-400">
             {formatNumber(totalEngagement)} engagements
           </span>
           <span className="text-xs text-gray-400">
-            {formatNumber(post.clicks)} clicks
+            {formatNumber(a.clicks)} clicks
           </span>
         </div>
       </div>
@@ -269,21 +322,19 @@ function TopPostCard({ post }: { post: PostAnalytics }) {
   );
 }
 
-function BestTimeHeatmap({ bestTimes }: { bestTimes: BestTime[] }) {
-  const grid: Record<string, Record<number, number>> = {};
+function BestTimeHeatmap({ slots }: { slots: BestTimeSlot[] }) {
+  const grid: Record<number, Record<number, number>> = {};
   let maxEngagement = 0;
 
-  for (const bt of bestTimes) {
-    if (!grid[bt.dayOfWeek]) grid[bt.dayOfWeek] = {};
-    grid[bt.dayOfWeek][bt.hour] = bt.averageEngagement;
-    if (bt.averageEngagement > maxEngagement)
-      maxEngagement = bt.averageEngagement;
+  for (const s of slots) {
+    if (!grid[s.day_of_week]) grid[s.day_of_week] = {};
+    grid[s.day_of_week][s.hour] = s.avg_engagement;
+    if (s.avg_engagement > maxEngagement) maxEngagement = s.avg_engagement;
   }
 
   return (
     <div className="overflow-x-auto">
       <div className="min-w-[600px]">
-        {/* Header row */}
         <div className="flex gap-px mb-1">
           <div className="w-16 shrink-0" />
           {HOURS.filter((h) => h % 3 === 0).map((h) => (
@@ -291,16 +342,20 @@ function BestTimeHeatmap({ bestTimes }: { bestTimes: BestTime[] }) {
               key={h}
               className="flex-1 text-[10px] text-gray-400 text-center"
             >
-              {h === 0 ? "12a" : h < 12 ? `${h}a` : h === 12 ? "12p" : `${h - 12}p`}
+              {h === 0
+                ? "12a"
+                : h < 12
+                  ? `${h}a`
+                  : h === 12
+                    ? "12p"
+                    : `${h - 12}p`}
             </div>
           ))}
         </div>
-
-        {/* Day rows */}
         {DAYS_ORDER.map((day) => (
           <div key={day} className="flex gap-px mb-px">
             <div className="w-16 shrink-0 text-[11px] text-gray-500 font-medium flex items-center">
-              {day.slice(0, 3)}
+              {DAY_LABELS[day]}
             </div>
             <div className="flex-1 flex gap-px">
               {HOURS.map((hour) => {
@@ -308,8 +363,10 @@ function BestTimeHeatmap({ bestTimes }: { bestTimes: BestTime[] }) {
                 return (
                   <div
                     key={hour}
+                    role="gridcell"
+                    aria-label={`${DAY_LABELS[day]} ${hour}:00 — ${Math.round(val)} avg engagement`}
                     className={`flex-1 h-6 rounded-sm ${getHeatmapColor(val, maxEngagement)}`}
-                    title={`${day} ${hour}:00 — ${Math.round(val)} avg engagement`}
+                    title={`${DAY_LABELS[day]} ${hour}:00 — ${Math.round(val)} avg engagement`}
                   />
                 );
               })}
@@ -320,10 +377,6 @@ function BestTimeHeatmap({ bestTimes }: { bestTimes: BestTime[] }) {
     </div>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Loading skeleton
-// ---------------------------------------------------------------------------
 
 function LoadingSkeleton() {
   return (
@@ -337,21 +390,13 @@ function LoadingSkeleton() {
           <Skeleton key={i} className="h-28 rounded-2xl" />
         ))}
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Skeleton className="h-72 rounded-2xl lg:col-span-2" />
-        <Skeleton className="h-72 rounded-2xl" />
-      </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Skeleton className="h-64 rounded-2xl" />
-        <Skeleton className="h-64 rounded-2xl" />
+        <Skeleton className="h-72 rounded-2xl" />
+        <Skeleton className="h-72 rounded-2xl" />
       </div>
     </div>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Empty state
-// ---------------------------------------------------------------------------
 
 function EmptyState() {
   return (
@@ -365,13 +410,14 @@ function EmptyState() {
           No analytics data yet
         </p>
         <p className="text-xs text-gray-400 mb-5">
-          Start publishing posts to see your performance metrics here.
+          Connect your social accounts and start publishing to see your
+          performance metrics here.
         </p>
         <Link
           href={appRouter.dashboard}
           className="inline-flex items-center gap-2 rounded-xl bg-[var(--sidebar-accent)] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:opacity-90"
         >
-          Create your first post
+          Go to chat
         </Link>
       </div>
     </div>
@@ -385,80 +431,131 @@ function EmptyState() {
 export default function AnalyticsDashboard() {
   const { useGet } = useApi();
   const [period, setPeriod] = useState<Period>("30d");
+  const [platform, setPlatform] = useState<string>("all");
 
-  // Fetch all data
-  const { data: overviewData, isLoading: overviewLoading } =
-    useGet(appRouter.api.analytics, { period }) as {
-      data: OverviewData | undefined;
-      isLoading: boolean;
-    };
+  const platformParam = platform === "all" ? undefined : platform;
+  const queryParams: Record<string, string> = { period };
+  if (platformParam) queryParams.platform = platformParam;
+
+  const { data: overviewData, isLoading: overviewLoading } = useGet(
+    appRouter.api.analytics,
+    queryParams
+  ) as { data: OverviewData | undefined; isLoading: boolean };
+
+  const postsParams: Record<string, string> = {};
+  if (platformParam) postsParams.platform = platformParam;
 
   const { data: postsData, isLoading: postsLoading } = useGet(
-    appRouter.api.analyticsPosts
-  ) as { data: { posts: PostAnalytics[] } | undefined; isLoading: boolean };
+    appRouter.api.analyticsPosts,
+    postsParams
+  ) as { data: { posts: AnalyticsPost[] } | undefined; isLoading: boolean };
 
   const { data: bestTimesData, isLoading: bestTimesLoading } = useGet(
-    appRouter.api.analyticsBestTimes
-  ) as { data: { bestTimes: BestTime[] } | undefined; isLoading: boolean };
+    appRouter.api.analyticsBestTimes,
+    platformParam ? { platform: platformParam } : undefined
+  ) as { data: { slots: BestTimeSlot[] } | undefined; isLoading: boolean };
 
   const { data: followersData, isLoading: followersLoading } = useGet(
-    appRouter.api.analyticsFollowers
-  ) as {
-    data: { followerStats: FollowerStat[] } | undefined;
-    isLoading: boolean;
-  };
+    appRouter.api.analyticsFollowers,
+    platformParam ? { platform: platformParam } : undefined
+  ) as { data: FollowersData | undefined; isLoading: boolean };
 
-  // Loading state
+  // All hooks must be called before any early return
+  const impressionsChartData = useMemo(
+    () =>
+      (overviewData?.dailyMetrics ?? []).map((m) => ({
+        date: formatChartDate(m.date),
+        impressions: m.impressions,
+      })),
+    [overviewData]
+  );
+
+  const engagementChartData = useMemo(
+    () =>
+      (overviewData?.dailyMetrics ?? []).map((m) => ({
+        date: formatChartDate(m.date),
+        likes: m.likes,
+        comments: m.comments,
+        shares: m.shares,
+      })),
+    [overviewData]
+  );
+
+  const platformBreakdown = useMemo(
+    () => buildPlatformBreakdown(overviewData?.dailyMetrics ?? []),
+    [overviewData]
+  );
+
+  const followerChartData = useMemo(
+    () => buildFollowerChartData(followersData),
+    [followersData]
+  );
+
+  const followerPlatforms = useMemo(() => {
+    const accountMap = new Map(
+      (followersData?.accounts ?? []).map((a) => [a._id, a])
+    );
+    return Object.keys(followersData?.stats ?? {}).map((accountId) => {
+      const account = accountMap.get(accountId);
+      return {
+        accountId,
+        platform: account?.platform ?? "unknown",
+        username: account?.username ?? accountId,
+      };
+    });
+  }, [followersData]);
+
+  const connectedPlatforms = overviewData?.connectedPlatforms ?? [];
+  const platformOptions = useMemo(
+    () => [
+      { value: "all" as const, label: "All Platforms" },
+      ...connectedPlatforms.map((p) => {
+        const info = getPlatform(p);
+        return {
+          value: p,
+          label: info?.label ?? p,
+          icon: info?.icon ? (
+            <span
+              className="flex h-4 w-4 items-center justify-center rounded text-white text-[10px]"
+              style={{ backgroundColor: info.color }}
+            >
+              {info.icon}
+            </span>
+          ) : undefined,
+        };
+      }),
+    ],
+    [connectedPlatforms]
+  );
+
   if (overviewLoading) return <LoadingSkeleton />;
 
-  // Empty state
   const hasData =
     overviewData &&
     (overviewData.kpis.impressions.value > 0 ||
       overviewData.kpis.posts.value > 0 ||
       overviewData.dailyMetrics.length > 0);
 
-  if (!hasData) return <EmptyState />;
-
-  // Chart data
-  const chartData = (overviewData?.dailyMetrics ?? []).map((m) => ({
-    date: formatChartDate(m.date),
-    impressions: m.totalImpressions,
-    engagement:
-      m.totalLikes + m.totalComments + m.totalShares + m.totalSaves,
-  }));
-
-  const platformBreakdown = buildPlatformBreakdown(
-    overviewData?.dailyMetrics ?? []
-  );
-
-  // Follower chart data
-  const followerChartData = buildFollowerChartData(
-    followersData?.followerStats ?? []
-  );
+  if (!hasData && platform === "all") return <EmptyState />;
 
   return (
     <div className="space-y-6">
-      {/* Header + period selector */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-          Analytics
-        </h1>
-        <div className="flex gap-1.5 rounded-xl bg-gray-100 p-1">
-          {PERIODS.map((p) => (
-            <button
-              key={p.value}
-              onClick={() => setPeriod(p.value)}
-              className={`rounded-lg px-3.5 py-1.5 text-sm font-medium transition-all cursor-pointer ${
-                period === p.value
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              {p.label}
-            </button>
-          ))}
+      {/* Header + filters */}
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
+            Analytics
+          </h1>
+          <PillSelector options={PERIODS} value={period} onChange={setPeriod} ariaLabel="Time period" />
         </div>
+        {connectedPlatforms.length > 1 && (
+          <PillSelector
+            options={platformOptions}
+            value={platform}
+            onChange={setPlatform}
+            ariaLabel="Platform filter"
+          />
+        )}
       </div>
 
       {/* KPI Cards */}
@@ -467,32 +564,26 @@ export default function AnalyticsDashboard() {
           <KpiCard
             key={kpi.key}
             label={kpi.label}
-            value={overviewData!.kpis[kpi.key].value}
-            change={overviewData!.kpis[kpi.key].change}
+            value={overviewData?.kpis[kpi.key].value ?? 0}
+            change={overviewData?.kpis[kpi.key].change ?? null}
             icon={kpi.icon}
             format={kpi.format}
           />
         ))}
       </div>
 
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Daily engagement chart */}
-        <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5 lg:col-span-2">
+      {/* Charts — separate impressions and engagement */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Impressions chart */}
+        <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
           <h2 className="text-sm font-semibold text-gray-700 mb-4">
-            Daily Performance
+            Impressions
           </h2>
-          <div className="h-64">
+          <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData}>
+              <AreaChart data={impressionsChartData}>
                 <defs>
-                  <linearGradient
-                    id="impressionsGrad"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
+                  <linearGradient id="impGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop
                       offset="5%"
                       stopColor="var(--sidebar-accent)"
@@ -503,16 +594,6 @@ export default function AnalyticsDashboard() {
                       stopColor="var(--sidebar-accent)"
                       stopOpacity={0}
                     />
-                  </linearGradient>
-                  <linearGradient
-                    id="engagementGrad"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.15} />
-                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -539,15 +620,7 @@ export default function AnalyticsDashboard() {
                   type="monotone"
                   dataKey="impressions"
                   stroke="#e8614d"
-                  fill="url(#impressionsGrad)"
-                  strokeWidth={2}
-                  dot={false}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="engagement"
-                  stroke="#6366f1"
-                  fill="url(#engagementGrad)"
+                  fill="url(#impGrad)"
                   strokeWidth={2}
                   dot={false}
                 />
@@ -556,111 +629,14 @@ export default function AnalyticsDashboard() {
           </div>
         </div>
 
-        {/* Platform breakdown */}
+        {/* Engagement chart — stacked bar for likes, comments, shares */}
         <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
           <h2 className="text-sm font-semibold text-gray-700 mb-4">
-            Posts by Platform
+            Engagement
           </h2>
-          {platformBreakdown.length > 0 ? (
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={platformBreakdown}
-                  layout="vertical"
-                  margin={{ left: 0 }}
-                >
-                  <XAxis
-                    type="number"
-                    tick={{ fontSize: 11, fill: "#9ca3af" }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    type="category"
-                    dataKey="platform"
-                    tick={{ fontSize: 11, fill: "#6b7280" }}
-                    axisLine={false}
-                    tickLine={false}
-                    width={80}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      borderRadius: "12px",
-                      border: "1px solid #e5e7eb",
-                      fontSize: "12px",
-                    }}
-                  />
-                  <Bar
-                    dataKey="posts"
-                    radius={[0, 6, 6, 0]}
-                    fill="#e8614d"
-                    barSize={20}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <p className="text-sm text-gray-400 text-center py-8">
-              No platform data yet
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Intelligence Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Top Posts */}
-        <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
-          <h2 className="text-sm font-semibold text-gray-700 mb-4">
-            Top Performing Posts
-          </h2>
-          {postsLoading ? (
-            <div className="space-y-3">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <Skeleton key={i} className="h-14 rounded-xl" />
-              ))}
-            </div>
-          ) : (postsData?.posts ?? []).length > 0 ? (
-            <div>
-              {postsData!.posts.slice(0, 5).map((post) => (
-                <TopPostCard key={post.postId} post={post} />
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-gray-400 text-center py-8">
-              No post analytics yet
-            </p>
-          )}
-        </div>
-
-        {/* Best Time to Post */}
-        <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
-          <h2 className="text-sm font-semibold text-gray-700 mb-4">
-            Best Time to Post
-          </h2>
-          {bestTimesLoading ? (
-            <Skeleton className="h-48 rounded-xl" />
-          ) : (bestTimesData?.bestTimes ?? []).length > 0 ? (
-            <BestTimeHeatmap bestTimes={bestTimesData!.bestTimes} />
-          ) : (
-            <p className="text-sm text-gray-400 text-center py-8">
-              Not enough data to determine best times
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Follower Growth */}
-      <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
-        <h2 className="text-sm font-semibold text-gray-700 mb-4">
-          Follower Growth
-        </h2>
-        {followersLoading ? (
-          <Skeleton className="h-64 rounded-xl" />
-        ) : followerChartData.length > 0 ? (
-          <div className="h-64">
+          <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={followerChartData}>
+              <BarChart data={engagementChartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis
                   dataKey="date"
@@ -672,7 +648,6 @@ export default function AnalyticsDashboard() {
                   tick={{ fontSize: 11, fill: "#9ca3af" }}
                   axisLine={false}
                   tickLine={false}
-                  tickFormatter={formatNumber}
                 />
                 <Tooltip
                   contentStyle={{
@@ -681,29 +656,190 @@ export default function AnalyticsDashboard() {
                     fontSize: "12px",
                   }}
                 />
-                {(followersData?.followerStats ?? []).map((stat) => {
-                  const platform = getPlatform(stat.platform);
-                  return (
-                    <Line
-                      key={stat.accountId}
-                      type="monotone"
-                      dataKey={stat.platform}
-                      stroke={platform?.color ?? "#6b7280"}
-                      strokeWidth={2}
-                      dot={false}
-                      name={platform?.label ?? stat.platform}
-                    />
-                  );
-                })}
-              </LineChart>
+                <Bar
+                  dataKey="likes"
+                  stackId="eng"
+                  fill="#e8614d"
+                  radius={[0, 0, 0, 0]}
+                />
+                <Bar
+                  dataKey="comments"
+                  stackId="eng"
+                  fill="#6366f1"
+                  radius={[0, 0, 0, 0]}
+                />
+                <Bar
+                  dataKey="shares"
+                  stackId="eng"
+                  fill="#10b981"
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
             </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* Top Performing Posts — always visible */}
+      <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
+        <h2 className="text-sm font-semibold text-gray-700 mb-4">
+          Top Performing Posts
+        </h2>
+        {postsLoading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-14 rounded-xl" />
+            ))}
+          </div>
+        ) : (postsData?.posts ?? []).length > 0 ? (
+          <div>
+            {postsData!.posts.slice(0, 5).map((post) => (
+              <TopPostCard key={post._id} post={post} />
+            ))}
           </div>
         ) : (
           <p className="text-sm text-gray-400 text-center py-8">
-            No follower data yet
+            No post analytics yet
           </p>
         )}
       </div>
+
+      {/* Platform-specific sections — only when a specific platform is selected */}
+      {platform !== "all" && (
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Best Time to Post */}
+            <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
+              <h2 className="text-sm font-semibold text-gray-700 mb-4">
+                Best Time to Post
+              </h2>
+              {bestTimesLoading ? (
+                <Skeleton className="h-48 rounded-xl" />
+              ) : (bestTimesData?.slots ?? []).length > 0 ? (
+                <BestTimeHeatmap slots={bestTimesData!.slots} />
+              ) : (
+                <p className="text-sm text-gray-400 text-center py-8">
+                  Not enough data to determine best times
+                </p>
+              )}
+            </div>
+
+            {/* Followers */}
+            <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
+              <h2 className="text-sm font-semibold text-gray-700 mb-4">
+                Followers
+              </h2>
+              {followersLoading ? (
+                <Skeleton className="h-48 rounded-xl" />
+              ) : followerChartData.length > 1 ? (
+                <div className="h-48">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={followerChartData}>
+                      <defs>
+                        {followerPlatforms.map((fp) => {
+                          const pl = getPlatform(fp.platform);
+                          return (
+                            <linearGradient
+                              key={fp.accountId}
+                              id={`followerGrad-${fp.accountId}`}
+                              x1="0"
+                              y1="0"
+                              x2="0"
+                              y2="1"
+                            >
+                              <stop
+                                offset="5%"
+                                stopColor={pl?.color ?? "#6b7280"}
+                                stopOpacity={0.15}
+                              />
+                              <stop
+                                offset="95%"
+                                stopColor={pl?.color ?? "#6b7280"}
+                                stopOpacity={0}
+                              />
+                            </linearGradient>
+                          );
+                        })}
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis
+                        dataKey="date"
+                        tick={{ fontSize: 11, fill: "#9ca3af" }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 11, fill: "#9ca3af" }}
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={formatNumber}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          borderRadius: "12px",
+                          border: "1px solid #e5e7eb",
+                          fontSize: "12px",
+                        }}
+                      />
+                      {followerPlatforms.map((fp) => {
+                        const pl = getPlatform(fp.platform);
+                        return (
+                          <Area
+                            key={fp.accountId}
+                            type="monotone"
+                            dataKey={fp.accountId}
+                            stroke={pl?.color ?? "#6b7280"}
+                            fill={`url(#followerGrad-${fp.accountId})`}
+                            strokeWidth={2}
+                            dot={false}
+                            name={`${pl?.label ?? fp.platform} (${fp.username})`}
+                          />
+                        );
+                      })}
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (followersData?.accounts ?? []).length > 0 ? (
+                <div className="space-y-3 py-2">
+                  {followersData!.accounts.map((a) => {
+                    const pl = getPlatform(a.platform);
+                    return (
+                      <div
+                        key={a._id}
+                        className="flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="flex h-6 w-6 items-center justify-center rounded text-white text-[10px]"
+                            style={{
+                              backgroundColor: pl?.color ?? "#6b7280",
+                            }}
+                          >
+                            {pl?.icon}
+                          </span>
+                          <span className="text-sm text-gray-700">
+                            {a.username}
+                          </span>
+                        </div>
+                        <span className="text-lg font-semibold text-gray-900">
+                          {formatNumber(a.currentFollowers)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                  <p className="text-xs text-gray-400 pt-2">
+                    Follower history chart will appear after a few days of data.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400 text-center py-8">
+                  No follower data yet
+                </p>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -713,25 +849,25 @@ export default function AnalyticsDashboard() {
 // ---------------------------------------------------------------------------
 
 function buildFollowerChartData(
-  stats: FollowerStat[]
+  data: FollowersData | undefined
 ): Record<string, string | number>[] {
-  if (stats.length === 0) return [];
+  if (!data?.stats) return [];
 
-  // Collect all dates and build a map: date -> { platform: count }
   const dateMap = new Map<string, Record<string, number>>();
 
-  for (const stat of stats) {
-    for (const f of stat.followers) {
-      const existing = dateMap.get(f.date) ?? {};
-      existing[stat.platform] = f.count;
-      dateMap.set(f.date, existing);
+  for (const [accountId, points] of Object.entries(data.stats)) {
+    if (!Array.isArray(points)) continue;
+    for (const p of points) {
+      const existing = dateMap.get(p.date) ?? {};
+      existing[accountId] = p.followers;
+      dateMap.set(p.date, existing);
     }
   }
 
   return Array.from(dateMap.entries())
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([date, platforms]) => ({
+    .map(([date, accounts]) => ({
       date: formatChartDate(date),
-      ...platforms,
+      ...accounts,
     }));
 }

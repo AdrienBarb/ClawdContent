@@ -1,13 +1,11 @@
 import { prisma } from "@/lib/db/prisma";
 import {
   getAnalytics,
-  getDailyMetrics as lateDailyMetrics,
   getFollowerStats as lateFollowerStats,
   getBestTimeToPost as lateBestTime,
-  PostAnalytics,
-  DailyMetric,
-  FollowerStat,
-  BestTime,
+  AnalyticsPost,
+  FollowerStatsResponse,
+  BestTimeSlot,
 } from "@/lib/late/mutations";
 
 // ---------------------------------------------------------------------------
@@ -29,12 +27,7 @@ function formatDate(date: Date): string {
   return date.toISOString().split("T")[0];
 }
 
-function computeDateRange(period: string): {
-  startDate: string;
-  endDate: string;
-  prevStartDate: string;
-  prevEndDate: string;
-} {
+function computeDateRange(period: string) {
   const days = periodToDays(period);
   const now = new Date();
   const endDate = formatDate(now);
@@ -54,48 +47,122 @@ function computeDateRange(period: string): {
   return { startDate, endDate, prevStartDate, prevEndDate };
 }
 
-function sumMetrics(metrics: DailyMetric[]) {
-  return metrics.reduce(
-    (acc, m) => ({
-      impressions: acc.impressions + m.totalImpressions,
-      reach: acc.reach + m.totalReach,
-      likes: acc.likes + m.totalLikes,
-      comments: acc.comments + m.totalComments,
-      shares: acc.shares + m.totalShares,
-      saves: acc.saves + m.totalSaves,
-      clicks: acc.clicks + m.totalClicks,
-      views: acc.views + m.totalViews,
-      posts: acc.posts + m.postCount,
-    }),
-    {
-      impressions: 0,
-      reach: 0,
-      likes: 0,
-      comments: 0,
-      shares: 0,
-      saves: 0,
-      clicks: 0,
-      views: 0,
-      posts: 0,
-    }
-  );
-}
-
 function pctChange(current: number, previous: number): number | null {
   if (previous === 0) return current > 0 ? 100 : null;
   return Math.round(((current - previous) / previous) * 100);
 }
 
 // ---------------------------------------------------------------------------
+// Profile
+// ---------------------------------------------------------------------------
+
+async function getUserProfile(userId: string) {
+  const lateProfile = await prisma.lateProfile.findUnique({
+    where: { userId },
+    include: { socialAccounts: { where: { status: "active" } } },
+  });
+  if (!lateProfile) return null;
+  return {
+    apiKey: lateProfile.lateApiKey,
+    connectedPlatforms: new Set(
+      lateProfile.socialAccounts.map((a) => a.platform)
+    ),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Aggregate posts into daily chart data
+// ---------------------------------------------------------------------------
+
+export interface DailyChartPoint {
+  date: string;
+  impressions: number;
+  likes: number;
+  comments: number;
+  shares: number;
+  saves: number;
+  clicks: number;
+  posts: number;
+  platforms: Record<string, number>;
+}
+
+function aggregatePostsByDay(posts: AnalyticsPost[]): DailyChartPoint[] {
+  const byDate = new Map<string, DailyChartPoint>();
+
+  for (const post of posts) {
+    const date = post.publishedAt?.split("T")[0];
+    if (!date) continue;
+
+    const existing = byDate.get(date) ?? {
+      date,
+      impressions: 0,
+      likes: 0,
+      comments: 0,
+      shares: 0,
+      saves: 0,
+      clicks: 0,
+      posts: 0,
+      platforms: {},
+    };
+
+    const a = post.analytics;
+    existing.impressions += a.impressions;
+    existing.likes += a.likes;
+    existing.comments += a.comments;
+    existing.shares += a.shares;
+    existing.saves += a.saves;
+    existing.clicks += a.clicks;
+    existing.posts += 1;
+    existing.platforms[post.platform] =
+      (existing.platforms[post.platform] ?? 0) + 1;
+
+    byDate.set(date, existing);
+  }
+
+  return Array.from(byDate.values()).sort((a, b) =>
+    a.date.localeCompare(b.date)
+  );
+}
+
+function sumPoints(points: DailyChartPoint[]) {
+  return points.reduce(
+    (acc, p) => ({
+      impressions: acc.impressions + p.impressions,
+      likes: acc.likes + p.likes,
+      comments: acc.comments + p.comments,
+      shares: acc.shares + p.shares,
+      saves: acc.saves + p.saves,
+      clicks: acc.clicks + p.clicks,
+      posts: acc.posts + p.posts,
+    }),
+    {
+      impressions: 0,
+      likes: 0,
+      comments: 0,
+      shares: 0,
+      saves: 0,
+      clicks: 0,
+      posts: 0,
+    }
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Exported service functions
 // ---------------------------------------------------------------------------
 
-async function getApiKey(userId: string): Promise<string | null> {
-  const lateProfile = await prisma.lateProfile.findUnique({
-    where: { userId },
-  });
-  return lateProfile?.lateApiKey ?? null;
+const ANALYTICS_WHITELIST = ["adrien-barbier@hotmail.fr", "admin@postclaw.io"];
+
+export function isAnalyticsEnabled(email: string | undefined): boolean {
+  return ANALYTICS_WHITELIST.includes(email ?? "");
 }
+
+const emptyFollowers: FollowerStatsResponse = {
+  accounts: [],
+  stats: {},
+  dateRange: { from: "", to: "" },
+  granularity: "daily",
+};
 
 export interface OverviewMetrics {
   kpis: {
@@ -104,94 +171,86 @@ export interface OverviewMetrics {
     posts: { value: number; change: number | null };
     followerGrowth: { value: number; change: number | null };
   };
-  dailyMetrics: DailyMetric[];
+  dailyMetrics: DailyChartPoint[];
+  connectedPlatforms: string[];
 }
+
+const emptyOverview: OverviewMetrics = {
+  kpis: {
+    impressions: { value: 0, change: null },
+    engagement: { value: 0, change: null },
+    posts: { value: 0, change: null },
+    followerGrowth: { value: 0, change: null },
+  },
+  dailyMetrics: [],
+  connectedPlatforms: [],
+};
 
 export async function getOverviewMetrics(
   userId: string,
-  period: string
+  period: string,
+  platform?: string
 ): Promise<OverviewMetrics> {
-  const apiKey = await getApiKey(userId);
-  if (!apiKey) {
-    return {
-      kpis: {
-        impressions: { value: 0, change: null },
-        engagement: { value: 0, change: null },
-        posts: { value: 0, change: null },
-        followerGrowth: { value: 0, change: null },
-      },
-      dailyMetrics: [],
-    };
-  }
+  const profile = await getUserProfile(userId);
+  if (!profile) return { ...emptyOverview, kpis: { ...emptyOverview.kpis }, dailyMetrics: [], connectedPlatforms: [] };
+  const { apiKey, connectedPlatforms } = profile;
 
   const { startDate, endDate, prevStartDate, prevEndDate } =
     computeDateRange(period);
 
-  const emptyMetrics = { dailyMetrics: [] };
-  const emptyFollowers = { followerStats: [] };
+  const emptyFollowerResp = emptyFollowers;
 
-  const [currentRaw, previousRaw, followerRaw] = await Promise.all([
-    lateDailyMetrics(apiKey, { startDate, endDate }).catch((e) => {
-      console.error("[Analytics] getDailyMetrics (current) failed:", e.message);
-      return emptyMetrics;
+  // Fetch individual posts for current + previous periods, and follower stats
+  const [currentPostsRaw, prevPostsRaw, followerRaw] = await Promise.all([
+    getAnalytics(apiKey, {
+      fromDate: startDate,
+      toDate: endDate,
+      limit: 100,
+      ...(platform && { platform }),
+    }).catch((e) => {
+      console.error("[Analytics] getAnalytics (current) failed:", e.message);
+      return null;
     }),
-    lateDailyMetrics(apiKey, { startDate: prevStartDate, endDate: prevEndDate }).catch((e) => {
-      console.error("[Analytics] getDailyMetrics (previous) failed:", e.message);
-      return emptyMetrics;
+    getAnalytics(apiKey, {
+      fromDate: prevStartDate,
+      toDate: prevEndDate,
+      limit: 100,
+      ...(platform && { platform }),
+    }).catch((e) => {
+      console.error("[Analytics] getAnalytics (prev) failed:", e.message);
+      return null;
     }),
     lateFollowerStats(apiKey).catch((e) => {
       console.error("[Analytics] getFollowerStats failed:", e.message);
-      return emptyFollowers;
+      return emptyFollowerResp;
     }),
   ]);
 
-  const currentMetrics = Array.isArray(currentRaw?.dailyMetrics) ? currentRaw.dailyMetrics : [];
-  const previousMetrics = Array.isArray(previousRaw?.dailyMetrics) ? previousRaw.dailyMetrics : [];
-  const followerStats = Array.isArray(followerRaw?.followerStats) ? followerRaw.followerStats : [];
+  const allowed = platform ? new Set([platform]) : connectedPlatforms;
 
-  const cur = sumMetrics(currentMetrics);
-  const prev = sumMetrics(previousMetrics);
+  const currentPosts = (currentPostsRaw?.posts ?? []).filter((p) =>
+    allowed.has(p.platform)
+  );
+  const prevPosts = (prevPostsRaw?.posts ?? []).filter((p) =>
+    allowed.has(p.platform)
+  );
+
+  const currentDaily = aggregatePostsByDay(currentPosts);
+  const cur = sumPoints(currentDaily);
+  const prev = sumPoints(aggregatePostsByDay(prevPosts));
 
   const curEngagement = cur.likes + cur.comments + cur.shares + cur.saves;
   const prevEngagement = prev.likes + prev.comments + prev.shares + prev.saves;
 
-  // Follower growth: sum net change across all accounts for the period
-  const days = periodToDays(period);
-  let followerGrowth = 0;
-  for (const stat of followerStats) {
-    const sorted = [...stat.followers].sort(
-      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
-    if (sorted.length >= 2) {
-      const recent = sorted[sorted.length - 1].count;
-      const daysAgo =
-        sorted.find(
-          (f) =>
-            new Date(f.date).getTime() >=
-            Date.now() - days * 24 * 60 * 60 * 1000
-        )?.count ?? sorted[0].count;
-      followerGrowth += recent - daysAgo;
-    }
-  }
-
-  // Previous period follower growth approximation
-  let prevFollowerGrowth = 0;
-  for (const stat of followerStats) {
-    const sorted = [...stat.followers].sort(
-      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
-    if (sorted.length >= 3) {
-      const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
-      const prevCutoff = cutoff - days * 24 * 60 * 60 * 1000;
-      const atCutoff =
-        sorted.find((f) => new Date(f.date).getTime() >= cutoff)?.count ??
-        sorted[0].count;
-      const atPrevCutoff =
-        sorted.find((f) => new Date(f.date).getTime() >= prevCutoff)?.count ??
-        sorted[0].count;
-      prevFollowerGrowth += atCutoff - atPrevCutoff;
-    }
-  }
+  // Follower count
+  const accounts = Array.isArray(followerRaw?.accounts)
+    ? followerRaw.accounts
+    : [];
+  const relevantAccounts = accounts.filter((a) => allowed.has(a.platform));
+  const totalFollowers = relevantAccounts.reduce(
+    (sum, a) => sum + (a.currentFollowers ?? 0),
+    0
+  );
 
   return {
     kpis: {
@@ -208,36 +267,57 @@ export async function getOverviewMetrics(
         change: pctChange(cur.posts, prev.posts),
       },
       followerGrowth: {
-        value: followerGrowth,
-        change: pctChange(followerGrowth, prevFollowerGrowth),
+        value: totalFollowers,
+        change: null,
       },
     },
-    dailyMetrics: currentMetrics,
+    dailyMetrics: currentDaily,
+    connectedPlatforms: [...connectedPlatforms],
   };
 }
 
 export async function getTopPosts(
   userId: string,
-  options?: { limit?: number; fromDate?: string; toDate?: string }
-): Promise<PostAnalytics[]> {
-  const apiKey = await getApiKey(userId);
-  if (!apiKey) return [];
+  options?: {
+    limit?: number;
+    fromDate?: string;
+    toDate?: string;
+    platform?: string;
+  }
+): Promise<AnalyticsPost[]> {
+  const profile = await getUserProfile(userId);
+  if (!profile) return [];
 
   try {
-    const result = await getAnalytics(apiKey, {
+    const result = await getAnalytics(profile.apiKey, {
       fromDate: options?.fromDate,
       toDate: options?.toDate,
-      limit: options?.limit ?? 10,
+      limit: 100,
+      ...(options?.platform && { platform: options.platform }),
     });
 
-    return [...result.data].sort(
-      (a, b) =>
-        b.likes +
-        b.comments +
-        b.shares +
-        b.saves -
-        (a.likes + a.comments + a.shares + a.saves)
-    );
+    const posts = Array.isArray(result?.posts) ? result.posts : [];
+    const desiredLimit = options?.limit ?? 10;
+    const allowed = options?.platform
+      ? new Set([options.platform])
+      : profile.connectedPlatforms;
+
+    return posts
+      .filter((p) => allowed.has(p.platform))
+      .sort((a, b) => {
+        const engA =
+          a.analytics.likes +
+          a.analytics.comments +
+          a.analytics.shares +
+          a.analytics.saves;
+        const engB =
+          b.analytics.likes +
+          b.analytics.comments +
+          b.analytics.shares +
+          b.analytics.saves;
+        return engB - engA;
+      })
+      .slice(0, desiredLimit);
   } catch {
     return [];
   }
@@ -246,13 +326,15 @@ export async function getTopPosts(
 export async function getBestPostingTimes(
   userId: string,
   platform?: string
-): Promise<BestTime[]> {
-  const apiKey = await getApiKey(userId);
-  if (!apiKey) return [];
+): Promise<BestTimeSlot[]> {
+  const profile = await getUserProfile(userId);
+  if (!profile) return [];
 
   try {
-    const result = await lateBestTime(apiKey, { platform });
-    return result.bestTimes;
+    const result = await lateBestTime(profile.apiKey, {
+      platform: platform || undefined,
+    });
+    return Array.isArray(result?.slots) ? result.slots : [];
   } catch {
     return [];
   }
@@ -261,14 +343,28 @@ export async function getBestPostingTimes(
 export async function getFollowerGrowth(
   userId: string,
   platform?: string
-): Promise<FollowerStat[]> {
-  const apiKey = await getApiKey(userId);
-  if (!apiKey) return [];
+): Promise<FollowerStatsResponse> {
+  const profile = await getUserProfile(userId);
+  if (!profile) return { ...emptyFollowers, accounts: [], stats: {} };
 
   try {
-    const result = await lateFollowerStats(apiKey, { platform });
-    return result.followerStats;
+    // Zernio's follower-stats has no platform param — we filter ourselves
+    const result = await lateFollowerStats(profile.apiKey);
+
+    if (!platform) return result;
+
+    const filteredAccounts = (result.accounts ?? []).filter(
+      (a) => a.platform === platform
+    );
+    const filteredAccountIds = new Set(filteredAccounts.map((a) => a._id));
+    const filteredStats: Record<string, { date: string; followers: number }[]> =
+      {};
+    for (const [id, points] of Object.entries(result.stats ?? {})) {
+      if (filteredAccountIds.has(id)) filteredStats[id] = points;
+    }
+
+    return { ...result, accounts: filteredAccounts, stats: filteredStats };
   } catch {
-    return [];
+    return emptyFollowers;
   }
 }

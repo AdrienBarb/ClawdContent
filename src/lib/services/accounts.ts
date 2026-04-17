@@ -53,8 +53,9 @@ export async function syncAccountsFromLate(userId: string): Promise<void> {
     lateProfile.lateApiKey
   );
 
-  // Upsert each account from Late
+  // Upsert each account from Zernio with its real status
   for (const account of accounts) {
+    const status = account.isActive ? "active" : "disconnected";
     await prisma.socialAccount.upsert({
       where: { lateAccountId: account.id },
       create: {
@@ -62,17 +63,17 @@ export async function syncAccountsFromLate(userId: string): Promise<void> {
         lateAccountId: account.id,
         platform: account.platform,
         username: account.username,
-        status: "active",
+        status,
       },
       update: {
         platform: account.platform,
         username: account.username,
-        status: "active",
+        status,
       },
     });
   }
 
-  // Mark accounts no longer in Late as disconnected
+  // Mark accounts no longer in Zernio at all as disconnected
   const lateAccountIds = accounts.map((a) => a.id);
   await prisma.socialAccount.updateMany({
     where: {
