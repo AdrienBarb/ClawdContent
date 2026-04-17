@@ -301,9 +301,11 @@ export async function getAnalytics(
     toDate?: string;
     limit?: number;
     offset?: number;
+    source?: string;
   }
 ): Promise<{ data: PostAnalytics[]; pagination: AnalyticsPagination }> {
   const params = new URLSearchParams();
+  params.set("source", options?.source ?? "all");
   if (options?.postId) params.set("postId", options.postId);
   if (options?.fromDate) params.set("fromDate", options.fromDate);
   if (options?.toDate) params.set("toDate", options.toDate);
@@ -318,9 +320,10 @@ export async function getAnalytics(
 
 export async function getDailyMetrics(
   apiKey: string,
-  options?: { startDate?: string; endDate?: string; platform?: string }
+  options?: { startDate?: string; endDate?: string; platform?: string; source?: string }
 ): Promise<{ dailyMetrics: DailyMetric[] }> {
   const params = new URLSearchParams();
+  params.set("source", options?.source ?? "all");
   if (options?.startDate) params.set("startDate", options.startDate);
   if (options?.endDate) params.set("endDate", options.endDate);
   if (options?.platform) params.set("platform", options.platform);
