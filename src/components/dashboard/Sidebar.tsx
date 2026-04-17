@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/sheet";
 import { useState } from "react";
 
-const ANALYTICS_WHITELIST = ["adrien-barbier@hotmail.fr"];
+const ANALYTICS_WHITELIST = ["adrien-barbier@hotmail.fr", "admin@postclaw.io"];
 
 const baseNavItems = [
   { href: appRouter.dashboard, label: "Chat", icon: RobotIcon },

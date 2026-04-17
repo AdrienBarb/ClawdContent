@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { appRouter } from "@/lib/constants/appRouter";
+import SubscribeModal from "@/components/dashboard/SubscribeModal";
 import { getPlatform } from "@/lib/constants/platforms";
 import useApi, { fetchData } from "@/lib/hooks/useApi";
 import { Button } from "@/components/ui/button";
@@ -194,6 +195,7 @@ function groupByDate(
 
 export default function ContentList() {
   const { useGet, usePost } = useApi();
+  const [showSubscribeModal, setShowSubscribeModal] = useState(false);
 
   // Default to "scheduled" — the queue view
   const [statusFilter, setStatusFilter] =
@@ -216,6 +218,10 @@ export default function ContentList() {
   const [loadingErrors, setLoadingErrors] = useState<Set<string>>(new Set());
 
   // ---------- Data ----------
+
+  const { data: dashboardStatus } = useGet(appRouter.api.dashboardStatus);
+  const subStatus = (dashboardStatus as { subscription?: { status: string } } | undefined)?.subscription?.status;
+  const hasActiveSubscription = subStatus === "active" || subStatus === "trialing" || subStatus === "past_due";
 
   const { data, isLoading, refetch } = useGet(
     appRouter.api.posts,
@@ -378,404 +384,374 @@ export default function ContentList() {
 
   // ---------- Render ----------
 
+  const showGlassPreview = !hasActiveSubscription;
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className={showGlassPreview ? "relative min-h-[calc(100vh-8rem)]" : "space-y-6"}>
+      {/* Page title — always visible */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-          Posts
-        </h1>
-        <Link
-          href={appRouter.dashboard}
-          className="inline-flex items-center gap-2 rounded-xl bg-[var(--sidebar-accent)] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:opacity-90"
-        >
-          <Plus className="h-4 w-4" />
-          Create post
-        </Link>
+        <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Posts</h1>
+        {!showGlassPreview && (
+          <Link
+            href={appRouter.dashboard}
+            className="inline-flex items-center gap-2 rounded-xl bg-[var(--sidebar-accent)] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:opacity-90"
+          >
+            <Plus className="h-4 w-4" />
+            Create post
+          </Link>
+        )}
       </div>
 
-      {/* Status tabs */}
-      <div className="flex gap-1.5 rounded-xl bg-gray-100 p-1 w-fit overflow-x-auto">
-        {STATUS_TABS.map((tab) => {
-          const Icon = tab.icon;
-          const count = counts[tab.value];
-          const active = statusFilter === tab.value;
-          return (
-            <button
-              key={tab.value}
-              onClick={() => setStatusFilter(tab.value)}
-              className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
-                active
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              <Icon className="h-3.5 w-3.5" />
-              {tab.label}
-              {count > 0 && (
-                <span
-                  className={`text-xs tabular-nums ${active ? "text-gray-400" : "opacity-60"}`}
-                >
-                  {count}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
+      {showGlassPreview ? (
+        <div className="absolute inset-0 mt-24">
+          {/* Blurred fake data only */}
+          <div className="blur-[1.5px] pointer-events-none select-none space-y-6 px-6 max-w-5xl mx-auto" style={{ maskImage: "radial-gradient(ellipse 70% 60% at 50% 40%, black 30%, transparent 80%)", WebkitMaskImage: "radial-gradient(ellipse 70% 60% at 50% 40%, black 30%, transparent 80%)" }}>
+            {/* Fake tabs */}
+            <div className="flex gap-1.5 rounded-xl bg-gray-100 p-1 w-fit">
+              {STATUS_TABS.map((tab, idx) => {
+                const Icon = tab.icon;
+                return (
+                  <span key={tab.value} className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-sm font-medium ${idx === 0 ? "bg-white text-gray-900 shadow-sm" : "text-gray-500"}`}>
+                    <Icon className="h-3.5 w-3.5" />
+                    {tab.label}
+                    {idx === 0 && <span className="text-xs text-gray-400">3</span>}
+                  </span>
+                );
+              })}
+            </div>
 
-      {/* Timeline */}
-      {grouped.length > 0 ? (
-        <div className="space-y-8">
-          {grouped.map(([dateKey, posts]) => (
-            <div key={dateKey}>
-              {/* Date header */}
-              <div className="flex items-center gap-3 mb-4">
-                <h3 className="text-sm font-semibold text-gray-900 whitespace-nowrap">
-                  {formatDateHeader(dateKey)}
-                </h3>
-                <div className="flex-1 h-px bg-gray-200" />
-              </div>
-
-              {/* Timeline entries */}
-              <div className="space-y-4">
-                {posts.map((post) => {
-                  const isRescheduling = reschedulingPostId === post.id;
-                  const isLong = post.content.length > MAX_PREVIEW_LENGTH;
-                  const isExpanded = expandedPosts.has(post.id);
-                  const displayContent =
-                    isLong && !isExpanded
-                      ? post.content.slice(0, MAX_PREVIEW_LENGTH) + "..."
-                      : post.content;
-
-                  const timeStr = formatTime(getPostDate(post));
-
-                  return (
-                    <div key={post.id} className="flex gap-4">
-                      {/* Left: time column */}
+            {/* Fake timeline */}
+            <div className="space-y-8">
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <h3 className="text-sm font-semibold text-gray-900 whitespace-nowrap">Tomorrow</h3>
+                  <div className="flex-1 h-px bg-gray-200" />
+                </div>
+                <div className="space-y-4">
+                  {[
+                    { time: "9:00 AM", platforms: ["twitter", "linkedin"], content: "Just shipped a major update to our product! Here's what changed and why it matters for your workflow..." },
+                    { time: "2:30 PM", platforms: ["instagram"], content: "Behind the scenes of our creative process. Swipe to see how we go from idea to final design" },
+                    { time: "6:00 PM", platforms: ["twitter", "bluesky"], content: "Quick tip: The best time to engage with your audience is when they're already scrolling. Here's how to find your peak hours..." },
+                  ].map((item, idx) => (
+                    <div key={idx} className="flex gap-4">
                       <div className="w-20 shrink-0 pt-4 text-right">
-                        <span className="text-sm font-semibold text-gray-900 tabular-nums">
-                          {timeStr}
-                        </span>
+                        <span className="text-sm font-semibold text-gray-900 tabular-nums">{item.time}</span>
                       </div>
-
-                      {/* Timeline dot + line */}
                       <div className="flex flex-col items-center shrink-0">
                         <div className="mt-5 h-2.5 w-2.5 rounded-full bg-[var(--sidebar-accent)]" />
                         <div className="flex-1 w-px bg-gray-200 mt-1" />
                       </div>
-
-                      {/* Right: card */}
                       <div className="flex-1 min-w-0 pb-2">
                         <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
-                          {/* Platform icons */}
                           <div className="flex items-center gap-1.5 mb-3">
-                            {post.platforms.map((p) => {
-                              const platformId = p.platform;
+                            {item.platforms.map((platformId) => {
                               const platform = getPlatform(platformId);
                               return (
-                                <span
-                                  key={platformId}
-                                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-white"
-                                  style={{
-                                    backgroundColor:
-                                      platform?.color ?? "#6b7280",
-                                  }}
-                                  title={platform?.label ?? platformId}
-                                >
-                                  {platform?.icon ?? (
-                                    <Share2 className="h-3.5 w-3.5" />
-                                  )}
+                                <span key={platformId} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-white" style={{ backgroundColor: platform?.color ?? "#6b7280" }}>
+                                  {platform?.icon ?? <Share2 className="h-3.5 w-3.5" />}
                                 </span>
                               );
                             })}
                           </div>
-
-                          {/* Content (read-only) */}
-                          <div>
-                            <p className="text-sm text-gray-900 leading-relaxed whitespace-pre-line">
-                              {displayContent}
-                            </p>
-                            {isLong && (
-                              <button
-                                onClick={() => toggleExpanded(post.id)}
-                                className="mt-1 inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
-                              >
-                                {isExpanded ? (
-                                  <>
-                                    Show less{" "}
-                                    <ChevronUp className="h-3 w-3" />
-                                  </>
-                                ) : (
-                                  <>
-                                    Show more{" "}
-                                    <ChevronDown className="h-3 w-3" />
-                                  </>
-                                )}
-                              </button>
-                            )}
-                          </div>
-
-                          {/* Media thumbnails */}
-                          {post.mediaItems &&
-                            post.mediaItems.length > 0 && (
-                              <div className="mt-3 flex gap-2 overflow-x-auto">
-                                {post.mediaItems.map((media, i) =>
-                                  media.type === "image" ? (
-                                    <a
-                                      key={i}
-                                      href={media.url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="shrink-0"
-                                    >
-                                      <img
-                                        src={media.url}
-                                        alt=""
-                                        className="h-20 w-20 rounded-lg object-cover border border-gray-100"
-                                      />
-                                    </a>
-                                  ) : (
-                                    <div
-                                      key={i}
-                                      className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-xs text-gray-400 border border-gray-100"
-                                    >
-                                      Video
-                                    </div>
-                                  )
-                                )}
-                              </div>
-                            )}
-
-                          {/* Error detail for failed posts */}
-                          {post.status === "failed" &&
-                            (() => {
-                              const detail = errorDetails[post.id];
-                              const isLoadingError = loadingErrors.has(post.id);
-
-                              if (!detail && !isLoadingError) {
-                                return (
-                                  <button
-                                    onClick={() => fetchErrorDetail(post.id)}
-                                    className="mt-3 inline-flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 transition-colors cursor-pointer"
-                                  >
-                                    <AlertCircle className="h-3.5 w-3.5" />
-                                    Show error details
-                                  </button>
-                                );
-                              }
-
-                              if (isLoadingError) {
-                                return (
-                                  <div className="mt-3 flex items-center gap-1.5 text-xs text-gray-400">
-                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                    Loading error details...
-                                  </div>
-                                );
-                              }
-
-                              if (detail) {
-                                const hintConfig = detail.errorCategory
-                                  ? ERROR_HINTS[detail.errorCategory]
-                                  : undefined;
-                                const HintIcon =
-                                  hintConfig?.icon ?? AlertCircle;
-
-                                return (
-                                  <div className="mt-3 rounded-xl bg-red-50 border border-red-100 p-3 space-y-1.5">
-                                    <div className="flex items-start gap-2">
-                                      <HintIcon className="h-4 w-4 text-red-400 mt-0.5 shrink-0" />
-                                      <div className="min-w-0">
-                                        <p className="text-xs font-medium text-red-700">
-                                          {detail.errorMessage ??
-                                            "Publishing failed"}
-                                        </p>
-                                        {hintConfig && (
-                                          <p className="text-xs text-red-500 mt-0.5">
-                                            {hintConfig.hint}
-                                          </p>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-                                );
-                              }
-
-                              return null;
-                            })()}
-
-                          {/* Reschedule picker */}
-                          {isRescheduling && (
-                            <div className="mt-3 flex items-center gap-2 flex-wrap">
-                              <input
-                                type="datetime-local"
-                                value={rescheduleDate}
-                                onChange={(e) =>
-                                  setRescheduleDate(e.target.value)
-                                }
-                                className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[var(--sidebar-accent)]/20 focus:border-[var(--sidebar-accent)]"
-                                autoFocus
-                              />
-                              <Button
-                                size="sm"
-                                className="h-8 text-xs bg-[var(--sidebar-accent)] hover:opacity-90 text-white cursor-pointer"
-                                onClick={() => handleReschedule(post.id)}
-                                disabled={
-                                  rescheduleMutation.isPending || !rescheduleDate
-                                }
-                              >
-                                {rescheduleMutation.isPending && (
-                                  <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
-                                )}
-                                Save
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 text-xs cursor-pointer"
-                                onClick={() => setReschedulingPostId(null)}
-                                disabled={rescheduleMutation.isPending}
-                              >
-                                Cancel
-                              </Button>
-                            </div>
-                          )}
-
-                          {/* Actions */}
-                          {!isRescheduling && (
-                            <div className="flex items-center gap-1.5 mt-4 pt-3 border-t border-gray-100">
-                              {(post.status === "scheduled" ||
-                                post.status === "draft") && (
-                                <>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-8 text-xs cursor-pointer"
-                                    onClick={() => startRescheduling(post)}
-                                  >
-                                    <CalendarClock className="h-3.5 w-3.5 mr-1" />
-                                    {post.status === "draft"
-                                      ? "Schedule"
-                                      : "Reschedule"}
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-8 text-xs text-gray-400 hover:text-red-500 hover:bg-red-50 cursor-pointer"
-                                    onClick={() => setDeleteTarget(post)}
-                                  >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                  </Button>
-                                </>
-                              )}
-
-                              {post.status === "failed" && (
-                                <>
-                                  <Button
-                                    size="sm"
-                                    className="h-8 text-xs bg-[var(--sidebar-accent)] hover:opacity-90 text-white cursor-pointer"
-                                    onClick={() =>
-                                      retryMutation.mutate({
-                                        postId: post.id,
-                                      })
-                                    }
-                                    disabled={retryMutation.isPending}
-                                  >
-                                    {retryMutation.isPending ? (
-                                      <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
-                                    ) : (
-                                      <RefreshCw className="h-3.5 w-3.5 mr-1" />
-                                    )}
-                                    Retry
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-8 text-xs text-gray-400 hover:text-red-500 hover:bg-red-50 cursor-pointer"
-                                    onClick={() => setDeleteTarget(post)}
-                                  >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                  </Button>
-                                </>
-                              )}
-
-                              {post.status === "published" &&
-                                post.platforms.map((p) => {
-                                  const platformId = p.platform;
-                                  const platform = getPlatform(platformId);
-                                  const unsupported =
-                                    UNSUPPORTED_UNPUBLISH_PLATFORMS.includes(
-                                      platformId
-                                    );
-
-                                  if (unsupported) {
-                                    return (
-                                      <span
-                                        key={platformId}
-                                        className="text-xs text-gray-400"
-                                      >
-                                        To delete from{" "}
-                                        {platform?.label ?? platformId}, go to
-                                        the app directly.
-                                      </span>
-                                    );
-                                  }
-
-                                  return (
-                                    <Button
-                                      key={platformId}
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-8 text-xs text-gray-400 hover:text-red-500 hover:bg-red-50 cursor-pointer"
-                                      onClick={() =>
-                                        unpublishMutation.mutate({
-                                          postId: post.id,
-                                          platform: platformId,
-                                        })
-                                      }
-                                      disabled={unpublishMutation.isPending}
-                                    >
-                                      {unpublishMutation.isPending ? (
-                                        <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
-                                      ) : (
-                                        <EyeOff className="h-3.5 w-3.5 mr-1" />
-                                      )}
-                                      Unpublish from{" "}
-                                      {platform?.label ?? platformId}
-                                    </Button>
-                                  );
-                                })}
-                            </div>
-                          )}
+                          <p className="text-sm text-gray-900 leading-relaxed">{item.content}</p>
                         </div>
                       </div>
                     </div>
-                  );
-                })}
+                  ))}
+                </div>
               </div>
             </div>
-          ))}
+          </div>
+
+          {/* Overlay — centered in viewport */}
+          <div className="fixed inset-0 z-10 flex items-center justify-center pointer-events-none md:pl-64">
+            <div className="bg-white rounded-2xl shadow-2xl border border-gray-200/60 px-8 py-8 max-w-md w-full text-center pointer-events-auto">
+              <p className="text-xs font-semibold uppercase tracking-widest text-[var(--sidebar-accent)] mb-3">
+                Content queue
+              </p>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                Your posts will show up here
+              </h3>
+              <p className="text-sm text-gray-500 leading-relaxed mb-5">
+                Chat with your AI manager to create content. It handles the rest.
+              </p>
+
+              <div className="flex flex-col gap-2.5 mb-6 text-left">
+                <div className="flex items-center gap-3 rounded-xl bg-gray-50 px-4 py-2.5">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--sidebar-accent)]/10 text-[var(--sidebar-accent)]">
+                    <CalendarClock className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Schedule across platforms</p>
+                    <p className="text-xs text-gray-500">Queue posts for X, LinkedIn, Instagram, and more</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 rounded-xl bg-gray-50 px-4 py-2.5">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--sidebar-accent)]/10 text-[var(--sidebar-accent)]">
+                    <FileEdit className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">AI writes your content</p>
+                    <p className="text-xs text-gray-500">Just describe what you want — your manager drafts it</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 rounded-xl bg-gray-50 px-4 py-2.5">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--sidebar-accent)]/10 text-[var(--sidebar-accent)]">
+                    <CheckCircle2 className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Track what went live</p>
+                    <p className="text-xs text-gray-500">See published, scheduled, and draft posts in one view</p>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowSubscribeModal(true)}
+                className="inline-flex items-center gap-2 rounded-xl bg-[var(--sidebar-accent)] px-6 py-3 text-sm font-semibold text-white transition-all hover:opacity-90 hover:shadow-lg w-full justify-center cursor-pointer"
+              >
+                Get started
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                </svg>
+              </button>
+            </div>
+          </div>
         </div>
       ) : (
-        /* Empty state */
-        <div className="rounded-2xl border-2 border-dashed border-gray-200 bg-white/50 p-12 text-center">
-          <CalendarClock className="h-10 w-10 text-gray-300 mx-auto mb-4" />
-          <p className="text-sm font-medium text-gray-500 mb-1">
-            {emptyMessages[statusFilter].title}
-          </p>
-          <p className="text-xs text-gray-400 mb-5">
-            {emptyMessages[statusFilter].sub}
-          </p>
-          {statusFilter === "scheduled" && (
-            <Link
-              href={appRouter.dashboard}
-              className="inline-flex items-center gap-2 rounded-xl bg-[var(--sidebar-accent)] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:opacity-90"
-            >
-              <Plus className="h-4 w-4" />
-              Create post
-            </Link>
+        /* ---- Normal view when user has posts ---- */
+        <>
+          {/* Status tabs */}
+          <div className="flex gap-1.5 rounded-xl bg-gray-100 p-1 w-fit overflow-x-auto">
+            {STATUS_TABS.map((tab) => {
+              const Icon = tab.icon;
+              const count = counts[tab.value];
+              const active = statusFilter === tab.value;
+              return (
+                <button
+                  key={tab.value}
+                  onClick={() => setStatusFilter(tab.value)}
+                  className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
+                    active
+                      ? "bg-white text-gray-900 shadow-sm"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {tab.label}
+                  {count > 0 && (
+                    <span
+                      className={`text-xs tabular-nums ${active ? "text-gray-400" : "opacity-60"}`}
+                    >
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Timeline */}
+          {grouped.length > 0 ? (
+            <div className="space-y-8">
+              {grouped.map(([dateKey, posts]) => (
+                <div key={dateKey}>
+                  <div className="flex items-center gap-3 mb-4">
+                    <h3 className="text-sm font-semibold text-gray-900 whitespace-nowrap">
+                      {formatDateHeader(dateKey)}
+                    </h3>
+                    <div className="flex-1 h-px bg-gray-200" />
+                  </div>
+                  <div className="space-y-4">
+                    {posts.map((post) => {
+                      const isRescheduling = reschedulingPostId === post.id;
+                      const isLong = post.content.length > MAX_PREVIEW_LENGTH;
+                      const isExpanded = expandedPosts.has(post.id);
+                      const displayContent =
+                        isLong && !isExpanded
+                          ? post.content.slice(0, MAX_PREVIEW_LENGTH) + "..."
+                          : post.content;
+                      const timeStr = formatTime(getPostDate(post));
+
+                      return (
+                        <div key={post.id} className="flex gap-4">
+                          <div className="w-20 shrink-0 pt-4 text-right">
+                            <span className="text-sm font-semibold text-gray-900 tabular-nums">
+                              {timeStr}
+                            </span>
+                          </div>
+                          <div className="flex flex-col items-center shrink-0">
+                            <div className="mt-5 h-2.5 w-2.5 rounded-full bg-[var(--sidebar-accent)]" />
+                            <div className="flex-1 w-px bg-gray-200 mt-1" />
+                          </div>
+                          <div className="flex-1 min-w-0 pb-2">
+                            <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
+                              <div className="flex items-center gap-1.5 mb-3">
+                                {post.platforms.map((p) => {
+                                  const platformId = p.platform;
+                                  const platform = getPlatform(platformId);
+                                  return (
+                                    <span
+                                      key={platformId}
+                                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-white"
+                                      style={{ backgroundColor: platform?.color ?? "#6b7280" }}
+                                      title={platform?.label ?? platformId}
+                                    >
+                                      {platform?.icon ?? <Share2 className="h-3.5 w-3.5" />}
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-900 leading-relaxed whitespace-pre-line">
+                                  {displayContent}
+                                </p>
+                                {isLong && (
+                                  <button
+                                    onClick={() => toggleExpanded(post.id)}
+                                    className="mt-1 inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+                                  >
+                                    {isExpanded ? (
+                                      <>Show less <ChevronUp className="h-3 w-3" /></>
+                                    ) : (
+                                      <>Show more <ChevronDown className="h-3 w-3" /></>
+                                    )}
+                                  </button>
+                                )}
+                              </div>
+                              {post.mediaItems && post.mediaItems.length > 0 && (
+                                <div className="mt-3 flex gap-2 overflow-x-auto">
+                                  {post.mediaItems.map((media, i) =>
+                                    media.type === "image" ? (
+                                      <a key={i} href={media.url} target="_blank" rel="noopener noreferrer" className="shrink-0">
+                                        <img src={media.url} alt="" className="h-20 w-20 rounded-lg object-cover border border-gray-100" />
+                                      </a>
+                                    ) : (
+                                      <div key={i} className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-xs text-gray-400 border border-gray-100">
+                                        Video
+                                      </div>
+                                    )
+                                  )}
+                                </div>
+                              )}
+                              {post.status === "failed" &&
+                                (() => {
+                                  const detail = errorDetails[post.id];
+                                  const isLoadingError = loadingErrors.has(post.id);
+                                  if (!detail && !isLoadingError) {
+                                    return (
+                                      <button onClick={() => fetchErrorDetail(post.id)} className="mt-3 inline-flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 transition-colors cursor-pointer">
+                                        <AlertCircle className="h-3.5 w-3.5" />
+                                        Show error details
+                                      </button>
+                                    );
+                                  }
+                                  if (isLoadingError) {
+                                    return (
+                                      <div className="mt-3 flex items-center gap-1.5 text-xs text-gray-400">
+                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                        Loading error details...
+                                      </div>
+                                    );
+                                  }
+                                  if (detail) {
+                                    const hintConfig = detail.errorCategory ? ERROR_HINTS[detail.errorCategory] : undefined;
+                                    const HintIcon = hintConfig?.icon ?? AlertCircle;
+                                    return (
+                                      <div className="mt-3 rounded-xl bg-red-50 border border-red-100 p-3 space-y-1.5">
+                                        <div className="flex items-start gap-2">
+                                          <HintIcon className="h-4 w-4 text-red-400 mt-0.5 shrink-0" />
+                                          <div className="min-w-0">
+                                            <p className="text-xs font-medium text-red-700">{detail.errorMessage ?? "Publishing failed"}</p>
+                                            {hintConfig && <p className="text-xs text-red-500 mt-0.5">{hintConfig.hint}</p>}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+                                  return null;
+                                })()}
+                              {isRescheduling && (
+                                <div className="mt-3 flex items-center gap-2 flex-wrap">
+                                  <input type="datetime-local" value={rescheduleDate} onChange={(e) => setRescheduleDate(e.target.value)} className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[var(--sidebar-accent)]/20 focus:border-[var(--sidebar-accent)]" autoFocus />
+                                  <Button size="sm" className="h-8 text-xs bg-[var(--sidebar-accent)] hover:opacity-90 text-white cursor-pointer" onClick={() => handleReschedule(post.id)} disabled={rescheduleMutation.isPending || !rescheduleDate}>
+                                    {rescheduleMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />}
+                                    Save
+                                  </Button>
+                                  <Button variant="ghost" size="sm" className="h-8 text-xs cursor-pointer" onClick={() => setReschedulingPostId(null)} disabled={rescheduleMutation.isPending}>Cancel</Button>
+                                </div>
+                              )}
+                              {!isRescheduling && (
+                                <div className="flex items-center gap-1.5 mt-4 pt-3 border-t border-gray-100">
+                                  {(post.status === "scheduled" || post.status === "draft") && (
+                                    <>
+                                      <Button variant="outline" size="sm" className="h-8 text-xs cursor-pointer" onClick={() => startRescheduling(post)}>
+                                        <CalendarClock className="h-3.5 w-3.5 mr-1" />
+                                        {post.status === "draft" ? "Schedule" : "Reschedule"}
+                                      </Button>
+                                      <Button variant="ghost" size="sm" className="h-8 text-xs text-gray-400 hover:text-red-500 hover:bg-red-50 cursor-pointer" onClick={() => setDeleteTarget(post)}>
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </Button>
+                                    </>
+                                  )}
+                                  {post.status === "failed" && (
+                                    <>
+                                      <Button size="sm" className="h-8 text-xs bg-[var(--sidebar-accent)] hover:opacity-90 text-white cursor-pointer" onClick={() => retryMutation.mutate({ postId: post.id })} disabled={retryMutation.isPending}>
+                                        {retryMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <RefreshCw className="h-3.5 w-3.5 mr-1" />}
+                                        Retry
+                                      </Button>
+                                      <Button variant="ghost" size="sm" className="h-8 text-xs text-gray-400 hover:text-red-500 hover:bg-red-50 cursor-pointer" onClick={() => setDeleteTarget(post)}>
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </Button>
+                                    </>
+                                  )}
+                                  {post.status === "published" &&
+                                    post.platforms.map((p) => {
+                                      const platformId = p.platform;
+                                      const platform = getPlatform(platformId);
+                                      const unsupported = UNSUPPORTED_UNPUBLISH_PLATFORMS.includes(platformId);
+                                      if (unsupported) {
+                                        return <span key={platformId} className="text-xs text-gray-400">To delete from {platform?.label ?? platformId}, go to the app directly.</span>;
+                                      }
+                                      return (
+                                        <Button key={platformId} variant="ghost" size="sm" className="h-8 text-xs text-gray-400 hover:text-red-500 hover:bg-red-50 cursor-pointer" onClick={() => unpublishMutation.mutate({ postId: post.id, platform: platformId })} disabled={unpublishMutation.isPending}>
+                                          {unpublishMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <EyeOff className="h-3.5 w-3.5 mr-1" />}
+                                          Unpublish from {platform?.label ?? platformId}
+                                        </Button>
+                                      );
+                                    })}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-2xl border-2 border-dashed border-gray-200 bg-white/50 p-12 text-center">
+              <CalendarClock className="h-10 w-10 text-gray-300 mx-auto mb-4" />
+              <p className="text-sm font-medium text-gray-500 mb-1">
+                {emptyMessages[statusFilter].title}
+              </p>
+              <p className="text-xs text-gray-400 mb-5">
+                {emptyMessages[statusFilter].sub}
+              </p>
+              {(statusFilter === "scheduled" || statusFilter === "draft") && (
+                <Link
+                  href={appRouter.dashboard}
+                  className="inline-flex items-center gap-2 rounded-xl bg-[var(--sidebar-accent)] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:opacity-90"
+                >
+                  <Plus className="h-4 w-4" />
+                  Create post
+                </Link>
+              )}
+            </div>
           )}
-        </div>
+        </>
       )}
 
       {/* Delete confirmation dialog */}
@@ -823,6 +799,10 @@ export default function ContentList() {
         </DialogContent>
       </Dialog>
 
+      <SubscribeModal
+        open={showSubscribeModal}
+        onOpenChange={setShowSubscribeModal}
+      />
     </div>
   );
 }
