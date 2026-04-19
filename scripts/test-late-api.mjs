@@ -95,7 +95,7 @@ switch (command) {
     if (!platform || !profileId) {
       console.error("Usage: connect <platform> <profileId>");
       console.error(
-        "Platforms: twitter, instagram, facebook, linkedin, tiktok, youtube, pinterest, reddit, bluesky, threads"
+        "Platforms: twitter, instagram, facebook, linkedin, tiktok, youtube, pinterest, bluesky, threads"
       );
       process.exit(1);
     }
@@ -162,6 +162,6 @@ Commands:
   posts:publish <accountId> "content" [platform]  Publish a post immediately
   posts:list                             List recent posts
 
-Platforms: twitter, instagram, facebook, linkedin, tiktok, youtube, pinterest, reddit, bluesky, threads`);
+Platforms: twitter, instagram, facebook, linkedin, tiktok, youtube, pinterest, bluesky, threads`);
   }
 }

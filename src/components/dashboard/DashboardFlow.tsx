@@ -48,7 +48,6 @@ const FEATURED_PLATFORM_IDS = [
   "threads",
   "bluesky",
   "youtube",
-  "reddit",
   "facebook",
 ];
 

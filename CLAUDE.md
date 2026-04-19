@@ -2,7 +2,7 @@
 
 ## What is PostClaw?
 
-PostClaw is a SaaS that gives each user a private AI social media manager via a web-based chat interface. Users chat with their AI social media manager to create, adapt, and publish social media posts across 13+ platforms via Zernio API. Positioned as "Your AI Social Media Manager" — competing against the cost of hiring a human, not against other tools.
+PostClaw is an AI social media manager that learns your brand, plans your content, and publishes to 10 platforms — all from a single chat conversation. No dashboard, no editor, no learning curve. It writes platform-native posts, adapts the tone for each network, publishes on schedule, analyzes performance, and spots what's going viral in your niche. Plans start at $17/mo.
 
 **How it works:**
 
@@ -190,7 +190,7 @@ The dashboard is **chat-first** — after subscribing, users land directly on th
 - **Connect buttons** (`ConnectAccountButtons.tsx`): Platform icons with brand colors.
 - **Content area**: Light gray background (`#f8f9fc`), white rounded cards, `max-w-5xl`.
 
-Supported platforms: **13+ social media platforms** via Zernio (Twitter/X, LinkedIn, Bluesky, Threads, Facebook, Instagram, Pinterest, TikTok, YouTube, Reddit, Mastodon, and more). Media uploads (images/videos) supported via Cloudinary.
+Supported platforms: **10 social media platforms** via Zernio (Twitter/X, LinkedIn, Bluesky, Threads, Facebook, Instagram, Pinterest, TikTok, YouTube, Mastodon). Media uploads (images/videos) supported via Cloudinary.
 
 ---
 

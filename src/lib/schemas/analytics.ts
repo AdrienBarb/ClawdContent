@@ -16,7 +16,6 @@ const platformEnum = z
     "pinterest",
     "tiktok",
     "youtube",
-    "reddit",
     "mastodon",
     "telegram",
     "discord",

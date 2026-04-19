@@ -9,7 +9,7 @@ PostClaw provides each user with their own private AI assistant via a web chat i
 ## Key Features
 
 - Personal AI assistant via web chat that creates and publishes social media content
-- Publish to 12+ social platforms from one chat (Instagram, TikTok, X/Twitter, LinkedIn, Facebook, YouTube, Pinterest, Threads, Bluesky, Reddit, Discord, Mastodon)
+- Publish to 11+ social platforms from one chat (Instagram, TikTok, X/Twitter, LinkedIn, Facebook, YouTube, Pinterest, Threads, Bluesky, Discord, Mastodon)
 - AI-adapted content per platform (tone, length, hashtags, format)
 - Media support (images and videos via Cloudinary)
 - Private, isolated instance per user

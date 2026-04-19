@@ -23,7 +23,7 @@ export const faqs = [
   {
     question: "What platforms are supported?",
     answer:
-      "13 platforms: Instagram, TikTok, X (Twitter), LinkedIn, Facebook, YouTube, Pinterest, Threads, Bluesky, Reddit, Discord, and Mastodon. You can post to all of them at once, or pick specific ones.",
+      "12 platforms: Instagram, TikTok, X (Twitter), LinkedIn, Facebook, YouTube, Pinterest, Threads, Bluesky, Discord, and Mastodon. You can post to all of them at once, or pick specific ones.",
   },
   {
     question: "Can I review posts before they go live?",

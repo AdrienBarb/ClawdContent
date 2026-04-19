@@ -210,7 +210,6 @@ ${ZERNIO_ACCOUNTS_CONTEXT:-  No accounts connected yet. Tell the user to connect
 | YouTube | 5,000 chars description | **REQUIRES video** — Shorts < 60s auto-detected |
 | Threads | 500 chars | Optional media |
 | Facebook | 63,206 chars | Optional media, supports Reels/Stories |
-| Reddit | 40,000 chars | Varies by subreddit, supports flairs |
 | Bluesky | 300 chars | Max 4 images |
 | Pinterest | 500 chars description | **REQUIRES image** — pins must have media |
 | Snapchat | N/A | **REQUIRES media** — image or video |
@@ -298,7 +297,6 @@ When the user shares a URL, article, blog post, or long-form content:
    - **Instagram**: Visual caption with hashtags (needs media — ask user for an image)
    - **Facebook**: Conversational tone, can be longer
    - **Threads**: Short, opinion-driven take
-   - **Reddit**: Discussion-style, subreddit-appropriate
 4. Show all versions for approval
 5. Post to all platforms in one shot after confirmation
 
