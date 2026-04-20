@@ -41,6 +41,16 @@ export function createZernioTools(
     return "document";
   }
 
+  // Helper: format an ISO date string in the user's local timezone for display
+  function formatLocal(iso: string | null | undefined): string | null {
+    if (!iso) return null;
+    return new Date(iso).toLocaleString("en-US", {
+      timeZone: timezone,
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+  }
+
   return {
     createPost: tool({
       description:
@@ -56,7 +66,7 @@ export function createZernioTools(
           .string()
           .optional()
           .describe(
-            "ISO 8601 date to schedule the post (optional, publishes immediately if omitted)"
+            "ISO 8601 date WITH timezone offset to schedule the post (e.g. 2026-04-20T18:00:00+02:00). MUST include offset. Publishes immediately if omitted."
           ),
         mediaItems: z
           .array(
@@ -105,6 +115,7 @@ export function createZernioTools(
                 postId: r.value.id,
                 status: r.value.status,
                 scheduledAt: r.value.scheduledAt,
+                scheduledAtLocal: formatLocal(r.value.scheduledAt),
                 publishedAt: r.value.publishedAt,
               }
             : {
@@ -151,6 +162,7 @@ export function createZernioTools(
             platforms: p.platforms.map((pl) => pl.platform),
             status: p.status,
             scheduledAt: p.scheduledAt,
+            scheduledAtLocal: formatLocal(p.scheduledAt),
             publishedAt: p.publishedAt,
             createdAt: p.createdAt,
           })),

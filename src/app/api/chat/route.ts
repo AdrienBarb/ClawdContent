@@ -4,7 +4,7 @@ import { auth } from "@/lib/better-auth/auth";
 import { NextResponse, NextRequest } from "next/server";
 import { headers } from "next/headers";
 import { streamText, UIMessage, convertToModelMessages, stepCountIs } from "ai";
-import { chatModel } from "@/lib/ai/provider";
+import { reasoningModel, executionModel } from "@/lib/ai/provider";
 import { buildSystemPrompt } from "@/lib/ai/system-prompt";
 import { createZernioTools } from "@/lib/ai/tools";
 import { saveChatMessage } from "@/lib/services/chatMessages";
@@ -119,10 +119,24 @@ export async function POST(req: NextRequest) {
     const modelMessages = await convertToModelMessages(messages);
 
     const result = streamText({
-      model: chatModel,
-      system: systemPrompt,
+      model: reasoningModel,
+      system: {
+        role: "system",
+        content: systemPrompt,
+        providerOptions: {
+          anthropic: { cacheControl: { type: "ephemeral" } },
+        },
+      },
       messages: modelMessages,
       tools,
+      prepareStep: ({ stepNumber }) => {
+        // Step 0: Sonnet for reasoning, content creation, tool decisions
+        // Step 1+: Haiku for processing tool results and follow-up calls
+        if (stepNumber > 0) {
+          return { model: executionModel };
+        }
+        return {};
+      },
       stopWhen: stepCountIs(25),
       onFinish: async ({ text }) => {
         if (text) {

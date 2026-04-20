@@ -1,5 +1,26 @@
 import { formatUserContext } from "@/lib/services/profile";
 
+/**
+ * Compute the current UTC offset string (e.g. "+02:00", "-05:00") for a
+ * given IANA timezone.  Uses Intl to avoid external dependencies.
+ */
+function getUtcOffsetString(timezone: string): string {
+  const now = new Date();
+  // Format a date in the target timezone with short offset → "GMT+2", "GMT-5", etc.
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    timeZoneName: "shortOffset",
+  }).formatToParts(now);
+  const gmtPart = parts.find((p) => p.type === "timeZoneName")?.value ?? "GMT";
+  // gmtPart is e.g. "GMT+2", "GMT-5:30", "GMT"
+  const match = gmtPart.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);
+  if (!match) return "+00:00";
+  const sign = match[1];
+  const hours = match[2].padStart(2, "0");
+  const minutes = match[3] ?? "00";
+  return `${sign}${hours}:${minutes}`;
+}
+
 interface UserData {
   name: string;
   timezone: string | null;
@@ -30,10 +51,13 @@ export function buildSystemPrompt(user: UserData): string {
 7. When reporting numbers from analytics, report the EXACT numbers returned by the tool. NEVER round, convert units, or abbreviate (e.g., 4386 impressions must stay "4386", never "4.4M" or "4.4K").
 8. For BATCH operations (scheduling multiple posts): you MUST call createPost once per content piece and verify each result. NEVER report success for a post unless you received an actual tool result with a postId for it. If you run out of steps, tell the user which posts were NOT created.
 9. After batch scheduling, use getPostLogs to verify all posts were created successfully. Report any discrepancies immediately.
+10. When you say "I'll do X now" or "I'll fix it", you MUST call the appropriate tool in that same response. NEVER promise an action without immediately performing it.
+11. NEVER mention platform limitations unless the user is explicitly trying to do something that hits that limitation. For example, if the user asks to create a post on Instagram, just create it — do not bring up unpublish limitations.
 
 ## Current date and time
 ${new Date().toLocaleString("en-US", { timeZone: user.timezone ?? "UTC", dateStyle: "full", timeStyle: "short" })}
 Timezone: ${user.timezone ?? "UTC"}
+UTC offset: ${getUtcOffsetString(user.timezone ?? "UTC")}
 
 ## Your user
 ${userContext}
@@ -79,11 +103,11 @@ ${accountsList}
 
 ## Posting rules
 - Always confirm before publishing unless the user explicitly says "post it" or "publish now"
-- When scheduling, use ISO 8601 dates in the user's timezone (${user.timezone ?? "UTC"})
+- When scheduling, ALWAYS include the UTC offset in your ISO 8601 date. Use the offset shown above (${getUtcOffsetString(user.timezone ?? "UTC")}). Example: if the user says "6 PM" and the offset is +02:00, send "2026-04-20T18:00:00+02:00". NEVER send a date without an offset.
 - ALWAYS use the current date shown above to compute absolute dates. Never guess the date.
 - If the user says "today at 11h", use today's actual date from the current date section above
 - If the user mentions a relative time ("tomorrow at 9am", "next Monday"), convert to absolute ISO date based on the current date
-- After calling createPost, report the EXACT status from the tool result (scheduled, published, or error). Never assume the result.
+- After calling createPost, report the EXACT scheduledAtLocal time from the tool result to the user, NOT the raw scheduledAt (which may be in UTC).
 
 ## Media handling
 - When the user's message contains [MEDIA: url] and [MEDIA_TYPE: type] tags, they've attached media
