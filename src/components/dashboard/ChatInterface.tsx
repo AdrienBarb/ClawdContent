@@ -23,6 +23,7 @@ import MediaUploadModal, {
 import MediaAttachDropdown from "@/components/dashboard/MediaAttachDropdown";
 import ImageGenerateModal from "@/components/dashboard/ImageGenerateModal";
 import ReactMarkdown from "react-markdown";
+import SubscribeModal from "@/components/dashboard/SubscribeModal";
 
 const SUGGESTIONS = [
   "Write a LinkedIn post about my latest project",
@@ -173,6 +174,7 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
   }, [hasMore, loadingOlder, nextCursor]);
 
   const [input, setInput] = useState("");
+  const [showSubscribeModal, setShowSubscribeModal] = useState(false);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [generateModalOpen, setGenerateModalOpen] = useState(false);
   const [attachedMedia, setAttachedMedia] = useState<AttachedMedia | null>(
@@ -184,8 +186,15 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
   const { data: dashboardStatus } = useGet(appRouter.api.dashboardStatus);
   const subStatus = dashboardStatus?.subscription?.status;
   const subPlanId = dashboardStatus?.subscription?.planId;
+  const hasActiveSubscription =
+    subStatus === "active" || subStatus === "trialing";
   const canGenerate = subStatus === "active" && subPlanId !== "starter";
   const accountCount: number = dashboardStatus?.accountCount ?? 0;
+  const freeMessageUsed: boolean = dashboardStatus?.freeMessageUsed ?? false;
+  // Check both server-side (freeMessageUsed) and client-side (messages in current session)
+  const localUserMessageCount = allMessages.filter((m) => m.role === "user").length;
+  const needsSubscription =
+    !hasActiveSubscription && (freeMessageUsed || localUserMessageCount >= 1);
   const chatSuggestions: string[] = dashboardStatus?.chatSuggestions ?? [];
   const userContext = dashboardStatus?.userContext as
     | { role: string | null; niche: string | null; topics: string[] }
@@ -271,6 +280,12 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
     if (!text && !attachedMedia) return;
     if (isLoading) return;
 
+    // Block if subscription required (free message already used)
+    if (needsSubscription) {
+      setShowSubscribeModal(true);
+      return;
+    }
+
     let messageText = text || "(media attached)";
 
     if (attachedMedia) {
@@ -280,21 +295,6 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
           : `image/${attachedMedia.format}`;
 
       messageText += `\n\n[MEDIA: ${attachedMedia.url}]\n[MEDIA_TYPE: ${mimeType}]`;
-    }
-
-    // Prepend hidden context on first message so OpenClaw knows the user's profile
-    if (allMessages.length === 0) {
-      const contextParts: string[] = [];
-      if (userContext?.role) contextParts.push(`Role: ${userContext.role}`);
-      if (userContext?.niche) contextParts.push(`Niche: ${userContext.niche}`);
-      if (userContext?.topics && userContext.topics.length > 0)
-        contextParts.push(`Topics: ${userContext.topics.join(", ")}`);
-      if (platformLabels.length > 0)
-        contextParts.push(`Connected platforms: ${platformLabels.join(", ")}`);
-
-      if (contextParts.length > 0) {
-        messageText = `[CONTEXT: User just started chatting. ${contextParts.join(". ")}. Be welcoming and guide them.]\n\n${messageText}`;
-      }
     }
 
     setInput("");
@@ -392,16 +392,36 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
           )}
 
           {error && (
-            <div className="rounded-xl border border-red-200 bg-red-50 p-4 flex items-start gap-3">
-              <WarningCircleIcon className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 flex items-start gap-3">
+              <WarningCircleIcon className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-red-900">
-                  Failed to send message
-                </p>
-                <p className="text-sm text-red-700 mt-0.5">
-                  {error.message ||
-                    "Make sure your AI social media manager is running and try again."}
-                </p>
+                {error.message?.includes("SUBSCRIPTION_REQUIRED") ||
+                error.message?.includes("403") ? (
+                  <>
+                    <p className="text-sm font-medium text-amber-900">
+                      Subscribe to keep chatting
+                    </p>
+                    <p className="text-sm text-amber-700 mt-0.5 mb-2">
+                      You&apos;ve used your free message. Subscribe to unlock
+                      unlimited access to your AI social media manager.
+                    </p>
+                    <button
+                      onClick={() => setShowSubscribeModal(true)}
+                      className="inline-flex items-center px-4 py-2 rounded-full bg-primary text-white text-sm font-medium hover:bg-[#E84A36] transition-all cursor-pointer"
+                    >
+                      Choose a plan
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm font-medium text-amber-900">
+                      Something went wrong
+                    </p>
+                    <p className="text-sm text-amber-700 mt-0.5">
+                      {error.message || "Please try again."}
+                    </p>
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -578,8 +598,14 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
             <div className="flex items-center justify-between px-3 pb-3">
               <div className="flex items-center gap-1">
                 <MediaAttachDropdown
-                  onOpenUpload={() => setUploadModalOpen(true)}
-                  onOpenGenerate={() => setGenerateModalOpen(true)}
+                  onOpenUpload={() => {
+                    if (needsSubscription) { setShowSubscribeModal(true); return; }
+                    setUploadModalOpen(true);
+                  }}
+                  onOpenGenerate={() => {
+                    if (needsSubscription) { setShowSubscribeModal(true); return; }
+                    setGenerateModalOpen(true);
+                  }}
                 />
               </div>
               <button
@@ -598,6 +624,10 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
           </div>
         </div>
       </div>
+      <SubscribeModal
+        open={showSubscribeModal}
+        onOpenChange={setShowSubscribeModal}
+      />
     </div>
   );
 }

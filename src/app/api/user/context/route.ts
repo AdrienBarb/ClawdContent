@@ -5,10 +5,6 @@ import { NextResponse, NextRequest } from "next/server";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/db/prisma";
 import { userContextSchema } from "@/lib/schemas/user";
-import {
-  updateContainerEnvVars,
-  formatUserContextFromData,
-} from "@/lib/services/provisioning";
 import { generateAndStoreSuggestions } from "@/lib/services/suggestions";
 
 export async function GET() {
@@ -65,27 +61,6 @@ export async function PUT(req: NextRequest) {
         onboardingTopics: data.topics,
       },
     });
-
-    // Push updated USER_CONTEXT to the container if running
-    const flyMachine = await prisma.flyMachine.findUnique({
-      where: { userId: session.user.id },
-    });
-
-    if (flyMachine && flyMachine.status === "running") {
-      const userContext = formatUserContextFromData({
-        onboardingRole: data.role,
-        onboardingNiche: data.niche,
-        onboardingTopics: data.topics,
-      });
-      await updateContainerEnvVars(session.user.id, {
-        USER_CONTEXT: userContext,
-      }).catch((err) =>
-        console.error(
-          `Failed to update USER_CONTEXT on container for user ${session.user.id}:`,
-          err
-        )
-      );
-    }
 
     // Regenerate personalized chat suggestions (non-blocking)
     generateAndStoreSuggestions(

@@ -68,10 +68,15 @@ interface Post {
 
 type StatusFilter = "draft" | "scheduled" | "published" | "failed";
 
-interface PostErrorDetail {
+interface PlatformError {
+  platform: string;
   errorMessage: string | null;
   errorCategory: string | null;
   errorSource: string | null;
+}
+
+interface PostErrorDetail {
+  platformErrors: PlatformError[];
 }
 
 // ---------------------------------------------------------------------------
@@ -311,9 +316,7 @@ export default function ContentList() {
       setErrorDetails((prev) => ({
         ...prev,
         [postId]: {
-          errorMessage: res.post.errorMessage ?? null,
-          errorCategory: res.post.errorCategory ?? null,
-          errorSource: res.post.errorSource ?? null,
+          platformErrors: res.post.platformErrors ?? [],
         },
       }));
     } catch {
@@ -655,17 +658,37 @@ export default function ContentList() {
                                     );
                                   }
                                   if (detail) {
-                                    const hintConfig = detail.errorCategory ? ERROR_HINTS[detail.errorCategory] : undefined;
-                                    const HintIcon = hintConfig?.icon ?? AlertCircle;
-                                    return (
-                                      <div className="mt-3 rounded-xl bg-red-50 border border-red-100 p-3 space-y-1.5">
-                                        <div className="flex items-start gap-2">
-                                          <HintIcon className="h-4 w-4 text-red-400 mt-0.5 shrink-0" />
-                                          <div className="min-w-0">
-                                            <p className="text-xs font-medium text-red-700">{detail.errorMessage ?? "Publishing failed"}</p>
-                                            {hintConfig && <p className="text-xs text-red-500 mt-0.5">{hintConfig.hint}</p>}
+                                    const errors = detail.platformErrors;
+                                    if (errors.length === 0) {
+                                      return (
+                                        <div className="mt-3 rounded-xl bg-red-50 border border-red-100 p-3">
+                                          <div className="flex items-start gap-2">
+                                            <AlertCircle className="h-4 w-4 text-red-400 mt-0.5 shrink-0" />
+                                            <p className="text-xs font-medium text-red-700">Publishing failed</p>
                                           </div>
                                         </div>
+                                      );
+                                    }
+                                    return (
+                                      <div className="mt-3 space-y-2">
+                                        {errors.map((err) => {
+                                          const hintConfig = err.errorCategory ? ERROR_HINTS[err.errorCategory] : undefined;
+                                          const HintIcon = hintConfig?.icon ?? AlertCircle;
+                                          const platform = getPlatform(err.platform);
+                                          return (
+                                            <div key={err.platform} className="rounded-xl bg-red-50 border border-red-100 p-3 space-y-1.5">
+                                              <div className="flex items-start gap-2">
+                                                <HintIcon className="h-4 w-4 text-red-400 mt-0.5 shrink-0" />
+                                                <div className="min-w-0">
+                                                  <p className="text-xs font-medium text-red-700">
+                                                    {platform?.label ?? err.platform}: {err.errorMessage ?? "Publishing failed"}
+                                                  </p>
+                                                  {hintConfig && <p className="text-xs text-red-500 mt-0.5">{hintConfig.hint}</p>}
+                                                </div>
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
                                       </div>
                                     );
                                   }

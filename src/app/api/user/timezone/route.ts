@@ -5,7 +5,6 @@ import { NextResponse, NextRequest } from "next/server";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/db/prisma";
 import { timezoneSchema } from "@/lib/schemas/user";
-import { updateContainerEnvVars } from "@/lib/services/provisioning";
 
 export async function PATCH(req: NextRequest) {
   try {
@@ -26,21 +25,6 @@ export async function PATCH(req: NextRequest) {
       where: { id: session.user.id },
       data: { timezone },
     });
-
-    // Push TZ to the user's container if they have one running
-    const flyMachine = await prisma.flyMachine.findUnique({
-      where: { userId: session.user.id },
-    });
-
-    if (flyMachine && flyMachine.status === "running") {
-      await updateContainerEnvVars(session.user.id, { TZ: timezone }).catch(
-        (err) =>
-          console.error(
-            `Failed to update TZ on container for user ${session.user.id}:`,
-            err
-          )
-      );
-    }
 
     return NextResponse.json({ timezone }, { status: 200 });
   } catch (error) {

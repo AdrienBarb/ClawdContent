@@ -9,7 +9,6 @@ import SubscribeModal from "@/components/dashboard/SubscribeModal";
 
 interface DashboardFlowProps {
   initialHasSubscription: boolean;
-  initialHasFlyMachine: boolean;
 }
 
 const benefits = [
@@ -53,12 +52,10 @@ const FEATURED_PLATFORM_IDS = [
 
 export default function DashboardFlow({
   initialHasSubscription,
-  initialHasFlyMachine,
 }: DashboardFlowProps) {
   const [showSubscribeModal, setShowSubscribeModal] = useState(false);
 
-  // Bot already provisioned or subscription active (provisioning triggered by webhook)
-  if (initialHasFlyMachine || initialHasSubscription) {
+  if (initialHasSubscription) {
     return <ChatWithLoader />;
   }
 

@@ -96,9 +96,13 @@ export interface LatePost {
 }
 
 export interface LatePostDetail extends LatePost {
-  errorMessage: string | null;
-  errorCategory: string | null;
-  errorSource: string | null;
+  /** Per-platform error details (from PlatformTarget entries). */
+  platformErrors: {
+    platform: string;
+    errorMessage: string | null;
+    errorCategory: string | null;
+    errorSource: string | null;
+  }[];
 }
 
 interface LatePostRaw {
@@ -142,30 +146,39 @@ export async function getPost(
   apiKey: string
 ): Promise<LatePostDetail> {
   const data = await lateRequest<{
-    _id: string;
-    content: string;
-    platforms: LatePostPlatform[];
-    mediaItems?: LateMediaItem[];
-    status: string;
-    scheduledFor: string | null;
-    publishedAt: string | null;
-    createdAt: string;
-    errorMessage?: string;
-    errorCategory?: string;
-    errorSource?: string;
+    post: {
+      _id: string;
+      content: string;
+      platforms: (LatePostPlatform & {
+        errorMessage?: string;
+        errorCategory?: string;
+        errorSource?: string;
+      })[];
+      mediaItems?: LateMediaItem[];
+      status: string;
+      scheduledFor: string | null;
+      publishedAt: string | null;
+      createdAt: string;
+    };
   }>(`/posts/${postId}`, { apiKey });
+  const p = data.post;
   return {
-    id: data._id,
-    content: data.content,
-    platforms: data.platforms,
-    mediaItems: data.mediaItems ?? [],
-    status: data.status,
-    scheduledAt: data.scheduledFor,
-    publishedAt: data.publishedAt,
-    createdAt: data.createdAt,
-    errorMessage: data.errorMessage ?? null,
-    errorCategory: data.errorCategory ?? null,
-    errorSource: data.errorSource ?? null,
+    id: p._id,
+    content: p.content,
+    platforms: p.platforms,
+    mediaItems: p.mediaItems ?? [],
+    status: p.status,
+    scheduledAt: p.scheduledFor,
+    publishedAt: p.publishedAt,
+    createdAt: p.createdAt,
+    platformErrors: p.platforms
+      .filter((pt) => pt.errorMessage || pt.errorCategory || pt.errorSource)
+      .map((pt) => ({
+        platform: pt.platform,
+        errorMessage: pt.errorMessage ?? null,
+        errorCategory: pt.errorCategory ?? null,
+        errorSource: pt.errorSource ?? null,
+      })),
   };
 }
 
@@ -241,6 +254,69 @@ export async function updatePost(
     },
     apiKey,
   });
+}
+
+export async function createPost(
+  profileId: string,
+  data: {
+    content: string;
+    platform: { platform: string; accountId?: string };
+    scheduledAt?: string;
+    publishNow?: boolean;
+    mediaItems?: { url: string; type: string }[];
+    timezone?: string;
+  },
+  apiKey: string
+): Promise<LatePost> {
+  const body: Record<string, unknown> = {
+    content: data.content,
+    profileId,
+    platforms: [data.platform],
+  };
+
+  if (data.scheduledAt) {
+    body.scheduledFor = data.scheduledAt;
+  } else if (data.publishNow !== false) {
+    // Publish immediately by default (without publishNow, Zernio defaults to draft)
+    body.publishNow = true;
+  }
+
+  if (data.timezone) body.timezone = data.timezone;
+  if (data.mediaItems && data.mediaItems.length > 0)
+    body.mediaItems = data.mediaItems;
+
+  const raw = await lateRequest<{ post: LatePostRaw }>("/posts", {
+    method: "POST",
+    body,
+    apiKey,
+  });
+  const p = raw.post;
+  return {
+    id: p._id,
+    content: p.content,
+    platforms: p.platforms,
+    mediaItems: p.mediaItems ?? [],
+    status: p.status,
+    scheduledAt: p.scheduledFor,
+    publishedAt: p.publishedAt,
+    createdAt: p.createdAt,
+  };
+}
+
+export async function uploadMedia(
+  url: string,
+  type: string,
+  apiKey: string
+): Promise<{ id: string; url: string }> {
+  const data = await lateRequest<{ media: { _id: string; url: string } }>(
+    "/media/upload",
+    {
+      method: "POST",
+      body: { url, type },
+      apiKey,
+    }
+  );
+  return { id: data.media._id, url: data.media.url };
 }
 
 // ---------------------------------------------------------------------------
@@ -333,7 +409,7 @@ export interface FollowerStatsResponse {
 
 // GET /v1/analytics/best-time
 export interface BestTimeSlot {
-  day_of_week: number; // 0=Sunday, 6=Saturday
+  day_of_week: number; // 0=Monday, 6=Sunday
   hour: number; // 0-23 UTC
   avg_engagement: number;
   post_count: number;
@@ -393,11 +469,10 @@ export async function getDailyMetrics(
 
 export async function getFollowerStats(
   apiKey: string,
-  options?: { accountIds?: string; platform?: string; fromDate?: string; toDate?: string }
+  options?: { accountIds?: string; fromDate?: string; toDate?: string }
 ): Promise<FollowerStatsResponse> {
   const params = new URLSearchParams();
   if (options?.accountIds) params.set("accountIds", options.accountIds);
-  if (options?.platform) params.set("platform", options.platform);
   if (options?.fromDate) params.set("fromDate", options.fromDate);
   if (options?.toDate) params.set("toDate", options.toDate);
 

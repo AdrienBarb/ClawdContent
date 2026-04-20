@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { appRouter } from "@/lib/constants/appRouter";
 import { getPlatform } from "@/lib/constants/platforms";
@@ -14,7 +14,13 @@ import {
   FileText as FileTextIcon,
   UsersThree as UsersThreeIcon,
   ChartLineUp as ChartLineUpIcon,
+  X as XIcon,
+  Info as InfoIcon,
+  Lightning as LightningIcon,
+  ChartBar as ChartBarIcon,
+  Clock as ClockIcon,
 } from "@phosphor-icons/react";
+import SubscribeModal from "@/components/dashboard/SubscribeModal";
 import {
   AreaChart,
   Area,
@@ -114,15 +120,15 @@ const PERIODS: { value: Period; label: string }[] = [
   { value: "90d", label: "90 days" },
 ];
 
-const DAYS_ORDER = [1, 2, 3, 4, 5, 6, 0]; // Mon-Sun
+const DAYS_ORDER = [0, 1, 2, 3, 4, 5, 6]; // Mon-Sun (Zernio: 0=Monday, 6=Sunday)
 const DAY_LABELS: Record<number, string> = {
-  0: "Sun",
-  1: "Mon",
-  2: "Tue",
-  3: "Wed",
-  4: "Thu",
-  5: "Fri",
-  6: "Sat",
+  0: "Mon",
+  1: "Tue",
+  2: "Wed",
+  3: "Thu",
+  4: "Fri",
+  5: "Sat",
+  6: "Sun",
 };
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
@@ -428,10 +434,28 @@ function EmptyState() {
 // Main Component
 // ---------------------------------------------------------------------------
 
+const BANNER_STORAGE_KEY = "postclaw_analytics_banner_dismissed";
+
 export default function AnalyticsDashboard() {
   const { useGet } = useApi();
   const [period, setPeriod] = useState<Period>("30d");
   const [platform, setPlatform] = useState<string>("all");
+  const [bannerVisible, setBannerVisible] = useState(false);
+  const [showSubscribeModal, setShowSubscribeModal] = useState(false);
+
+  useEffect(() => {
+    setBannerVisible(localStorage.getItem(BANNER_STORAGE_KEY) !== "true");
+  }, []);
+
+  function dismissBanner() {
+    setBannerVisible(false);
+    localStorage.setItem(BANNER_STORAGE_KEY, "true");
+  }
+
+  const { data: dashboardStatus } = useGet(appRouter.api.dashboardStatus);
+  const subStatus = (dashboardStatus as { subscription?: { status: string } } | undefined)?.subscription?.status;
+  const hasActiveSubscription = subStatus === "active" || subStatus === "trialing" || subStatus === "past_due";
+  const showGlassPreview = !hasActiveSubscription;
 
   const platformParam = platform === "all" ? undefined : platform;
   const queryParams: Record<string, string> = { period };
@@ -528,7 +552,7 @@ export default function AnalyticsDashboard() {
     [connectedPlatforms]
   );
 
-  if (overviewLoading) return <LoadingSkeleton />;
+  if (!showGlassPreview && overviewLoading) return <LoadingSkeleton />;
 
   const hasData =
     overviewData &&
@@ -536,10 +560,164 @@ export default function AnalyticsDashboard() {
       overviewData.kpis.posts.value > 0 ||
       overviewData.dailyMetrics.length > 0);
 
-  if (!hasData && platform === "all") return <EmptyState />;
+  if (!showGlassPreview && !hasData && platform === "all") return <EmptyState />;
+
+  if (showGlassPreview) {
+    return (
+      <div className="relative min-h-[calc(100vh-8rem)]">
+        <h1 className="text-2xl font-semibold tracking-tight text-gray-900 mb-6">
+          Analytics
+        </h1>
+
+        <div className="absolute inset-0 mt-16">
+          {/* Blurred fake data */}
+          <div className="blur-[1.5px] pointer-events-none select-none space-y-6 px-6 max-w-5xl mx-auto" style={{ maskImage: "radial-gradient(ellipse 70% 60% at 50% 40%, black 30%, transparent 80%)", WebkitMaskImage: "radial-gradient(ellipse 70% 60% at 50% 40%, black 30%, transparent 80%)" }}>
+            {/* Fake KPI cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                { label: "Impressions", value: "24.8K", change: "+12%" },
+                { label: "Engagement", value: "1,847", change: "+8%" },
+                { label: "Posts Published", value: "64", change: "+15%" },
+                { label: "Followers", value: "2,340", change: "+3%" },
+              ].map((kpi) => (
+                <div key={kpi.label} className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">{kpi.label}</p>
+                  <p className="text-2xl font-bold text-gray-900">{kpi.value}</p>
+                  <p className="text-xs text-emerald-600 mt-1.5">{kpi.change} vs prev period</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Fake charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
+                <p className="text-sm font-semibold text-gray-700 mb-4">Impressions</p>
+                <div className="h-56 flex items-end gap-1 px-4">
+                  {[40, 55, 35, 70, 60, 80, 45, 90, 65, 75, 85, 50, 95, 70].map((h, i) => (
+                    <div key={i} className="flex-1 rounded-t bg-[var(--sidebar-accent)] opacity-30" style={{ height: `${h}%` }} />
+                  ))}
+                </div>
+              </div>
+              <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
+                <p className="text-sm font-semibold text-gray-700 mb-4">Engagement</p>
+                <div className="h-56 flex items-end gap-1 px-4">
+                  {[30, 45, 25, 60, 50, 70, 35, 80, 55, 65, 75, 40, 85, 60].map((h, i) => (
+                    <div key={i} className="flex-1 rounded-t bg-indigo-500 opacity-30" style={{ height: `${h}%` }} />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Fake top posts */}
+            <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
+              <p className="text-sm font-semibold text-gray-700 mb-4">Top Performing Posts</p>
+              <div className="space-y-3">
+                {[
+                  { platform: "twitter", text: "Just launched our new feature — here's what changed...", views: "3.2K", eng: "284" },
+                  { platform: "linkedin", text: "3 lessons from scaling a SaaS to $10K MRR...", views: "1.8K", eng: "156" },
+                  { platform: "instagram", text: "Behind the scenes of building in public...", views: "1.2K", eng: "98" },
+                ].map((post, i) => {
+                  const pl = getPlatform(post.platform);
+                  return (
+                    <div key={i} className="flex items-start gap-4 py-3 border-b border-gray-50 last:border-0">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white mt-0.5" style={{ backgroundColor: pl?.color ?? "#6b7280" }}>
+                        {pl?.icon}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-gray-900">{post.text}</p>
+                        <div className="flex items-center gap-3 mt-1.5">
+                          <span className="text-xs text-gray-400">{post.views} views</span>
+                          <span className="text-xs text-gray-400">{post.eng} engagements</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* CTA overlay */}
+          <div className="fixed inset-0 z-10 flex items-center justify-center pointer-events-none md:pl-64">
+            <div className="bg-white rounded-2xl shadow-2xl border border-gray-200/60 px-8 py-8 max-w-md w-full text-center pointer-events-auto">
+              <p className="text-xs font-semibold uppercase tracking-widest text-[var(--sidebar-accent)] mb-3">
+                Analytics
+              </p>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                See what&apos;s working across all your platforms
+              </h3>
+              <p className="text-sm text-gray-500 leading-relaxed mb-5">
+                Track impressions, engagement, and growth — all from one dashboard.
+              </p>
+
+              <div className="flex flex-col gap-2.5 mb-6 text-left">
+                <div className="flex items-center gap-3 rounded-xl bg-gray-50 px-4 py-2.5">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--sidebar-accent)]/10 text-[var(--sidebar-accent)]">
+                    <ChartBarIcon weight="bold" className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Cross-platform metrics</p>
+                    <p className="text-xs text-gray-500">Impressions, engagement, and followers in one view</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 rounded-xl bg-gray-50 px-4 py-2.5">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--sidebar-accent)]/10 text-[var(--sidebar-accent)]">
+                    <LightningIcon weight="bold" className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Top performing posts</p>
+                    <p className="text-xs text-gray-500">Find what resonates and double down</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 rounded-xl bg-gray-50 px-4 py-2.5">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--sidebar-accent)]/10 text-[var(--sidebar-accent)]">
+                    <ClockIcon weight="bold" className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Best time to post</p>
+                    <p className="text-xs text-gray-500">AI-powered scheduling based on your audience</p>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowSubscribeModal(true)}
+                className="inline-flex items-center gap-2 rounded-xl bg-[var(--sidebar-accent)] px-6 py-3 text-sm font-semibold text-white transition-all hover:opacity-90 hover:shadow-lg cursor-pointer w-full justify-center"
+              >
+                Get started
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <SubscribeModal open={showSubscribeModal} onOpenChange={setShowSubscribeModal} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
+      {/* New user banner */}
+      {bannerVisible && (
+        <div className="flex items-start gap-3 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+          <InfoIcon className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" weight="fill" />
+          <p className="text-sm text-blue-700 flex-1">
+            Just connected your accounts? Analytics data may take a few hours to
+            sync from your social platforms. Check back soon!
+          </p>
+          <button
+            onClick={dismissBanner}
+            className="shrink-0 rounded-lg p-1 text-blue-400 hover:bg-blue-100 hover:text-blue-600 transition-colors cursor-pointer"
+            aria-label="Dismiss"
+          >
+            <XIcon className="h-4 w-4" weight="bold" />
+          </button>
+        </div>
+      )}
+
       {/* Header + filters */}
       <div className="flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

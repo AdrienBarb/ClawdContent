@@ -3,7 +3,7 @@ import { errorHandler } from "@/lib/errors/errorHandler";
 import { auth } from "@/lib/better-auth/auth";
 import { NextResponse, NextRequest } from "next/server";
 import { headers } from "next/headers";
-import { getFollowerGrowth, isAnalyticsEnabled } from "@/lib/services/analytics";
+import { getFollowerGrowth } from "@/lib/services/analytics";
 import { analyticsFollowersQuerySchema } from "@/lib/schemas/analytics";
 
 export async function GET(req: NextRequest) {
@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
       headers: await headers(),
     });
 
-    if (!session?.user || !isAnalyticsEnabled(session.user.email)) {
+    if (!session?.user) {
       return NextResponse.json(
         { error: errorMessages.UNAUTHORIZED },
         { status: 401 }

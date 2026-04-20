@@ -11,8 +11,10 @@ export const connectAccountSchema = z.object({
     "pinterest",
     "threads",
     "bluesky",
-    "mastodon",
-    "discord",
+    "reddit",
+    "telegram",
+    "snapchat",
+    "googlebusiness",
   ]),
 });
 

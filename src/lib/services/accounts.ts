@@ -4,10 +4,6 @@ import {
   listAccounts as lateListAccounts,
   deleteAccount as lateDeleteAccount,
 } from "@/lib/late/mutations";
-import {
-  buildAccountsContext,
-  updateContainerEnvVars,
-} from "./provisioning";
 
 export async function getConnectedAccounts(userId: string) {
   const lateProfile = await prisma.lateProfile.findUnique({
@@ -83,12 +79,6 @@ export async function syncAccountsFromLate(userId: string): Promise<void> {
     },
     data: { status: "disconnected" },
   });
-
-  // Update container with new accounts context
-  const context = await buildAccountsContext(userId);
-  await updateContainerEnvVars(userId, {
-    ZERNIO_ACCOUNTS_CONTEXT: context,
-  });
 }
 
 export async function disconnectAccount(
@@ -126,12 +116,6 @@ export async function disconnectAccount(
       lateProfileId: lateProfile.id,
     },
     data: { status: "disconnected" },
-  });
-
-  // Update container with new accounts context
-  const context = await buildAccountsContext(userId);
-  await updateContainerEnvVars(userId, {
-    ZERNIO_ACCOUNTS_CONTEXT: context,
   });
 }
 
@@ -171,11 +155,5 @@ export async function removeAccount(
       id: accountId,
       lateProfileId: lateProfile.id,
     },
-  });
-
-  // Update container with new accounts context
-  const context = await buildAccountsContext(userId);
-  await updateContainerEnvVars(userId, {
-    ZERNIO_ACCOUNTS_CONTEXT: context,
   });
 }

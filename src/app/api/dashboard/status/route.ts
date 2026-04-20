@@ -5,7 +5,6 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { after } from "next/server";
 import { prisma } from "@/lib/db/prisma";
-import { getBotStatus } from "@/lib/services/bot";
 import { getPlan, type PlanId } from "@/lib/constants/plans";
 import { getCreditBalance } from "@/lib/services/credits";
 import { syncAccountsFromLate } from "@/lib/services/accounts";
@@ -28,7 +27,7 @@ export async function GET() {
 
     const userId = session.user.id;
 
-    const [user, subscription, botStatus, lateProfile, credits] =
+    const [user, subscription, lateProfile, credits, userMessageCount] =
       await Promise.all([
         prisma.user.findUnique({
           where: { id: userId },
@@ -41,12 +40,14 @@ export async function GET() {
           },
         }),
         prisma.subscription.findUnique({ where: { userId } }),
-        getBotStatus(userId),
         prisma.lateProfile.findUnique({
           where: { userId },
           include: { socialAccounts: true },
         }),
         getCreditBalance(userId),
+        prisma.chatMessage.count({
+          where: { userId, role: "user" },
+        }),
       ]);
 
     const planId = (subscription?.planId as PlanId) || "starter";
@@ -89,7 +90,6 @@ export async function GET() {
         name: plan.name,
         socialAccountLimit: plan.socialAccountLimit,
       },
-      botStatus: botStatus?.status ?? null,
       accountCount:
         lateProfile?.socialAccounts?.filter((a) => a.status === "active")
           .length ?? 0,
@@ -101,6 +101,7 @@ export async function GET() {
           status: a.status,
         })) ?? [],
       credits,
+      freeMessageUsed: userMessageCount >= 1,
     });
   } catch (error) {
     return errorHandler(error);
