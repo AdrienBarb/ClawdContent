@@ -12,7 +12,7 @@ import {
 
 export async function getUserPosts(
   userId: string,
-  options?: { status?: string; limit?: number; page?: number }
+  options?: { status?: string; limit?: number; page?: number; sortBy?: string }
 ): Promise<PaginatedPosts> {
   const lateProfile = await prisma.lateProfile.findUnique({
     where: { userId },

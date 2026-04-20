@@ -174,20 +174,10 @@ function getPostDate(post: Post): string {
  * Scheduled: ascending (soonest first — it's a queue).
  * Published/Failed: descending (most recent first).
  */
-function groupByDate(
-  posts: Post[],
-  status: StatusFilter
-): [string, Post[]][] {
-  const asc = status === "scheduled";
-
-  const sorted = [...posts].sort((a, b) => {
-    const dateA = new Date(getPostDate(a)).getTime();
-    const dateB = new Date(getPostDate(b)).getTime();
-    return asc ? dateA - dateB : dateB - dateA;
-  });
-
+/** Group posts by date, preserving server sort order. */
+function groupByDate(posts: Post[]): [string, Post[]][] {
   const groups = new Map<string, Post[]>();
-  for (const post of sorted) {
+  for (const post of posts) {
     const dateKey = new Date(getPostDate(post)).toDateString();
     if (!groups.has(dateKey)) groups.set(dateKey, []);
     groups.get(dateKey)!.push(post);
@@ -231,9 +221,11 @@ export default function ContentList() {
   const subStatus = (dashboardStatus as { subscription?: { status: string } } | undefined)?.subscription?.status;
   const hasActiveSubscription = subStatus === "active" || subStatus === "trialing" || subStatus === "past_due";
 
+  const sortBy = statusFilter === "scheduled" ? "scheduled-asc" : "scheduled-desc";
+
   const { data, isLoading, refetch } = useGet(
     appRouter.api.posts,
-    { status: statusFilter, page, limit: 20 },
+    { status: statusFilter, page, limit: 20, sortBy },
     { refetchInterval: 10000 }
   );
 
@@ -280,7 +272,7 @@ export default function ContentList() {
     | { page: number; limit: number; total: number; pages: number }
     | undefined;
 
-  const grouped = groupByDate(posts, statusFilter);
+  const grouped = groupByDate(posts);
 
   // ---------- Handlers ----------
 
