@@ -314,7 +314,8 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
     }
   };
 
-  const canSend = (input.trim() || attachedMedia) && !isLoading;
+  const hasAccounts = accountCount > 0;
+  const canSend = (input.trim() || attachedMedia) && !isLoading && hasAccounts;
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] max-w-3xl mx-auto">
@@ -590,9 +591,10 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
                 e.target.style.height = `${Math.min(e.target.scrollHeight, 160)}px`;
               }}
               onKeyDown={handleKeyDown}
-              placeholder="Type your thoughts..."
+              placeholder={hasAccounts ? "Type your thoughts..." : "Connect a social account to start chatting"}
+              disabled={!hasAccounts}
               rows={1}
-              className="w-full resize-none bg-transparent px-5 pt-4 pb-2 text-base leading-relaxed focus:outline-none placeholder:text-gray-400"
+              className="w-full resize-none bg-transparent px-5 pt-4 pb-2 text-base leading-relaxed focus:outline-none placeholder:text-gray-400 disabled:cursor-not-allowed disabled:opacity-60"
               style={{ minHeight: "44px", maxHeight: "160px" }}
             />
             <div className="flex items-center justify-between px-3 pb-3">
