@@ -37,7 +37,9 @@ export async function GET(req: NextRequest) {
       id: m.id,
       role: m.role as "user" | "assistant",
       content: m.content,
-      parts: [{ type: "text" as const, text: m.content }],
+      parts: (Array.isArray(m.parts) ? m.parts : null) as UIMessage["parts"] ?? [
+        { type: "text" as const, text: m.content },
+      ],
     }));
 
     return NextResponse.json({

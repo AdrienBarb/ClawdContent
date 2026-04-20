@@ -5,20 +5,23 @@ import { formatUserContext } from "@/lib/services/profile";
  * given IANA timezone.  Uses Intl to avoid external dependencies.
  */
 function getUtcOffsetString(timezone: string): string {
-  const now = new Date();
-  // Format a date in the target timezone with short offset → "GMT+2", "GMT-5", etc.
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: timezone,
-    timeZoneName: "shortOffset",
-  }).formatToParts(now);
-  const gmtPart = parts.find((p) => p.type === "timeZoneName")?.value ?? "GMT";
-  // gmtPart is e.g. "GMT+2", "GMT-5:30", "GMT"
-  const match = gmtPart.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);
-  if (!match) return "+00:00";
-  const sign = match[1];
-  const hours = match[2].padStart(2, "0");
-  const minutes = match[3] ?? "00";
-  return `${sign}${hours}:${minutes}`;
+  try {
+    const now = new Date();
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: timezone,
+      timeZoneName: "shortOffset",
+    }).formatToParts(now);
+    const gmtPart =
+      parts.find((p) => p.type === "timeZoneName")?.value ?? "GMT";
+    const match = gmtPart.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);
+    if (!match) return "+00:00";
+    const sign = match[1];
+    const hours = match[2].padStart(2, "0");
+    const minutes = match[3] ?? "00";
+    return `${sign}${hours}:${minutes}`;
+  } catch {
+    return "+00:00";
+  }
 }
 
 interface UserData {
@@ -41,18 +44,12 @@ export function buildSystemPrompt(user: UserData): string {
 
   return `You are PostClaw, an expert AI social media manager. You help users create, schedule, and publish content across multiple social media platforms.
 
-## CRITICAL RULES — NEVER BREAK THESE
-1. NEVER claim you did something without actually calling a tool. If you did not call a tool, say so.
-2. NEVER invent or fabricate tool results. Only report what the tool actually returned.
-3. ALWAYS report the exact status returned by tools (published, scheduled, failed, error).
-4. If a tool returns an error, ALWAYS tell the user the exact error message. Never hide errors.
-5. If you're unsure whether something is possible, check your tools list. If a tool exists for it, use it. If no tool exists, tell the user honestly.
-6. NEVER say "I can't do X" without first checking if you have a tool for it.
-7. When reporting numbers from analytics, report the EXACT numbers returned by the tool. NEVER round, convert units, or abbreviate (e.g., 4386 impressions must stay "4386", never "4.4M" or "4.4K").
-8. For BATCH operations (scheduling multiple posts): you MUST call createPost once per content piece and verify each result. NEVER report success for a post unless you received an actual tool result with a postId for it. If you run out of steps, tell the user which posts were NOT created.
-9. After batch scheduling, use getPostLogs to verify all posts were created successfully. Report any discrepancies immediately.
-10. When you say "I'll do X now" or "I'll fix it", you MUST call the appropriate tool in that same response. NEVER promise an action without immediately performing it.
-11. NEVER mention platform limitations unless the user is explicitly trying to do something that hits that limitation. For example, if the user asks to create a post on Instagram, just create it — do not bring up unpublish limitations.
+## CRITICAL RULES
+1. Your conversation history contains your previous tool calls and their results. TRUST THIS HISTORY. If you see a tool result with a postId and status, that action happened — do not second-guess it or claim you didn't do it.
+2. Only report what tools actually returned. Never invent results or statuses.
+3. When you say you'll do something, call the tool immediately in that same response.
+4. Report exact numbers from tools — never round or abbreviate (4386 stays "4386", not "4.4K").
+5. Don't bring up platform limitations unless the user is trying to do something that hits one.
 
 ## Current date and time
 ${new Date().toLocaleString("en-US", { timeZone: user.timezone ?? "UTC", dateStyle: "full", timeStyle: "short" })}
@@ -60,6 +57,7 @@ Timezone: ${user.timezone ?? "UTC"}
 UTC offset: ${getUtcOffsetString(user.timezone ?? "UTC")}
 
 ## Your user
+Name: ${user.name}
 ${userContext}
 Plan: ${user.planId}
 

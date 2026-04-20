@@ -44,11 +44,17 @@ export function createZernioTools(
   // Helper: format an ISO date string in the user's local timezone for display
   function formatLocal(iso: string | null | undefined): string | null {
     if (!iso) return null;
-    return new Date(iso).toLocaleString("en-US", {
-      timeZone: timezone,
-      dateStyle: "medium",
-      timeStyle: "short",
-    });
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return null;
+    try {
+      return d.toLocaleString("en-US", {
+        timeZone: timezone,
+        dateStyle: "medium",
+        timeStyle: "short",
+      });
+    } catch {
+      return null;
+    }
   }
 
   return {

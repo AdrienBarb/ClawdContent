@@ -1,16 +1,24 @@
 import { prisma } from "@/lib/db/prisma";
+import type { Prisma } from "@prisma/client";
 
 export async function saveChatMessage({
   userId,
   role,
   content,
+  parts,
 }: {
   userId: string;
   role: "user" | "assistant";
   content: string;
+  parts?: Prisma.InputJsonValue;
 }) {
   return prisma.chatMessage.create({
-    data: { userId, role, content },
+    data: {
+      userId,
+      role,
+      content,
+      ...(parts !== undefined && { parts }),
+    },
   });
 }
 

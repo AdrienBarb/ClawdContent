@@ -4,6 +4,7 @@ import { auth } from "@/lib/better-auth/auth";
 import { NextResponse, NextRequest } from "next/server";
 import { headers } from "next/headers";
 import { streamText, UIMessage, convertToModelMessages, stepCountIs } from "ai";
+import type { Prisma } from "@prisma/client";
 import { reasoningModel, executionModel } from "@/lib/ai/provider";
 import { buildSystemPrompt } from "@/lib/ai/system-prompt";
 import { createZernioTools } from "@/lib/ai/tools";
@@ -78,7 +79,26 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { messages }: { messages: UIMessage[] } = await req.json();
+    const { messages: rawMessages }: { messages: UIMessage[] } =
+      await req.json();
+
+    // Sanitize messages: strip system role, cap length, remove incomplete tool calls
+    const messages: UIMessage[] = rawMessages
+      .filter((m) => m.role === "user" || m.role === "assistant")
+      .slice(-100)
+      .map((m) => ({
+        ...m,
+        parts: (m.parts ?? []).filter((p) => {
+          // Keep text parts
+          if (p.type === "text") return true;
+          // Keep tool parts only if they have a completed result
+          if ("state" in p && "output" in p && p.state === "output-available") {
+            return true;
+          }
+          // Drop everything else (incomplete tool calls, unknown part types)
+          return false;
+        }),
+      }));
 
     // Build system prompt from user data
     const systemPrompt = buildSystemPrompt({
@@ -138,47 +158,81 @@ export async function POST(req: NextRequest) {
         }
         return {};
       },
-      stopWhen: stepCountIs(25),
+      stopWhen: stepCountIs(10),
       onFinish: async ({ text, usage, steps }) => {
-        if (text) {
-          await saveChatMessage({
-            userId,
-            role: "assistant",
-            content: text,
-          });
+        // Build full UIMessage parts from steps (text + tool calls)
+        // so the AI can see its own actions when history is reloaded
+        const parts: unknown[] = [];
+        try {
+          // Build full UIMessage parts from steps (text + tool calls)
+          for (const step of steps) {
+            for (const tc of step.toolCalls) {
+              const tr = step.toolResults.find(
+                (r) => r.toolCallId === tc.toolCallId
+              );
+              parts.push({
+                type: "dynamic-tool",
+                toolCallId: tc.toolCallId,
+                toolName: tc.toolName,
+                input: tc.input,
+                state: "output-available",
+                output: tr?.output,
+              });
+            }
+            if (step.text) {
+              parts.push({ type: "text", text: step.text });
+            }
+          }
+
+          if (text || parts.length > 0) {
+            await saveChatMessage({
+              userId,
+              role: "assistant",
+              content: text || "",
+              parts:
+                parts.length > 0
+                  ? (parts as unknown as Prisma.InputJsonValue)
+                  : undefined,
+            });
+          }
+        } catch (error) {
+          console.error("Failed to save assistant message:", error);
         }
 
         // Track token usage and estimated cost per user
-        if (usage) {
-          const inputTokens = usage.inputTokens ?? 0;
-          const outputTokens = usage.outputTokens ?? 0;
-          const cacheReadTokens =
-            usage.inputTokenDetails?.cacheReadTokens ?? 0;
-          const cacheWriteTokens =
-            usage.inputTokenDetails?.cacheWriteTokens ?? 0;
+        try {
+          if (usage) {
+            const inputTokens = usage.inputTokens ?? 0;
+            const outputTokens = usage.outputTokens ?? 0;
+            const cacheReadTokens =
+              usage.inputTokenDetails?.cacheReadTokens ?? 0;
+            const cacheWriteTokens =
+              usage.inputTokenDetails?.cacheWriteTokens ?? 0;
 
-          // Compute cost from per-step usage (step 0 = Sonnet, step 1+ = Haiku)
-          let estimatedCost = 0;
-          for (let i = 0; i < steps.length; i++) {
-            const s = steps[i];
-            const isSonnet = i === 0;
-            const inputRate = isSonnet ? 3 : 1; // $/M tokens
-            const outputRate = isSonnet ? 15 : 5;
-            estimatedCost +=
-              ((s.usage.inputTokens ?? 0) * inputRate +
-                (s.usage.outputTokens ?? 0) * outputRate) /
-              1_000_000;
+            let estimatedCost = 0;
+            for (let i = 0; i < steps.length; i++) {
+              const s = steps[i];
+              const isSonnet = i === 0;
+              const inputRate = isSonnet ? 3 : 1; // $/M tokens
+              const outputRate = isSonnet ? 15 : 5;
+              estimatedCost +=
+                ((s.usage.inputTokens ?? 0) * inputRate +
+                  (s.usage.outputTokens ?? 0) * outputRate) /
+                1_000_000;
+            }
+
+            captureServerEvent(userId, "ai_chat_usage", {
+              input_tokens: inputTokens,
+              output_tokens: outputTokens,
+              total_tokens: inputTokens + outputTokens,
+              cache_read_tokens: cacheReadTokens,
+              cache_write_tokens: cacheWriteTokens,
+              estimated_cost_usd: Math.round(estimatedCost * 10000) / 10000,
+              step_count: steps.length,
+            });
           }
-
-          captureServerEvent(userId, "ai_chat_usage", {
-            input_tokens: inputTokens,
-            output_tokens: outputTokens,
-            total_tokens: inputTokens + outputTokens,
-            cache_read_tokens: cacheReadTokens,
-            cache_write_tokens: cacheWriteTokens,
-            estimated_cost_usd: Math.round(estimatedCost * 10000) / 10000,
-            step_count: steps.length,
-          });
+        } catch {
+          // PostHog tracking failure is non-critical
         }
       },
     });

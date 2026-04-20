@@ -161,6 +161,7 @@ model ChatMessage {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   role      String   // "user" | "assistant"
   content   String
+  parts     Json?    // Full UIMessage parts (text + tool calls) for AI context
   createdAt DateTime @default(now())
 
   @@index([userId, createdAt])
