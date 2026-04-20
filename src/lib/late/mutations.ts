@@ -522,6 +522,56 @@ export async function getAccountsHealth(
   return lateRequest(`/accounts/health?profileId=${profileId}`, { apiKey });
 }
 
+// ---------------------------------------------------------------------------
+// Logs
+// ---------------------------------------------------------------------------
+
+export interface LogRecord {
+  type: string;
+  action: string;
+  platform: string | null;
+  status: string;
+  statusCode: number | null;
+  errorMessage: string | null;
+  errorCode: string | null;
+  durationMs: number | null;
+  endpoint: string | null;
+  requestBody: string | null;
+  responseBody: string | null;
+  createdAt: string;
+  metadata: string | null;
+}
+
+export interface LogsResponse {
+  logs: LogRecord[];
+  pagination: { page: number; limit: number; total: number; pages: number };
+}
+
+export async function getLogs(
+  apiKey: string,
+  options?: {
+    type?: string;
+    status?: string;
+    platform?: string;
+    action?: string;
+    days?: number;
+    limit?: number;
+    page?: number;
+  }
+): Promise<LogsResponse> {
+  const params = new URLSearchParams();
+  if (options?.type) params.set("type", options.type);
+  if (options?.status) params.set("status", options.status);
+  if (options?.platform) params.set("platform", options.platform);
+  if (options?.action) params.set("action", options.action);
+  if (options?.days) params.set("days", String(options.days));
+  if (options?.limit) params.set("limit", String(options.limit));
+  if (options?.page) params.set("page", String(options.page));
+
+  const qs = params.toString();
+  return lateRequest(`/logs${qs ? `?${qs}` : ""}`, { apiKey });
+}
+
 export async function getBestTimeToPost(
   apiKey: string,
   options?: { platform?: string; source?: string }

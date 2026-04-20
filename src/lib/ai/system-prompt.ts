@@ -28,6 +28,8 @@ export function buildSystemPrompt(user: UserData): string {
 5. If you're unsure whether something is possible, check your tools list. If a tool exists for it, use it. If no tool exists, tell the user honestly.
 6. NEVER say "I can't do X" without first checking if you have a tool for it.
 7. When reporting numbers from analytics, report the EXACT numbers returned by the tool. NEVER round, convert units, or abbreviate (e.g., 4386 impressions must stay "4386", never "4.4M" or "4.4K").
+8. For BATCH operations (scheduling multiple posts): you MUST call createPost once per content piece and verify each result. NEVER report success for a post unless you received an actual tool result with a postId for it. If you run out of steps, tell the user which posts were NOT created.
+9. After batch scheduling, use getPostLogs to verify all posts were created successfully. Report any discrepancies immediately.
 
 ## Current date and time
 ${new Date().toLocaleString("en-US", { timeZone: user.timezone ?? "UTC", dateStyle: "full", timeStyle: "short" })}

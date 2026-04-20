@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { after } from "next/server";
 import crypto from "crypto";
 import { prisma } from "@/lib/db/prisma";
+import { resendClient } from "@/lib/resend/resendClient";
+import { AccountDisconnectedEmail } from "@/lib/emails/AccountDisconnectedEmail";
+import config from "@/lib/config";
 
 const ZERNIO_WEBHOOK_SECRET = process.env.ZERNIO_WEBHOOK_SECRET;
 
@@ -34,13 +38,54 @@ export async function POST(req: NextRequest) {
 
   switch (event.event) {
     case "account.disconnected": {
-      const { accountId, disconnectionType, reason } = event.account;
+      const { accountId, platform, username, disconnectionType, reason } =
+        event.account;
 
       // Only handle unintentional disconnects (token expired/revoked)
       if (disconnectionType === "unintentional") {
         await prisma.socialAccount.updateMany({
           where: { lateAccountId: accountId },
           data: { status: "disconnected" },
+        });
+
+        // Send email notification in background
+        after(async () => {
+          try {
+            // Find the user who owns this account
+            const socialAccount = await prisma.socialAccount.findUnique({
+              where: { lateAccountId: accountId },
+              include: {
+                lateProfile: {
+                  include: { user: { select: { email: true, name: true } } },
+                },
+              },
+            });
+
+            if (!socialAccount?.lateProfile?.user?.email) return;
+
+            const { email, name } = socialAccount.lateProfile.user;
+            const reconnectUrl = `${config.project.url}/d/accounts`;
+
+            await resendClient.emails.send({
+              from: config.contact.email,
+              to: email,
+              subject: `Your ${platform} account needs to be reconnected`,
+              react: AccountDisconnectedEmail({
+                platform,
+                username,
+                reconnectUrl,
+              }),
+            });
+
+            console.log(
+              `[Zernio Webhook] Sent disconnection email to ${name ?? email} for ${platform}/@${username}`
+            );
+          } catch (error) {
+            console.error(
+              "[Zernio Webhook] Failed to send disconnection email:",
+              error
+            );
+          }
         });
 
         console.log(
@@ -59,8 +104,21 @@ export async function POST(req: NextRequest) {
       break;
     }
 
+    case "post.failed":
+    case "post.partial": {
+      const { id, content, platforms } = event.post;
+      const failedPlatforms = platforms
+        .filter((p: { status: string }) => p.status === "failed")
+        .map((p: { platform: string; error?: string }) => `${p.platform}: ${p.error ?? "unknown error"}`)
+        .join(", ");
+
+      console.error(
+        `[Zernio Webhook] Post ${event.event} — postId=${id} content="${content?.slice(0, 50)}..." failures=[${failedPlatforms}]`
+      );
+      break;
+    }
+
     default:
-      // Ignore unhandled events
       break;
   }
 

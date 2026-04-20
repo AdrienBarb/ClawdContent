@@ -11,6 +11,7 @@ import {
   getDailyMetrics,
   getBestTimeToPost,
   listAccounts,
+  getLogs,
 } from "@/lib/late/mutations";
 
 interface SocialAccount {
@@ -96,7 +97,7 @@ export function createZernioTools(
           )
         );
 
-        return results.map((r, i) => ({
+        const platformResults = results.map((r, i) => ({
           platform: platforms[i],
           success: r.status === "fulfilled",
           ...(r.status === "fulfilled"
@@ -110,6 +111,14 @@ export function createZernioTools(
                 error: r.reason?.message ?? "Unknown error",
               }),
         }));
+
+        const succeeded = platformResults.filter((r) => r.success).length;
+        const failed = platformResults.filter((r) => !r.success).length;
+
+        return {
+          summary: `${succeeded}/${platforms.length} succeeded${failed > 0 ? `, ${failed} FAILED` : ""}`,
+          results: platformResults,
+        };
       },
     }),
 
@@ -286,6 +295,49 @@ export function createZernioTools(
           username: a.username,
           isActive: a.isActive,
         }));
+      },
+    }),
+
+    getPostLogs: tool({
+      description:
+        "Check recent publishing logs to debug failures or verify that posts were created successfully. Use this after batch operations to confirm nothing was silently dropped.",
+      inputSchema: z.object({
+        status: z
+          .string()
+          .optional()
+          .describe("Filter: success, failed, pending, skipped, or all (default all)"),
+        platform: z
+          .string()
+          .optional()
+          .describe("Filter by platform"),
+        days: z
+          .number()
+          .optional()
+          .describe("Look back N days (default 7, max 90)"),
+        limit: z
+          .number()
+          .optional()
+          .describe("Max logs to return (default 20, max 100)"),
+      }),
+      execute: async ({ status, platform, days, limit }) => {
+        const result = await getLogs(apiKey, {
+          type: "publishing",
+          status: status ?? "all",
+          platform,
+          days: days ?? 7,
+          limit: limit ?? 20,
+        });
+        return {
+          logs: result.logs.map((l) => ({
+            action: l.action,
+            platform: l.platform,
+            status: l.status,
+            errorMessage: l.errorMessage,
+            errorCode: l.errorCode,
+            createdAt: l.createdAt,
+          })),
+          pagination: result.pagination,
+        };
       },
     }),
   };
