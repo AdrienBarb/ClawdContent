@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import {
   getConnectUrl as lateGetConnectUrl,
-  listAccounts as lateListAccounts,
   deleteAccount as lateDeleteAccount,
   getAccountsHealth,
 } from "@/lib/late/mutations";
@@ -45,33 +44,17 @@ export async function syncAccountsFromLate(userId: string): Promise<void> {
     throw new Error("Late profile not found");
   }
 
-  // Use health endpoint for detailed token status, fall back to listAccounts
-  let accountStatuses: { id: string; platform: string; username: string; isActive: boolean }[];
-
-  try {
-    const health = await getAccountsHealth(
-      lateProfile.lateProfileId,
-      lateProfile.lateApiKey
-    );
-    accountStatuses = health.accounts.map((a) => ({
-      id: a.accountId,
-      platform: a.platform,
-      username: a.username,
-      isActive: a.tokenValid && !a.needsReconnect,
-    }));
-  } catch {
-    // Fall back to simple list if health endpoint fails
-    const accounts = await lateListAccounts(
-      lateProfile.lateProfileId,
-      lateProfile.lateApiKey
-    );
-    accountStatuses = accounts.map((a) => ({
-      id: a.id,
-      platform: a.platform,
-      username: a.username,
-      isActive: a.isActive,
-    }));
-  }
+  // Use health endpoint for detailed token status (tokenValid + needsReconnect)
+  const health = await getAccountsHealth(
+    lateProfile.lateProfileId,
+    lateProfile.lateApiKey
+  );
+  const accountStatuses = health.accounts.map((a) => ({
+    id: a.accountId,
+    platform: a.platform,
+    username: a.username,
+    isActive: a.tokenValid && !a.needsReconnect,
+  }));
 
   // Upsert each account from Zernio with its real status
   for (const account of accountStatuses) {
