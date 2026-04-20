@@ -8,6 +8,7 @@ import { reasoningModel, executionModel } from "@/lib/ai/provider";
 import { buildSystemPrompt } from "@/lib/ai/system-prompt";
 import { createZernioTools } from "@/lib/ai/tools";
 import { saveChatMessage } from "@/lib/services/chatMessages";
+import { captureServerEvent } from "@/lib/tracking/postHogClient";
 import { prisma } from "@/lib/db/prisma";
 
 export const maxDuration = 300;
@@ -138,12 +139,45 @@ export async function POST(req: NextRequest) {
         return {};
       },
       stopWhen: stepCountIs(25),
-      onFinish: async ({ text }) => {
+      onFinish: async ({ text, usage, steps }) => {
         if (text) {
           await saveChatMessage({
             userId,
             role: "assistant",
             content: text,
+          });
+        }
+
+        // Track token usage and estimated cost per user
+        if (usage) {
+          const inputTokens = usage.inputTokens ?? 0;
+          const outputTokens = usage.outputTokens ?? 0;
+          const cacheReadTokens =
+            usage.inputTokenDetails?.cacheReadTokens ?? 0;
+          const cacheWriteTokens =
+            usage.inputTokenDetails?.cacheWriteTokens ?? 0;
+
+          // Compute cost from per-step usage (step 0 = Sonnet, step 1+ = Haiku)
+          let estimatedCost = 0;
+          for (let i = 0; i < steps.length; i++) {
+            const s = steps[i];
+            const isSonnet = i === 0;
+            const inputRate = isSonnet ? 3 : 1; // $/M tokens
+            const outputRate = isSonnet ? 15 : 5;
+            estimatedCost +=
+              ((s.usage.inputTokens ?? 0) * inputRate +
+                (s.usage.outputTokens ?? 0) * outputRate) /
+              1_000_000;
+          }
+
+          captureServerEvent(userId, "ai_chat_usage", {
+            input_tokens: inputTokens,
+            output_tokens: outputTokens,
+            total_tokens: inputTokens + outputTokens,
+            cache_read_tokens: cacheReadTokens,
+            cache_write_tokens: cacheWriteTokens,
+            estimated_cost_usd: Math.round(estimatedCost * 10000) / 10000,
+            step_count: steps.length,
           });
         }
       },
