@@ -47,8 +47,11 @@ export default function MediaUploadModal({
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<UploadProgress | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [currentFileIndex, setCurrentFileIndex] = useState(0);
+  const [totalFiles, setTotalFiles] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const xhrRef = useRef<XMLHttpRequest | null>(null);
+  const queueRef = useRef<File[]>([]);
 
   // Close on Escape
   useEffect(() => {
@@ -71,6 +74,9 @@ export default function MediaUploadModal({
     setError(null);
     setProgress(null);
     setUploading(false);
+    setCurrentFileIndex(0);
+    setTotalFiles(0);
+    queueRef.current = [];
   }, []);
 
   const handleClose = useCallback(() => {
@@ -93,102 +99,129 @@ export default function MediaUploadModal({
     return null;
   };
 
-  const uploadFile = useCallback(
-    (file: File) => {
-      const validationError = validateFile(file);
-      if (validationError) {
-        setError(validationError);
-        return;
+  const processNextRef = useRef<() => void>(() => {});
+
+  processNextRef.current = () => {
+    const file = queueRef.current.shift();
+    if (!file) {
+      resetState();
+      onClose();
+      return;
+    }
+
+    setCurrentFileIndex((prev) => prev + 1);
+    setProgress({ percent: 0, startedAt: Date.now() });
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", UPLOAD_PRESET);
+
+    const xhr = new XMLHttpRequest();
+    xhrRef.current = xhr;
+
+    xhr.upload.addEventListener("progress", (e) => {
+      if (e.lengthComputable) {
+        setProgress((prev) => ({
+          percent: Math.round((e.loaded / e.total) * 100),
+          startedAt: prev?.startedAt ?? Date.now(),
+        }));
+      }
+    });
+
+    xhr.addEventListener("load", () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        const data = JSON.parse(xhr.responseText);
+        const resourceType =
+          data.resource_type === "video" ? "video" : "image";
+
+        const result: UploadResult = {
+          url: data.secure_url,
+          resourceType,
+          format: data.format,
+          cloudinaryId: data.public_id,
+          bytes: data.bytes,
+          width: data.width || undefined,
+          height: data.height || undefined,
+          thumbnailUrl: data.thumbnail_url || data.secure_url,
+        };
+
+        onUploadComplete(result);
+
+        // Upload next file in queue or close
+        if (queueRef.current.length > 0) {
+          processNextRef.current();
+        } else {
+          resetState();
+          onClose();
+        }
+      } else {
+        setError("Upload failed. Please try again.");
+        setUploading(false);
+        setProgress(null);
+      }
+    });
+
+    xhr.addEventListener("error", () => {
+      setError("Upload failed. Check your connection and try again.");
+      setUploading(false);
+      setProgress(null);
+    });
+
+    xhr.addEventListener("abort", () => {
+      setUploading(false);
+      setProgress(null);
+    });
+
+    xhr.open(
+      "POST",
+      `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`
+    );
+    xhr.send(formData);
+  };
+
+  const uploadFiles = useCallback(
+    (files: File[]) => {
+      // Validate all files first
+      for (const file of files) {
+        const validationError = validateFile(file);
+        if (validationError) {
+          setError(validationError);
+          return;
+        }
       }
 
       setError(null);
       setUploading(true);
-      setProgress({ percent: 0, startedAt: Date.now() });
-
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("upload_preset", UPLOAD_PRESET);
-
-      const xhr = new XMLHttpRequest();
-      xhrRef.current = xhr;
-
-      xhr.upload.addEventListener("progress", (e) => {
-        if (e.lengthComputable) {
-          setProgress((prev) => ({
-            percent: Math.round((e.loaded / e.total) * 100),
-            startedAt: prev?.startedAt ?? Date.now(),
-          }));
-        }
-      });
-
-      xhr.addEventListener("load", () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          const data = JSON.parse(xhr.responseText);
-          const resourceType =
-            data.resource_type === "video" ? "video" : "image";
-
-          const result: UploadResult = {
-            url: data.secure_url,
-            resourceType,
-            format: data.format,
-            cloudinaryId: data.public_id,
-            bytes: data.bytes,
-            width: data.width || undefined,
-            height: data.height || undefined,
-            thumbnailUrl: data.thumbnail_url || data.secure_url,
-          };
-
-          onUploadComplete(result);
-          resetState();
-          onClose();
-        } else {
-          setError("Upload failed. Please try again.");
-          setUploading(false);
-          setProgress(null);
-        }
-      });
-
-      xhr.addEventListener("error", () => {
-        setError("Upload failed. Check your connection and try again.");
-        setUploading(false);
-        setProgress(null);
-      });
-
-      xhr.addEventListener("abort", () => {
-        setUploading(false);
-        setProgress(null);
-      });
-
-      xhr.open(
-        "POST",
-        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`
-      );
-      xhr.send(formData);
+      setCurrentFileIndex(0);
+      setTotalFiles(files.length);
+      queueRef.current = [...files];
+      processNextRef.current();
     },
-    [onUploadComplete, onClose, resetState]
+    []
   );
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
       setDragOver(false);
-      const file = e.dataTransfer.files[0];
-      if (file) uploadFile(file);
+      const files = Array.from(e.dataTransfer.files);
+      if (files.length > 0) uploadFiles(files);
     },
-    [uploadFile]
+    [uploadFiles]
   );
 
   const handleFileSelect = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) uploadFile(file);
-      // Reset so the same file can be selected again
+      const files = Array.from(e.target.files ?? []);
+      if (files.length > 0) uploadFiles(files);
+      // Reset so the same files can be selected again
       e.target.value = "";
     },
-    [uploadFile]
+    [uploadFiles]
   );
 
   const handleCancel = useCallback(() => {
+    queueRef.current = [];
     xhrRef.current?.abort();
     xhrRef.current = null;
   }, []);
@@ -254,6 +287,7 @@ export default function MediaUploadModal({
             ref={fileInputRef}
             type="file"
             accept={ALLOWED_TYPES.join(",")}
+            multiple
             onChange={handleFileSelect}
             className="hidden"
           />
@@ -273,7 +307,7 @@ export default function MediaUploadModal({
               <div className="flex items-center justify-between mb-2">
                 <div>
                   <p className="text-sm font-medium text-gray-900">
-                    Uploading
+                    Uploading{totalFiles > 1 ? ` (${currentFileIndex}/${totalFiles})` : ""}
                   </p>
                   <p className="text-xs text-gray-500 mt-0.5">
                     {progress.percent} %

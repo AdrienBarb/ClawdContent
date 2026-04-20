@@ -177,9 +177,7 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
   const [showSubscribeModal, setShowSubscribeModal] = useState(false);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [generateModalOpen, setGenerateModalOpen] = useState(false);
-  const [attachedMedia, setAttachedMedia] = useState<AttachedMedia | null>(
-    null
-  );
+  const [attachedMedia, setAttachedMedia] = useState<AttachedMedia[]>([]);
 
   // Fetch dashboard status for subscription info (cached by React Query from ChatWithLoader)
   const { useGet } = useApi();
@@ -232,16 +230,19 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
   }, [messages]);
 
   const handleUploadComplete = useCallback((result: UploadResult) => {
-    setAttachedMedia({
-      url: result.url,
-      resourceType: result.resourceType,
-      format: result.format,
-      cloudinaryId: result.cloudinaryId,
-      bytes: result.bytes,
-      width: result.width,
-      height: result.height,
-      thumbnailUrl: result.thumbnailUrl,
-    });
+    setAttachedMedia((prev) => [
+      ...prev,
+      {
+        url: result.url,
+        resourceType: result.resourceType,
+        format: result.format,
+        cloudinaryId: result.cloudinaryId,
+        bytes: result.bytes,
+        width: result.width,
+        height: result.height,
+        thumbnailUrl: result.thumbnailUrl,
+      },
+    ]);
 
     // Fire-and-forget save to DB
     fetch(appRouter.api.mediaUpload, {
@@ -263,21 +264,24 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
 
   const handleImageGenerated = useCallback(
     (result: { imageUrl: string }) => {
-      setAttachedMedia({
-        url: result.imageUrl,
-        resourceType: "image",
-        format: "png",
-        cloudinaryId: "",
-        bytes: 0,
-        thumbnailUrl: result.imageUrl,
-      });
+      setAttachedMedia((prev) => [
+        ...prev,
+        {
+          url: result.imageUrl,
+          resourceType: "image",
+          format: "png",
+          cloudinaryId: "",
+          bytes: 0,
+          thumbnailUrl: result.imageUrl,
+        },
+      ]);
     },
     []
   );
 
   const handleSend = () => {
     const text = input.trim();
-    if (!text && !attachedMedia) return;
+    if (!text && attachedMedia.length === 0) return;
     if (isLoading) return;
 
     // Block if subscription required (free message already used)
@@ -288,17 +292,17 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
 
     let messageText = text || "(media attached)";
 
-    if (attachedMedia) {
+    for (const media of attachedMedia) {
       const mimeType =
-        attachedMedia.resourceType === "video"
-          ? `video/${attachedMedia.format}`
-          : `image/${attachedMedia.format}`;
+        media.resourceType === "video"
+          ? `video/${media.format}`
+          : `image/${media.format}`;
 
-      messageText += `\n\n[MEDIA: ${attachedMedia.url}]\n[MEDIA_TYPE: ${mimeType}]`;
+      messageText += `\n\n[MEDIA: ${media.url}]\n[MEDIA_TYPE: ${mimeType}]`;
     }
 
     setInput("");
-    setAttachedMedia(null);
+    setAttachedMedia([]);
     sendMessage({ text: messageText });
   };
 
@@ -315,7 +319,7 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
   };
 
   const hasAccounts = accountCount > 0;
-  const canSend = (input.trim() || attachedMedia) && !isLoading && hasAccounts;
+  const canSend = (input.trim() || attachedMedia.length > 0) && !isLoading && hasAccounts;
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] max-w-3xl mx-auto">
@@ -536,33 +540,41 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
         </div>
 
         {/* Media preview */}
-        {attachedMedia && (
+        {attachedMedia.length > 0 && (
           <div className="px-4 pt-3">
-            <div className="relative inline-block">
-              {attachedMedia.resourceType === "image" ? (
-                <img
-                  src={attachedMedia.thumbnailUrl}
-                  alt="Attached media"
-                  className="h-20 w-20 rounded-lg object-cover border border-gray-200"
-                />
-              ) : (
-                <div className="h-20 w-20 rounded-lg bg-gray-100 border border-gray-200 flex flex-col items-center justify-center">
-                  <FilmStripIcon className="h-6 w-6 text-gray-400" />
-                  <span className="text-[10px] text-gray-500 mt-1 uppercase font-medium">
-                    {attachedMedia.format}
+            <div className="flex flex-wrap gap-2">
+              {attachedMedia.map((media, index) => (
+                <div key={`${media.url}-${index}`} className="relative">
+                  {media.resourceType === "image" ? (
+                    <img
+                      src={media.thumbnailUrl}
+                      alt="Attached media"
+                      className="h-20 w-20 rounded-lg object-cover border border-gray-200"
+                    />
+                  ) : (
+                    <div className="h-20 w-20 rounded-lg bg-gray-100 border border-gray-200 flex flex-col items-center justify-center">
+                      <FilmStripIcon className="h-6 w-6 text-gray-400" />
+                      <span className="text-[10px] text-gray-500 mt-1 uppercase font-medium">
+                        {media.format}
+                      </span>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setAttachedMedia((prev) =>
+                        prev.filter((_, i) => i !== index)
+                      )
+                    }
+                    className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-gray-900 text-white flex items-center justify-center hover:bg-gray-700 transition-colors cursor-pointer"
+                  >
+                    <XIcon className="h-3 w-3" />
+                  </button>
+                  <span className="absolute bottom-1 right-1 rounded bg-black/60 px-1 py-0.5 text-[9px] font-medium text-white uppercase">
+                    {media.format}
                   </span>
                 </div>
-              )}
-              <button
-                type="button"
-                onClick={() => setAttachedMedia(null)}
-                className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-gray-900 text-white flex items-center justify-center hover:bg-gray-700 transition-colors cursor-pointer"
-              >
-                <XIcon className="h-3 w-3" />
-              </button>
-              <span className="absolute bottom-1 right-1 rounded bg-black/60 px-1 py-0.5 text-[9px] font-medium text-white uppercase">
-                {attachedMedia.format}
-              </span>
+              ))}
             </div>
           </div>
         )}
