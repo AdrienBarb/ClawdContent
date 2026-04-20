@@ -6,7 +6,7 @@ export default function DemoSection() {
           See it in action
         </h2>
         <p className="text-center text-secondary-foreground text-lg mb-12 max-w-2xl mx-auto">
-          From idea to 13 published posts — one conversation.
+          From idea to 9 published posts — one conversation.
         </p>
 
         <div className="rounded-2xl overflow-hidden border border-border shadow-lg aspect-video">

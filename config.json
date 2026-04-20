@@ -3,7 +3,7 @@
     "name": "PostClaw",
     "shortName": "postclaw",
     "brandName": "PostClaw",
-    "description": "Your AI social media manager powered by OpenClaw",
+    "description": "Your AI social media manager.",
     "tagline": "Your AI social media manager.",
     "url": "https://www.postclaw.io",
     "logo": "/logo.png",
@@ -11,7 +11,7 @@
   },
   "seo": {
     "title": "PostClaw — Your AI Social Media Manager",
-    "description": "An AI that learns your brand, plans your content, and publishes to 13 platforms. Not a tool. Not a dashboard. A social media manager that works for you 24/7.",
+    "description": "An AI that learns your brand, plans your content, and publishes to 9 platforms. Not a tool. Not a dashboard. A social media manager that works for you 24/7.",
     "keywords": [
       "AI social media manager",
       "AI social media",
@@ -21,8 +21,7 @@
       "multi-platform posting",
       "AI social media agent",
       "social media AI assistant",
-      "PostClaw",
-      "OpenClaw"
+      "PostClaw"
     ],
     "author": "PostClaw",
     "ogImage": "/og-banner.png",

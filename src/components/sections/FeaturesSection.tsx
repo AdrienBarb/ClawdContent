@@ -19,7 +19,7 @@ const features = [
     icon: ShieldCheckIcon,
     title: "It\u2019s yours alone.",
     description:
-      "Every PostClaw user gets a private, dedicated AI instance running 24/7 on its own server. Your brand knowledge, conversations, and content strategy stay isolated and protected. No shared data. No shared infrastructure. No access from other users.",
+      "Your brand knowledge, conversations, and content strategy are completely isolated and protected. No shared data. No access from other users. Everything stays private.",
   },
   {
     icon: SparkleIcon,
@@ -46,7 +46,7 @@ const comparisons = [
   },
   {
     without: "Constant guilt about platforms you\u2019re ignoring",
-    with: "13 platforms covered, none neglected",
+    with: "9 platforms covered, none neglected",
   },
   {
     without: "Staring at a blank editor wondering what to post",

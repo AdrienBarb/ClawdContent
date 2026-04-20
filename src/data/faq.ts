@@ -2,7 +2,7 @@ export const faqs = [
   {
     question: "How does it actually work?",
     answer:
-      "After you sign up and subscribe, we deploy a private AI social media manager just for you. You connect your social media accounts from the dashboard, then start chatting with it. Tell it what to post, ask it to plan your content calendar, or let it suggest ideas. It writes the content, adapts it for each platform's tone and format, and publishes. That's it.",
+      "Sign up, connect your social media accounts, and start chatting with your AI social media manager. Tell it what to post, ask it to plan your content calendar, or let it suggest ideas. It writes the content, adapts it for each platform's tone and format, schedules or publishes immediately, and tracks your performance with built-in analytics. That's it.",
   },
   {
     question:
@@ -23,7 +23,7 @@ export const faqs = [
   {
     question: "What platforms are supported?",
     answer:
-      "14 platforms: Instagram, TikTok, X (Twitter), LinkedIn, Facebook, YouTube, Pinterest, Threads, Bluesky, Reddit, Telegram, Snapchat, Google Business, and WhatsApp. You can post to all of them at once, or pick specific ones.",
+      "9 platforms: Instagram, TikTok, X (Twitter), LinkedIn, Facebook, YouTube, Pinterest, Threads, and Bluesky. You can post to all of them at once, or pick specific ones.",
   },
   {
     question: "Can I review posts before they go live?",
@@ -33,7 +33,7 @@ export const faqs = [
   {
     question: "Is my data private?",
     answer:
-      "Every user gets their own isolated AI instance \u2014 no shared infrastructure, no shared data. Your social accounts, content, and conversations are completely private and never accessible to other users.",
+      "Yes. Your social accounts, content, and conversations are completely isolated and private. No shared data, never accessible to other users.",
   },
   {
     question: "Can I cancel anytime?",

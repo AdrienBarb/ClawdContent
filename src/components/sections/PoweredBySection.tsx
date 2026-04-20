@@ -36,7 +36,7 @@ export default function PoweredBySection() {
                 <span className="text-xs font-medium text-primary bg-primary/10 px-3 py-1 rounded-full">
                   Social Media API
                 </span>
-                <span className="text-xs text-muted-foreground">14+ Platforms</span>
+                <span className="text-xs text-muted-foreground">9 Platforms</span>
               </div>
               <h3 className="text-xl font-semibold text-foreground mb-3">
                 Zernio

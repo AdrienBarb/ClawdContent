@@ -203,16 +203,12 @@ export default function PrivacyPage() {
                 <strong>Supabase</strong> — database hosting (PostgreSQL)
               </li>
               <li>
-                <strong>Fly.io</strong> — container hosting for your AI social
-                media manager (Europe)
-              </li>
-              <li>
                 <strong>Zernio (zernio.com)</strong> — social media posting
                 (OAuth tokens and post data)
               </li>
               <li>
-                <strong>Moonshot (Kimi K2.5)</strong> — AI language model for
-                content generation
+                <strong>Anthropic</strong> — AI language model for content
+                generation
               </li>
               <li>
                 <strong>Resend</strong> — transactional email delivery

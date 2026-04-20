@@ -17,7 +17,7 @@ const personas = [
     icon: Palette,
     title: "Creators Who'd Rather Create",
     description:
-      "You have ideas, not time. PostClaw turns one idea into 13 platform-ready posts, remembers your style, and handles publishing. You focus on the work that actually matters to you.",
+      "You have ideas, not time. PostClaw turns one idea into 9 platform-ready posts, remembers your style, and handles publishing. You focus on the work that actually matters to you.",
   },
 ];
 

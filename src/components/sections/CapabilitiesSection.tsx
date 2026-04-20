@@ -4,10 +4,10 @@ import {
   Send,
   CalendarClock,
   Brain,
-  Globe,
   ImagePlus,
   CalendarDays,
   Lightbulb,
+  BarChart3,
 } from "lucide-react";
 
 const capabilities = [
@@ -21,7 +21,7 @@ const capabilities = [
     icon: Languages,
     title: "Adapt for Every Platform",
     description:
-      "One idea becomes 13 native posts. Professional on LinkedIn, punchy on X, visual on Instagram, casual on Threads \u2014 automatically. No copy-pasting, no reformatting.",
+      "One idea becomes 9 native posts. Professional on LinkedIn, punchy on X, visual on Instagram, casual on Threads \u2014 automatically. No copy-pasting, no reformatting.",
   },
   {
     icon: Send,
@@ -48,16 +48,16 @@ const capabilities = [
       '\u201CPlan my content for the next 2 weeks.\u201D Get a full calendar with post ideas, topics, angles, and suggested publish dates across all platforms. No more staring at a blank editor.',
   },
   {
-    icon: Globe,
-    title: "Research the Web",
-    description:
-      "It browses the web to find trending topics, competitor activity, and industry news \u2014 then turns it into content ideas tailored to your niche.",
-  },
-  {
     icon: ImagePlus,
     title: "Generate Images",
     description:
       "Need a visual for your post? It creates images tailored for each platform \u2014 square for Instagram, vertical for Stories, landscape for X.",
+  },
+  {
+    icon: BarChart3,
+    title: "Track Your Performance",
+    description:
+      "See what\u2019s working. Get analytics on impressions, engagement, and follower growth across all platforms. Ask your AI for insights and recommendations based on real data.",
   },
   {
     icon: Lightbulb,

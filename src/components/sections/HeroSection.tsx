@@ -77,7 +77,7 @@ export default function HeroSection({ variant = "control" }: HeroSectionProps) {
 
           {/* Subhead — sans-serif */}
           <p className="text-lg md:text-xl leading-relaxed text-secondary-foreground max-w-2xl mb-10">
-            Learns your brand. Plans your content. Posts to 13 platforms.
+            Learns your brand. Plans your content. Posts to 9 platforms.
           </p>
 
           {/* CTA */}

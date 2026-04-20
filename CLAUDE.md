@@ -2,54 +2,53 @@
 
 ## What is PostClaw?
 
-PostClaw is an AI social media manager that learns your brand, plans your content, and publishes to 10 platforms — all from a single chat conversation. No dashboard, no editor, no learning curve. It writes platform-native posts, adapts the tone for each network, publishes on schedule, analyzes performance, and spots what's going viral in your niche. Plans start at $17/mo.
+PostClaw is an AI social media manager that learns your brand, plans your content, and publishes to 9 platforms — all from a single chat conversation. No dashboard, no editor, no learning curve. It writes platform-native posts, adapts the tone for each network, publishes on schedule, analyzes performance, and spots what's going viral in your niche. Plans start at $17/mo.
 
 **How it works:**
 
-1. User signs up, pays via Stripe (plans from $17/mo)
-2. We auto-provision a private OpenClaw container on Fly.io + a Zernio profile
-3. User connects their social accounts
-4. User chats with their AI social media manager in the web app to create and publish content
+1. User signs up → LateProfile (Zernio) auto-created
+2. User connects social accounts (free, no subscription needed)
+3. User gets 1 free chat message to try the AI
+4. User subscribes via Stripe for unlimited access
+5. User chats with their AI social media manager to create and publish content
 
 **Key services:**
 
-- **OpenClaw** — Open-source AI agent framework (runs in Docker on Fly.io)
-- **Zernio** (zernio.com) — Unified social media API
-- **Kimi K2.5** (Moonshot) — LLM powering the bot
-- **Fly.io** — Container hosting (one machine per user)
+- **Vercel AI SDK** — `streamText()` with tool calling in Next.js API routes
+- **Anthropic Claude** — LLM powering the AI (claude-sonnet-4-6)
+- **Zernio** (zernio.com) — Unified social media API (9 platforms)
+- **Vercel** — Hosting (Next.js)
 
 ---
 
 ## Architecture
 
 ```
-User ─── Web Chat (Next.js) ─── OpenClaw Container (Fly.io)
-                                       │
-                                       ├── Kimi K2.5 (Moonshot API)
-                                       └── Zernio API (social posting)
+User ─── Web Chat (Next.js on Vercel) ─── Anthropic Claude (via AI SDK)
+                                                  │
+                                                  └── Zernio API tools (10 tools)
 
 Dashboard (Next.js on Vercel)
     ├── Stripe (payments)
-    ├── Fly.io Machines API (container management)
-    ├── Zernio API (account connections)
+    ├── Zernio API (account connections + social posting)
     └── PostgreSQL (Supabase)
 ```
 
-**Per-user isolation:** Each user gets their own Fly.io machine with a **profile-scoped Zernio API key** that can only access their own social accounts. One master Zernio account, many scoped keys.
+**Per-user isolation:** Each user gets a **profile-scoped Zernio API key** that can only access their own social accounts. One master Zernio account, many scoped keys.
 
-**Custom Docker image:** `ghcr.io/adrienbarb/postclaw-agent`
-
-- Tags: `:latest` (production, built from `main`) and `:dev` (testing, built from `dev` branch)
-- Entrypoint generates `openclaw.json` + `SOUL.md` from env vars
-- Pre-installs the `zernio-cli` skill from ClawHub
-- GitHub Action auto-builds on changes to `docker/openclaw/`
-- `OPENCLAW_DOCKER_IMAGE` env var overrides image used in provisioning (defaults to `:latest`)
+**AI Architecture:**
+- System prompt built dynamically from DB on each request (user context, accounts, capabilities)
+- 10 typed AI SDK tools wrap Zernio API mutations
+- `stepCountIs(10)` limits agent loops
+- Anti-hallucination rules in system prompt (exact number reporting, no fabrication)
 
 ---
 
 ## Tech Stack
 
 - **Next.js 16** (App Router) + TypeScript + React 19
+- **Vercel AI SDK** (`ai` + `@ai-sdk/anthropic` + `@ai-sdk/react`)
+- **Anthropic Claude Sonnet 4.6** — LLM
 - **Prisma 7** + PostgreSQL (Supabase)
 - **Better Auth** (magic links + Google OAuth)
 - **Stripe** (subscriptions)
@@ -57,6 +56,7 @@ Dashboard (Next.js on Vercel)
 - **React Query** via `useApi` hook
 - **Tailwind CSS v4** + shadcn/ui
 - **PostHog** (analytics)
+- **Cloudinary** (media uploads)
 
 ---
 
@@ -64,8 +64,8 @@ Dashboard (Next.js on Vercel)
 
 ```
 User (1:1) ── Subscription
-     (1:1) ── FlyMachine
      (1:1) ── LateProfile (1:N) ── SocialAccount
+     (1:N) ── ChatMessage
      (1:N) ── Media
      (1:N) ── Session
      (1:N) ── Account
@@ -75,10 +75,11 @@ User (1:1) ── Subscription
 | ----------------- | -------------------------------------------------------------------------- |
 | **User**          | Authenticated user (Better Auth)                                           |
 | **Subscription**  | Stripe subscription: customerId, subscriptionId, status, period dates      |
-| **FlyMachine**    | User's container: machineId, volumeId, region, status                      |
 | **LateProfile**   | User's Zernio profile: profileId, scoped API key (model name is legacy)    |
 | **SocialAccount** | Connected social platform: accountId, platform, username, status           |
+| **ChatMessage**   | Persisted chat messages (role, content, userId)                             |
 | **Media**         | Uploaded media: cloudinaryId, url, resourceType, format, bytes, dimensions |
+| **FlyMachine**    | LEGACY — kept in schema, no longer used                                    |
 | **Session**       | Auth session                                                               |
 | **Account**       | OAuth/password account info                                                |
 
@@ -98,24 +99,23 @@ src/
 │   ├── (dashboard)/               # Protected dashboard layout (sidebar)
 │   │   ├── layout.tsx             # Sidebar + auth guard
 │   │   └── d/
-│   │       ├── page.tsx           # Chat with provisioning guard (default view)
+│   │       ├── page.tsx           # Chat (default view)
 │   │       ├── accounts/          # Social accounts (connect/disconnect)
 │   │       │   └── callback/      # OAuth return handler
-│   │       ├── channels/          # Messaging channels
-│   │       ├── chat/              # Redirects to /d
 │   │       ├── billing/           # Subscription info
-│   │       ├── bot/               # Redirects to /d
 │   │       └── subscribe/         # Stripe checkout card
 │   ├── api/
 │   │   ├── auth/[...all]/         # Better Auth
 │   │   ├── checkout/              # Stripe Checkout session
-│   │   ├── bot/                   # Bot management (GET/POST/PUT/PATCH)
+│   │   ├── chat/                  # AI chat (streamText + tools)
 │   │   ├── media/upload/          # Media upload callback (POST)
 │   │   ├── accounts/              # List accounts (GET)
-│   │   ├── accounts/connect/      # OAuth connect URL (POST)
+│   │   ├── accounts/connect/      # Zernio OAuth URL (POST)
 │   │   ├── accounts/callback/     # Sync after OAuth (POST)
+│   │   ├── accounts/disconnect/   # Disconnect account (POST)
+│   │   ├── accounts/remove/       # Remove account (POST)
+│   │   ├── analytics/             # Analytics endpoints
 │   │   ├── dashboard/status/      # Dashboard polling endpoint (GET)
-│   │   ├── provisioning/retry/    # Retry failed provisioning (POST)
 │   │   └── webhooks/stripe/       # Stripe webhooks
 │   └── checkout/success/          # Post-payment redirect
 ├── components/
@@ -123,21 +123,27 @@ src/
 │   ├── sections/                  # Landing page sections
 │   ├── dashboard/                 # Dashboard components
 │   │   ├── Sidebar.tsx            # Dark sidebar navigation
-│   │   ├── ChatWithLoader.tsx     # Provisioning guard → ChatInterface
-│   │   ├── ChatInterface.tsx      # AI chat with streaming + media upload (Cloudinary)
-│   │   ├── DashboardHome.tsx      # Legacy dashboard (kept, unused)
-│   │   └── ConnectAccountButtons.tsx # Platform connect buttons with icons
+│   │   ├── ChatWithLoader.tsx     # Thin wrapper → ChatInterface
+│   │   ├── ChatInterface.tsx      # AI chat with streaming + media upload + paywall
+│   │   ├── ConnectAccountButtons.tsx # Platform connect buttons with icons
+│   │   ├── AnalyticsDashboard.tsx # Analytics charts
+│   │   └── ContentList.tsx        # Published content list
 │   └── providers/                 # Context providers
 ├── lib/
+│   ├── ai/                        # AI SDK integration
+│   │   ├── provider.ts            # Anthropic provider config
+│   │   ├── system-prompt.ts       # Dynamic system prompt builder
+│   │   └── tools.ts              # 10 Zernio tools as AI SDK tools
 │   ├── late/                      # Zernio API client + mutations (directory name is legacy)
-│   ├── fly/                       # Fly.io Machines API client + mutations
 │   ├── services/                  # Business logic
-│   │   ├── provisioning.ts        # Create/destroy/retry user containers
+│   │   ├── profile.ts            # LateProfile creation/cleanup
 │   │   ├── subscription.ts        # Stripe checkout + sync
-│   │   ├── bot.ts                 # Bot status, token, restart, image update
-│   │   ├── media.ts               # Media upload save + list
-│   │   ├── accounts.ts            # Social account CRUD
-│   │   └── email.ts               # Brevo email automation (contacts, events)
+│   │   ├── accounts.ts           # Social account CRUD + sync
+│   │   ├── analytics.ts          # Analytics data fetching
+│   │   ├── chatMessages.ts       # Chat message persistence
+│   │   ├── credits.ts            # Credit balance
+│   │   ├── media.ts              # Media upload save + list
+│   │   └── email.ts              # Brevo email automation
 │   ├── schemas/                   # Zod validation schemas
 │   ├── better-auth/               # Auth config
 │   ├── stripe/                    # Stripe client
@@ -145,7 +151,8 @@ src/
 │   ├── constants/
 │   │   ├── appRouter.ts           # Centralized route config
 │   │   ├── errorMessage.ts        # Error message constants
-│   │   └── platforms.tsx          # Social platform icons + brand colors
+│   │   ├── plans.ts              # Plan definitions + limits
+│   │   └── platforms.tsx          # Social platform icons + brand colors (9 platforms)
 │   ├── errors/                    # Error handler
 │   ├── hooks/                     # useApi (React Query)
 │   ├── brevo/                     # Brevo API client (email automation)
@@ -159,75 +166,115 @@ src/
 
 ## API Routes
 
-| Route                      | Methods | Auth    | Purpose                                         |
-| -------------------------- | ------- | ------- | ----------------------------------------------- |
-| `/api/auth/[...all]`       | All     | Various | Better Auth                                     |
-| `/api/checkout`            | POST    | Yes     | Create Stripe Checkout session                  |
-| `/api/bot`                 | GET     | Yes     | Get bot status                                  |
-| `/api/bot`                 | POST    | Yes     | Set bot config                                  |
-| `/api/bot`                 | PUT     | Yes     | Update bot Docker image                         |
-| `/api/bot`                 | PATCH   | Yes     | Restart bot                                     |
-| `/api/media/upload`        | POST    | Yes     | Save media upload record                        |
-| `/api/accounts`            | GET     | Yes     | List connected accounts                         |
-| `/api/accounts/connect`    | POST    | Yes     | Get Late OAuth URL                              |
-| `/api/accounts/callback`   | POST    | Yes     | Sync accounts after OAuth                       |
-| `/api/accounts/disconnect` | POST    | Yes     | Disconnect a social account                     |
-| `/api/chat`                | POST    | Yes     | Streaming chat proxy to OpenClaw container      |
-| `/api/chat/history`        | GET     | Yes     | Get chat history from container                 |
-| `/api/dashboard/status`    | GET     | Yes     | Dashboard polling (bot, accounts, subscription) |
-| `/api/provisioning/retry`  | POST    | Yes     | Retry failed provisioning                       |
-| `/api/webhooks/stripe`     | POST    | No      | Stripe webhook handler                          |
+| Route                      | Methods | Auth | Purpose                                    |
+| -------------------------- | ------- | ---- | ------------------------------------------ |
+| `/api/auth/[...all]`       | All     | Var  | Better Auth                                |
+| `/api/checkout`            | POST    | Yes  | Create Stripe Checkout session             |
+| `/api/chat`                | POST    | Yes  | AI chat (streamText + Zernio tools)        |
+| `/api/media/upload`        | POST    | Yes  | Save media upload record                   |
+| `/api/accounts`            | GET     | Yes  | List connected accounts                    |
+| `/api/accounts/connect`    | POST    | Yes  | Get Zernio OAuth URL                       |
+| `/api/accounts/callback`   | POST    | Yes  | Sync accounts after OAuth                  |
+| `/api/accounts/disconnect` | POST    | Yes  | Disconnect a social account                |
+| `/api/accounts/remove`     | POST    | Yes  | Remove a social account                    |
+| `/api/analytics/*`         | GET     | Yes  | Analytics data (overview, posts, best-times, followers) |
+| `/api/dashboard/status`    | GET     | Yes  | Dashboard polling (accounts, subscription, plan) |
+| `/api/user/timezone`       | POST    | Yes  | Update user timezone                       |
+| `/api/user/context`        | POST    | Yes  | Update user onboarding context             |
+| `/api/webhooks/stripe`     | POST    | No   | Stripe webhook handler                     |
 
 ---
 
 ## Dashboard UI
 
-The dashboard is **chat-first** — after subscribing, users land directly on the chat interface.
+The dashboard is **chat-first** — users land directly on the chat interface.
 
-- **Sidebar** (`Sidebar.tsx`): Dark navy sidebar (`#151929`) with coral accent (`#e8614d`), nav items: Chat, Accounts, Billing. User section at bottom. Mobile: sheet drawer.
-- **Chat** (`/d`): `ChatWithLoader` polls `/api/dashboard/status` every 3s. During provisioning shows spinner + "Your bot is starting up...". On failure shows error + retry button. Once running, renders `ChatInterface` (streaming AI chat via `@ai-sdk/react`).
-- **Accounts** (`/d/accounts`): Client component polling dashboard status. Shows connected accounts with disconnect (X) button + `ConnectAccountButtons` to add new ones.
+- **Sidebar** (`Sidebar.tsx`): Dark navy sidebar (`#151929`) with coral accent (`#e8614d`), nav items: Chat, Content, Analytics, Accounts, Billing. User section at bottom. Mobile: sheet drawer.
+- **Chat** (`/d`): `ChatWithLoader` → `ChatInterface` (streaming AI chat via `@ai-sdk/react`). No provisioning step — chat is instant.
+- **Paywall**: 1 free message, then modal prompts subscription. Enforced server-side (403 `SUBSCRIPTION_REQUIRED`) + client-side (intercepts send button).
+- **Accounts** (`/d/accounts`): Connect/disconnect/reconnect/remove social accounts. Free access (no subscription needed).
 - **Connect buttons** (`ConnectAccountButtons.tsx`): Platform icons with brand colors.
 - **Content area**: Light gray background (`#f8f9fc`), white rounded cards, `max-w-5xl`.
 
-Supported platforms: **10 social media platforms** via Zernio (Twitter/X, LinkedIn, Bluesky, Threads, Facebook, Instagram, Pinterest, TikTok, YouTube, Mastodon). Media uploads (images/videos) supported via Cloudinary.
+Supported platforms: **9 social media platforms** via Zernio (Twitter/X, LinkedIn, Bluesky, Threads, Facebook, Instagram, Pinterest, TikTok, YouTube). Media uploads (images/videos) supported via Cloudinary.
+
+---
+
+## AI Chat System
+
+### System Prompt (`src/lib/ai/system-prompt.ts`)
+
+Built fresh from DB on every request. Includes:
+- PostClaw identity + capabilities
+- User context (name, role, niche, topics, timezone)
+- Connected accounts list
+- Current date/time
+- Anti-hallucination rules (7 critical rules)
+- Content guidelines per platform
+- "What you CAN do" / "What you CANNOT do" sections
+
+### Tools (`src/lib/ai/tools.ts`)
+
+10 tools wrapping `src/lib/late/mutations.ts`:
+- `createPost` — Create and publish/schedule posts (per-platform via `Promise.allSettled`)
+- `listPosts` — List user's posts with filtering
+- `updatePost` — Update draft/scheduled posts
+- `deletePost` — Delete draft/scheduled posts
+- `unpublishPost` — Remove published posts from platforms
+- `retryPost` — Retry failed posts
+- `uploadMedia` — Upload media via Zernio presign
+- `getAnalytics` — Get analytics overview
+- `getDailyMetrics` — Get daily metrics for charts
+- `getBestTimeToPost` — Get optimal posting times (day_of_week: 0=Monday)
+
+### Chat Flow
+
+1. Auth check
+2. Fetch user + subscription + LateProfile + messageCount (parallel)
+3. No subscription + messageCount >= 1 → 403 `SUBSCRIPTION_REQUIRED`
+4. No connected accounts → 400 `NO_CONNECTED_ACCOUNTS`
+5. Build system prompt
+6. Create tools (with user's scoped API key)
+7. `streamText()` with `stepCountIs(10)` safety limit
+8. Save messages via `onFinish` callback
 
 ---
 
 ## Service Layer
 
-Services live in `src/lib/services/`. Routes call services, services call adapters (`src/lib/late/`, `src/lib/fly/`, `src/lib/stripe/`). Routes never call adapters directly.
+Services live in `src/lib/services/`. Routes call services, services call adapters (`src/lib/late/`, `src/lib/stripe/`).
 
 ### Key flows
 
-**Provisioning (on checkout.session.completed):**
-
-1. Create Zernio profile → scoped API key
-2. Create Fly.io volume + machine with env vars (single API call for machine)
-3. Save FlyMachine + LateProfile (legacy name) to DB
-
-**Deprovisioning (on subscription.deleted):**
-
-1. Delete Fly.io machine + volume
-2. Clean up DB records
+**User signup (Better Auth `user.create.after` hook):**
+1. Create Zernio profile → scoped API key → save LateProfile to DB
+2. Create Brevo contact + trigger onboarding automation
+3. Capture PostHog event
 
 **Social account connection:**
-
 1. Get Zernio OAuth URL → redirect user
-2. On callback, sync accounts from Zernio API → upsert DB → update container env vars
+2. On callback, sync accounts from Zernio API → upsert DB
+
+**Subscription (on checkout.session.completed):**
+1. Upsert subscription record
+2. Ensure LateProfile exists (idempotent)
+
+**Deprovisioning (on subscription.deleted):**
+1. Status → canceled
+2. Clean up LateProfile + social accounts
 
 ---
 
 ## Stripe Webhooks
 
-| Event                           | Action                                                           |
-| ------------------------------- | ---------------------------------------------------------------- |
-| `checkout.session.completed`    | Upsert subscription, provision user (non-blocking via `after()`) |
-| `customer.subscription.created` | Idempotent upsert subscription                                   |
-| `customer.subscription.updated` | Sync status + period dates                                       |
-| `customer.subscription.deleted` | Status → canceled, deprovision (non-blocking)                    |
-| `invoice.payment_succeeded`     | Extend period, verify container running                          |
-| `invoice.payment_failed`        | Status → past_due (do NOT deprovision)                           |
+| Event                           | Action                                              |
+| ------------------------------- | --------------------------------------------------- |
+| `checkout.session.completed`    | Upsert subscription, ensure profile exists          |
+| `customer.subscription.created` | Idempotent upsert subscription                      |
+| `customer.subscription.updated` | Sync status + period dates                          |
+| `customer.subscription.deleted` | Status → canceled, cleanup profile (non-blocking)   |
+| `invoice.payment_succeeded`     | Extend period                                       |
+| `invoice.payment_failed`        | Status → past_due (do NOT deprovision)              |
 
 ---
 
@@ -255,15 +302,11 @@ RESEND_API_KEY=
 BREVO_API_KEY=
 BREVO_LIST_ID=
 
-# Fly.io
-FLY_API_TOKEN=
-FLY_APP_NAME=
+# AI (Anthropic)
+ANTHROPIC_API_KEY=
 
-# Zernio (master key — not per-user, formerly LATE_API_KEY)
+# Zernio (master key — not per-user)
 ZERNIO_API_KEY=
-
-# LLM (Moonshot/Kimi K2.5)
-MOONSHOT_API_KEY=
 
 # Analytics (PostHog)
 NEXT_PUBLIC_POSTHOG_KEY=
@@ -273,9 +316,6 @@ NEXT_PUBLIC_POSTHOG_HOST=
 NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=
 CLOUDINARY_API_KEY=
 CLOUDINARY_API_SECRET=
-
-# Docker image override (optional, defaults to :latest)
-OPENCLAW_DOCKER_IMAGE=
 
 # App
 NEXT_PUBLIC_APP_ENV=
@@ -297,17 +337,6 @@ npm run email:dev          # Preview email templates
 
 ---
 
-## Phase Status
-
-| Phase         | Status   | What it covers                                                           |
-| ------------- | -------- | ------------------------------------------------------------------------ |
-| **Phase 0**   | COMPLETE | Fly.io deploy + OpenClaw + Kimi K2.5                                     |
-| **Phase 0.5** | COMPLETE | Zernio (formerly Late API) integration + social posting                  |
-| **Phase 1**   | COMPLETE | DB schema, Stripe subscription, auto-provisioning, dashboard, onboarding |
-| **Phase 2**   | TODO     | Monitoring, production hardening, self-service billing portal            |
-
----
-
 ## Coding Standards
 
 ### Core Principles
@@ -321,7 +350,7 @@ npm run email:dev          # Preview email templates
 ### File Naming
 
 - **Components**: PascalCase (`Sidebar.tsx`)
-- **Utilities/Hooks/Services**: camelCase (`provisioning.ts`, `useApi.ts`)
+- **Utilities/Hooks/Services**: camelCase (`profile.ts`, `useApi.ts`)
 - **Constants**: UPPER_SNAKE_CASE inside files
 
 ### API Route Pattern
@@ -363,7 +392,7 @@ Always use `useApi` hook. Never use axios directly.
 ```typescript
 const { useGet, usePost } = useApi();
 const { data } = useGet("/api/accounts");
-const { mutate } = usePost("/api/bot", { onSuccess: () => { ... } });
+const { mutate } = usePost("/api/accounts/connect", { onSuccess: () => { ... } });
 ```
 
 ### Styling
@@ -396,27 +425,17 @@ const { mutate } = usePost("/api/bot", { onSuccess: () => { ... } });
 - Base URL: `https://zernio.com/api/v1`
 - Client: `src/lib/late/client.ts` (directory name is legacy)
 - Profile-scoped API keys for per-user isolation
-- ClawHub skill: `mikipalet/zernio-cli` (commands: `zernio posts:create`, `zernio media:upload`, etc.)
+- `publishNow: true` required for immediate posts (default is draft)
+- `day_of_week`: 0=Monday (not Sunday)
+- Media types: `image/video/gif/document` (not MIME types)
 
-### Fly.io
+### Vercel AI SDK
 
-- One app (`FLY_APP_NAME`) with many machines — one per user
-- Machines API (REST): `https://api.machines.dev/v1`
-- Client: `src/lib/fly/client.ts`, mutations: `src/lib/fly/mutations.ts`
-- `updateMachineEnv` fetches current config, merges env vars, POSTs back — triggers restart
-- `restart.policy: "always"` for crash recovery
-- Region: `cdg` (Paris), Guest: `shared-cpu-2x, 1024MB RAM`
-- `NODE_OPTIONS=--max-old-space-size=768` set on all machines (OpenClaw needs >512MB heap)
-- Each machine gets a 1GB volume mounted at `/home/node/.openclaw/`
-- No auto-stop (containers must stay running for chat availability)
-
-### Docker Dev/Prod Tags
-
-- GitHub Action builds on push to `main` (→ `:latest` + `:sha`) or `dev` (→ `:dev` + `:sha`)
-- `OPENCLAW_DOCKER_IMAGE` env var overrides image in provisioning (defaults to `:latest`)
-- Fly machines are pinned to a specific image digest — restarting does NOT auto-pull new tags
-- To update existing machines: use `PUT /api/bot` with `{ image: "ghcr.io/adrienbarb/postclaw-agent:dev" }`
-- To promote: merge `dev` → `main`, push, then update all prod machines with `updateMachineImage()`
+- `streamText()` with `@ai-sdk/anthropic` provider
+- Tools use `inputSchema` (not `parameters`) with Zod schemas
+- `stepCountIs(10)` for multi-step agent loops
+- `toUIMessageStreamResponse()` for streaming to client
+- `@ai-sdk/react` `useChat()` on client side
 
 ### Media Upload (Cloudinary)
 
@@ -424,25 +443,14 @@ const { mutate } = usePost("/api/bot", { onSuccess: () => { ... } });
 - Unsigned upload preset: `postclaw_unsigned`, cloud: `postclaw`
 - Media saved to `Media` table via `/api/media/upload` (fire-and-forget from client)
 - Chat messages include `[MEDIA: <url>]` + `[MEDIA_TYPE: <mime>]` tags
-- SOUL.md teaches bot to handle media via Zernio CLI skill (`zernio media:upload` + `zernio posts:create --media-id`)
-
-### OpenClaw Container
-
-- Config dir: `$HOME/.openclaw/` (runs as `node` user)
-- Entrypoint generates `openclaw.json` from env vars
-- `OVERWRITE_SOUL=true` forces SOUL.md regeneration on restart
-- `dmPolicy: "open"` — safe because each user has their own private instance
+- AI tools can reference media URLs directly in `createPost`
 
 ### PostHog A/B Testing
 
 - Server-side experiments via `posthog-node` feature flags
-- `src/proxy.ts` sets a `postclaw_distinct_id` cookie (UUID, 1-year TTL) on first visit — Next.js 16 uses `proxy.ts` instead of `middleware.ts`
-- Distinct ID helpers in `src/lib/tracking/distinctId.ts`: `getDistinctId()` (server components), `getDistinctIdFromHeader()` (raw cookie header)
-- PostHog server client singleton in `src/lib/tracking/postHogClient.ts`
-- Home page (`src/app/(home)/page.tsx`) evaluates feature flags server-side via `getFeatureFlag()`, passes variant as prop
-- `user_signed_up` event captured in Better Auth `databaseHooks.user.create.after` — linked to anonymous distinct ID for conversion tracking
-- Experiments must be created in PostHog dashboard (feature flag key + goal metric)
-- Previous experiment: `hero-copy-experiment` — now inactive, hero copy unified to "AI Social Media Manager" positioning (Mar 2026)
+- `src/proxy.ts` sets a `postclaw_distinct_id` cookie (UUID, 1-year TTL) on first visit
+- Distinct ID helpers in `src/lib/tracking/distinctId.ts`
+- `user_signed_up` event captured in Better Auth `databaseHooks.user.create.after`
 
 ### Dashboard Layout
 
@@ -457,8 +465,14 @@ const { mutate } = usePost("/api/bot", { onSuccess: () => { ... } });
 
 App config is centralized in `config.json`:
 
-- Project name, description ("Your AI social media manager powered by OpenClaw"), tagline, URL
+- Project name, description, tagline, URL
 - SEO metadata (title: "PostClaw — Your AI Social Media Manager")
 - Contact info
 - Pricing tiers (Starter $17/mo, Pro $37/mo, Business $79/mo)
 - Feature flags
+
+---
+
+## Important: External Communication
+
+Never mention Anthropic, Claude, OpenAI, or any AI provider in user-facing content. Use "proprietary AI engine" or "our AI" instead. Internal code/docs can use actual tech names.

@@ -56,8 +56,8 @@ export const PLANS: Plan[] = [
     yearlyTotalPrice: Math.round(79 * 12 * YEARLY_DISCOUNT * 100) / 100,
     yearlyMonthlyEquivalent:
       Math.round(((79 * 12 * YEARLY_DISCOUNT) / 12) * 100) / 100,
-    socialAccountLimit: 13,
-    socialAccountLabel: "All 13 social accounts",
+    socialAccountLimit: 9,
+    socialAccountLabel: "All 9 social accounts",
     imageCreditsPerMonth: 20,
     hasTrial: false,
     trialDays: 0,
@@ -73,15 +73,13 @@ export interface SharedFeature {
 
 export const SHARED_FEATURES: SharedFeature[] = [
   { label: "Personal AI social media manager", includedIn: "all" },
-  { label: "Private, isolated instance", includedIn: "all" },
-  { label: "Always-on agent (never sleeps)", includedIn: ["pro", "business"] },
   { label: "Unlimited posts", includedIn: "all" },
   { label: "AI-adapted content per platform", includedIn: "all" },
   { label: "AI content generation", includedIn: "all" },
   { label: "Scheduling & automation", includedIn: "all" },
   { label: "Brand voice memory", includedIn: "all" },
-  { label: "Web research", includedIn: "all" },
   { label: "Content calendar planning", includedIn: "all" },
+  { label: "Performance analytics", includedIn: "all" },
   { label: "Strategy advice", includedIn: "all" },
   { label: "AI image generation", includedIn: ["pro", "business"] },
 ];

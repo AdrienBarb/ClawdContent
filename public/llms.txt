@@ -1,39 +1,42 @@
 # PostClaw
 
-> PostClaw is a SaaS that gives you a personal AI content manager via web chat. Create, adapt, and publish social media posts across 12+ social platforms — just by chatting.
+> PostClaw is an AI social media manager that learns your brand, plans your content, and publishes to 9 platforms — all from a single chat conversation.
 
 ## What PostClaw Does
 
-PostClaw provides each user with their own private AI assistant via a web chat interface, powered by OpenClaw (the open-source AI agent framework with 140K+ GitHub stars). Chat with your assistant to draft posts, adapt content for different platforms, and publish — all from one conversation. Each user gets an isolated instance with their own social accounts connected.
+PostClaw is your AI social media manager. Chat with it to draft posts, plan your content calendar, adapt content for different platforms, schedule, and publish — all from one conversation. It learns your brand voice over time, analyzes performance, and suggests improvements. Your data and social accounts are completely isolated and private.
 
 ## Key Features
 
-- Personal AI assistant via web chat that creates and publishes social media content
-- Publish to 11+ social platforms from one chat (Instagram, TikTok, X/Twitter, LinkedIn, Facebook, YouTube, Pinterest, Threads, Bluesky, Discord, Mastodon)
+- AI social media manager via web chat that creates and publishes content
+- Publish to 9 social platforms from one chat (Instagram, TikTok, X/Twitter, LinkedIn, Facebook, YouTube, Pinterest, Threads, Bluesky)
 - AI-adapted content per platform (tone, length, hashtags, format)
+- Content calendar planning and scheduling
+- Performance analytics and best time to post recommendations
+- Image generation for posts
 - Media support (images and videos via Cloudinary)
-- Private, isolated instance per user
+- Brand voice learning — gets better the more you use it
 - Unlimited posts, cancel anytime
 
 ## How It Works
 
-1. Sign up and choose a plan (from $17/month)
-2. Connect your social media accounts from the dashboard
-3. Start chatting with your personal AI assistant from the dashboard
-4. Tell it what to post — it writes, adapts, and publishes across all your platforms
+1. Sign up and connect your social media accounts (free)
+2. Try your first chat message for free
+3. Choose a plan (from $17/month) for unlimited access
+4. Chat with your AI social media manager — it writes, adapts, schedules, and publishes across all your platforms
 
 ## Target Audience
 
+- Solo founders and indie hackers managing their own social presence
+- Small teams and startups (1-5 people) without a dedicated social media hire
 - Content creators who publish across multiple platforms
-- Founders and indie hackers managing their own social presence
-- Small businesses wanting consistent social media without hiring a manager
 - Professionals who want to stay active on social media without the overhead
 
 ## Pricing
 
 - Starter: $17/month — 2 social accounts
 - Pro: $37/month — 6 social accounts, 3-day free trial
-- Business: $79/month — all 12 social accounts, 3-day free trial, priority support
+- Business: $79/month — all 9 social accounts, 3-day free trial, priority support
 - Annual billing available (30% off)
 - Unlimited posts on all plans
 - 7-day money-back guarantee
@@ -41,11 +44,9 @@ PostClaw provides each user with their own private AI assistant via a web chat i
 
 ## Tech Stack
 
-- AI Agent: OpenClaw (open-source)
-- LLM: Kimi K2.5 by Moonshot
-- Interface: Web chat via OpenClaw Gateway API
+- AI: Proprietary AI engine
 - Social Media API: Zernio (zernio.com)
-- Hosting: Fly.io (isolated container per user)
+- Hosting: Vercel (Next.js)
 
 ## Important Pages
 

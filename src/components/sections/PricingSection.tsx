@@ -39,7 +39,7 @@ export default function PricingSection() {
           <PricingCards onSelectPlan={handleSelectPlan} />
 
           <p className="text-center text-xs text-muted-foreground mt-8">
-            Powered by open-source AI technology
+            Cancel anytime. No contracts.
           </p>
         </div>
       </div>

@@ -1,24 +1,18 @@
-import { Github, Lock, Zap } from "lucide-react";
+import { Lock, Zap } from "lucide-react";
 
 const stats = [
-  { value: "13", label: "Platforms Supported" },
-  { value: "140K+", label: "GitHub Stars" },
+  { value: "9", label: "Platforms Supported" },
   { value: "< 2 min", label: "Setup Time" },
-  { value: "24/7", label: "Always-On Bot" },
+  { value: "24/7", label: "Always-On AI" },
+  { value: "$17/mo", label: "Starting Price" },
 ];
 
 const trustPoints = [
   {
-    icon: Github,
-    title: "Open-Source & Transparent",
-    description:
-      "Built on battle-tested open-source technology with 140K+ GitHub stars. Public code, active community, proven reliability.",
-  },
-  {
     icon: Lock,
-    title: "Your own isolated server",
+    title: "Your data stays private",
     description:
-      "Every user gets a private bot instance on a dedicated server. No shared infrastructure, no data leaks. Your content stays yours.",
+      "Your content, conversations, and social accounts are completely isolated. No shared data, no access from other users.",
   },
   {
     icon: Zap,
@@ -53,7 +47,7 @@ export default function SocialProofSection() {
               Why You Can Trust PostClaw
             </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
             {trustPoints.map((point, index) => (
               <div key={point.title} className="bg-card border border-border rounded-2xl p-8 h-full flex flex-col hover:border-primary/20 transition-colors">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 mb-5">
