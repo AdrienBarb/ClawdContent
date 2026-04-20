@@ -6,20 +6,20 @@ import {
   retryPost as lateRetryPost,
   unpublishPost as lateUnpublishPost,
   updatePost as lateUpdatePost,
-  LatePost,
   LatePostDetail,
+  PaginatedPosts,
 } from "@/lib/late/mutations";
 
 export async function getUserPosts(
   userId: string,
-  options?: { status?: string; limit?: number }
-): Promise<LatePost[]> {
+  options?: { status?: string; limit?: number; page?: number }
+): Promise<PaginatedPosts> {
   const lateProfile = await prisma.lateProfile.findUnique({
     where: { userId },
   });
 
   if (!lateProfile) {
-    return [];
+    return { posts: [], pagination: { page: 1, limit: 20, total: 0, pages: 0 } };
   }
 
   return lateListPosts(

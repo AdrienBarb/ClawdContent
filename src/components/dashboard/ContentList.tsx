@@ -26,6 +26,8 @@ import {
   EyeOff,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   AlertCircle,
   Link2,
   Pencil,
@@ -205,6 +207,7 @@ export default function ContentList() {
   // Default to "scheduled" — the queue view
   const [statusFilter, setStatusFilter] =
     useState<StatusFilter>("scheduled");
+  const [page, setPage] = useState(1);
   const [expandedPosts, setExpandedPosts] = useState<Set<string>>(new Set());
 
   // Reschedule
@@ -230,7 +233,7 @@ export default function ContentList() {
 
   const { data, isLoading, refetch } = useGet(
     appRouter.api.posts,
-    undefined,
+    { status: statusFilter, page, limit: 20 },
     { refetchInterval: 10000 }
   );
 
@@ -272,17 +275,12 @@ export default function ContentList() {
 
   // ---------- Derived ----------
 
-  const allPosts: Post[] = data?.posts ?? [];
-  const filteredPosts = allPosts.filter((p) => p.status === statusFilter);
+  const posts: Post[] = data?.posts ?? [];
+  const pagination = data?.pagination as
+    | { page: number; limit: number; total: number; pages: number }
+    | undefined;
 
-  const counts = {
-    draft: allPosts.filter((p) => p.status === "draft").length,
-    scheduled: allPosts.filter((p) => p.status === "scheduled").length,
-    published: allPosts.filter((p) => p.status === "published").length,
-    failed: allPosts.filter((p) => p.status === "failed").length,
-  };
-
-  const grouped = groupByDate(filteredPosts, statusFilter);
+  const grouped = groupByDate(posts, statusFilter);
 
   // ---------- Handlers ----------
 
@@ -528,12 +526,11 @@ export default function ContentList() {
           <div className="flex gap-1.5 rounded-xl bg-gray-100 p-1 w-fit overflow-x-auto">
             {STATUS_TABS.map((tab) => {
               const Icon = tab.icon;
-              const count = counts[tab.value];
               const active = statusFilter === tab.value;
               return (
                 <button
                   key={tab.value}
-                  onClick={() => setStatusFilter(tab.value)}
+                  onClick={() => { setStatusFilter(tab.value); setPage(1); }}
                   className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
                     active
                       ? "bg-white text-gray-900 shadow-sm"
@@ -542,11 +539,9 @@ export default function ContentList() {
                 >
                   <Icon className="h-3.5 w-3.5" />
                   {tab.label}
-                  {count > 0 && (
-                    <span
-                      className={`text-xs tabular-nums ${active ? "text-gray-400" : "opacity-60"}`}
-                    >
-                      {count}
+                  {active && pagination && pagination.total > 0 && (
+                    <span className="text-xs tabular-nums text-gray-400">
+                      {pagination.total}
                     </span>
                   )}
                 </button>
@@ -557,7 +552,7 @@ export default function ContentList() {
           {/* Timeline */}
           {grouped.length > 0 ? (
             <div className="space-y-8">
-              {grouped.map(([dateKey, posts]) => (
+              {grouped.map(([dateKey, datePosts]) => (
                 <div key={dateKey}>
                   <div className="flex items-center gap-3 mb-4">
                     <h3 className="text-sm font-semibold text-gray-900 whitespace-nowrap">
@@ -566,7 +561,7 @@ export default function ContentList() {
                     <div className="flex-1 h-px bg-gray-200" />
                   </div>
                   <div className="space-y-4">
-                    {posts.map((post) => {
+                    {datePosts.map((post) => {
                       const isRescheduling = reschedulingPostId === post.id;
                       const isLong = post.content.length > MAX_PREVIEW_LENGTH;
                       const isExpanded = expandedPosts.has(post.id);
@@ -772,6 +767,33 @@ export default function ContentList() {
                   Create post
                 </Link>
               )}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {pagination && pagination.pages > 1 && (
+            <div className="flex items-center justify-center gap-2 pt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 cursor-pointer"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-sm text-gray-500 tabular-nums px-2">
+                {page} / {pagination.pages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 cursor-pointer"
+                onClick={() => setPage((p) => Math.min(pagination.pages, p + 1))}
+                disabled={page >= pagination.pages}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
             </div>
           )}
         </>

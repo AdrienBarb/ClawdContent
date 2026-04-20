@@ -3,6 +3,7 @@ import {
   getConnectUrl as lateGetConnectUrl,
   listAccounts as lateListAccounts,
   deleteAccount as lateDeleteAccount,
+  getAccountsHealth,
 } from "@/lib/late/mutations";
 
 export async function getConnectedAccounts(userId: string) {
@@ -44,13 +45,36 @@ export async function syncAccountsFromLate(userId: string): Promise<void> {
     throw new Error("Late profile not found");
   }
 
-  const accounts = await lateListAccounts(
-    lateProfile.lateProfileId,
-    lateProfile.lateApiKey
-  );
+  // Use health endpoint for detailed token status, fall back to listAccounts
+  let accountStatuses: { id: string; platform: string; username: string; isActive: boolean }[];
+
+  try {
+    const health = await getAccountsHealth(
+      lateProfile.lateProfileId,
+      lateProfile.lateApiKey
+    );
+    accountStatuses = health.accounts.map((a) => ({
+      id: a.accountId,
+      platform: a.platform,
+      username: a.username,
+      isActive: a.tokenValid && !a.needsReconnect,
+    }));
+  } catch {
+    // Fall back to simple list if health endpoint fails
+    const accounts = await lateListAccounts(
+      lateProfile.lateProfileId,
+      lateProfile.lateApiKey
+    );
+    accountStatuses = accounts.map((a) => ({
+      id: a.id,
+      platform: a.platform,
+      username: a.username,
+      isActive: a.isActive,
+    }));
+  }
 
   // Upsert each account from Zernio with its real status
-  for (const account of accounts) {
+  for (const account of accountStatuses) {
     const status = account.isActive ? "active" : "disconnected";
     await prisma.socialAccount.upsert({
       where: { lateAccountId: account.id },
@@ -70,7 +94,7 @@ export async function syncAccountsFromLate(userId: string): Promise<void> {
   }
 
   // Mark accounts no longer in Zernio at all as disconnected
-  const lateAccountIds = accounts.map((a) => a.id);
+  const lateAccountIds = accountStatuses.map((a) => a.id);
   await prisma.socialAccount.updateMany({
     where: {
       lateProfileId: lateProfile.id,

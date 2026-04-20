@@ -59,6 +59,7 @@ export const appRouter = {
     dashboardStatus: "/api/dashboard/status",
     webhooks: {
       stripe: "/api/webhooks/stripe",
+      zernio: "/api/webhooks/zernio",
     },
   },
 };

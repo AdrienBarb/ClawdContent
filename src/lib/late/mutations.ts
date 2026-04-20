@@ -116,29 +116,39 @@ interface LatePostRaw {
   createdAt: string;
 }
 
+export interface PaginatedPosts {
+  posts: LatePost[];
+  pagination: { page: number; limit: number; total: number; pages: number };
+}
+
 export async function listPosts(
   profileId: string,
   apiKey: string,
-  options?: { status?: string; limit?: number }
-): Promise<LatePost[]> {
+  options?: { status?: string; limit?: number; page?: number }
+): Promise<PaginatedPosts> {
   const params = new URLSearchParams({ profileId });
   if (options?.status) params.set("status", options.status);
-  if (options?.limit) params.set("limit", String(options.limit));
+  params.set("limit", String(options?.limit ?? 20));
+  if (options?.page) params.set("page", String(options.page));
 
-  const data = await lateRequest<{ posts: LatePostRaw[] }>(
-    `/posts?${params.toString()}`,
-    { apiKey }
-  );
-  return data.posts.map((p) => ({
-    id: p._id,
-    content: p.content,
-    platforms: p.platforms,
-    mediaItems: p.mediaItems ?? [],
-    status: p.status,
-    scheduledAt: p.scheduledFor,
-    publishedAt: p.publishedAt,
-    createdAt: p.createdAt,
-  }));
+  const data = await lateRequest<{
+    posts: LatePostRaw[];
+    pagination: { page: number; limit: number; total: number; pages: number };
+  }>(`/posts?${params.toString()}`, { apiKey });
+
+  return {
+    posts: data.posts.map((p) => ({
+      id: p._id,
+      content: p.content,
+      platforms: p.platforms,
+      mediaItems: p.mediaItems ?? [],
+      status: p.status,
+      scheduledAt: p.scheduledFor,
+      publishedAt: p.publishedAt,
+      createdAt: p.createdAt,
+    })),
+    pagination: data.pagination,
+  };
 }
 
 export async function getPost(
@@ -480,6 +490,36 @@ export async function getFollowerStats(
   return lateRequest(`/accounts/follower-stats${qs ? `?${qs}` : ""}`, {
     apiKey,
   });
+}
+
+// GET /v1/accounts/health — token validity and reconnection status
+export interface AccountHealth {
+  accountId: string;
+  platform: string;
+  username: string;
+  status: "healthy" | "warning" | "error";
+  canPost: boolean;
+  tokenValid: boolean;
+  needsReconnect: boolean;
+  issues: string[];
+}
+
+export interface AccountsHealthResponse {
+  summary: {
+    total: number;
+    healthy: number;
+    warning: number;
+    error: number;
+    needsReconnect: number;
+  };
+  accounts: AccountHealth[];
+}
+
+export async function getAccountsHealth(
+  profileId: string,
+  apiKey: string
+): Promise<AccountsHealthResponse> {
+  return lateRequest(`/accounts/health?profileId=${profileId}`, { apiKey });
 }
 
 export async function getBestTimeToPost(

@@ -115,7 +115,7 @@ export function createZernioTools(
 
     listPosts: tool({
       description:
-        "List recent posts. Can filter by status (published, scheduled, failed, draft).",
+        "List recent posts. Can filter by status (published, scheduled, failed, draft). Results are paginated (20 per page by default).",
       inputSchema: z.object({
         status: z
           .string()
@@ -124,22 +124,29 @@ export function createZernioTools(
         limit: z
           .number()
           .optional()
-          .describe("Max number of posts to return (default 20)"),
+          .describe("Max number of posts to return per page (default 20)"),
+        page: z
+          .number()
+          .optional()
+          .describe("Page number (default 1)"),
       }),
-      execute: async ({ status, limit }) => {
-        const posts = await listPosts(profileId, apiKey, { status, limit });
-        return posts.map((p) => ({
-          id: p.id,
-          content:
-            p.content.length > 200
-              ? p.content.slice(0, 200) + "..."
-              : p.content,
-          platforms: p.platforms.map((pl) => pl.platform),
-          status: p.status,
-          scheduledAt: p.scheduledAt,
-          publishedAt: p.publishedAt,
-          createdAt: p.createdAt,
-        }));
+      execute: async ({ status, limit, page }) => {
+        const result = await listPosts(profileId, apiKey, { status, limit, page });
+        return {
+          posts: result.posts.map((p) => ({
+            id: p.id,
+            content:
+              p.content.length > 200
+                ? p.content.slice(0, 200) + "..."
+                : p.content,
+            platforms: p.platforms.map((pl) => pl.platform),
+            status: p.status,
+            scheduledAt: p.scheduledAt,
+            publishedAt: p.publishedAt,
+            createdAt: p.createdAt,
+          })),
+          pagination: result.pagination,
+        };
       },
     }),
 
