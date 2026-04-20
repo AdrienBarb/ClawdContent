@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
       system: systemPrompt,
       messages: modelMessages,
       tools,
-      stopWhen: stepCountIs(10),
+      stopWhen: stepCountIs(25),
       onFinish: async ({ text }) => {
         if (text) {
           await saveChatMessage({
