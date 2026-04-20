@@ -13,7 +13,7 @@ export const faqs = [
   {
     question: "What technology powers PostClaw?",
     answer:
-      "PostClaw runs on OpenClaw, the most popular open-source AI agent framework with over 140K GitHub stars. Each user gets a private, dedicated AI instance running on its own isolated server. We handle all the setup, hosting, and security \u2014 you just chat.",
+      "PostClaw uses our proprietary AI engine combined with Zernio's unified social media API. Your AI social media manager understands your brand, writes platform-native content, and publishes directly to your accounts. We handle all the infrastructure — you just chat.",
   },
   {
     question: "Does it actually sound like me, or like a robot?",
@@ -23,7 +23,7 @@ export const faqs = [
   {
     question: "What platforms are supported?",
     answer:
-      "12 platforms: Instagram, TikTok, X (Twitter), LinkedIn, Facebook, YouTube, Pinterest, Threads, Bluesky, Discord, and Mastodon. You can post to all of them at once, or pick specific ones.",
+      "14 platforms: Instagram, TikTok, X (Twitter), LinkedIn, Facebook, YouTube, Pinterest, Threads, Bluesky, Reddit, Telegram, Snapchat, Google Business, and WhatsApp. You can post to all of them at once, or pick specific ones.",
   },
   {
     question: "Can I review posts before they go live?",

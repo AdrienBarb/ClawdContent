@@ -87,6 +87,14 @@ export const auth = betterAuth({
             }),
           });
 
+          // Create Zernio profile so user can connect social accounts immediately
+          const { ensureUserProfile } = await import(
+            "@/lib/services/profile"
+          );
+          await ensureUserProfile(user.id, user.name).catch((err) =>
+            console.error(`Failed to create profile for user ${user.id}:`, err)
+          );
+
           // Brevo: create contact + trigger onboarding automation
           await createBrevoContact({
             email: user.email,

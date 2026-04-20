@@ -151,12 +151,6 @@ function sumPoints(points: DailyChartPoint[]) {
 // Exported service functions
 // ---------------------------------------------------------------------------
 
-const ANALYTICS_WHITELIST = ["adrien-barbier@hotmail.fr", "admin@postclaw.io"];
-
-export function isAnalyticsEnabled(email: string | undefined): boolean {
-  return ANALYTICS_WHITELIST.includes(email ?? "");
-}
-
 const emptyFollowers: FollowerStatsResponse = {
   accounts: [],
   stats: {},
@@ -198,9 +192,9 @@ export async function getOverviewMetrics(
   const { startDate, endDate, prevStartDate, prevEndDate } =
     computeDateRange(period);
 
-  const emptyFollowerResp = emptyFollowers;
-
-  // Fetch individual posts for current + previous periods, and follower stats
+  // Fetch per-post analytics (current + previous period) and follower stats in parallel
+  // Note: we use getAnalytics (per-post data) instead of getDailyMetrics because
+  // the daily-metrics endpoint returns inflated/inaccurate data for some platforms (e.g. Threads).
   const [currentPostsRaw, prevPostsRaw, followerRaw] = await Promise.all([
     getAnalytics(apiKey, {
       fromDate: startDate,
@@ -220,9 +214,12 @@ export async function getOverviewMetrics(
       console.error("[Analytics] getAnalytics (prev) failed:", e.message);
       return null;
     }),
-    lateFollowerStats(apiKey).catch((e) => {
+    lateFollowerStats(apiKey, {
+      fromDate: startDate,
+      toDate: endDate,
+    }).catch((e) => {
       console.error("[Analytics] getFollowerStats failed:", e.message);
-      return emptyFollowerResp;
+      return emptyFollowers;
     }),
   ]);
 
@@ -242,7 +239,7 @@ export async function getOverviewMetrics(
   const curEngagement = cur.likes + cur.comments + cur.shares + cur.saves;
   const prevEngagement = prev.likes + prev.comments + prev.shares + prev.saves;
 
-  // Follower count
+  // Follower stats
   const accounts = Array.isArray(followerRaw?.accounts)
     ? followerRaw.accounts
     : [];
@@ -251,6 +248,20 @@ export async function getOverviewMetrics(
     (sum, a) => sum + (a.currentFollowers ?? 0),
     0
   );
+  const totalGrowth = relevantAccounts.reduce(
+    (sum, a) => sum + (a.growth ?? 0),
+    0
+  );
+  // Compute weighted average growth percentage
+  const followerChange =
+    relevantAccounts.length > 0 && totalFollowers > 0
+      ? Math.round(
+          relevantAccounts.reduce(
+            (sum, a) => sum + (a.growthPercentage ?? 0) * (a.currentFollowers ?? 0),
+            0
+          ) / totalFollowers
+        )
+      : null;
 
   return {
     kpis: {
@@ -268,7 +279,7 @@ export async function getOverviewMetrics(
       },
       followerGrowth: {
         value: totalFollowers,
-        change: null,
+        change: followerChange,
       },
     },
     dailyMetrics: currentDaily,
@@ -348,7 +359,6 @@ export async function getFollowerGrowth(
   if (!profile) return { ...emptyFollowers, accounts: [], stats: {} };
 
   try {
-    // Zernio's follower-stats has no platform param — we filter ourselves
     const result = await lateFollowerStats(profile.apiKey);
 
     if (!platform) return result;

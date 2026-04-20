@@ -11,7 +11,6 @@ import {
   handlePlanUpgrade,
   handlePlanDowngrade,
 } from "@/lib/services/credits";
-import { updateMachineAutoStop } from "@/lib/fly/mutations";
 
 export async function createCheckoutSession(
   userId: string,
@@ -156,20 +155,6 @@ export async function changePlan(
     await handlePlanDowngrade(userId, newPlanId);
   }
 
-  // Update container auto-stop and plan env var based on new plan
-  const alwaysOnPlans: PlanId[] = ["pro", "business"];
-  const shouldAutoStop = !alwaysOnPlans.includes(newPlanId);
-  await updateMachineAutoStop(userId, shouldAutoStop).catch((err) =>
-    console.error(`Failed to update auto-stop for user ${userId}:`, err)
-  );
-
-  // Sync PLAN_ID env var so the bot knows the user's plan
-  const { updateContainerEnvVars } = await import(
-    "@/lib/services/provisioning"
-  );
-  await updateContainerEnvVars(userId, { PLAN_ID: newPlanId }).catch((err) =>
-    console.error(`Failed to update PLAN_ID for user ${userId}:`, err)
-  );
 }
 
 export async function syncSubscriptionStatus(

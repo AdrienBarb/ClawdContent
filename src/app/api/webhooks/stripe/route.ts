@@ -5,9 +5,9 @@ import { stripe } from "@/lib/stripe/client";
 import { errorMessages } from "@/lib/constants/errorMessage";
 import { prisma } from "@/lib/db/prisma";
 import {
-  deprovisionUser,
-  provisionUser,
-} from "@/lib/services/provisioning";
+  ensureUserProfile,
+  cleanupUserProfile,
+} from "@/lib/services/profile";
 import {
   getPlanFromStripePriceId,
   type PlanId,
@@ -242,10 +242,10 @@ async function handleCheckoutCompleted(
 
   after(async () => {
     try {
-      await provisionUser(userId, user?.name ?? "User", planId);
-      console.log(`Provisioned user ${userId} after checkout`);
+      await ensureUserProfile(userId, user?.name ?? "User");
+      console.log(`Ensured profile for user ${userId} after checkout`);
     } catch (err) {
-      console.error(`Failed to provision user ${userId}:`, err);
+      console.error(`Failed to ensure profile for user ${userId}:`, err);
     }
   });
 }
@@ -349,14 +349,14 @@ async function handleSubscriptionDeleted(
     });
   }
 
-  // Deprovision in background
+  // Clean up user profile in background
   after(async () => {
     try {
-      await deprovisionUser(existing.userId);
-      console.log(`Deprovisioned user ${existing.userId}`);
+      await cleanupUserProfile(existing.userId);
+      console.log(`Cleaned up profile for user ${existing.userId}`);
     } catch (err) {
       console.error(
-        `Failed to deprovision user ${existing.userId}:`,
+        `Failed to clean up profile for user ${existing.userId}:`,
         err
       );
     }
@@ -391,17 +391,6 @@ async function handleInvoiceSucceeded(
   // Monthly credit reset
   const planId = (existing.planId || "pro") as PlanId;
   await grantPlanCredits(existing.userId, planId);
-
-  // Verify container is still running
-  const flyMachine = await prisma.flyMachine.findUnique({
-    where: { userId: existing.userId },
-  });
-
-  if (!flyMachine || flyMachine.status === "failed") {
-    console.log(
-      `Container missing/failed for user ${existing.userId} — will need manual re-provision`
-    );
-  }
 }
 
 async function handleInvoiceFailed(invoice: Stripe.Invoice): Promise<void> {

@@ -123,20 +123,6 @@ export default async function Footer() {
           </p>
           <div className="flex items-center gap-5">
             <a
-              href="https://openclaw.ai/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="opacity-70 hover:opacity-100 transition-opacity"
-            >
-              <Image
-                src="/images/openclaw/openclaw-seeklogo.svg"
-                alt="OpenClaw"
-                width={48}
-                height={48}
-                className="h-12 w-auto"
-              />
-            </a>
-            <a
               href="https://zernio.com/?utm_source=postclaw"
               target="_blank"
               rel="noopener noreferrer"

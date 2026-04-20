@@ -5,7 +5,7 @@ export const deletePostSchema = z.object({
 });
 
 export const listPostsQuerySchema = z.object({
-  status: z.enum(["scheduled", "published", "failed"]).optional(),
+  status: z.enum(["draft", "scheduled", "published", "failed"]).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional(),
 });
 
