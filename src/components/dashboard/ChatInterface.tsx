@@ -600,6 +600,7 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
             <div className="flex items-center justify-between px-3 pb-3">
               <div className="flex items-center gap-1">
                 <MediaAttachDropdown
+                  disabled={!hasAccounts}
                   onOpenUpload={() => {
                     if (needsSubscription) { setShowSubscribeModal(true); return; }
                     setUploadModalOpen(true);
