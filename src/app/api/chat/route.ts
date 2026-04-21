@@ -3,7 +3,12 @@ import { errorHandler } from "@/lib/errors/errorHandler";
 import { auth } from "@/lib/better-auth/auth";
 import { NextResponse, NextRequest } from "next/server";
 import { headers } from "next/headers";
-import { streamText, UIMessage, convertToModelMessages, stepCountIs } from "ai";
+import {
+  streamText,
+  UIMessage,
+  convertToModelMessages,
+  stepCountIs,
+} from "ai";
 import type { Prisma } from "@prisma/client";
 import { reasoningModel, executionModel } from "@/lib/ai/provider";
 import { buildSystemPrompt } from "@/lib/ai/system-prompt";
@@ -86,19 +91,63 @@ export async function POST(req: NextRequest) {
     const messages: UIMessage[] = rawMessages
       .filter((m) => m.role === "user" || m.role === "assistant")
       .slice(-100)
-      .map((m) => ({
-        ...m,
-        parts: (m.parts ?? []).filter((p) => {
-          // Keep text parts
-          if (p.type === "text") return true;
-          // Keep tool parts only if they have a completed result
-          if ("state" in p && "output" in p && p.state === "output-available") {
+      .map((m) => {
+        const filteredParts = (m.parts ?? []).filter((p) => {
+          if (p == null || typeof p !== "object" || !("type" in p)) return false;
+          if (p.type === "text" || p.type === "step-start") return true;
+          if (
+            (p.type === "dynamic-tool" ||
+              (typeof p.type === "string" && p.type.startsWith("tool-"))) &&
+            "toolCallId" in p &&
+            typeof p.toolCallId === "string" &&
+            "toolName" in p &&
+            typeof p.toolName === "string" &&
+            "state" in p &&
+            p.state === "output-available" &&
+            "output" in p &&
+            p.output !== undefined
+          ) {
             return true;
           }
-          // Drop everything else (incomplete tool calls, unknown part types)
           return false;
-        }),
-      }));
+        });
+
+        // For assistant messages: ensure tool-call parts and text parts are in
+        // separate steps. The Anthropic API requires tool_use at the end of an
+        // assistant message — text after tool_use is invalid. Inserting a
+        // step-start between them makes convertToModelMessages produce:
+        //   assistant([tool_use]) → tool([tool_result]) → assistant([text])
+        if (m.role === "assistant") {
+          const hasToolParts = filteredParts.some(
+            (p) => p.type === "dynamic-tool" || (typeof p.type === "string" && p.type.startsWith("tool-"))
+          );
+          const hasTextAfterTool = hasToolParts && filteredParts.some((p, i) => {
+            if (p.type !== "text") return false;
+            return filteredParts.slice(0, i).some(
+              (prev) => prev.type === "dynamic-tool" || (typeof prev.type === "string" && prev.type.startsWith("tool-"))
+            );
+          });
+
+          if (hasTextAfterTool) {
+            // Rebuild parts: [step-start, ...tools, step-start, ...texts]
+            const toolParts = filteredParts.filter(
+              (p) => p.type === "dynamic-tool" || (typeof p.type === "string" && p.type.startsWith("tool-"))
+            );
+            const textParts = filteredParts.filter((p) => p.type === "text");
+            return {
+              ...m,
+              parts: [
+                { type: "step-start" as const },
+                ...toolParts,
+                { type: "step-start" as const },
+                ...textParts,
+              ] as UIMessage["parts"],
+            };
+          }
+        }
+
+        return { ...m, parts: filteredParts };
+      });
 
     // Build system prompt from user data
     const systemPrompt = buildSystemPrompt({
@@ -137,7 +186,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const modelMessages = await convertToModelMessages(messages);
+    console.log(
+      `[Chat] userId=${userId}, messages=${messages.length}, toolParts=${messages.filter((m) => m.parts?.some((p) => p.type === "dynamic-tool" || (typeof p.type === "string" && p.type.startsWith("tool-")))).length} msgs with tools`
+    );
+
+    const modelMessages = await convertToModelMessages(messages, {
+      ignoreIncompleteToolCalls: true,
+    });
+
+    console.log(`[Chat] modelMessages=${modelMessages.length}`);
 
     const result = streamText({
       model: reasoningModel,
@@ -160,24 +217,36 @@ export async function POST(req: NextRequest) {
       },
       stopWhen: stepCountIs(10),
       onFinish: async ({ text, usage, steps }) => {
+        const toolsSummary = steps
+          .flatMap((s) => s.toolCalls.map((tc) => tc.toolName))
+          .join(", ");
+        console.log(
+          `[Chat] onFinish: steps=${steps.length}, tools=[${toolsSummary}], textLen=${text?.length ?? 0}, tokens=${usage?.inputTokens ?? 0}in/${usage?.outputTokens ?? 0}out`
+        );
+
         // Build full UIMessage parts from steps (text + tool calls)
-        // so the AI can see its own actions when history is reloaded
+        // so the AI can see its own actions when history is reloaded.
+        // step-start markers allow convertToModelMessages to properly
+        // reconstruct multi-step tool exchanges.
         const parts: unknown[] = [];
         try {
-          // Build full UIMessage parts from steps (text + tool calls)
           for (const step of steps) {
+            parts.push({ type: "step-start" });
             for (const tc of step.toolCalls) {
               const tr = step.toolResults.find(
                 (r) => r.toolCallId === tc.toolCallId
               );
-              parts.push({
-                type: "dynamic-tool",
-                toolCallId: tc.toolCallId,
-                toolName: tc.toolName,
-                input: tc.input,
-                state: "output-available",
-                output: tr?.output,
-              });
+              // Only save tool calls that have a completed result
+              if (tr) {
+                parts.push({
+                  type: "dynamic-tool",
+                  toolCallId: tc.toolCallId,
+                  toolName: tc.toolName,
+                  input: tc.input,
+                  state: "output-available",
+                  output: tr.output ?? null,
+                });
+              }
             }
             if (step.text) {
               parts.push({ type: "text", text: step.text });

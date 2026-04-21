@@ -87,6 +87,11 @@ export function createZernioTools(
           .describe("Media attachments (optional)"),
       }),
       execute: async ({ content, platforms, scheduledAt, mediaItems }) => {
+        console.log(
+          `[Tool:createPost] platforms=${platforms.join(",")}, media=${mediaItems?.length ?? 0}, scheduled=${!!scheduledAt}, content="${content.slice(0, 50)}..."`
+        );
+        const start = Date.now();
+
         // Convert media types to Zernio format
         const zernioMedia = mediaItems?.map((m) => ({
           url: m.url,
@@ -131,6 +136,17 @@ export function createZernioTools(
 
         const succeeded = platformResults.filter((r) => r.success).length;
         const failed = platformResults.filter((r) => !r.success).length;
+        const duration = Date.now() - start;
+
+        for (const r of platformResults) {
+          if (r.success) {
+            console.log(`[Tool:createPost] ✓ ${r.platform} (${duration}ms)`);
+          } else {
+            console.error(
+              `[Tool:createPost] ✗ ${r.platform}: ${"error" in r ? r.error : "unknown"} (${duration}ms)`
+            );
+          }
+        }
 
         return {
           summary: `${succeeded}/${platforms.length} succeeded${failed > 0 ? `, ${failed} FAILED` : ""}`,
@@ -157,7 +173,11 @@ export function createZernioTools(
           .describe("Page number (default 1)"),
       }),
       execute: async ({ status, limit, page }) => {
+        console.log(
+          `[Tool:listPosts] status=${status ?? "all"}, limit=${limit ?? 20}, page=${page ?? 1}`
+        );
         const result = await listPosts(profileId, apiKey, { status, limit, page });
+        console.log(`[Tool:listPosts] → ${result.posts.length} posts returned`);
         return {
           posts: result.posts.map((p) => ({
             id: p.id,
@@ -184,7 +204,9 @@ export function createZernioTools(
         postId: z.string().describe("The post ID to delete"),
       }),
       execute: async ({ postId }) => {
+        console.log(`[Tool:deletePost] postId=${postId}`);
         await deletePost(postId, apiKey);
+        console.log(`[Tool:deletePost] ✓ deleted`);
         return { success: true, deletedPostId: postId };
       },
     }),
@@ -201,7 +223,9 @@ export function createZernioTools(
           ),
       }),
       execute: async ({ postId, platform }) => {
+        console.log(`[Tool:unpublishPost] postId=${postId}, platform=${platform}`);
         await unpublishPost(postId, platform, apiKey);
+        console.log(`[Tool:unpublishPost] ✓ unpublished from ${platform}`);
         return { success: true, unpublishedPostId: postId, platform };
       },
     }),
@@ -218,7 +242,11 @@ export function createZernioTools(
           .describe("New scheduled time (ISO 8601)"),
       }),
       execute: async ({ postId, content, scheduledAt }) => {
+        console.log(
+          `[Tool:updatePost] postId=${postId}, hasContent=${!!content}, hasSchedule=${!!scheduledAt}`
+        );
         await updatePost(postId, { content, scheduledAt }, apiKey);
+        console.log(`[Tool:updatePost] ✓ updated`);
         return { success: true, updatedPostId: postId };
       },
     }),
@@ -229,7 +257,9 @@ export function createZernioTools(
         postId: z.string().describe("The post ID to retry"),
       }),
       execute: async ({ postId }) => {
+        console.log(`[Tool:retryPost] postId=${postId}`);
         await retryPost(postId, apiKey);
+        console.log(`[Tool:retryPost] ✓ retried`);
         return { success: true, retriedPostId: postId };
       },
     }),
@@ -247,12 +277,18 @@ export function createZernioTools(
           .describe("Max number of posts (default 20)"),
       }),
       execute: async ({ platform, fromDate, toDate, limit }) => {
+        console.log(
+          `[Tool:getAnalytics] platform=${platform ?? "all"}, from=${fromDate ?? "∞"}, to=${toDate ?? "now"}`
+        );
         const data = await getAnalytics(apiKey, {
           platform,
           fromDate,
           toDate,
           limit,
         });
+        console.log(
+          `[Tool:getAnalytics] → ${data.posts.length} posts, overview: ${JSON.stringify(data.overview).slice(0, 100)}`
+        );
         return {
           overview: data.overview,
           posts: data.posts.slice(0, 10).map((p) => ({
@@ -279,7 +315,12 @@ export function createZernioTools(
         platform: z.string().optional().describe("Filter by platform"),
       }),
       execute: async ({ fromDate, toDate, platform }) => {
-        return getDailyMetrics(apiKey, { fromDate, toDate, platform });
+        console.log(
+          `[Tool:getDailyMetrics] platform=${platform ?? "all"}, from=${fromDate ?? "∞"}, to=${toDate ?? "now"}`
+        );
+        const result = await getDailyMetrics(apiKey, { fromDate, toDate, platform });
+        console.log(`[Tool:getDailyMetrics] → returned metrics`);
+        return result;
       },
     }),
 
@@ -290,7 +331,9 @@ export function createZernioTools(
         platform: z.string().optional().describe("Filter by platform"),
       }),
       execute: async ({ platform }) => {
+        console.log(`[Tool:getBestTimeToPost] platform=${platform ?? "all"}`);
         const data = await getBestTimeToPost(apiKey, { platform });
+        console.log(`[Tool:getBestTimeToPost] → ${data.slots.length} slots`);
         // Zernio: day_of_week 0=Monday, 6=Sunday
         const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
         return data.slots.map((s) => ({
@@ -306,7 +349,9 @@ export function createZernioTools(
       description: "List the user's connected social media accounts.",
       inputSchema: z.object({}),
       execute: async () => {
+        console.log(`[Tool:listAccounts]`);
         const accts = await listAccounts(profileId, apiKey);
+        console.log(`[Tool:listAccounts] → ${accts.length} accounts`);
         return accts.map((a) => ({
           id: a.id,
           platform: a.platform,
@@ -338,6 +383,9 @@ export function createZernioTools(
           .describe("Max logs to return (default 20, max 100)"),
       }),
       execute: async ({ status, platform, days, limit }) => {
+        console.log(
+          `[Tool:getPostLogs] status=${status ?? "all"}, platform=${platform ?? "all"}, days=${days ?? 7}`
+        );
         const result = await getLogs(apiKey, {
           type: "publishing",
           status: status ?? "all",
@@ -345,6 +393,7 @@ export function createZernioTools(
           days: days ?? 7,
           limit: limit ?? 20,
         });
+        console.log(`[Tool:getPostLogs] → ${result.logs.length} logs`);
         return {
           logs: result.logs.map((l) => ({
             action: l.action,
