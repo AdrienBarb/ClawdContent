@@ -14,6 +14,7 @@ import {
   getLogs,
 } from "@/lib/late/mutations";
 import { lateRequest } from "@/lib/late/client";
+import { getUserMedia } from "@/lib/services/media";
 
 interface SocialAccount {
   platform: string;
@@ -25,7 +26,8 @@ export function createZernioTools(
   apiKey: string,
   profileId: string,
   accounts: SocialAccount[],
-  timezone: string
+  timezone: string,
+  userId: string
 ) {
   // Build a map of platform → accountId for resolving in createPost
   const accountsByPlatform = new Map<string, string>();
@@ -413,6 +415,28 @@ export function createZernioTools(
           username: a.username,
           isActive: a.isActive,
         }));
+      },
+    }),
+
+    listUserMedia: tool({
+      description:
+        "List the user's uploaded media files (images and videos). Use this to find existing media the user has uploaded that can be attached to posts via createPost.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        console.log(`[Tool:listUserMedia]`);
+        const media = await getUserMedia(userId);
+        console.log(`[Tool:listUserMedia] → ${media.length} media files`);
+        return {
+          media: media.map((m) => ({
+            id: m.id,
+            url: m.url,
+            resourceType: m.resourceType,
+            format: m.format,
+            width: m.width,
+            height: m.height,
+            createdAt: m.createdAt,
+          })),
+        };
       },
     }),
 

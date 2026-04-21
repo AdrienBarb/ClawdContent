@@ -165,7 +165,8 @@ export async function POST(req: NextRequest) {
       lateProfile.lateApiKey,
       lateProfile.lateProfileId,
       lateProfile.socialAccounts,
-      user?.timezone ?? "UTC"
+      user?.timezone ?? "UTC",
+      userId
     );
 
     // Extract and save the last user message

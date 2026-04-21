@@ -17,6 +17,7 @@ import {
   CaretUpDownIcon,
   FileTextIcon,
   ChartLineUpIcon,
+  ImageIcon,
 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -44,6 +45,7 @@ const navItems = [
   },
   { href: appRouter.analytics, label: "Analytics", icon: ChartLineUpIcon },
   { href: appRouter.posts, label: "Posts", icon: FileTextIcon },
+  { href: appRouter.media, label: "Media", icon: ImageIcon },
   { href: appRouter.context, label: "Knowledge", icon: UserCircleIcon },
 ];
 
