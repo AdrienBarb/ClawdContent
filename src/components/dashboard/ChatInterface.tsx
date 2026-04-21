@@ -26,10 +26,10 @@ import ReactMarkdown from "react-markdown";
 import SubscribeModal from "@/components/dashboard/SubscribeModal";
 
 const SUGGESTIONS = [
-  "Write a LinkedIn post about my latest project",
-  "Draft a short announcement for Threads",
-  "Turn this idea into a Twitter thread",
-  "Write a professional update about a milestone",
+  "Write a post about my latest project",
+  "Share a lesson I learned recently",
+  "Announce a milestone I just hit",
+  "Write something to attract new clients",
 ];
 
 interface AttachedMedia {
