@@ -44,6 +44,8 @@ export async function POST(req: NextRequest) {
             onboardingRole: true,
             onboardingNiche: true,
             onboardingTopics: true,
+            onboardingGoal: true,
+            strategy: true,
           },
         }),
         prisma.subscription.findUnique({
@@ -156,6 +158,8 @@ export async function POST(req: NextRequest) {
       onboardingRole: user?.onboardingRole ?? null,
       onboardingNiche: user?.onboardingNiche ?? null,
       onboardingTopics: user?.onboardingTopics ?? [],
+      onboardingGoal: user?.onboardingGoal ?? null,
+      strategy: user?.strategy ?? null,
       planId: subscription?.planId ?? "starter",
       accounts: lateProfile.socialAccounts,
     });

@@ -37,6 +37,8 @@ export async function GET() {
             onboardingRole: true,
             onboardingNiche: true,
             onboardingTopics: true,
+            onboardingGoal: true,
+            strategy: true,
           },
         }),
         prisma.subscription.findUnique({ where: { userId } }),
@@ -76,7 +78,9 @@ export async function GET() {
         role: user?.onboardingRole ?? null,
         niche: user?.onboardingNiche ?? null,
         topics: user?.onboardingTopics ?? [],
+        goal: user?.onboardingGoal ?? null,
       },
+      hasStrategy: !!user?.strategy,
       subscription: subscription
         ? {
             status: subscription.status,

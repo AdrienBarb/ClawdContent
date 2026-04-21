@@ -4,9 +4,10 @@ import { prisma } from "@/lib/db/prisma";
 export async function generateChatSuggestions(
   role: string | null,
   niche: string | null,
-  topics: string[]
+  topics: string[],
+  goal: string | null = null
 ): Promise<string[]> {
-  if (!role && !niche && topics.length === 0) {
+  if (!role && !niche && !goal && topics.length === 0) {
     return [];
   }
 
@@ -14,6 +15,7 @@ export async function generateChatSuggestions(
     const profileParts: string[] = [];
     if (role) profileParts.push(`Role: ${role}`);
     if (niche) profileParts.push(`Niche/business: ${niche}`);
+    if (goal) profileParts.push(`Main goal: ${goal.replace(/_/g, " ")}`);
     if (topics.length > 0) profileParts.push(`Topics: ${topics.join(", ")}`);
 
     const message = await anthropic.messages.create({
@@ -51,9 +53,10 @@ export async function generateAndStoreSuggestions(
   userId: string,
   role: string | null,
   niche: string | null,
-  topics: string[]
+  topics: string[],
+  goal: string | null = null
 ): Promise<void> {
-  const suggestions = await generateChatSuggestions(role, niche, topics);
+  const suggestions = await generateChatSuggestions(role, niche, topics, goal);
   if (suggestions.length > 0) {
     await prisma.user.update({
       where: { id: userId },

@@ -25,6 +25,7 @@ export async function GET() {
         onboardingRole: true,
         onboardingNiche: true,
         onboardingTopics: true,
+        onboardingGoal: true,
       },
     });
 
@@ -32,6 +33,7 @@ export async function GET() {
       role: user.onboardingRole,
       niche: user.onboardingNiche,
       topics: user.onboardingTopics,
+      goal: user.onboardingGoal,
     });
   } catch (error) {
     return errorHandler(error);
@@ -59,6 +61,7 @@ export async function PUT(req: NextRequest) {
         onboardingRole: data.role,
         onboardingNiche: data.niche,
         onboardingTopics: data.topics,
+        ...(data.goal !== undefined && { onboardingGoal: data.goal }),
       },
     });
 
@@ -67,7 +70,8 @@ export async function PUT(req: NextRequest) {
       session.user.id,
       data.role ?? null,
       data.niche ?? null,
-      data.topics ?? []
+      data.topics ?? [],
+      data.goal ?? null
     ).catch((err) =>
       console.error(
         `Failed to regenerate suggestions for user ${session.user.id}:`,
