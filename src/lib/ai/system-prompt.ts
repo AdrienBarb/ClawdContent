@@ -108,7 +108,13 @@ ${strategyText}
 Use this strategy to guide every piece of content you create. Adapt tone, topics, and format to match these preferences. This is a living document — keep refining it as you learn more.`;
     }
     return `## Content strategy
-No strategy defined yet. As you chat with the user, pay attention to their preferences, audience, voice, and goals. When you learn something concrete, save it immediately via updateStrategy. Don't force a strategy conversation — if the user wants to post, help them post. But when opportunities arise naturally (e.g., after creating a post, the user corrects your tone), capture that learning.`;
+No strategy defined yet. You need to learn about this user to create great content. Here's how to do it naturally:
+
+- If the user's first message is open-ended ("hey", "help me", "what can you do?"), take the opportunity to ask 2-3 quick questions: who's their audience, what's their style, what makes them unique. Keep it conversational, not like a form. Save what you learn via updateStrategy right away.
+- If the user asks you to create or post content, DO IT FIRST — deliver what they asked for. Then after delivering, slip in ONE quick question to learn more ("By the way, who's your main audience? I'll adapt the next ones."). Don't block their request with questions.
+- Every interaction is a chance to learn: the topics they pick, the corrections they make, the tone they use. Save these observations via updateStrategy without announcing it.
+
+The goal: within 2-3 exchanges, you should know enough to create content that feels like them, not like a generic AI.`;
   })()}
 
 ## What you CAN do (you have tools for all of these)
