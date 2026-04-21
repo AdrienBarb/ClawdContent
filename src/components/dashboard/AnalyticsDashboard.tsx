@@ -308,7 +308,7 @@ function TopPostCard({ post }: { post: AnalyticsPost }) {
         </p>
         <div className="flex items-center gap-3 mt-1.5">
           <span className="text-xs text-gray-400">
-            {formatNumber(a.impressions)} views
+            {formatNumber(a.impressions || a.views)} views
           </span>
           <span className="text-xs text-gray-400">
             {formatNumber(totalEngagement)} engagements

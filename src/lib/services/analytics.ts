@@ -106,7 +106,7 @@ function aggregatePostsByDay(posts: AnalyticsPost[]): DailyChartPoint[] {
     };
 
     const a = post.analytics;
-    existing.impressions += a.impressions;
+    existing.impressions += a.impressions || a.views;
     existing.likes += a.likes;
     existing.comments += a.comments;
     existing.shares += a.shares;
