@@ -10,7 +10,7 @@ import {
   stepCountIs,
 } from "ai";
 import type { Prisma } from "@prisma/client";
-import { reasoningModel, executionModel } from "@/lib/ai/provider";
+import { model } from "@/lib/ai/provider";
 import { buildSystemPrompt } from "@/lib/ai/system-prompt";
 import { createZernioTools } from "@/lib/ai/tools";
 import { saveChatMessage } from "@/lib/services/chatMessages";
@@ -197,7 +197,7 @@ export async function POST(req: NextRequest) {
     console.log(`[Chat] modelMessages=${modelMessages.length}`);
 
     const result = streamText({
-      model: reasoningModel,
+      model,
       system: {
         role: "system",
         content: systemPrompt,
@@ -207,14 +207,6 @@ export async function POST(req: NextRequest) {
       },
       messages: modelMessages,
       tools,
-      prepareStep: ({ stepNumber }) => {
-        // Step 0: Sonnet for reasoning, content creation, tool decisions
-        // Step 1+: Haiku for processing tool results and follow-up calls
-        if (stepNumber > 0) {
-          return { model: executionModel };
-        }
-        return {};
-      },
       stopWhen: stepCountIs(10),
       onFinish: async ({ text, usage, steps }) => {
         const toolsSummary = steps
@@ -278,17 +270,14 @@ export async function POST(req: NextRequest) {
             const cacheWriteTokens =
               usage.inputTokenDetails?.cacheWriteTokens ?? 0;
 
-            let estimatedCost = 0;
-            for (let i = 0; i < steps.length; i++) {
-              const s = steps[i];
-              const isSonnet = i === 0;
-              const inputRate = isSonnet ? 3 : 1; // $/M tokens
-              const outputRate = isSonnet ? 15 : 5;
-              estimatedCost +=
-                ((s.usage.inputTokens ?? 0) * inputRate +
-                  (s.usage.outputTokens ?? 0) * outputRate) /
-                1_000_000;
-            }
+            const inputRate = 3; // Sonnet $/M tokens
+            const outputRate = 15;
+            const estimatedCost =
+              ((inputTokens - cacheReadTokens) * inputRate +
+                cacheReadTokens * 0.3 +
+                cacheWriteTokens * 3.75 +
+                outputTokens * outputRate) /
+              1_000_000;
 
             captureServerEvent(userId, "ai_chat_usage", {
               input_tokens: inputTokens,

@@ -242,10 +242,7 @@ export function createZernioTools(
         return {
           posts: result.posts.map((p) => ({
             id: p.id,
-            content:
-              p.content.length > 200
-                ? p.content.slice(0, 200) + "..."
-                : p.content,
+            content: p.content,
             platforms: p.platforms.map((pl) => pl.platform),
             status: p.status,
             scheduledAt: p.scheduledAt,
@@ -353,10 +350,7 @@ export function createZernioTools(
         return {
           overview: data.overview,
           posts: data.posts.slice(0, 10).map((p) => ({
-            content:
-              p.content.length > 100
-                ? p.content.slice(0, 100) + "..."
-                : p.content,
+            content: p.content,
             platform: p.platform,
             publishedAt: p.publishedAt,
             analytics: p.analytics,
