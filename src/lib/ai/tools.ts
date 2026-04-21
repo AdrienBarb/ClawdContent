@@ -13,6 +13,7 @@ import {
   listAccounts,
   getLogs,
 } from "@/lib/late/mutations";
+import { lateRequest } from "@/lib/late/client";
 
 interface SocialAccount {
   platform: string;
@@ -58,6 +59,66 @@ export function createZernioTools(
   }
 
   return {
+    validatePost: tool({
+      description:
+        "Validate post content before publishing. Checks character limits, missing media, format issues, and platform-specific constraints. Call this before createPost to catch problems early.",
+      inputSchema: z.object({
+        content: z.string().describe("The post text content to validate"),
+        platforms: z
+          .array(z.string())
+          .describe("Target platforms to validate against"),
+        mediaItems: z
+          .array(
+            z.object({
+              url: z.string().describe("Media URL"),
+              type: z.string().describe("Media type: image or video"),
+            })
+          )
+          .optional()
+          .describe("Media attachments to validate"),
+      }),
+      execute: async ({ content, platforms, mediaItems }) => {
+        console.log(
+          `[Tool:validatePost] platforms=${platforms.join(",")}, content="${content.slice(0, 50)}..."`
+        );
+        const result = await lateRequest<{
+          valid: boolean;
+          errors?: { platform: string; error: string }[];
+          warnings?: { platform: string; warning: string }[];
+          message?: string;
+        }>("/tools/validate/post", {
+          method: "POST",
+          apiKey,
+          body: {
+            content,
+            platforms: platforms.map((p) => ({
+              platform: p,
+              ...(mediaItems?.length
+                ? {
+                    customMedia: mediaItems.map((m) => ({
+                      url: m.url,
+                      type: toZernioMediaType(m.type),
+                    })),
+                  }
+                : {}),
+            })),
+            ...(mediaItems?.length
+              ? {
+                  mediaItems: mediaItems.map((m) => ({
+                    url: m.url,
+                    type: toZernioMediaType(m.type),
+                  })),
+                }
+              : {}),
+          },
+        });
+        console.log(
+          `[Tool:validatePost] → valid=${result.valid}, errors=${result.errors?.length ?? 0}, warnings=${result.warnings?.length ?? 0}`
+        );
+        return result;
+      },
+    }),
+
     createPost: tool({
       description:
         "Create and publish a social media post. Creates one post per platform for independent error handling. Can also schedule for later. Without scheduledAt, the post is published immediately.",
