@@ -27,7 +27,7 @@ export async function generateChatSuggestions(
           content: `You are helping a social media manager tool. Given this user profile:
 ${profileParts.join("\n")}
 
-Generate exactly 4 short prompt suggestions (max 10 words each) that this user could ask their AI social media manager. The suggestions should be actionable and specific to their profile. Do NOT mention any platform name (no "LinkedIn post", "tweet", "Thread") — just describe the content idea. Examples: "Write a post about my latest project", "Share a lesson I learned this week", "Announce a new feature I shipped".
+Generate exactly 4 short prompt suggestions (max 10 words each) that this user could ask their AI social media manager. The suggestions should be varied — mix content creation, strategy, and analytics. Do NOT mention any platform name (no "LinkedIn post", "tweet", "Thread"). One suggestion should be about strategy or planning, one about content creation, one about analytics or timing, and one that's a creative content idea specific to their profile. Examples: "Help me define my content strategy", "Write a post about my latest project", "When is the best time to post?", "What should I talk about this week?".
 
 Return ONLY a JSON array of 4 strings, no other text.`,
         },

@@ -26,10 +26,10 @@ import ReactMarkdown from "react-markdown";
 import SubscribeModal from "@/components/dashboard/SubscribeModal";
 
 const SUGGESTIONS = [
+  "Help me define my content strategy",
   "Write a post about my latest project",
-  "Share a lesson I learned recently",
-  "Announce a milestone I just hit",
-  "Write something to attract new clients",
+  "When is the best time to post?",
+  "What should I talk about this week?",
 ];
 
 interface AttachedMedia {
