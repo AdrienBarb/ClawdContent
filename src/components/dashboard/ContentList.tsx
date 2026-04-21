@@ -165,7 +165,7 @@ function formatDateHeader(dateKey: string) {
 /** Returns the relevant date for a post depending on its status. */
 function getPostDate(post: Post): string {
   if (post.status === "scheduled") return post.scheduledAt ?? post.createdAt;
-  if (post.status === "published") return post.publishedAt ?? post.createdAt;
+  if (post.status === "published") return post.scheduledAt ?? post.publishedAt ?? post.createdAt;
   return post.createdAt;
 }
 
