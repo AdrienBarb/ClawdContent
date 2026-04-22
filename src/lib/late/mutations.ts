@@ -256,13 +256,22 @@ export async function updatePost(
   data: { content?: string; scheduledAt?: string },
   apiKey: string
 ): Promise<void> {
-  const { scheduledAt, ...rest } = data;
+  // Fetch current post to preserve fields not being updated (PUT = full replace)
+  const current = await getPost(postId, apiKey);
+
+  const body: Record<string, unknown> = {
+    content: data.content ?? current.content,
+    ...(current.scheduledAt && { scheduledFor: current.scheduledAt }),
+  };
+
+  // Explicit scheduledAt overrides the current value (including clearing it with null)
+  if (data.scheduledAt !== undefined) {
+    body.scheduledFor = data.scheduledAt;
+  }
+
   await lateRequest(`/posts/${postId}`, {
     method: "PUT",
-    body: {
-      ...rest,
-      ...(scheduledAt !== undefined && { scheduledFor: scheduledAt }),
-    },
+    body,
     apiKey,
   });
 }

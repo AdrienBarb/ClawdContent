@@ -306,8 +306,20 @@ export function createZernioTools(
           `[Tool:updatePost] postId=${postId}, hasContent=${!!content}, hasSchedule=${!!scheduledAt}`
         );
         await updatePost(postId, { content, scheduledAt }, apiKey);
-        console.log(`[Tool:updatePost] ✓ updated`);
-        return { success: true, updatedPostId: postId };
+        // Re-fetch to return the actual post state so the AI reports truthfully
+        const { getPost } = await import("@/lib/late/mutations");
+        const updated = await getPost(postId, apiKey);
+        console.log(
+          `[Tool:updatePost] ✓ updated → status=${updated.status}, scheduledAt=${updated.scheduledAt}`
+        );
+        return {
+          success: true,
+          updatedPostId: postId,
+          status: updated.status,
+          content: updated.content,
+          scheduledAt: updated.scheduledAt,
+          scheduledAtLocal: formatLocal(updated.scheduledAt),
+        };
       },
     }),
 
