@@ -342,8 +342,8 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
       <div className="flex-1 flex flex-col rounded-2xl bg-white shadow-sm border border-gray-100 overflow-hidden">
         {/* Messages area */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto p-5 space-y-4">
-          {/* No accounts — welcome card with connect button */}
-          {allMessages.length === 0 && !error && accountCount === 0 && (
+          {/* Welcome message — no accounts or empty chat */}
+          {allMessages.length === 0 && !error && (
             <div className="flex flex-col justify-end h-full gap-4 animate-fade-in">
               <div className="flex items-end gap-2.5">
                 <img
@@ -359,18 +359,27 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
                     border: "1px solid rgba(255, 94, 72, 0.1)",
                   }}
                 >
-                  <p className="text-gray-800">
-                    Hey! I&apos;m your AI social media manager. Before we start
-                    creating content, connect your social accounts so I can
-                    publish for you.
-                  </p>
-                  <Link
-                    href={appRouter.accounts}
-                    className="inline-flex items-center gap-2 mt-3 px-4 py-2 rounded-full bg-primary text-white text-sm font-medium hover:bg-[#E84A36] transition-all hover:shadow-md cursor-pointer"
-                  >
-                    Connect my accounts
-                    <ArrowRightIcon className="h-3.5 w-3.5" />
-                  </Link>
+                  {accountCount === 0 ? (
+                    <>
+                      <p className="text-gray-800">
+                        Hey! I&apos;m your AI social media manager. Before we
+                        start creating content, connect your social accounts so
+                        I can publish for you.
+                      </p>
+                      <Link
+                        href={appRouter.accounts}
+                        className="inline-flex items-center gap-2 mt-3 px-4 py-2 rounded-full bg-primary text-white text-sm font-medium hover:bg-[#E84A36] transition-all hover:shadow-md cursor-pointer"
+                      >
+                        Connect my accounts
+                        <ArrowRightIcon className="h-3.5 w-3.5" />
+                      </Link>
+                    </>
+                  ) : (
+                    <p className="text-gray-800">
+                      Hey! I&apos;m your AI social media manager. Tell me what
+                      you need, or pick an action below to get started.
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
