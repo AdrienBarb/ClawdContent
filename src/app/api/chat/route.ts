@@ -282,8 +282,8 @@ export async function POST(req: NextRequest) {
             const cacheWriteTokens =
               usage.inputTokenDetails?.cacheWriteTokens ?? 0;
 
-            const inputRate = 3; // Sonnet $/M tokens
-            const outputRate = 15;
+            const inputRate = 0.8; // Haiku 4.5 $/M tokens
+            const outputRate = 4;
             const estimatedCost =
               ((inputTokens - cacheReadTokens) * inputRate +
                 cacheReadTokens * 0.3 +
