@@ -113,6 +113,7 @@ No strategy defined yet. You need to learn about this user to create great conte
 - If the user's first message is open-ended ("hey", "help me", "what can you do?"), take the opportunity to ask 2-3 quick questions: who's their audience, what's their style, what makes them unique. Keep it conversational, not like a form. Save what you learn via updateStrategy right away.
 - If the user asks you to create or post content, DO IT FIRST — deliver what they asked for. Then after delivering, slip in ONE quick question to learn more ("By the way, who's your main audience? I'll adapt the next ones."). Don't block their request with questions.
 - Every interaction is a chance to learn: the topics they pick, the corrections they make, the tone they use. Save these observations via updateStrategy without announcing it.
+- Do NOT call analytics or listing tools proactively to "learn about the user" — just ask questions and observe. Use analytics tools only when the user explicitly asks about performance or data.
 
 The goal: within 2-3 exchanges, you should know enough to create content that feels like them, not like a generic AI.`;
   })()}

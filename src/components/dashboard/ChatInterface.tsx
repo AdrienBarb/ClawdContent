@@ -228,7 +228,9 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
   const accountCount: number = dashboardStatus?.accountCount ?? 0;
   const freeMessageUsed: boolean = dashboardStatus?.freeMessageUsed ?? false;
   // Check both server-side (freeMessageUsed) and client-side (messages in current session)
-  const localUserMessageCount = allMessages.filter((m) => m.role === "user").length;
+  const localUserMessageCount = allMessages.filter(
+    (m) => m.role === "user"
+  ).length;
   const needsSubscription =
     !hasActiveSubscription && (freeMessageUsed || localUserMessageCount >= 1);
 
@@ -277,22 +279,19 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
     });
   }, []);
 
-  const handleImageGenerated = useCallback(
-    (result: { imageUrl: string }) => {
-      setAttachedMedia((prev) => [
-        ...prev,
-        {
-          url: result.imageUrl,
-          resourceType: "image",
-          format: "png",
-          cloudinaryId: "",
-          bytes: 0,
-          thumbnailUrl: result.imageUrl,
-        },
-      ]);
-    },
-    []
-  );
+  const handleImageGenerated = useCallback((result: { imageUrl: string }) => {
+    setAttachedMedia((prev) => [
+      ...prev,
+      {
+        url: result.imageUrl,
+        resourceType: "image",
+        format: "png",
+        cloudinaryId: "",
+        bytes: 0,
+        thumbnailUrl: result.imageUrl,
+      },
+    ]);
+  }, []);
 
   const handleSend = () => {
     const text = input.trim();
@@ -334,8 +333,9 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
   };
 
   const hasAccounts = accountCount > 0;
-  const canSend = (input.trim() || attachedMedia.length > 0) && !isLoading && hasAccounts;
-  const showCategories = allMessages.length === 0 && hasAccounts;
+  const canSend =
+    (input.trim() || attachedMedia.length > 0) && !isLoading && hasAccounts;
+  const showCategories = hasAccounts;
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] max-w-3xl mx-auto">
@@ -360,9 +360,9 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
                   }}
                 >
                   <p className="text-gray-800">
-                    Hey! I&apos;m your AI social media manager. Before we
-                    start creating content, connect your social accounts so
-                    I can publish for you.
+                    Hey! I&apos;m your AI social media manager. Before we start
+                    creating content, connect your social accounts so I can
+                    publish for you.
                   </p>
                   <Link
                     href={appRouter.accounts}
@@ -511,9 +511,18 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
                   className="shrink-0 h-7 w-7 rounded-full"
                 />
                 <div className="bg-gray-100 rounded-2xl rounded-bl-md px-5 py-4 flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce-dot" style={{ animationDelay: "0ms" }} />
-                  <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce-dot" style={{ animationDelay: "150ms" }} />
-                  <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce-dot" style={{ animationDelay: "300ms" }} />
+                  <span
+                    className="h-2 w-2 rounded-full bg-primary/60 animate-bounce-dot"
+                    style={{ animationDelay: "0ms" }}
+                  />
+                  <span
+                    className="h-2 w-2 rounded-full bg-primary/60 animate-bounce-dot"
+                    style={{ animationDelay: "150ms" }}
+                  />
+                  <span
+                    className="h-2 w-2 rounded-full bg-primary/60 animate-bounce-dot"
+                    style={{ animationDelay: "300ms" }}
+                  />
                 </div>
               </div>
             )}
@@ -583,7 +592,11 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
                 e.target.style.height = `${Math.min(e.target.scrollHeight, 160)}px`;
               }}
               onKeyDown={handleKeyDown}
-              placeholder={hasAccounts ? "What can I do for you?" : "Connect a social account to start chatting"}
+              placeholder={
+                hasAccounts
+                  ? "What can I do for you?"
+                  : "Connect a social account to start chatting"
+              }
               disabled={!hasAccounts}
               rows={1}
               className="w-full resize-none bg-transparent px-5 pt-4 pb-2 text-base leading-relaxed focus:outline-none placeholder:text-gray-400 disabled:cursor-not-allowed disabled:opacity-60"
@@ -594,11 +607,17 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
                 <MediaAttachDropdown
                   disabled={!hasAccounts}
                   onOpenUpload={() => {
-                    if (needsSubscription) { setShowSubscribeModal(true); return; }
+                    if (needsSubscription) {
+                      setShowSubscribeModal(true);
+                      return;
+                    }
                     setUploadModalOpen(true);
                   }}
                   onOpenGenerate={() => {
-                    if (needsSubscription) { setShowSubscribeModal(true); return; }
+                    if (needsSubscription) {
+                      setShowSubscribeModal(true);
+                      return;
+                    }
                     setGenerateModalOpen(true);
                   }}
                 />

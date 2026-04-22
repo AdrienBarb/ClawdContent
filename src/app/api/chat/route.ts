@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
     // Sanitize messages: strip system role, cap length, remove incomplete tool calls
     const messages: UIMessage[] = rawMessages
       .filter((m) => m.role === "user" || m.role === "assistant")
-      .slice(-100)
+      .slice(-20)
       .map((m) => {
         const filteredParts = (m.parts ?? []).filter((p) => {
           if (p == null || typeof p !== "object" || !("type" in p)) return false;

@@ -351,8 +351,11 @@ export function createZernioTools(
         );
         return {
           overview: data.overview,
-          posts: data.posts.slice(0, 10).map((p) => ({
-            content: p.content,
+          posts: data.posts.slice(0, 5).map((p) => ({
+            content:
+              p.content.length > 100
+                ? p.content.slice(0, 100) + "..."
+                : p.content,
             platform: p.platform,
             publishedAt: p.publishedAt,
             analytics: p.analytics,
@@ -393,12 +396,15 @@ export function createZernioTools(
         console.log(`[Tool:getBestTimeToPost] → ${data.slots.length} slots`);
         // Zernio: day_of_week 0=Monday, 6=Sunday
         const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-        return data.slots.map((s) => ({
-          dayOfWeek: dayNames[s.day_of_week],
-          hourUTC: s.hour,
-          avgEngagement: s.avg_engagement,
-          postCount: s.post_count,
-        }));
+        return data.slots
+          .sort((a, b) => b.avg_engagement - a.avg_engagement)
+          .slice(0, 5)
+          .map((s) => ({
+            dayOfWeek: dayNames[s.day_of_week],
+            hourUTC: s.hour,
+            avgEngagement: s.avg_engagement,
+            postCount: s.post_count,
+          }));
       },
     }),
 
@@ -498,6 +504,9 @@ export function createZernioTools(
     getPostLogs: tool({
       description:
         "Check recent publishing logs to debug failures or verify that posts were created successfully. Use this after batch operations to confirm nothing was silently dropped.",
+      providerOptions: {
+        anthropic: { cacheControl: { type: "ephemeral" } },
+      },
       inputSchema: z.object({
         status: z
           .string()
