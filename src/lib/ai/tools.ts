@@ -452,38 +452,41 @@ export function createZernioTools(
       inputSchema: z.object({
         goal: z
           .string()
+          .max(500)
           .optional()
           .describe("User's primary social media goal"),
         audience: z
           .string()
+          .max(500)
           .optional()
           .describe("Target audience description"),
         angle: z
           .string()
+          .max(500)
           .optional()
           .describe("User's unique angle or positioning"),
         contentPillars: z
-          .array(z.string())
+          .array(z.string().max(200))
           .max(5)
           .optional()
           .describe("Main content themes (3-5, replaces existing list)"),
         voice: z
           .object({
-            general: z.string().optional(),
-            linkedin: z.string().optional(),
-            twitter: z.string().optional(),
-            instagram: z.string().optional(),
-            threads: z.string().optional(),
-            bluesky: z.string().optional(),
-            facebook: z.string().optional(),
-            tiktok: z.string().optional(),
-            pinterest: z.string().optional(),
-            youtube: z.string().optional(),
+            general: z.string().max(300).optional(),
+            linkedin: z.string().max(300).optional(),
+            twitter: z.string().max(300).optional(),
+            instagram: z.string().max(300).optional(),
+            threads: z.string().max(300).optional(),
+            bluesky: z.string().max(300).optional(),
+            facebook: z.string().max(300).optional(),
+            tiktok: z.string().max(300).optional(),
+            pinterest: z.string().max(300).optional(),
+            youtube: z.string().max(300).optional(),
           })
           .optional()
           .describe("Voice/tone preferences — general or per-platform"),
         constraints: z
-          .array(z.string())
+          .array(z.string().max(200))
           .max(10)
           .optional()
           .describe("Hard rules to always follow or avoid (replaces existing list)"),
@@ -495,9 +498,9 @@ export function createZernioTools(
         const { updateUserStrategy } = await import(
           "@/lib/services/strategy"
         );
-        const updated = await updateUserStrategy(userId, partial);
+        await updateUserStrategy(userId, partial);
         console.log(`[Tool:updateStrategy] ✓ strategy updated`);
-        return { success: true, strategy: updated };
+        return { success: true, updatedFields: Object.keys(partial) };
       },
     }),
 

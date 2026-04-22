@@ -42,28 +42,31 @@ function formatStrategy(strategy: unknown): string | null {
   const s = strategy as Record<string, unknown>;
   const parts: string[] = [];
 
-  if (s.goal) parts.push(`Goal: ${s.goal}`);
-  if (s.audience) parts.push(`Target audience: ${s.audience}`);
-  if (s.angle) parts.push(`Unique angle: ${s.angle}`);
+  if (typeof s.goal === "string") parts.push(`Goal: ${s.goal}`);
+  if (typeof s.audience === "string") parts.push(`Target audience: ${s.audience}`);
+  if (typeof s.angle === "string") parts.push(`Unique angle: ${s.angle}`);
   if (Array.isArray(s.contentPillars) && s.contentPillars.length > 0) {
-    parts.push(
-      `Content pillars:\n${(s.contentPillars as string[]).map((p) => `  - ${p}`).join("\n")}`
-    );
+    const pillars = s.contentPillars.filter((p): p is string => typeof p === "string");
+    if (pillars.length > 0) {
+      parts.push(`Content pillars:\n${pillars.map((p) => `  - ${p}`).join("\n")}`);
+    }
   }
   if (s.voice && typeof s.voice === "object") {
-    const voice = s.voice as Record<string, string>;
     const voiceParts: string[] = [];
-    for (const [platform, desc] of Object.entries(voice)) {
-      if (desc) voiceParts.push(`  - ${platform}: ${desc}`);
+    for (const [platform, desc] of Object.entries(s.voice as Record<string, unknown>)) {
+      if (typeof desc === "string" && desc) {
+        voiceParts.push(`  - ${platform}: ${desc}`);
+      }
     }
     if (voiceParts.length > 0) {
       parts.push(`Voice/tone:\n${voiceParts.join("\n")}`);
     }
   }
   if (Array.isArray(s.constraints) && s.constraints.length > 0) {
-    parts.push(
-      `Hard constraints:\n${(s.constraints as string[]).map((c) => `  - ${c}`).join("\n")}`
-    );
+    const constraints = s.constraints.filter((c): c is string => typeof c === "string");
+    if (constraints.length > 0) {
+      parts.push(`Hard constraints:\n${constraints.map((c) => `  - ${c}`).join("\n")}`);
+    }
   }
 
   return parts.length > 0 ? parts.join("\n") : null;

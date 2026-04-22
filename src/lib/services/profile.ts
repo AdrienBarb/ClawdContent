@@ -38,21 +38,7 @@ export async function cleanupUserProfile(userId: string): Promise<void> {
   await prisma.lateProfile.deleteMany({ where: { userId } });
 }
 
-const ROLE_LABELS: Record<string, string> = {
-  solopreneur: "Solopreneur / Indie Maker",
-  startup_founder: "Startup Founder",
-  freelancer: "Freelancer / Consultant",
-  content_creator: "Content Creator",
-  marketing_manager: "Marketing Manager",
-};
-
-const GOAL_LABELS: Record<string, string> = {
-  get_clients: "Get clients / Generate leads",
-  personal_brand: "Build personal brand",
-  product_awareness: "Grow product awareness",
-  community: "Build & engage a community",
-  visibility: "Stay visible without spending hours",
-};
+import { ROLE_LABELS, GOAL_LABELS } from "@/lib/constants/onboarding";
 
 export function formatUserContext(user: {
   onboardingRole: string | null;
@@ -69,7 +55,11 @@ export function formatUserContext(user: {
   if (user.onboardingNiche) {
     parts.push(`Niche: ${user.onboardingNiche}`);
   }
-  if (user.onboardingGoal) {
+  // Show goal only if strategy doesn't have its own goal (avoid duplicate)
+  const strategyGoal = user.strategy && typeof user.strategy === "object"
+    ? (user.strategy as Record<string, unknown>).goal
+    : undefined;
+  if (user.onboardingGoal && !strategyGoal) {
     parts.push(`Goal: ${GOAL_LABELS[user.onboardingGoal] ?? user.onboardingGoal}`);
   }
   // Show topics only as legacy fallback (when no strategy exists yet)

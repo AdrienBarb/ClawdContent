@@ -56,18 +56,20 @@ export async function updateUserStrategy(
   userId: string,
   partial: UserStrategy
 ): Promise<UserStrategy> {
-  const user = await prisma.user.findUniqueOrThrow({
-    where: { id: userId },
-    select: { strategy: true },
+  return prisma.$transaction(async (tx) => {
+    const user = await tx.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { strategy: true },
+    });
+
+    const existing = (user.strategy as UserStrategy | null) ?? null;
+    const merged = mergeStrategy(existing, partial);
+
+    await tx.user.update({
+      where: { id: userId },
+      data: { strategy: merged as unknown as Prisma.InputJsonValue },
+    });
+
+    return merged;
   });
-
-  const existing = (user.strategy as UserStrategy | null) ?? null;
-  const merged = mergeStrategy(existing, partial);
-
-  await prisma.user.update({
-    where: { id: userId },
-    data: { strategy: merged as unknown as Prisma.InputJsonValue },
-  });
-
-  return merged;
 }

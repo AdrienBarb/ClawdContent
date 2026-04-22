@@ -86,11 +86,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { messages: rawMessages }: { messages: UIMessage[] } =
-      await req.json();
+    const body = await req.json();
+    const rawMessages = body?.messages;
+
+    if (!Array.isArray(rawMessages)) {
+      return NextResponse.json(
+        { error: "Invalid request" },
+        { status: 400 }
+      );
+    }
 
     // Sanitize messages: strip system role, cap length, remove incomplete tool calls
-    const messages: UIMessage[] = rawMessages
+    const messages: UIMessage[] = (rawMessages as UIMessage[])
       .filter((m) => m.role === "user" || m.role === "assistant")
       .slice(-20)
       .map((m) => {

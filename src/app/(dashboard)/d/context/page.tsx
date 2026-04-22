@@ -6,84 +6,18 @@ import useApi from "@/lib/hooks/useApi";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  CheckIcon,
+  FloppyDiskIcon,
   RocketIcon,
   LightbulbIcon,
   BriefcaseIcon,
   PencilSimpleIcon,
   MegaphoneIcon,
-  CheckIcon,
-  FloppyDiskIcon,
   UsersThreeIcon,
   StarIcon,
   ChatCircleDotsIcon,
   EyeIcon,
 } from "@phosphor-icons/react";
-
-const roles = [
-  {
-    id: "solopreneur",
-    label: "Solopreneur / Indie Maker",
-    description: "I'm building a product and growing my audience.",
-    icon: RocketIcon,
-  },
-  {
-    id: "startup_founder",
-    label: "Startup Founder",
-    description: "I'm raising awareness for my company.",
-    icon: LightbulbIcon,
-  },
-  {
-    id: "freelancer",
-    label: "Freelancer / Consultant",
-    description: "I want to attract clients through content.",
-    icon: BriefcaseIcon,
-  },
-  {
-    id: "content_creator",
-    label: "Content Creator",
-    description: "I'm building a personal brand.",
-    icon: PencilSimpleIcon,
-  },
-  {
-    id: "marketing_manager",
-    label: "Marketing Manager",
-    description: "I handle content for a company.",
-    icon: MegaphoneIcon,
-  },
-];
-
-const goals = [
-  {
-    id: "get_clients",
-    label: "Get clients / Generate leads",
-    description: "I want my content to attract prospects and convert them.",
-    icon: UsersThreeIcon,
-  },
-  {
-    id: "personal_brand",
-    label: "Build my personal brand",
-    description: "I want to be recognized as an expert in my field.",
-    icon: StarIcon,
-  },
-  {
-    id: "product_awareness",
-    label: "Grow awareness for my product",
-    description: "I want more people to discover what I'm building.",
-    icon: MegaphoneIcon,
-  },
-  {
-    id: "community",
-    label: "Build & engage a community",
-    description: "I want to create conversations and connections.",
-    icon: ChatCircleDotsIcon,
-  },
-  {
-    id: "visibility",
-    label: "Stay visible without spending hours",
-    description: "I just want a consistent, low-effort presence.",
-    icon: EyeIcon,
-  },
-];
 
 interface ContextData {
   role: string | null;
@@ -91,6 +25,22 @@ interface ContextData {
   topics: string[];
   goal: string | null;
 }
+
+const roles = [
+  { id: "solopreneur", label: "Solopreneur / Indie Maker", description: "I'm building a product and growing my audience.", icon: RocketIcon },
+  { id: "startup_founder", label: "Startup Founder", description: "I'm raising awareness for my company.", icon: LightbulbIcon },
+  { id: "freelancer", label: "Freelancer / Consultant", description: "I want to attract clients through content.", icon: BriefcaseIcon },
+  { id: "content_creator", label: "Content Creator", description: "I'm building a personal brand.", icon: PencilSimpleIcon },
+  { id: "marketing_manager", label: "Marketing Manager", description: "I handle content for a company.", icon: MegaphoneIcon },
+];
+
+const goals = [
+  { id: "get_clients", label: "Get clients / Generate leads", description: "I want my content to attract prospects and convert them.", icon: UsersThreeIcon },
+  { id: "personal_brand", label: "Build my personal brand", description: "I want to be recognized as an expert in my field.", icon: StarIcon },
+  { id: "product_awareness", label: "Grow awareness for my product", description: "I want more people to discover what I'm building.", icon: MegaphoneIcon },
+  { id: "community", label: "Build & engage a community", description: "I want to create conversations and connections.", icon: ChatCircleDotsIcon },
+  { id: "visibility", label: "Stay visible without spending hours", description: "I just want a consistent, low-effort presence.", icon: EyeIcon },
+];
 
 export default function ContextPage() {
   const { useGet, usePut } = useApi();
