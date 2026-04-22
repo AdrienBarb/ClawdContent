@@ -216,7 +216,6 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [generateModalOpen, setGenerateModalOpen] = useState(false);
   const [attachedMedia, setAttachedMedia] = useState<AttachedMedia[]>([]);
-  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
   // Fetch dashboard status for subscription info (cached by React Query from ChatWithLoader)
   const { useGet } = useApi();
@@ -319,13 +318,11 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
 
     setInput("");
     setAttachedMedia([]);
-    setExpandedCategory(null);
     sendMessage({ text: messageText });
   };
 
   const handlePromptClick = (text: string) => {
     setInput(text);
-    setExpandedCategory(null);
     setTimeout(() => inputRef.current?.focus(), 0);
   };
 
@@ -625,50 +622,32 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
 
       {/* Category action prompts — below the card, only on empty state */}
       {showCategories && (
-        <div className="mt-3 space-y-2">
-          {/* Category buttons */}
-          <div className="flex gap-2 justify-center">
-            {ACTION_CATEGORIES.map((cat) => {
-              const isExpanded = expandedCategory === cat.id;
-              return (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() =>
-                    setExpandedCategory(isExpanded ? null : cat.id)
-                  }
-                  className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all cursor-pointer ${
-                    isExpanded
-                      ? "bg-primary text-white shadow-md"
-                      : "bg-white text-gray-700 border border-gray-200 hover:border-gray-300 hover:shadow-sm"
-                  }`}
-                >
-                  <cat.icon className="h-4 w-4" />
-                  {cat.label}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Expanded prompt list */}
-          {expandedCategory && (
-            <div className="rounded-xl bg-white border border-gray-200 shadow-sm overflow-hidden">
-              {ACTION_CATEGORIES.find((c) => c.id === expandedCategory)?.prompts.map(
-                (prompt, i, arr) => (
+        <div className="mt-3 flex gap-2 justify-center">
+          {ACTION_CATEGORIES.map((cat) => (
+            <div key={cat.id} className="relative group">
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium bg-white text-gray-700 border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all cursor-pointer"
+              >
+                <cat.icon className="h-4 w-4" />
+                {cat.label}
+              </button>
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 rounded-xl bg-white border border-gray-200 shadow-lg overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                {cat.prompts.map((prompt, i, arr) => (
                   <button
                     key={prompt}
                     type="button"
                     onClick={() => handlePromptClick(prompt)}
-                    className={`w-full text-left px-5 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer ${
+                    className={`w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer ${
                       i < arr.length - 1 ? "border-b border-gray-100" : ""
                     }`}
                   >
                     {prompt}
                   </button>
-                )
-              )}
+                ))}
+              </div>
             </div>
-          )}
+          ))}
         </div>
       )}
 
