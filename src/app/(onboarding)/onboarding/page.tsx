@@ -13,6 +13,10 @@ import {
   MegaphoneIcon,
   ArrowRightIcon,
   CheckIcon,
+  UsersThreeIcon,
+  StarIcon,
+  ChatCircleDotsIcon,
+  EyeIcon,
 } from "@phosphor-icons/react";
 
 const roles = [
@@ -48,19 +52,37 @@ const roles = [
   },
 ];
 
-const topicOptions = [
-  "AI",
-  "Marketing",
-  "Design",
-  "Development",
-  "Business",
-  "Finance",
-  "Health",
-  "Productivity",
-  "E-commerce",
-  "Education",
-  "Crypto",
-  "Lifestyle",
+const goals = [
+  {
+    id: "get_clients",
+    label: "Get clients / Generate leads",
+    description: "I want my content to attract prospects and convert them.",
+    icon: UsersThreeIcon,
+  },
+  {
+    id: "personal_brand",
+    label: "Build my personal brand",
+    description: "I want to be recognized as an expert in my field.",
+    icon: StarIcon,
+  },
+  {
+    id: "product_awareness",
+    label: "Grow awareness for my product",
+    description: "I want more people to discover what I'm building.",
+    icon: MegaphoneIcon,
+  },
+  {
+    id: "community",
+    label: "Build & engage a community",
+    description: "I want to create conversations and connections.",
+    icon: ChatCircleDotsIcon,
+  },
+  {
+    id: "visibility",
+    label: "Stay visible without spending hours",
+    description: "I just want a consistent, low-effort presence.",
+    icon: EyeIcon,
+  },
 ];
 
 export default function OnboardingPage() {
@@ -68,8 +90,7 @@ export default function OnboardingPage() {
   const { usePost } = useApi();
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [niche, setNiche] = useState("");
-  const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
-  const [customTopic, setCustomTopic] = useState("");
+  const [selectedGoal, setSelectedGoal] = useState<string | null>(null);
 
   const { mutate: saveOnboarding, isPending } = usePost(
     appRouter.api.onboarding,
@@ -84,30 +105,12 @@ export default function OnboardingPage() {
     saveOnboarding({
       role: selectedRole ?? undefined,
       niche: niche || undefined,
-      topics: selectedTopics.length > 0 ? selectedTopics : undefined,
+      goal: selectedGoal ?? undefined,
     });
   };
 
   const handleSkip = () => {
     saveOnboarding({});
-  };
-
-  const toggleTopic = (topic: string) => {
-    setSelectedTopics((prev) =>
-      prev.includes(topic)
-        ? prev.filter((t) => t !== topic)
-        : prev.length < 4
-          ? [...prev, topic]
-          : prev
-    );
-  };
-
-  const addCustomTopic = () => {
-    const trimmed = customTopic.trim();
-    if (trimmed && !selectedTopics.includes(trimmed) && selectedTopics.length < 4) {
-      setSelectedTopics((prev) => [...prev, trimmed]);
-      setCustomTopic("");
-    }
   };
 
   return (
@@ -212,64 +215,55 @@ export default function OnboardingPage() {
             </p>
           </div>
 
-          {/* Topics */}
+          {/* Goal */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Pick your main topics{" "}
-              <span className="text-gray-400 font-normal">(up to 4)</span>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              What&apos;s your #1 goal on social media?
             </label>
-            <div className="flex flex-wrap gap-2">
-              {topicOptions.map((topic) => {
-                const isSelected = selectedTopics.includes(topic);
+            <div className="space-y-2">
+              {goals.map((goal) => {
+                const isSelected = selectedGoal === goal.id;
                 return (
                   <button
-                    key={topic}
-                    onClick={() => toggleTopic(topic)}
-                    className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-all cursor-pointer ${
+                    key={goal.id}
+                    onClick={() => setSelectedGoal(goal.id)}
+                    className={`w-full flex items-center gap-4 rounded-xl border p-4 text-left transition-all cursor-pointer ${
                       isSelected
-                        ? "bg-primary text-white"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        ? "border-primary bg-primary/5"
+                        : "border-gray-200 bg-white hover:border-gray-300"
                     }`}
                   >
-                    {topic}
+                    <span
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
+                        isSelected
+                          ? "bg-primary text-white"
+                          : "bg-gray-100 text-gray-500"
+                      }`}
+                    >
+                      <goal.icon className="h-5 w-5" />
+                    </span>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-gray-900">
+                        {goal.label}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {goal.description}
+                      </p>
+                    </div>
+                    <span
+                      className={`h-5 w-5 shrink-0 rounded-full border-2 flex items-center justify-center ${
+                        isSelected
+                          ? "border-primary bg-primary"
+                          : "border-gray-300"
+                      }`}
+                    >
+                      {isSelected && (
+                        <CheckIcon className="h-3 w-3 text-white" />
+                      )}
+                    </span>
                   </button>
                 );
               })}
-              {selectedTopics
-                .filter((t) => !topicOptions.includes(t))
-                .map((topic) => (
-                  <button
-                    key={topic}
-                    onClick={() => toggleTopic(topic)}
-                    className="rounded-full px-3.5 py-1.5 text-sm font-medium bg-primary text-white cursor-pointer"
-                  >
-                    {topic}
-                  </button>
-                ))}
-            </div>
-            <div className="flex gap-2 mt-3">
-              <input
-                type="text"
-                value={customTopic}
-                onChange={(e) => setCustomTopic(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addCustomTopic();
-                  }
-                }}
-                placeholder="Add custom topic..."
-                className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                maxLength={50}
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={addCustomTopic}
-                disabled={!customTopic.trim() || selectedTopics.length >= 4}
-              >
-                Add
-              </Button>
             </div>
           </div>
         </div>

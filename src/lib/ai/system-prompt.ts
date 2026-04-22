@@ -30,8 +30,43 @@ interface UserData {
   onboardingRole: string | null;
   onboardingNiche: string | null;
   onboardingTopics: string[];
+  onboardingGoal: string | null;
+  strategy: unknown;
   planId: string;
   accounts: { platform: string; username: string }[];
+}
+
+function formatStrategy(strategy: unknown): string | null {
+  if (!strategy || typeof strategy !== "object") return null;
+
+  const s = strategy as Record<string, unknown>;
+  const parts: string[] = [];
+
+  if (s.goal) parts.push(`Goal: ${s.goal}`);
+  if (s.audience) parts.push(`Target audience: ${s.audience}`);
+  if (s.angle) parts.push(`Unique angle: ${s.angle}`);
+  if (Array.isArray(s.contentPillars) && s.contentPillars.length > 0) {
+    parts.push(
+      `Content pillars:\n${(s.contentPillars as string[]).map((p) => `  - ${p}`).join("\n")}`
+    );
+  }
+  if (s.voice && typeof s.voice === "object") {
+    const voice = s.voice as Record<string, string>;
+    const voiceParts: string[] = [];
+    for (const [platform, desc] of Object.entries(voice)) {
+      if (desc) voiceParts.push(`  - ${platform}: ${desc}`);
+    }
+    if (voiceParts.length > 0) {
+      parts.push(`Voice/tone:\n${voiceParts.join("\n")}`);
+    }
+  }
+  if (Array.isArray(s.constraints) && s.constraints.length > 0) {
+    parts.push(
+      `Hard constraints:\n${(s.constraints as string[]).map((c) => `  - ${c}`).join("\n")}`
+    );
+  }
+
+  return parts.length > 0 ? parts.join("\n") : null;
 }
 
 export function buildSystemPrompt(user: UserData): string {
@@ -64,6 +99,25 @@ Plan: ${user.planId}
 ## Connected social accounts
 ${accountsList}
 
+${(() => {
+    const strategyText = formatStrategy(user.strategy);
+    if (strategyText) {
+      return `## Content strategy (learned from conversations)
+${strategyText}
+
+Use this strategy to guide every piece of content you create. Adapt tone, topics, and format to match these preferences. This is a living document — keep refining it as you learn more.`;
+    }
+    return `## Content strategy
+No strategy defined yet. You need to learn about this user to create great content. Here's how to do it naturally:
+
+- If the user's first message is open-ended ("hey", "help me", "what can you do?"), take the opportunity to ask 2-3 quick questions: who's their audience, what's their style, what makes them unique. Keep it conversational, not like a form. Save what you learn via updateStrategy right away.
+- If the user asks you to create or post content, DO IT FIRST — deliver what they asked for. Then after delivering, slip in ONE quick question to learn more ("By the way, who's your main audience? I'll adapt the next ones."). Don't block their request with questions.
+- Every interaction is a chance to learn: the topics they pick, the corrections they make, the tone they use. Save these observations via updateStrategy without announcing it.
+- Do NOT call analytics or listing tools proactively to "learn about the user" — just ask questions and observe. Use analytics tools only when the user explicitly asks about performance or data.
+
+The goal: within 2-3 exchanges, you should know enough to create content that feels like them, not like a generic AI.`;
+  })()}
+
 ## What you CAN do (you have tools for all of these)
 - Create and publish posts immediately (one per platform for independent error handling)
 - Schedule posts for a future date/time
@@ -76,6 +130,7 @@ ${accountsList}
 - View daily metrics and platform breakdown
 - Get best times to post based on engagement data
 - List connected social accounts
+- Save and update the user's content strategy (audience, voice, content pillars, constraints)
 
 ## What you CANNOT do
 - Edit a post that is already published (you can unpublish it and create a new one)
@@ -152,6 +207,17 @@ Always respect these limits when writing content:
 - Twitter/X: supports up to 4 images per post
 - Facebook: supports multiple images
 - Other platforms: typically support single image or video
+
+## Strategy auto-improvement
+- When the user corrects your tone, style, or word choices → save to voice via updateStrategy
+- When the user mentions their audience or who they're trying to reach → save to audience
+- When the user says "never do X" or "always do Y" → save to constraints
+- When you notice recurring content themes across conversations → save to contentPillars
+- When the user rejects a content direction → infer the constraint and save it
+- Save immediately when you learn something — don't wait to be asked
+- Be specific in what you save: "Direct, uses tu instead of vous, no corporate speak" beats "Casual tone"
+- Keep the strategy in the user's language (if they write in French, strategy fields should be in French)
+- You don't need to announce every strategy update — just do it naturally in the flow of conversation
 
 ## Important
 - You are a social media manager, not a general-purpose assistant

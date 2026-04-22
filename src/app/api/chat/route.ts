@@ -44,6 +44,8 @@ export async function POST(req: NextRequest) {
             onboardingRole: true,
             onboardingNiche: true,
             onboardingTopics: true,
+            onboardingGoal: true,
+            strategy: true,
           },
         }),
         prisma.subscription.findUnique({
@@ -90,7 +92,7 @@ export async function POST(req: NextRequest) {
     // Sanitize messages: strip system role, cap length, remove incomplete tool calls
     const messages: UIMessage[] = rawMessages
       .filter((m) => m.role === "user" || m.role === "assistant")
-      .slice(-100)
+      .slice(-20)
       .map((m) => {
         const filteredParts = (m.parts ?? []).filter((p) => {
           if (p == null || typeof p !== "object" || !("type" in p)) return false;
@@ -156,6 +158,8 @@ export async function POST(req: NextRequest) {
       onboardingRole: user?.onboardingRole ?? null,
       onboardingNiche: user?.onboardingNiche ?? null,
       onboardingTopics: user?.onboardingTopics ?? [],
+      onboardingGoal: user?.onboardingGoal ?? null,
+      strategy: user?.strategy ?? null,
       planId: subscription?.planId ?? "starter",
       accounts: lateProfile.socialAccounts,
     });

@@ -351,8 +351,11 @@ export function createZernioTools(
         );
         return {
           overview: data.overview,
-          posts: data.posts.slice(0, 10).map((p) => ({
-            content: p.content,
+          posts: data.posts.slice(0, 5).map((p) => ({
+            content:
+              p.content.length > 100
+                ? p.content.slice(0, 100) + "..."
+                : p.content,
             platform: p.platform,
             publishedAt: p.publishedAt,
             analytics: p.analytics,
@@ -393,12 +396,15 @@ export function createZernioTools(
         console.log(`[Tool:getBestTimeToPost] → ${data.slots.length} slots`);
         // Zernio: day_of_week 0=Monday, 6=Sunday
         const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-        return data.slots.map((s) => ({
-          dayOfWeek: dayNames[s.day_of_week],
-          hourUTC: s.hour,
-          avgEngagement: s.avg_engagement,
-          postCount: s.post_count,
-        }));
+        return data.slots
+          .sort((a, b) => b.avg_engagement - a.avg_engagement)
+          .slice(0, 5)
+          .map((s) => ({
+            dayOfWeek: dayNames[s.day_of_week],
+            hourUTC: s.hour,
+            avgEngagement: s.avg_engagement,
+            postCount: s.post_count,
+          }));
       },
     }),
 
@@ -440,9 +446,67 @@ export function createZernioTools(
       },
     }),
 
+    updateStrategy: tool({
+      description:
+        "Save or update the user's content strategy. Call this whenever you learn something about the user's preferences, target audience, writing style, content themes, or constraints. This is a partial update — only include the fields you want to change. Arrays (contentPillars, constraints) replace the previous value entirely. Voice is merged per-platform (setting linkedin won't erase twitter).",
+      inputSchema: z.object({
+        goal: z
+          .string()
+          .optional()
+          .describe("User's primary social media goal"),
+        audience: z
+          .string()
+          .optional()
+          .describe("Target audience description"),
+        angle: z
+          .string()
+          .optional()
+          .describe("User's unique angle or positioning"),
+        contentPillars: z
+          .array(z.string())
+          .max(5)
+          .optional()
+          .describe("Main content themes (3-5, replaces existing list)"),
+        voice: z
+          .object({
+            general: z.string().optional(),
+            linkedin: z.string().optional(),
+            twitter: z.string().optional(),
+            instagram: z.string().optional(),
+            threads: z.string().optional(),
+            bluesky: z.string().optional(),
+            facebook: z.string().optional(),
+            tiktok: z.string().optional(),
+            pinterest: z.string().optional(),
+            youtube: z.string().optional(),
+          })
+          .optional()
+          .describe("Voice/tone preferences — general or per-platform"),
+        constraints: z
+          .array(z.string())
+          .max(10)
+          .optional()
+          .describe("Hard rules to always follow or avoid (replaces existing list)"),
+      }),
+      execute: async (partial) => {
+        console.log(
+          `[Tool:updateStrategy] userId=${userId}, fields=${Object.keys(partial).join(",")}`
+        );
+        const { updateUserStrategy } = await import(
+          "@/lib/services/strategy"
+        );
+        const updated = await updateUserStrategy(userId, partial);
+        console.log(`[Tool:updateStrategy] ✓ strategy updated`);
+        return { success: true, strategy: updated };
+      },
+    }),
+
     getPostLogs: tool({
       description:
         "Check recent publishing logs to debug failures or verify that posts were created successfully. Use this after batch operations to confirm nothing was silently dropped.",
+      providerOptions: {
+        anthropic: { cacheControl: { type: "ephemeral" } },
+      },
       inputSchema: z.object({
         status: z
           .string()

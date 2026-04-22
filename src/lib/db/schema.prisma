@@ -27,6 +27,8 @@ model User {
   onboardingNiche     String?
   onboardingTopics    String[]        @default([])
   chatSuggestions     String[]        @default([])
+  onboardingGoal      String?
+  strategy            Json?
   creditBalance       CreditBalance?
   creditTransactions  CreditTransaction[]
   imageGenerations    ImageGeneration[]

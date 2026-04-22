@@ -46,10 +46,20 @@ const ROLE_LABELS: Record<string, string> = {
   marketing_manager: "Marketing Manager",
 };
 
+const GOAL_LABELS: Record<string, string> = {
+  get_clients: "Get clients / Generate leads",
+  personal_brand: "Build personal brand",
+  product_awareness: "Grow product awareness",
+  community: "Build & engage a community",
+  visibility: "Stay visible without spending hours",
+};
+
 export function formatUserContext(user: {
   onboardingRole: string | null;
   onboardingNiche: string | null;
   onboardingTopics: string[];
+  onboardingGoal?: string | null;
+  strategy?: unknown;
 }): string {
   const parts: string[] = [];
 
@@ -59,7 +69,11 @@ export function formatUserContext(user: {
   if (user.onboardingNiche) {
     parts.push(`Niche: ${user.onboardingNiche}`);
   }
-  if (user.onboardingTopics.length > 0) {
+  if (user.onboardingGoal) {
+    parts.push(`Goal: ${GOAL_LABELS[user.onboardingGoal] ?? user.onboardingGoal}`);
+  }
+  // Show topics only as legacy fallback (when no strategy exists yet)
+  if (user.onboardingTopics.length > 0 && !user.strategy) {
     parts.push(`Topics: ${user.onboardingTopics.join(", ")}`);
   }
 

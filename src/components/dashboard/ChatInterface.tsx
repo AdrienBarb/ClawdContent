@@ -7,16 +7,18 @@ import { appRouter } from "@/lib/constants/appRouter";
 import {
   PaperPlaneTiltIcon,
   CircleNotchIcon,
-  SparkleIcon,
   WarningCircleIcon,
   XIcon,
   FilmStripIcon,
   ArrowRightIcon,
+  PencilSimpleIcon,
+  CompassIcon,
+  ChartLineUpIcon,
+  CalendarDotsIcon,
 } from "@phosphor-icons/react";
 import { useRef, useEffect, useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import useApi from "@/lib/hooks/useApi";
-import { getPlatform } from "@/lib/constants/platforms";
 import MediaUploadModal, {
   type UploadResult,
 } from "@/components/dashboard/MediaUploadModal";
@@ -25,11 +27,47 @@ import ImageGenerateModal from "@/components/dashboard/ImageGenerateModal";
 import ReactMarkdown from "react-markdown";
 import SubscribeModal from "@/components/dashboard/SubscribeModal";
 
-const SUGGESTIONS = [
-  "Write a LinkedIn post about my latest project",
-  "Draft a short announcement for Threads",
-  "Turn this idea into a Twitter thread",
-  "Write a professional update about a milestone",
+const ACTION_CATEGORIES = [
+  {
+    id: "write",
+    label: "Write",
+    icon: PencilSimpleIcon,
+    prompts: [
+      "Write a post about my latest project",
+      "Give me content ideas for this week",
+      "Adapt this text for social media",
+    ],
+  },
+  {
+    id: "strategy",
+    label: "Strategy",
+    icon: CompassIcon,
+    prompts: [
+      "Help me define my content strategy",
+      "What should I talk about?",
+      "Review my brand voice",
+    ],
+  },
+  {
+    id: "analytics",
+    label: "Analytics",
+    icon: ChartLineUpIcon,
+    prompts: [
+      "How are my posts performing?",
+      "When is the best time to post?",
+      "Show my top performing posts",
+    ],
+  },
+  {
+    id: "schedule",
+    label: "Schedule",
+    icon: CalendarDotsIcon,
+    prompts: [
+      "Schedule a post for later",
+      "Plan my week of content",
+      "Show my scheduled posts",
+    ],
+  },
 ];
 
 interface AttachedMedia {
@@ -190,32 +228,11 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
   const accountCount: number = dashboardStatus?.accountCount ?? 0;
   const freeMessageUsed: boolean = dashboardStatus?.freeMessageUsed ?? false;
   // Check both server-side (freeMessageUsed) and client-side (messages in current session)
-  const localUserMessageCount = allMessages.filter((m) => m.role === "user").length;
+  const localUserMessageCount = allMessages.filter(
+    (m) => m.role === "user"
+  ).length;
   const needsSubscription =
     !hasActiveSubscription && (freeMessageUsed || localUserMessageCount >= 1);
-  const chatSuggestions: string[] = dashboardStatus?.chatSuggestions ?? [];
-  const userContext = dashboardStatus?.userContext as
-    | { role: string | null; niche: string | null; topics: string[] }
-    | undefined;
-  const hasContext = !!(userContext?.role || userContext?.niche);
-
-  const platformLabels = useMemo(() => {
-    const accts: { platform: string }[] = dashboardStatus?.accounts ?? [];
-    return accts
-      .map((a) => getPlatform(a.platform)?.label)
-      .filter(Boolean) as string[];
-  }, [dashboardStatus?.accounts]);
-
-  const platformsText = useMemo(() => {
-    if (platformLabels.length === 0) return "";
-    if (platformLabels.length === 1) return platformLabels[0];
-    if (platformLabels.length === 2)
-      return `${platformLabels[0]} and ${platformLabels[1]}`;
-    return `${platformLabels.slice(0, -1).join(", ")}, and ${platformLabels[platformLabels.length - 1]}`;
-  }, [platformLabels]);
-
-  const suggestions =
-    chatSuggestions.length > 0 ? chatSuggestions : SUGGESTIONS;
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -262,22 +279,19 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
     });
   }, []);
 
-  const handleImageGenerated = useCallback(
-    (result: { imageUrl: string }) => {
-      setAttachedMedia((prev) => [
-        ...prev,
-        {
-          url: result.imageUrl,
-          resourceType: "image",
-          format: "png",
-          cloudinaryId: "",
-          bytes: 0,
-          thumbnailUrl: result.imageUrl,
-        },
-      ]);
-    },
-    []
-  );
+  const handleImageGenerated = useCallback((result: { imageUrl: string }) => {
+    setAttachedMedia((prev) => [
+      ...prev,
+      {
+        url: result.imageUrl,
+        resourceType: "image",
+        format: "png",
+        cloudinaryId: "",
+        bytes: 0,
+        thumbnailUrl: result.imageUrl,
+      },
+    ]);
+  }, []);
 
   const handleSend = () => {
     const text = input.trim();
@@ -306,7 +320,7 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
     sendMessage({ text: messageText });
   };
 
-  const handleSuggestion = (text: string) => {
+  const handlePromptClick = (text: string) => {
     setInput(text);
     setTimeout(() => inputRef.current?.focus(), 0);
   };
@@ -319,24 +333,24 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
   };
 
   const hasAccounts = accountCount > 0;
-  const canSend = (input.trim() || attachedMedia.length > 0) && !isLoading && hasAccounts;
+  const canSend =
+    (input.trim() || attachedMedia.length > 0) && !isLoading && hasAccounts;
+  const showCategories = hasAccounts;
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] max-w-3xl mx-auto">
       <div className="flex-1 flex flex-col rounded-2xl bg-white shadow-sm border border-gray-100 overflow-hidden">
         {/* Messages area */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto p-5 space-y-4">
-          {allMessages.length === 0 && !error && (
+          {/* No accounts — welcome card with connect button */}
+          {allMessages.length === 0 && !error && accountCount === 0 && (
             <div className="flex flex-col justify-end h-full gap-4 animate-fade-in">
-              {/* Welcome card */}
               <div className="flex items-end gap-2.5">
-                {/* Bot avatar */}
                 <img
                   src="/logo.svg"
                   alt="PostClaw"
                   className="shrink-0 h-8 w-8 rounded-full shadow-sm"
                 />
-
                 <div
                   className="max-w-[80%] rounded-2xl rounded-bl-md px-5 py-4 text-sm leading-relaxed"
                   style={{
@@ -345,54 +359,20 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
                     border: "1px solid rgba(255, 94, 72, 0.1)",
                   }}
                 >
-                  {accountCount === 0 ? (
-                    <>
-                      <p className="text-gray-800">
-                        Hey! I&apos;m your AI social media manager. Before we
-                        start creating content, connect your social accounts so
-                        I can publish for you.
-                      </p>
-                      <Link
-                        href={appRouter.accounts}
-                        className="inline-flex items-center gap-2 mt-3 px-4 py-2 rounded-full bg-primary text-white text-sm font-medium hover:bg-[#E84A36] transition-all hover:shadow-md cursor-pointer"
-                      >
-                        Connect my accounts
-                        <ArrowRightIcon className="h-3.5 w-3.5" />
-                      </Link>
-                    </>
-                  ) : (
-                    <p className="text-gray-800">
-                      {hasContext
-                        ? `You're all set on ${platformsText}! Ready to create your first post? Here are some ideas:`
-                        : `You're all set on ${platformsText}! Tell me what you'd like to post — I can write, adapt, and publish to all your platforms.`}
-                    </p>
-                  )}
+                  <p className="text-gray-800">
+                    Hey! I&apos;m your AI social media manager. Before we start
+                    creating content, connect your social accounts so I can
+                    publish for you.
+                  </p>
+                  <Link
+                    href={appRouter.accounts}
+                    className="inline-flex items-center gap-2 mt-3 px-4 py-2 rounded-full bg-primary text-white text-sm font-medium hover:bg-[#E84A36] transition-all hover:shadow-md cursor-pointer"
+                  >
+                    Connect my accounts
+                    <ArrowRightIcon className="h-3.5 w-3.5" />
+                  </Link>
                 </div>
               </div>
-
-              {/* Suggestion chips */}
-              {accountCount > 0 && (
-                <div className="flex flex-wrap gap-2 pl-11">
-                  {suggestions.map((s, i) => (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => handleSuggestion(s)}
-                      className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm text-gray-700 transition-all cursor-pointer hover:scale-[1.03] hover:shadow-md active:scale-[0.98]"
-                      style={{
-                        background:
-                          "linear-gradient(135deg, #ffffff 0%, #faf9ff 100%)",
-                        border: "1px solid rgba(212, 214, 229, 0.6)",
-                        animationDelay: `${i * 80}ms`,
-                        animationFillMode: "both",
-                      }}
-                    >
-                      <SparkleIcon className="h-3 w-3 text-primary/60 shrink-0" />
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
           )}
 
@@ -531,9 +511,18 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
                   className="shrink-0 h-7 w-7 rounded-full"
                 />
                 <div className="bg-gray-100 rounded-2xl rounded-bl-md px-5 py-4 flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce-dot" style={{ animationDelay: "0ms" }} />
-                  <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce-dot" style={{ animationDelay: "150ms" }} />
-                  <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce-dot" style={{ animationDelay: "300ms" }} />
+                  <span
+                    className="h-2 w-2 rounded-full bg-primary/60 animate-bounce-dot"
+                    style={{ animationDelay: "0ms" }}
+                  />
+                  <span
+                    className="h-2 w-2 rounded-full bg-primary/60 animate-bounce-dot"
+                    style={{ animationDelay: "150ms" }}
+                  />
+                  <span
+                    className="h-2 w-2 rounded-full bg-primary/60 animate-bounce-dot"
+                    style={{ animationDelay: "300ms" }}
+                  />
                 </div>
               </div>
             )}
@@ -603,7 +592,11 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
                 e.target.style.height = `${Math.min(e.target.scrollHeight, 160)}px`;
               }}
               onKeyDown={handleKeyDown}
-              placeholder={hasAccounts ? "Type your thoughts..." : "Connect a social account to start chatting"}
+              placeholder={
+                hasAccounts
+                  ? "What can I do for you?"
+                  : "Connect a social account to start chatting"
+              }
               disabled={!hasAccounts}
               rows={1}
               className="w-full resize-none bg-transparent px-5 pt-4 pb-2 text-base leading-relaxed focus:outline-none placeholder:text-gray-400 disabled:cursor-not-allowed disabled:opacity-60"
@@ -614,11 +607,17 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
                 <MediaAttachDropdown
                   disabled={!hasAccounts}
                   onOpenUpload={() => {
-                    if (needsSubscription) { setShowSubscribeModal(true); return; }
+                    if (needsSubscription) {
+                      setShowSubscribeModal(true);
+                      return;
+                    }
                     setUploadModalOpen(true);
                   }}
                   onOpenGenerate={() => {
-                    if (needsSubscription) { setShowSubscribeModal(true); return; }
+                    if (needsSubscription) {
+                      setShowSubscribeModal(true);
+                      return;
+                    }
                     setGenerateModalOpen(true);
                   }}
                 />
@@ -639,6 +638,38 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
           </div>
         </div>
       </div>
+
+      {/* Category action prompts — below the card, only on empty state */}
+      {showCategories && (
+        <div className="mt-3 flex gap-2 justify-center">
+          {ACTION_CATEGORIES.map((cat) => (
+            <div key={cat.id} className="relative group">
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium bg-white text-gray-700 border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all cursor-pointer"
+              >
+                <cat.icon className="h-4 w-4" />
+                {cat.label}
+              </button>
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 rounded-xl bg-white border border-gray-200 shadow-lg overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                {cat.prompts.map((prompt, i, arr) => (
+                  <button
+                    key={prompt}
+                    type="button"
+                    onClick={() => handlePromptClick(prompt)}
+                    className={`w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer ${
+                      i < arr.length - 1 ? "border-b border-gray-100" : ""
+                    }`}
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       <SubscribeModal
         open={showSubscribeModal}
         onOpenChange={setShowSubscribeModal}
