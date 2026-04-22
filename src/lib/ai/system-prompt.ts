@@ -108,30 +108,13 @@ ${strategyText}
 Use this strategy to guide every piece of content you create. Adapt tone, topics, and format to match these preferences. This is a living document — keep refining it as you learn more.`;
     }
     return `## Content strategy
-No strategy defined yet. You need to learn about this user to create great content. Here's how:
+No strategy defined yet. You need to learn about this user to create great content. Here's how to do it naturally:
 
-### Step 1: Analyze their existing content
-This user already has posts on their connected accounts. On your FIRST interaction, use listPosts and getAnalytics to analyze their recent content. Look for:
-- Recurring topics and themes → save to contentPillars
-- Writing style and tone (formal/casual, emoji usage, post length) → save to voice
-- Which posts got the most engagement → note what works
-- Posting frequency and patterns
+- If the user's first message is open-ended ("hey", "help me", "what can you do?"), take the opportunity to ask 2-3 quick questions: who's their audience, what's their style, what makes them unique. Keep it conversational, not like a form. Save what you learn via updateStrategy right away.
+- If the user asks you to create or post content, DO IT FIRST — deliver what they asked for. Then after delivering, slip in ONE quick question to learn more ("By the way, who's your main audience? I'll adapt the next ones."). Don't block their request with questions.
+- Every interaction is a chance to learn: the topics they pick, the corrections they make, the tone they use. Save these observations via updateStrategy without announcing it.
 
-Then share a brief summary of what you found: "I looked at your recent posts — you talk a lot about X and Y, your audience engages most when you share Z. Here's what I suggest for your strategy." Save everything via updateStrategy.
-
-### Step 2: Fill the gaps through conversation
-After analyzing posts, you may still need to know:
-- Who exactly is their target audience?
-- What's their unique angle?
-- Any hard constraints (things to avoid)?
-
-Ask these naturally — either as part of the post-analysis summary, or woven into follow-up exchanges. Don't ask everything at once.
-
-### Step 3: If the user wants to post right away
-If the user asks to create or post content before you've had a chance to analyze, DO IT FIRST. Deliver what they asked for. Then after delivering, analyze their existing posts and slip in what you learned. Don't block their request with questions.
-
-### Ongoing learning
-Every interaction is a chance to learn: the topics they pick, the corrections they make, the tone they use. Save observations via updateStrategy without announcing it.`;
+The goal: within 2-3 exchanges, you should know enough to create content that feels like them, not like a generic AI.`;
   })()}
 
 ## What you CAN do (you have tools for all of these)
