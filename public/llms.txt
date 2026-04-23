@@ -1,36 +1,36 @@
 # PostClaw
 
-> PostClaw is an AI social media manager that learns your brand, plans your content, and publishes to 9 platforms — all from a single chat conversation.
+> PostClaw is an AI social media manager for small businesses. It learns your brand, suggests what to post, and publishes to Instagram, Facebook, and 7 more platforms.
 
 ## What PostClaw Does
 
-PostClaw is your AI social media manager. Chat with it to draft posts, plan your content calendar, adapt content for different platforms, schedule, and publish — all from one conversation. It learns your brand voice over time, analyzes performance, and suggests improvements. Your data and social accounts are completely isolated and private.
+PostClaw is your AI social media manager. It suggests post ideas based on your business, writes the content in your voice, adapts it for each platform, and publishes on schedule. It learns your brand voice over time, analyzes performance, and suggests improvements. Your data and social accounts are completely isolated and private.
 
 ## Key Features
 
-- AI social media manager via web chat that creates and publishes content
-- Publish to 9 social platforms from one chat (Instagram, TikTok, X/Twitter, LinkedIn, Facebook, YouTube, Pinterest, Threads, Bluesky)
+- AI social media manager that suggests, writes, and publishes content for you
+- Publish to 9 social platforms (Instagram, Facebook, LinkedIn, TikTok, X/Twitter, YouTube, Pinterest, Threads, Bluesky)
 - AI-adapted content per platform (tone, length, hashtags, format)
 - Content calendar planning and scheduling
 - Performance analytics and best time to post recommendations
 - Image generation for posts
 - Media support (images and videos via Cloudinary)
-- Brand voice learning — gets better the more you use it
+- Brand voice learning that gets better the more you use it
 - Unlimited posts, cancel anytime
 
 ## How It Works
 
 1. Sign up and connect your social media accounts (free)
-2. Try your first chat message for free
+2. Try your first post for free
 3. Choose a plan (from $17/month) for unlimited access
-4. Chat with your AI social media manager — it writes, adapts, schedules, and publishes across all your platforms
+4. Your AI social media manager suggests posts, you approve, and it publishes across all your platforms
 
 ## Target Audience
 
-- Solo founders and indie hackers managing their own social presence
-- Small teams and startups (1-5 people) without a dedicated social media hire
-- Content creators who publish across multiple platforms
-- Professionals who want to stay active on social media without the overhead
+- Photographers, creatives, and freelancers who need a consistent social media presence
+- Restaurants, cafes, and caterers who want to fill tables through social media
+- Coaches, consultants, and service providers building an audience
+- Local and small businesses too busy serving customers to manage social media
 
 ## Pricing
 

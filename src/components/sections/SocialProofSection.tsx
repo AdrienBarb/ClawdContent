@@ -1,7 +1,7 @@
 import { Lock, Zap } from "lucide-react";
 
 const stats = [
-  { value: "9", label: "Platforms Supported" },
+  { value: "9", label: "Platforms incl. Instagram & Facebook" },
   { value: "< 2 min", label: "Setup Time" },
   { value: "24/7", label: "Always-On AI" },
   { value: "$17/mo", label: "Starting Price" },

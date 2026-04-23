@@ -1,4 +1,4 @@
-import { UserPlus, MessageSquare, Send } from "lucide-react";
+import { UserPlus, Sparkles, CheckCircle } from "lucide-react";
 
 const steps = [
   {
@@ -6,21 +6,21 @@ const steps = [
     step: "1",
     title: "Connect your accounts",
     description:
-      "Sign up, link your social platforms from the dashboard. Takes less than 2 minutes.",
+      "Link your Instagram, Facebook, or whichever platforms your customers use. Takes 2 minutes.",
   },
   {
-    icon: MessageSquare,
+    icon: Sparkles,
     step: "2",
-    title: "Talk to your AI social media manager",
+    title: "It suggests, you approve",
     description:
-      '"Write about our product launch." "Plan my content for next week." "Make a thread about what I learned this month." Plain language, nothing to learn.',
+      "Your AI manager creates ready-to-publish posts based on your business. Review them, tweak if you want, or approve as-is.",
   },
   {
-    icon: Send,
+    icon: CheckCircle,
     step: "3",
-    title: "It writes, adapts, and publishes",
+    title: "It publishes. You're done.",
     description:
-      "Your AI social media manager rewrites the content for each platform\u2019s tone and format, schedules it at the right time, and publishes everywhere. You\u2019re done.",
+      "Posts go out at the best time, adapted for each platform. Your social media runs itself while you focus on your business.",
   },
 ];
 
@@ -33,7 +33,7 @@ export default function HowItWorksSection() {
             How It Works
           </h2>
           <p className="text-center text-secondary-foreground mb-16 text-lg">
-            Three steps. No learning curve. No dashboard to figure out.
+            From signup to your first post in under 5 minutes.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

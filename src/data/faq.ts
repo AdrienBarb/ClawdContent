@@ -2,18 +2,18 @@ export const faqs = [
   {
     question: "How does it actually work?",
     answer:
-      "Sign up, connect your social media accounts, and start chatting with your AI social media manager. Tell it what to post, ask it to plan your content calendar, or let it suggest ideas. It writes the content, adapts it for each platform's tone and format, schedules or publishes immediately, and tracks your performance with built-in analytics. That's it.",
+      "Sign up, connect your social media accounts, and your AI social media manager gets to work. It suggests post ideas based on your business, writes the content, adapts it for each platform's tone and format, and schedules or publishes immediately. You review, approve, and you're done.",
   },
   {
     question:
-      "What makes PostClaw different from Buffer, Later, or Hootsuite?",
+      "What makes PostClaw different from Buffer, Canva, or Hootsuite?",
     answer:
-      'Those are dashboards you operate. PostClaw is an AI that operates for you. You don\'t schedule posts, pick time slots, or write content in an editor. You have a conversation with your AI social media manager \u2014 "plan my content for next week," "write about our product launch," "post this tomorrow at 9am" \u2014 and it handles everything. It also learns your brand voice over time, so your content gets better the longer you use it.',
+      "Those are dashboards you operate. PostClaw is an AI that operates for you. You don't schedule posts, pick time slots, or write content in an editor. You tell your AI social media manager what your business is about, and it suggests content, writes posts, and publishes, while you focus on your customers. It also learns your brand voice over time, so your content gets better the longer you use it.",
   },
   {
     question: "What technology powers PostClaw?",
     answer:
-      "PostClaw uses our proprietary AI engine combined with Zernio's unified social media API. Your AI social media manager understands your brand, writes platform-native content, and publishes directly to your accounts. We handle all the infrastructure — you just chat.",
+      "PostClaw uses our proprietary AI engine combined with Zernio's unified social media API. Your AI social media manager understands your brand, writes platform-native content, and publishes directly to your accounts. We handle all the infrastructure. You just tell it what your business needs.",
   },
   {
     question: "Does it actually sound like me, or like a robot?",
@@ -23,12 +23,12 @@ export const faqs = [
   {
     question: "What platforms are supported?",
     answer:
-      "9 platforms: Instagram, TikTok, X (Twitter), LinkedIn, Facebook, YouTube, Pinterest, Threads, and Bluesky. You can post to all of them at once, or pick specific ones.",
+      "9 platforms: Instagram, Facebook, LinkedIn, TikTok, X (Twitter), YouTube, Pinterest, Threads, and Bluesky. You can post to all of them at once, or pick specific ones. Most of our users start with Instagram and Facebook.",
   },
   {
     question: "Can I review posts before they go live?",
     answer:
-      "Yes. Your AI social media manager shows you every post before publishing. You can edit, approve, or ask it to rewrite. You stay in control \u2014 it just does the heavy lifting.",
+      "Yes. Your AI social media manager shows you every post before publishing. You can edit, approve, or ask it to rewrite. You stay in control. It just does the heavy lifting.",
   },
   {
     question: "Is my data private?",
@@ -43,6 +43,6 @@ export const faqs = [
   {
     question: "What if I need help?",
     answer:
-      "Reach out at support@postclaw.io. We're a small team and we respond quickly. We also actively improve the product based on user feedback.",
+      "Reach out at admin@postclaw.io. We're a small team and we respond quickly. We also actively improve the product based on user feedback.",
   },
 ];

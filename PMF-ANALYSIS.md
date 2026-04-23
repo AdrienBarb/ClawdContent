@@ -102,3 +102,16 @@ Current value prop assumes users arrive with content ideas ("one idea → 9 plat
 - Show real examples (photographer, coach, restaurant)
 - Lead with Instagram/Facebook
 - Simplify pricing
+
+---
+
+## Action Plan (April 23, 2026)
+
+Priority-ordered based on analysis review. Sequenced so each step amplifies the next.
+
+- [ ] **1. Talk to the 6 power users this week** — DM Adontai, Casa Lasagna, Stefan, Brandon, Fabienne, Paul. Ask: "Why do you use PostClaw?" and "What almost made you leave?" Qualitative data is the biggest gap right now.
+- [ ] **2. Reposition the landing page** — Rewrite for small business owners BEFORE any technical work. Current "Solo Founders & Indie Hackers" messaging attracts the wrong audience. Lead with Instagram/Facebook, not "9 platforms." Show niches: photographer, restaurant, coach.
+- [ ] **3. Force account connection in onboarding** — The single biggest technical lever. 90% drop before core value. Move connection to the first step after signup, before chat access.
+- [ ] **4. Make the AI proactive on first interaction** — First message should be "Here are 5 post ideas for your week" based on their niche. This is the shift from distribution tool to content strategy tool.
+- [ ] **5. Kill the fraud** — 13 fake Starter subscriptions (~15-20% of revenue). Add Stripe Radar or email verification before payment. Pollutes every metric until fixed.
+- [ ] **6. Reach out to the 23 paying-but-not-connected users** — They will churn within 1-2 billing cycles. Personal outreach to help them connect (feasible at this scale) or accept the revenue drop and plan accordingly.

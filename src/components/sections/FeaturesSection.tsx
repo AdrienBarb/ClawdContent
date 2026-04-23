@@ -10,51 +10,51 @@ import { BrainIcon, ShieldCheckIcon, SparkleIcon, ClockIcon } from "@phosphor-ic
 
 const features = [
   {
-    icon: BrainIcon,
-    title: "It learns you.",
+    icon: SparkleIcon,
+    title: "It does the thinking\nfor you.",
     description:
-      "Most AI tools start from zero every time. PostClaw remembers your brand voice, your audience, your content history, and what works. Week 1 is good. Week 8 is indistinguishable from you writing it yourself.",
+      "Scheduling tools still need you to write the content. PostClaw figures out what to post, writes it, and handles the timing. You just approve.",
+  },
+  {
+    icon: BrainIcon,
+    title: "It sounds like you,\nnot a robot.",
+    description:
+      "It learns your tone, your niche, and what your audience responds to. After a few weeks, your followers won't know you didn't write it yourself.",
   },
   {
     icon: ShieldCheckIcon,
-    title: "It\u2019s yours alone.",
+    title: "Nothing goes live\nwithout your OK.",
     description:
-      "Your brand knowledge, conversations, and content strategy are completely isolated and protected. No shared data. No access from other users. Everything stays private.",
-  },
-  {
-    icon: SparkleIcon,
-    title: "It thinks,\nnot just posts.",
-    description:
-      "PostClaw doesn\u2019t wait for you to have an idea. It suggests content based on your niche, monitors trends, and plans ahead. It\u2019s the difference between a tool that does what you say and a social media manager that knows what to do.",
+      "Every post is shown to you first. Edit it, approve it, or ask for a rewrite. Your accounts, your rules. No surprises.",
   },
   {
     icon: ClockIcon,
-    title: "Nothing new\nto learn.",
+    title: "Simpler than anything\nyou've tried.",
     description:
-      "If you can send a message, you already know how to use PostClaw. No dashboards to navigate. No editors to figure out. No 30-minute onboarding tutorials. Just chat.",
+      "No dashboards to learn. No editors to figure out. No content calendars to fill. You approve posts. That's it.",
   },
 ];
 
 const comparisons = [
   {
-    without: "45+ min/day juggling 5 apps and rewriting the same post",
-    with: "2 min/day \u2014 one conversation",
+    without: "45 minutes writing one Instagram caption",
+    with: "Approve a ready-made post in 10 seconds",
   },
   {
-    without: "Same text copy-pasted everywhere (and it shows)",
-    with: "AI adapts tone, length, and format for each platform",
+    without: "Googling 'what to post for my business'",
+    with: "Open the app. Post ideas already waiting.",
   },
   {
-    without: "Constant guilt about platforms you\u2019re ignoring",
-    with: "9 platforms covered, none neglected",
+    without: "Same caption copy-pasted to every platform",
+    with: "Each post rewritten for Instagram, Facebook, LinkedIn",
   },
   {
-    without: "Staring at a blank editor wondering what to post",
-    with: "Your AI suggests topics, plans your calendar, and writes first drafts",
+    without: "Forgetting to post for weeks, then feeling guilty",
+    with: "Daily posts on autopilot, zero effort",
   },
   {
-    without: "Hiring a freelancer: $500\u20132,000/mo. Hiring in-house: $4,000+/mo",
-    with: "From $17/mo \u2014 your AI social media manager, on 24/7",
+    without: "Hiring a social media person: $1,000-2,000/mo",
+    with: "From $17/mo. Less than your phone bill.",
   },
 ];
 
@@ -101,7 +101,7 @@ export default function FeaturesSection() {
           {/* Before / After comparison */}
           <div className="rounded-[2rem] border border-border bg-card p-8 md:p-12 mb-16 shadow-sm">
               <h3 className="text-2xl md:text-3xl font-bold text-center mb-10 text-foreground">
-                Before PostClaw vs. After PostClaw
+                What changes when PostClaw takes over
               </h3>
               <div className="space-y-4">
                 {comparisons.map((row, index) => (
@@ -136,7 +136,7 @@ export default function FeaturesSection() {
                 onClick={handleGetStarted}
                 className="text-base px-10 h-14 bg-primary hover:bg-[#E84A36] text-white rounded-full"
               >
-                Launch my AI manager
+                Start posting today
               </Button>
             </div>
         </div>

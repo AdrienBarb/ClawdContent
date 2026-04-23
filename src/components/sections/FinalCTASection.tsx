@@ -26,12 +26,11 @@ export default function FinalCTASection() {
         <div className="mx-auto max-w-4xl">
           <div className="rounded-[2rem] border border-[#1e293b] bg-gradient-to-br from-[#0f172a] to-[#1e293b] p-12 md:p-20 text-center">
               <h2 className="text-4xl md:text-5xl font-bold mb-5 text-white leading-tight">
-                Every day without PostClaw is another day of copy-pasting,
-                rewriting, and staring at blank editors.
+                Every day you&apos;re not posting, your competitors are.
               </h2>
               <p className="text-[#8e93b0] text-lg mb-10 max-w-lg mx-auto">
                 Setup takes 2 minutes. Your AI social media manager starts
-                learning your brand immediately.
+                working for you immediately.
               </p>
               <Button
                 size="lg"

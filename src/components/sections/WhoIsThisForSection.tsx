@@ -1,23 +1,29 @@
-import { Rocket, Users, Palette } from "lucide-react";
+import { Camera, UtensilsCrossed, Briefcase, Store } from "lucide-react";
 
 const personas = [
   {
-    icon: Rocket,
-    title: "Solo Founders & Indie Hackers",
+    icon: Camera,
+    title: "Photographers & Creatives",
     description:
-      "You're shipping features, closing deals, and talking to users. Writing 5 platform-native posts a day is a full-time job you didn't sign up for — and can't afford to hire for. PostClaw is the social media manager that fits your budget and your bandwidth.",
+      "You shoot beautiful work. Posting it, writing captions, keeping Instagram and Pinterest updated... that takes as long as the shoot itself. PostClaw turns your portfolio into a steady stream of posts across every platform you care about.",
   },
   {
-    icon: Users,
-    title: "Small Teams & Startups",
+    icon: UtensilsCrossed,
+    title: "Restaurants, Cafés & Caterers",
     description:
-      "Your team has 3 people and none of them is a social media manager. You don't need to hire one. PostClaw plans your content calendar, writes every post, adapts for each platform, and publishes on schedule — while your team builds the product.",
+      "Your food speaks for itself, but only if people see it. PostClaw posts your daily specials, menu highlights, and behind-the-scenes content that fills tables. No more 'we should really post something today.'",
   },
   {
-    icon: Palette,
-    title: "Creators Who'd Rather Create",
+    icon: Briefcase,
+    title: "Coaches, Consultants & Service Providers",
     description:
-      "You have ideas, not time. PostClaw turns one idea into 9 platform-ready posts, remembers your style, and handles publishing. You focus on the work that actually matters to you.",
+      "Your expertise is your business. But building an audience means showing up every day. PostClaw plans your content, writes posts that position you as the expert, and publishes while you're with clients.",
+  },
+  {
+    icon: Store,
+    title: "Local & Small Businesses",
+    description:
+      "Estate agents, fitness studios, florists, salons... you're too busy serving customers to manage a social media presence. PostClaw keeps your business visible online without adding another job to your plate.",
   },
 ];
 
@@ -29,14 +35,14 @@ export default function WhoIsThisForSection() {
           <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 text-foreground leading-tight">
             Built for people who have a business to run
             <br />
-            — not a feed to manage.
+            not a feed to manage.
           </h2>
           <p className="text-center text-secondary-foreground text-lg mb-16">
             &nbsp;
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {personas.map((persona, index) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {personas.map((persona) => (
               <div key={persona.title} className="bg-card border border-border rounded-2xl p-8 h-full hover:border-primary/30 transition-colors shadow-sm">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 mb-5">
                   <persona.icon className="h-5 w-5 text-primary" />

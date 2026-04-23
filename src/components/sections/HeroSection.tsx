@@ -61,7 +61,7 @@ export default function HeroSection({ variant = "control" }: HeroSectionProps) {
                 ))}
               </div>
               <span className="text-sm text-muted-foreground">
-                Join 300+ founders on autopilot
+                Join 300+ business owners
               </span>
             </div>
 
@@ -77,7 +77,7 @@ export default function HeroSection({ variant = "control" }: HeroSectionProps) {
 
           {/* Subhead — sans-serif */}
           <p className="text-lg md:text-xl leading-relaxed text-secondary-foreground max-w-2xl mb-10">
-            Learns your brand. Plans your content. Posts to 9 platforms.
+            You run your business. It runs your Instagram, Facebook, and everything else.
           </p>
 
           {/* CTA */}
