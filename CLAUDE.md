@@ -2,7 +2,13 @@
 
 ## What is PostClaw?
 
-PostClaw is an AI social media manager that learns your brand, plans your content, and publishes to 9 platforms — all from a single chat conversation. No dashboard, no editor, no learning curve. It writes platform-native posts, adapts the tone for each network, publishes on schedule, analyzes performance, and spots what's going viral in your niche. Plans start at $17/mo.
+PostClaw is an AI social media manager for small business owners — photographers, caterers, coaches, consultants, artists, and local businesses. It learns your brand, plans your content, and publishes to your social accounts from a single chat conversation. No dashboard, no editor, no learning curve. Plans start at $17/mo.
+
+**Target audience (ICP):** Non-tech small business owners who need help with social media but can't afford a marketing agency ($2K+/mo). NOT indie hackers or SaaS founders — they churn.
+
+**Positioning:** PostClaw is a social media *manager*, not a tool. The AI tells you what to post and posts it for you. Core value prop: "Tell me what to post and post it for me." Lead with Instagram/Facebook (dominant platforms among real users), not "9 platforms."
+
+**Voice:** Speak their language — no startup jargon, no "founders", no "autopilot." Think: "Would a photographer or a caterer in Leeds understand this?"
 
 **How it works:**
 

@@ -17,7 +17,6 @@ model User {
   sessions            Session[]
   accounts            Account[]
   subscription        Subscription?
-  flyMachine          FlyMachine?
   lateProfile         LateProfile?
   timezone            String?
   media               Media[]
@@ -98,20 +97,6 @@ model Subscription {
   @@map("subscription")
 }
 
-model FlyMachine {
-  id               String   @id @default(cuid())
-  userId           String   @unique
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  machineId        String   @unique
-  volumeId         String?
-  region           String   @default("cdg")
-  status           String   @default("pending") // pending, deploying, running, stopped, failed
-  gatewayToken     String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  @@map("fly_machine")
-}
 
 model LateProfile {
   id             String          @id @default(cuid())
