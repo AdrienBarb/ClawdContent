@@ -167,7 +167,7 @@ export async function POST(req: NextRequest) {
       onboardingTopics: user?.onboardingTopics ?? [],
       onboardingGoal: user?.onboardingGoal ?? null,
       strategy: user?.strategy ?? null,
-      planId: subscription?.planId ?? "starter",
+      planId: subscription?.planId ?? "pro",
       accounts: lateProfile.socialAccounts,
     });
 

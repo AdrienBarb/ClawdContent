@@ -52,7 +52,7 @@ export async function GET() {
         }),
       ]);
 
-    const planId = (subscription?.planId as PlanId) || "starter";
+    const planId = (subscription?.planId as PlanId) || "pro";
     const plan = getPlan(planId);
 
     // Background sync: check Zernio account statuses periodically

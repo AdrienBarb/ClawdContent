@@ -224,7 +224,7 @@ function ChatInner({ historyState }: { historyState: HistoryState }) {
   const subPlanId = dashboardStatus?.subscription?.planId;
   const hasActiveSubscription =
     subStatus === "active" || subStatus === "trialing";
-  const canGenerate = subStatus === "active" && subPlanId !== "starter";
+  const canGenerate = subStatus === "active";
   const accountCount: number = dashboardStatus?.accountCount ?? 0;
   const freeMessageUsed: boolean = dashboardStatus?.freeMessageUsed ?? false;
   // Check both server-side (freeMessageUsed) and client-side (messages in current session)

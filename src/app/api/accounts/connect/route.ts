@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       }),
     ]);
 
-    const planId = (subscription?.planId as PlanId) || "starter";
+    const planId = (subscription?.planId as PlanId) || "pro";
     const plan = getPlan(planId);
     const activeAccountCount = lateProfile?.socialAccounts?.length ?? 0;
 

@@ -1,4 +1,4 @@
-export type PlanId = "starter" | "pro" | "business";
+export type PlanId = "starter" | "pro" | "business"; // starter/business kept for legacy subscribers
 export type BillingInterval = "monthly" | "yearly";
 
 export interface Plan {
@@ -80,27 +80,40 @@ export function getDisplayPrice(
     : plan.monthlyPrice;
 }
 
-// Map env var price IDs to plan + interval
-const STRIPE_PRICE_ENV_MAP: Record<string, { envVar: string }> = {
-  "starter-monthly": { envVar: "STRIPE_PRICE_STARTER_MONTHLY" },
-  "starter-yearly": { envVar: "STRIPE_PRICE_STARTER_YEARLY" },
-  "pro-monthly": { envVar: "STRIPE_PRICE_PRO_MONTHLY" },
-  "pro-yearly": { envVar: "STRIPE_PRICE_PRO_YEARLY" },
-  "business-monthly": { envVar: "STRIPE_PRICE_BUSINESS_MONTHLY" },
-  "business-yearly": { envVar: "STRIPE_PRICE_BUSINESS_YEARLY" },
-};
+// Stripe price mappings
+// First match per plan+interval is used for new checkouts (getStripePriceId)
+// All entries are checked for webhook resolution (getPlanFromStripePriceId)
+interface StripePriceMapping {
+  envVar: string;
+  planId: PlanId;
+  interval: BillingInterval;
+}
+
+const STRIPE_PRICES: StripePriceMapping[] = [
+  // Current plan — new checkouts use these
+  { envVar: "STRIPE_PRICE_POSTCLAW_MONTHLY", planId: "pro", interval: "monthly" },
+  { envVar: "STRIPE_PRICE_POSTCLAW_YEARLY", planId: "pro", interval: "yearly" },
+  // Legacy prices — webhook resolution only (all resolve to "pro")
+  { envVar: "STRIPE_PRICE_PRO_MONTHLY", planId: "pro", interval: "monthly" },
+  { envVar: "STRIPE_PRICE_PRO_YEARLY", planId: "pro", interval: "yearly" },
+  { envVar: "STRIPE_PRICE_STARTER_MONTHLY", planId: "pro", interval: "monthly" },
+  { envVar: "STRIPE_PRICE_STARTER_YEARLY", planId: "pro", interval: "yearly" },
+  { envVar: "STRIPE_PRICE_BUSINESS_MONTHLY", planId: "pro", interval: "monthly" },
+  { envVar: "STRIPE_PRICE_BUSINESS_YEARLY", planId: "pro", interval: "yearly" },
+];
 
 export function getStripePriceId(
   planId: PlanId,
   interval: BillingInterval
 ): string {
-  const key = `${planId}-${interval}`;
-  const mapping = STRIPE_PRICE_ENV_MAP[key];
-  if (!mapping) throw new Error(`No price mapping for ${key}`);
+  const mapping = STRIPE_PRICES.find(
+    (m) => m.planId === planId && m.interval === interval
+  );
+  if (!mapping) throw new Error(`No price mapping for ${planId}-${interval}`);
 
   const priceId = process.env[mapping.envVar];
   if (!priceId)
-    throw new Error(`Missing env var ${mapping.envVar} for ${key}`);
+    throw new Error(`Missing env var ${mapping.envVar}`);
 
   return priceId;
 }
@@ -108,11 +121,10 @@ export function getStripePriceId(
 export function getPlanFromStripePriceId(
   stripePriceId: string
 ): { planId: PlanId; interval: BillingInterval } | null {
-  for (const [key, mapping] of Object.entries(STRIPE_PRICE_ENV_MAP)) {
+  for (const mapping of STRIPE_PRICES) {
     const envValue = process.env[mapping.envVar];
     if (envValue === stripePriceId) {
-      const [planId, interval] = key.split("-") as [PlanId, BillingInterval];
-      return { planId, interval };
+      return { planId: mapping.planId, interval: mapping.interval };
     }
   }
   return null;

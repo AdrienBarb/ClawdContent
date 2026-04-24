@@ -3,7 +3,7 @@ import { openai } from "@/lib/openai/client";
 import { uploadBase64Image } from "@/lib/cloudinary/upload";
 import { deductCredit, refundCredit } from "@/lib/services/credits";
 import { errorMessages } from "@/lib/constants/errorMessage";
-import type { PlanId } from "@/lib/constants/plans";
+
 
 interface GenerateImageParams {
   userId: string;
@@ -19,10 +19,6 @@ export async function generateImage({ userId, prompt, size }: GenerateImageParam
 
   if (!subscription || subscription.status !== "active") {
     throw new AccessError(errorMessages.SUBSCRIPTION_REQUIRED);
-  }
-
-  if ((subscription.planId as PlanId) === "starter") {
-    throw new AccessError(errorMessages.STARTER_NO_GENERATION);
   }
 
   // Deduct credit
