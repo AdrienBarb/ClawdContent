@@ -41,10 +41,7 @@ export async function POST(req: NextRequest) {
           select: {
             name: true,
             timezone: true,
-            onboardingRole: true,
-            onboardingNiche: true,
-            onboardingTopics: true,
-            onboardingGoal: true,
+            knowledgeBase: true,
             strategy: true,
           },
         }),
@@ -162,10 +159,7 @@ export async function POST(req: NextRequest) {
     const systemPrompt = buildSystemPrompt({
       name: user?.name ?? "User",
       timezone: user?.timezone ?? null,
-      onboardingRole: user?.onboardingRole ?? null,
-      onboardingNiche: user?.onboardingNiche ?? null,
-      onboardingTopics: user?.onboardingTopics ?? [],
-      onboardingGoal: user?.onboardingGoal ?? null,
+      knowledgeBase: user?.knowledgeBase ?? null,
       strategy: user?.strategy ?? null,
       planId: subscription?.planId ?? "pro",
       accounts: lateProfile.socialAccounts,

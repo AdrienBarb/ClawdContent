@@ -13,10 +13,12 @@ PostClaw is an AI social media manager for small business owners — photographe
 **How it works:**
 
 1. User signs up → LateProfile (Zernio) auto-created
-2. User connects social accounts (free, no subscription needed)
-3. User gets 1 free chat message to try the AI
-4. User subscribes via Stripe for unlimited access
-5. User chats with their AI social media manager to create and publish content
+2. Onboarding: user enters website URL (scraped via Firecrawl) or business description
+3. AI analyzes and builds knowledgeBase → user validates extracted data
+4. User connects social accounts (free, no subscription needed)
+5. User gets 1 free chat message to try the AI
+6. User subscribes via Stripe for unlimited access
+7. User chats with their AI social media manager to create and publish content
 
 **Key services:**
 
@@ -63,6 +65,7 @@ Dashboard (Next.js on Vercel)
 - **Tailwind CSS v4** + shadcn/ui
 - **PostHog** (analytics)
 - **Cloudinary** (media uploads)
+- **Firecrawl** (website scraping for onboarding)
 
 ---
 
@@ -85,7 +88,7 @@ User (1:1) ── Subscription
 | **SocialAccount** | Connected social platform: accountId, platform, username, status           |
 | **ChatMessage**   | Persisted chat messages (role, content, userId)                             |
 | **Media**         | Uploaded media: cloudinaryId, url, resourceType, format, bytes, dimensions |
-| **FlyMachine**    | LEGACY — kept in schema, no longer used                                    |
+| **CreditBalance** | User credit balance: planCredits, topUpCredits                             |
 | **Session**       | Auth session                                                               |
 | **Account**       | OAuth/password account info                                                |
 
@@ -108,6 +111,7 @@ src/
 │   │       ├── page.tsx           # Chat (default view)
 │   │       ├── accounts/          # Social accounts (connect/disconnect)
 │   │       │   └── callback/      # OAuth return handler
+│   │       ├── business/          # Edit business info (knowledgeBase)
 │   │       ├── billing/           # Subscription info
 │   │       └── subscribe/         # Stripe checkout card
 │   ├── api/
@@ -121,6 +125,8 @@ src/
 │   │   ├── accounts/disconnect/   # Disconnect account (POST)
 │   │   ├── accounts/remove/       # Remove account (POST)
 │   │   ├── analytics/             # Analytics endpoints
+│   │   ├── onboarding/analyze/     # Scrape website + AI analysis (POST)
+│   │   ├── onboarding/confirm/    # Save knowledgeBase (POST)
 │   │   ├── dashboard/status/      # Dashboard polling endpoint (GET)
 │   │   └── webhooks/stripe/       # Stripe webhooks
 │   └── checkout/success/          # Post-payment redirect
@@ -140,6 +146,7 @@ src/
 │   │   ├── provider.ts            # Anthropic provider config
 │   │   ├── system-prompt.ts       # Dynamic system prompt builder
 │   │   └── tools.ts              # 10 Zernio tools as AI SDK tools
+│   ├── firecrawl/                 # Firecrawl website scraping client
 │   ├── late/                      # Zernio API client + mutations (directory name is legacy)
 │   ├── services/                  # Business logic
 │   │   ├── profile.ts            # LateProfile creation/cleanup
@@ -310,6 +317,9 @@ BREVO_LIST_ID=
 
 # AI (Anthropic)
 ANTHROPIC_API_KEY=
+
+# Website Scraping (Firecrawl)
+FIRECRAWL_API_KEY=
 
 # Zernio (master key — not per-user)
 ZERNIO_API_KEY=

@@ -12,6 +12,7 @@ interface ConnectAccountButtonsProps {
   connectedPlatforms?: string[];
   disabled?: boolean;
   onDisabledClick?: () => void;
+  returnTo?: string;
 }
 
 export default function ConnectAccountButtons({
@@ -19,6 +20,7 @@ export default function ConnectAccountButtons({
   connectedPlatforms = [],
   disabled = false,
   onDisabledClick,
+  returnTo,
 }: ConnectAccountButtonsProps) {
   const { usePost } = useApi();
   const [connectingPlatform, setConnectingPlatform] = useState<string | null>(
@@ -49,7 +51,7 @@ export default function ConnectAccountButtons({
 
   const handleConnect = (platform: string) => {
     setConnectingPlatform(platform);
-    getConnectUrl({ platform });
+    getConnectUrl({ platform, returnTo });
   };
 
   return (

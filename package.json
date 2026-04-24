@@ -23,6 +23,7 @@
     "@anthropic-ai/sdk": "^0.89.0",
     "@getbrevo/brevo": "^5.0.3",
     "@hookform/resolvers": "^5.2.2",
+    "@mendable/firecrawl-js": "^4.19.0",
     "@phosphor-icons/react": "^2.1.10",
     "@prisma/adapter-pg": "^7.4.1",
     "@prisma/client": "^7.3.0",

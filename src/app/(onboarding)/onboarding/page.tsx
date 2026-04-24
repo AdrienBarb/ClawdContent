@@ -1,234 +1,374 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { appRouter } from "@/lib/constants/appRouter";
 import useApi from "@/lib/hooks/useApi";
+import ConnectAccountButtons from "@/components/dashboard/ConnectAccountButtons";
+import toast from "react-hot-toast";
 import {
   ArrowRightIcon,
-  CheckIcon,
-  RocketIcon,
-  LightbulbIcon,
-  BriefcaseIcon,
+  ArrowLeftIcon,
+  SpinnerGapIcon,
+  GlobeIcon,
   PencilSimpleIcon,
-  MegaphoneIcon,
-  UsersThreeIcon,
-  StarIcon,
-  ChatCircleDotsIcon,
-  EyeIcon,
+  CheckCircleIcon,
 } from "@phosphor-icons/react";
+import type { KnowledgeBase } from "@/lib/schemas/knowledgeBase";
 
-const roles = [
-  { id: "solopreneur", label: "Solopreneur / Indie Maker", description: "I'm building a product and growing my audience.", icon: RocketIcon },
-  { id: "startup_founder", label: "Startup Founder", description: "I'm raising awareness for my company.", icon: LightbulbIcon },
-  { id: "freelancer", label: "Freelancer / Consultant", description: "I want to attract clients through content.", icon: BriefcaseIcon },
-  { id: "content_creator", label: "Content Creator", description: "I'm building a personal brand.", icon: PencilSimpleIcon },
-  { id: "marketing_manager", label: "Marketing Manager", description: "I handle content for a company.", icon: MegaphoneIcon },
-];
+type Step = "input" | "validate" | "connect";
 
-const goals = [
-  { id: "get_clients", label: "Get clients / Generate leads", description: "I want my content to attract prospects and convert them.", icon: UsersThreeIcon },
-  { id: "personal_brand", label: "Build my personal brand", description: "I want to be recognized as an expert in my field.", icon: StarIcon },
-  { id: "product_awareness", label: "Grow awareness for my product", description: "I want more people to discover what I'm building.", icon: MegaphoneIcon },
-  { id: "community", label: "Build & engage a community", description: "I want to create conversations and connections.", icon: ChatCircleDotsIcon },
-  { id: "visibility", label: "Stay visible without spending hours", description: "I just want a consistent, low-effort presence.", icon: EyeIcon },
-];
+const inputSchema = z
+  .object({
+    websiteUrl: z.string().url("Please enter a valid URL (e.g. https://www.yourbusiness.com)").or(z.literal("")),
+    businessDescription: z.string().max(1000).optional(),
+  })
+  .refine((data) => data.websiteUrl || data.businessDescription, {
+    message: "Please provide a website URL or a business description",
+  });
+
+type InputFormData = z.infer<typeof inputSchema>;
+
+const validateSchema = z.object({
+  businessName: z.string().min(1, "Business name is required"),
+  description: z.string().min(1, "Description is required"),
+  services: z.string().optional(),
+});
+
+type ValidateFormData = z.infer<typeof validateSchema>;
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { usePost } = useApi();
-  const [selectedRole, setSelectedRole] = useState<string | null>(null);
-  const [niche, setNiche] = useState("");
-  const [selectedGoal, setSelectedGoal] = useState<string | null>(null);
+  const { usePost, useGet } = useApi();
 
-  const { mutate: saveOnboarding, isPending } = usePost(
-    appRouter.api.onboarding,
+  const [step, setStep] = useState<Step>("input");
+  const [knowledgeBase, setKnowledgeBase] = useState<KnowledgeBase | null>(null);
+
+  // Step 1 form
+  const inputForm = useForm<InputFormData>({
+    resolver: zodResolver(inputSchema),
+    defaultValues: { websiteUrl: "", businessDescription: "" },
+  });
+
+  // Step 2 form
+  const validateForm = useForm<ValidateFormData>({
+    resolver: zodResolver(validateSchema),
+  });
+
+  const { mutate: analyze, isPending: isAnalyzing } = usePost(
+    appRouter.api.onboardingAnalyze,
     {
-      onSuccess: () => {
-        router.push(appRouter.dashboard);
+      onSuccess: (data: { knowledgeBase: KnowledgeBase }) => {
+        setKnowledgeBase(data.knowledgeBase);
+        validateForm.reset({
+          businessName: data.knowledgeBase.businessName,
+          description: data.knowledgeBase.description,
+          services: data.knowledgeBase.services.join(", "),
+        });
+        setStep("validate");
+      },
+      onError: (error: Error) => {
+        toast.error(error.message || "Something went wrong. Please try again.");
       },
     }
   );
 
-  const handleFinish = () => {
-    saveOnboarding({
-      role: selectedRole ?? undefined,
-      niche: niche || undefined,
-      goal: selectedGoal ?? undefined,
+  const { mutate: confirm, isPending: isConfirming } = usePost(
+    appRouter.api.onboardingConfirm,
+    {
+      onSuccess: () => {
+        setStep("connect");
+      },
+      onError: (error: Error) => {
+        toast.error(error.message || "Failed to save. Please try again.");
+      },
+    }
+  );
+
+  const { data: statusData, refetch: refetchStatus } = useGet(
+    appRouter.api.dashboardStatus
+  );
+
+  const connectedPlatforms =
+    (statusData as { accounts?: { platform: string; status: string }[] })
+      ?.accounts?.filter((a) => a.status === "active")
+      .map((a) => a.platform) ?? [];
+
+  const handleAnalyze = (data: InputFormData) => {
+    analyze({
+      websiteUrl: data.websiteUrl || undefined,
+      businessDescription: data.businessDescription || undefined,
     });
   };
 
-  const handleSkip = () => {
-    saveOnboarding({});
+  const onInputError = () => {
+    const errors = inputForm.formState.errors;
+    const firstError =
+      errors.websiteUrl?.message ||
+      errors.businessDescription?.message ||
+      errors.root?.message;
+    if (firstError) toast.error(firstError);
   };
+
+  const handleConfirm = (data: ValidateFormData) => {
+    const kb: KnowledgeBase = {
+      businessName: data.businessName,
+      description: data.description,
+      services: (data.services ?? "").split(",").map((s) => s.trim()).filter(Boolean),
+      source: knowledgeBase?.source ?? "manual",
+    };
+    confirm({
+      websiteUrl: inputForm.getValues("websiteUrl") || undefined,
+      businessDescription: inputForm.getValues("businessDescription") || undefined,
+      knowledgeBase: kb,
+    });
+  };
+
+  const onValidateError = () => {
+    const errors = validateForm.formState.errors;
+    const firstError = Object.values(errors).find((e) => e?.message)?.message;
+    if (firstError) toast.error(firstError);
+  };
+
+  const handleAccountConnected = useCallback(() => {
+    refetchStatus();
+  }, [refetchStatus]);
 
   return (
     <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center px-4">
-      {/* Skip */}
-      <div className="w-full max-w-lg mb-8">
-        <div className="flex items-center justify-end">
-          <button
-            onClick={handleSkip}
-            className="text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
-            disabled={isPending}
-          >
-            Skip — you can update this later
-          </button>
-        </div>
-      </div>
-
       <div className="w-full max-w-lg">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-            Better context, better posts
-          </h1>
-          <p className="text-gray-500 mt-2">
-            PostClaw helps you create and publish content across 13+
-            social media platforms. The more it knows about your work,
-            the more relevant every post will be.
-          </p>
+        {/* Step indicator */}
+        <div className="flex items-center justify-center gap-2 mb-8">
+          {(["input", "validate", "connect"] as Step[]).map((s, i) => (
+            <div key={s} className="flex items-center gap-2">
+              <div
+                className={`h-2 w-8 rounded-full transition-colors ${
+                  s === step
+                    ? "bg-primary"
+                    : (["input", "validate", "connect"].indexOf(s) <
+                        ["input", "validate", "connect"].indexOf(step))
+                      ? "bg-primary/40"
+                      : "bg-gray-200"
+                }`}
+              />
+              {i < 2 && <div className="w-1" />}
+            </div>
+          ))}
         </div>
 
-        <div className="space-y-8">
-          {/* Role */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              What best describes you?
-            </label>
-            <div className="space-y-2">
-              {roles.map((role) => {
-                const isSelected = selectedRole === role.id;
-                return (
-                  <button
-                    key={role.id}
-                    onClick={() => setSelectedRole(role.id)}
-                    className={`w-full flex items-center gap-4 rounded-xl border p-4 text-left transition-all cursor-pointer ${
-                      isSelected
-                        ? "border-primary bg-primary/5"
-                        : "border-gray-200 bg-white hover:border-gray-300"
-                    }`}
-                  >
-                    <span
-                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
-                        isSelected
-                          ? "bg-primary text-white"
-                          : "bg-gray-100 text-gray-500"
-                      }`}
-                    >
-                      <role.icon className="h-5 w-5" />
-                    </span>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-gray-900">
-                        {role.label}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {role.description}
-                      </p>
-                    </div>
-                    <span
-                      className={`h-5 w-5 shrink-0 rounded-full border-2 flex items-center justify-center ${
-                        isSelected
-                          ? "border-primary bg-primary"
-                          : "border-gray-300"
-                      }`}
-                    >
-                      {isSelected && (
-                        <CheckIcon className="h-3 w-3 text-white" />
-                      )}
-                    </span>
-                  </button>
-                );
-              })}
+        {/* Step 1: Business Input */}
+        {step === "input" && (
+          <form onSubmit={inputForm.handleSubmit(handleAnalyze, onInputError)}>
+            <div className="text-center mb-8">
+              <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
+                Tell us about your business
+              </h1>
+              <p className="text-gray-500 mt-2">
+                Share your website or describe what you do. We&apos;ll use this
+                to create posts that sound like you.
+              </p>
             </div>
-          </div>
 
-          {/* Niche */}
+            <div className="space-y-6">
+              <div>
+                <label
+                  htmlFor="websiteUrl"
+                  className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2"
+                >
+                  <GlobeIcon className="h-4 w-4" />
+                  Your website
+                </label>
+                <Input
+                  id="websiteUrl"
+                  type="url"
+                  placeholder="https://www.yourbusiness.com"
+                  className="rounded-xl bg-white"
+                  {...inputForm.register("websiteUrl")}
+                />
+              </div>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-200" />
+                </div>
+                <div className="relative flex justify-center text-xs">
+                  <span className="bg-background px-2 text-gray-400">
+                    or describe your business
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="businessDescription"
+                  className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2"
+                >
+                  <PencilSimpleIcon className="h-4 w-4" />
+                  Business description
+                </label>
+                <textarea
+                  id="businessDescription"
+                  placeholder="e.g. I'm a wedding photographer based in Leeds. I shoot natural, candid moments and work mostly with couples in Yorkshire."
+                  className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                  rows={4}
+                  maxLength={1000}
+                  {...inputForm.register("businessDescription")}
+                />
+                <p className="text-xs text-gray-400 mt-1 text-right">
+                  {(inputForm.watch("businessDescription") ?? "").length}/1000
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-8 flex justify-end">
+              <Button
+                type="submit"
+                className="bg-primary hover:bg-[#E84A36] text-white"
+                disabled={isAnalyzing}
+              >
+                {isAnalyzing ? (
+                  <>
+                    <SpinnerGapIcon className="h-4 w-4 mr-1.5 animate-spin" />
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    Analyze my business
+                    <ArrowRightIcon className="h-4 w-4 ml-1.5" />
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+        )}
+
+        {/* Step 2: Validate */}
+        {step === "validate" && (
+          <form onSubmit={validateForm.handleSubmit(handleConfirm, onValidateError)}>
+            <div className="text-center mb-8">
+              <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
+                Here&apos;s what we understood
+              </h1>
+              <p className="text-gray-500 mt-2">
+                Check that everything looks right. You can edit any field.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <FormField label="Business name" placeholder="e.g. Casa Lasagna" multiline={false} {...validateForm.register("businessName")} />
+              <FormField label="Description" placeholder="e.g. Italian catering service specializing in homemade lasagna for events" multiline {...validateForm.register("description")} />
+              <FormField label="Services" placeholder="e.g. Event catering, Private dining, Cooking classes" hint="Separate with commas" multiline={false} {...validateForm.register("services")} />
+            </div>
+
+            <div className="mt-8 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setStep("input")}
+                className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
+              >
+                <ArrowLeftIcon className="h-4 w-4" />
+                Back
+              </button>
+              <Button
+                type="submit"
+                className="bg-primary hover:bg-[#E84A36] text-white"
+                disabled={isConfirming}
+              >
+                {isConfirming ? (
+                  <>
+                    <SpinnerGapIcon className="h-4 w-4 mr-1.5 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    Looks good
+                    <CheckCircleIcon className="h-4 w-4 ml-1.5" />
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+        )}
+
+        {/* Step 3: Connect Accounts */}
+        {step === "connect" && (
           <div>
-            <label
-              htmlFor="niche"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              Describe your business or niche
-            </label>
-            <textarea
-              id="niche"
-              value={niche}
-              onChange={(e) => setNiche(e.target.value)}
-              placeholder="e.g. I run a design agency for SaaS startups"
-              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary resize-none"
-              rows={3}
-              maxLength={200}
+            <div className="text-center mb-8">
+              <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
+                Connect your social accounts
+              </h1>
+              <p className="text-gray-500 mt-2">
+                Choose the platforms where you want to publish. You can add more
+                later.
+              </p>
+            </div>
+
+            <ConnectAccountButtons
+              onAccountConnected={handleAccountConnected}
+              connectedPlatforms={connectedPlatforms}
+              returnTo="/onboarding"
             />
-            <p className="text-xs text-gray-400 mt-1 text-right">
-              {niche.length}/200
-            </p>
-          </div>
 
-          {/* Goal */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              What&apos;s your #1 goal on social media?
-            </label>
-            <div className="space-y-2">
-              {goals.map((goal) => {
-                const isSelected = selectedGoal === goal.id;
-                return (
-                  <button
-                    key={goal.id}
-                    onClick={() => setSelectedGoal(goal.id)}
-                    className={`w-full flex items-center gap-4 rounded-xl border p-4 text-left transition-all cursor-pointer ${
-                      isSelected
-                        ? "border-primary bg-primary/5"
-                        : "border-gray-200 bg-white hover:border-gray-300"
-                    }`}
-                  >
-                    <span
-                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
-                        isSelected
-                          ? "bg-primary text-white"
-                          : "bg-gray-100 text-gray-500"
-                      }`}
-                    >
-                      <goal.icon className="h-5 w-5" />
-                    </span>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-gray-900">
-                        {goal.label}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {goal.description}
-                      </p>
-                    </div>
-                    <span
-                      className={`h-5 w-5 shrink-0 rounded-full border-2 flex items-center justify-center ${
-                        isSelected
-                          ? "border-primary bg-primary"
-                          : "border-gray-300"
-                      }`}
-                    >
-                      {isSelected && (
-                        <CheckIcon className="h-3 w-3 text-white" />
-                      )}
-                    </span>
-                  </button>
-                );
-              })}
+            {connectedPlatforms.length > 0 && (
+              <p className="text-sm text-green-600 mt-4 text-center">
+                {connectedPlatforms.length} account
+                {connectedPlatforms.length > 1 ? "s" : ""} connected
+              </p>
+            )}
+
+            <div className="mt-8 flex justify-end">
+              <Button
+                onClick={() => router.push(appRouter.dashboard)}
+                className="bg-primary hover:bg-[#E84A36] text-white"
+              >
+                Go to dashboard
+                <ArrowRightIcon className="h-4 w-4 ml-1.5" />
+              </Button>
             </div>
           </div>
-        </div>
-
-        <div className="mt-8 flex justify-end">
-          <Button
-            onClick={handleFinish}
-            className="bg-primary hover:bg-[#E84A36] text-white"
-            disabled={isPending}
-          >
-            {isPending ? "Setting up..." : "Finish setup"}
-            {!isPending && <ArrowRightIcon className="h-4 w-4 ml-1.5" />}
-          </Button>
-        </div>
+        )}
       </div>
     </div>
   );
 }
+
+import React from "react";
+
+const FormField = React.forwardRef<
+  HTMLInputElement | HTMLTextAreaElement,
+  {
+    label: string;
+    multiline?: boolean;
+    hint?: string;
+  } & React.InputHTMLAttributes<HTMLInputElement> &
+    React.TextareaHTMLAttributes<HTMLTextAreaElement>
+>(({ label, multiline = false, hint, ...props }, ref) => {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+        {label}
+      </label>
+      {multiline ? (
+        <textarea
+          ref={ref as React.Ref<HTMLTextAreaElement>}
+          className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+          rows={5}
+          {...(props as React.TextareaHTMLAttributes<HTMLTextAreaElement>)}
+        />
+      ) : (
+        <Input
+          ref={ref as React.Ref<HTMLInputElement>}
+          className="rounded-xl bg-white"
+          {...(props as React.InputHTMLAttributes<HTMLInputElement>)}
+        />
+      )}
+      {hint && <p className="text-xs text-gray-400 mt-1">{hint}</p>}
+    </div>
+  );
+});
+FormField.displayName = "FormField";

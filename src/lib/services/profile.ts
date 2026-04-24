@@ -38,38 +38,31 @@ export async function cleanupUserProfile(userId: string): Promise<void> {
   await prisma.lateProfile.deleteMany({ where: { userId } });
 }
 
-import { ROLE_LABELS, GOAL_LABELS } from "@/lib/constants/onboarding";
-
 export function formatUserContext(user: {
-  onboardingRole: string | null;
-  onboardingNiche: string | null;
-  onboardingTopics: string[];
-  onboardingGoal?: string | null;
-  strategy?: unknown;
+  knowledgeBase: unknown;
 }): string {
+  if (!user.knowledgeBase || typeof user.knowledgeBase !== "object") {
+    return "No business profile provided yet.";
+  }
+
+  const kb = user.knowledgeBase as Record<string, unknown>;
+
+  // Legacy users who were backfilled with { source: "legacy" } only
+  if (kb.source === "legacy" && !kb.businessName) {
+    return "No business profile provided yet.";
+  }
+
   const parts: string[] = [];
 
-  if (user.onboardingRole) {
-    parts.push(`Role: ${ROLE_LABELS[user.onboardingRole] ?? user.onboardingRole}`);
-  }
-  if (user.onboardingNiche) {
-    parts.push(`Niche: ${user.onboardingNiche}`);
-  }
-  // Show goal only if strategy doesn't have its own goal (avoid duplicate)
-  const strategyGoal = user.strategy && typeof user.strategy === "object"
-    ? (user.strategy as Record<string, unknown>).goal
-    : undefined;
-  if (user.onboardingGoal && !strategyGoal) {
-    parts.push(`Goal: ${GOAL_LABELS[user.onboardingGoal] ?? user.onboardingGoal}`);
-  }
-  // Show topics only as legacy fallback (when no strategy exists yet)
-  if (user.onboardingTopics.length > 0 && !user.strategy) {
-    parts.push(`Topics: ${user.onboardingTopics.join(", ")}`);
+  if (typeof kb.businessName === "string") parts.push(`Business: ${kb.businessName}`);
+  if (typeof kb.description === "string") parts.push(`Description: ${kb.description}`);
+  if (Array.isArray(kb.services) && kb.services.length > 0) {
+    parts.push(`Services: ${kb.services.join(", ")}`);
   }
 
   return parts.length > 0
     ? parts.join("\n")
-    : "No profile information provided yet.";
+    : "No business profile provided yet.";
 }
 
 export async function buildAccountsContext(userId: string): Promise<string> {

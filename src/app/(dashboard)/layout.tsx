@@ -22,10 +22,10 @@ export default async function DashboardLayout({
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { onboardingCompleted: true },
+    select: { knowledgeBase: true },
   });
 
-  if (!user?.onboardingCompleted) {
+  if (user?.knowledgeBase === null) {
     redirect("/onboarding");
   }
 

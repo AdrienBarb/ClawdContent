@@ -3,8 +3,8 @@ import { errorHandler } from "@/lib/errors/errorHandler";
 import { auth } from "@/lib/better-auth/auth";
 import { NextResponse, NextRequest } from "next/server";
 import { headers } from "next/headers";
-import { onboardingSchema } from "@/lib/schemas/onboarding";
-import { completeOnboarding } from "@/lib/services/onboarding";
+import { prisma } from "@/lib/db/prisma";
+import { confirmInputSchema } from "@/lib/schemas/knowledgeBase";
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,11 +19,18 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const data = onboardingSchema.parse(body);
+    const data = confirmInputSchema.parse(body);
 
-    await completeOnboarding(session.user.id, data);
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: {
+        websiteUrl: data.websiteUrl ?? null,
+        businessDescription: data.businessDescription ?? null,
+        knowledgeBase: data.knowledgeBase,
+      },
+    });
 
-    return NextResponse.json({ success: true }, { status: 200 });
+    return NextResponse.json({ success: true });
   } catch (error) {
     return errorHandler(error);
   }

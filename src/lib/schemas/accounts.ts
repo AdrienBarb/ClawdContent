@@ -16,6 +16,7 @@ export const connectAccountSchema = z.object({
     "snapchat",
     "googlebusiness",
   ]),
+  returnTo: z.string().optional(),
 });
 
 export const disconnectAccountSchema = z.object({

@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { platform } = connectAccountSchema.parse(body);
+    const { platform, returnTo } = connectAccountSchema.parse(body);
 
     // Check account limit for user's plan
     const [subscription, lateProfile] = await Promise.all([
@@ -54,7 +54,9 @@ export async function POST(req: NextRequest) {
 
     const baseUrl =
       process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    const redirectUrl = `${baseUrl}${appRouter.accountsCallback}`;
+    const callbackUrl = new URL(`${baseUrl}${appRouter.accountsCallback}`);
+    if (returnTo) callbackUrl.searchParams.set("returnTo", returnTo);
+    const redirectUrl = callbackUrl.toString();
 
     const url = await getConnectUrl(session.user.id, platform, redirectUrl);
 

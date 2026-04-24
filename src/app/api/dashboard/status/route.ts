@@ -33,11 +33,8 @@ export async function GET() {
           where: { id: userId },
           select: {
             timezone: true,
-            chatSuggestions: true,
-            onboardingRole: true,
-            onboardingNiche: true,
-            onboardingTopics: true,
-            onboardingGoal: true,
+            websiteUrl: true,
+            knowledgeBase: true,
             strategy: true,
           },
         }),
@@ -73,13 +70,9 @@ export async function GET() {
 
     return NextResponse.json({
       timezone: user?.timezone ?? null,
-      chatSuggestions: user?.chatSuggestions ?? [],
-      userContext: {
-        role: user?.onboardingRole ?? null,
-        niche: user?.onboardingNiche ?? null,
-        topics: user?.onboardingTopics ?? [],
-        goal: user?.onboardingGoal ?? null,
-      },
+      websiteUrl: user?.websiteUrl ?? null,
+      knowledgeBase: user?.knowledgeBase ?? null,
+      hasKnowledgeBase: !!user?.knowledgeBase,
       hasStrategy: !!user?.strategy,
       subscription: subscription
         ? {

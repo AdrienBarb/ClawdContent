@@ -1,16 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { appRouter } from "@/lib/constants/appRouter";
 import useApi from "@/lib/hooks/useApi";
 
 export default function AccountsCallbackPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { usePost } = useApi();
   const [status, setStatus] = useState<"syncing" | "done" | "error">(
     "syncing"
   );
+
+  const returnTo = searchParams.get("returnTo");
 
   const { mutate: syncAccounts } = usePost(appRouter.api.accountsCallback, {
     onSuccess: () => {
@@ -19,7 +22,7 @@ export default function AccountsCallbackPage() {
       if (window.opener) {
         window.close();
       } else {
-        router.push(appRouter.accounts);
+        router.push(returnTo || appRouter.accounts);
       }
     },
     onError: () => {
@@ -49,10 +52,10 @@ export default function AccountsCallbackPage() {
             Something went wrong syncing your account.
           </p>
           <button
-            onClick={() => router.push(appRouter.accounts)}
+            onClick={() => router.push(returnTo || appRouter.accounts)}
             className="text-sm text-primary underline"
           >
-            Go back to accounts
+            Go back
           </button>
         </div>
       )}

@@ -46,7 +46,7 @@ const navItems = [
   { href: appRouter.analytics, label: "Analytics", icon: ChartLineUpIcon },
   { href: appRouter.posts, label: "Posts", icon: FileTextIcon },
   { href: appRouter.media, label: "Media", icon: ImageIcon },
-  { href: appRouter.context, label: "Knowledge", icon: UserCircleIcon },
+  { href: appRouter.business, label: "My Business", icon: UserCircleIcon },
 ];
 
 const userMenuItems = [

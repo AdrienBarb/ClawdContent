@@ -27,10 +27,7 @@ function getUtcOffsetString(timezone: string): string {
 interface UserData {
   name: string;
   timezone: string | null;
-  onboardingRole: string | null;
-  onboardingNiche: string | null;
-  onboardingTopics: string[];
-  onboardingGoal: string | null;
+  knowledgeBase: unknown;
   strategy: unknown;
   planId: string;
   accounts: { platform: string; username: string }[];
