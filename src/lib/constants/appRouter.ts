@@ -41,6 +41,8 @@ export const appRouter = {
     postsUnpublish: "/api/posts/unpublish",
     postsUpdate: "/api/posts/update",
     accountsCallback: "/api/accounts/callback",
+    accountsAnalyze: "/api/accounts/analyze",
+    suggestions: "/api/suggestions",
     billingPortal: "/api/billing/portal",
     billingChangePlan: "/api/billing/change-plan",
     media: "/api/media",

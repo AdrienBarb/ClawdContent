@@ -116,11 +116,32 @@ model SocialAccount {
   lateAccountId String      @unique
   platform      String
   username      String
-  status        String      @default("active") // active, disconnected
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  status         String      @default("active") // active, disconnected
+  analysisStatus String      @default("pending") // pending, analyzing, completed
+  insights       Json?
+  bestTimes      Json?
+  lastAnalyzedAt DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  suggestions    PostSuggestion[]
 
   @@map("social_account")
+}
+
+model PostSuggestion {
+  id              String        @id @default(cuid())
+  socialAccountId String
+  socialAccount   SocialAccount @relation(fields: [socialAccountId], references: [id], onDelete: Cascade)
+  content         String
+  contentType     String        // text, image, carousel
+  suggestedDay    Int           // 0=Monday, 6=Sunday
+  suggestedHour   Int           // 0-23 local time
+  reasoning       String?
+  status          String        @default("pending") // pending, scheduled, dismissed
+  createdAt       DateTime      @default(now())
+
+  @@index([socialAccountId])
+  @@map("post_suggestion")
 }
 
 model Media {

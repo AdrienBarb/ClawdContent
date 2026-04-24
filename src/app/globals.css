@@ -28,14 +28,14 @@
 }
 
 :root {
-  --sidebar-bg: #151929;
-  --sidebar-bg-hover: #1c2035;
-  --sidebar-bg-active: #252a3a;
-  --sidebar-text: #7a7f94;
-  --sidebar-text-active: #ffffff;
+  --sidebar-bg: #ffffff;
+  --sidebar-bg-hover: #f5f5f7;
+  --sidebar-bg-active: #f0f0f2;
+  --sidebar-text: #6b7280;
+  --sidebar-text-active: #111827;
   --sidebar-accent: #e8614d;
-  --sidebar-border: #1e2233;
-  --sidebar-user-bg: #1a1d2e;
+  --sidebar-border: #e5e7eb;
+  --sidebar-user-bg: #fafafa;
 }
 
 /* Landing page theme — editorial lavender */

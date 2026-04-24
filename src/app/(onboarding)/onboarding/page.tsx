@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { appRouter } from "@/lib/constants/appRouter";
 import useApi from "@/lib/hooks/useApi";
-import ConnectAccountButtons from "@/components/dashboard/ConnectAccountButtons";
 import toast from "react-hot-toast";
 import {
   ArrowRightIcon,
@@ -21,7 +20,7 @@ import {
 } from "@phosphor-icons/react";
 import type { KnowledgeBase } from "@/lib/schemas/knowledgeBase";
 
-type Step = "input" | "validate" | "connect";
+type Step = "input" | "validate";
 
 const inputSchema = z
   .object({
@@ -44,7 +43,7 @@ type ValidateFormData = z.infer<typeof validateSchema>;
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { usePost, useGet } = useApi();
+  const { usePost } = useApi();
 
   const [step, setStep] = useState<Step>("input");
   const [knowledgeBase, setKnowledgeBase] = useState<KnowledgeBase | null>(null);
@@ -82,22 +81,13 @@ export default function OnboardingPage() {
     appRouter.api.onboardingConfirm,
     {
       onSuccess: () => {
-        setStep("connect");
+        router.push(appRouter.dashboard);
       },
       onError: (error: Error) => {
         toast.error(error.message || "Failed to save. Please try again.");
       },
     }
   );
-
-  const { data: statusData, refetch: refetchStatus } = useGet(
-    appRouter.api.dashboardStatus
-  );
-
-  const connectedPlatforms =
-    (statusData as { accounts?: { platform: string; status: string }[] })
-      ?.accounts?.filter((a) => a.status === "active")
-      .map((a) => a.platform) ?? [];
 
   const handleAnalyze = (data: InputFormData) => {
     analyze({
@@ -135,28 +125,24 @@ export default function OnboardingPage() {
     if (firstError) toast.error(firstError);
   };
 
-  const handleAccountConnected = useCallback(() => {
-    refetchStatus();
-  }, [refetchStatus]);
-
   return (
     <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center px-4">
       <div className="w-full max-w-lg">
         {/* Step indicator */}
         <div className="flex items-center justify-center gap-2 mb-8">
-          {(["input", "validate", "connect"] as Step[]).map((s, i) => (
+          {(["input", "validate"] as Step[]).map((s, i) => (
             <div key={s} className="flex items-center gap-2">
               <div
                 className={`h-2 w-8 rounded-full transition-colors ${
                   s === step
                     ? "bg-primary"
-                    : (["input", "validate", "connect"].indexOf(s) <
-                        ["input", "validate", "connect"].indexOf(step))
+                    : (["input", "validate"].indexOf(s) <
+                        ["input", "validate"].indexOf(step))
                       ? "bg-primary/40"
                       : "bg-gray-200"
                 }`}
               />
-              {i < 2 && <div className="w-1" />}
+              {i < 1 && <div className="w-1" />}
             </div>
           ))}
         </div>
@@ -295,43 +281,6 @@ export default function OnboardingPage() {
           </form>
         )}
 
-        {/* Step 3: Connect Accounts */}
-        {step === "connect" && (
-          <div>
-            <div className="text-center mb-8">
-              <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-                Connect your social accounts
-              </h1>
-              <p className="text-gray-500 mt-2">
-                Choose the platforms where you want to publish. You can add more
-                later.
-              </p>
-            </div>
-
-            <ConnectAccountButtons
-              onAccountConnected={handleAccountConnected}
-              connectedPlatforms={connectedPlatforms}
-              returnTo="/onboarding"
-            />
-
-            {connectedPlatforms.length > 0 && (
-              <p className="text-sm text-green-600 mt-4 text-center">
-                {connectedPlatforms.length} account
-                {connectedPlatforms.length > 1 ? "s" : ""} connected
-              </p>
-            )}
-
-            <div className="mt-8 flex justify-end">
-              <Button
-                onClick={() => router.push(appRouter.dashboard)}
-                className="bg-primary hover:bg-[#E84A36] text-white"
-              >
-                Go to dashboard
-                <ArrowRightIcon className="h-4 w-4 ml-1.5" />
-              </Button>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

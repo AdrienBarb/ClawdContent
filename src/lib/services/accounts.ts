@@ -35,14 +35,21 @@ export async function getConnectUrl(
   );
 }
 
-export async function syncAccountsFromLate(userId: string): Promise<void> {
+export interface SyncResult {
+  newAccounts: { id: string; platform: string }[];
+}
+
+export async function syncAccountsFromLate(userId: string): Promise<SyncResult> {
   const lateProfile = await prisma.lateProfile.findUnique({
     where: { userId },
+    include: { socialAccounts: { select: { lateAccountId: true } } },
   });
 
   if (!lateProfile) {
     throw new Error("Late profile not found");
   }
+
+  const existingLateIds = new Set(lateProfile.socialAccounts.map((a) => a.lateAccountId));
 
   // Use health endpoint for detailed token status (tokenValid + needsReconnect)
   const health = await getAccountsHealth(
@@ -57,9 +64,13 @@ export async function syncAccountsFromLate(userId: string): Promise<void> {
   }));
 
   // Upsert each account from Zernio with its real status
+  const newAccounts: { id: string; platform: string }[] = [];
+
   for (const account of accountStatuses) {
     const status = account.isActive ? "active" : "disconnected";
-    await prisma.socialAccount.upsert({
+    const isNew = !existingLateIds.has(account.id);
+
+    const result = await prisma.socialAccount.upsert({
       where: { lateAccountId: account.id },
       create: {
         lateProfileId: lateProfile.id,
@@ -74,6 +85,10 @@ export async function syncAccountsFromLate(userId: string): Promise<void> {
         status,
       },
     });
+
+    if (isNew && status === "active") {
+      newAccounts.push({ id: result.id, platform: result.platform });
+    }
   }
 
   // Mark accounts no longer in Zernio at all as disconnected
@@ -86,6 +101,8 @@ export async function syncAccountsFromLate(userId: string): Promise<void> {
     },
     data: { status: "disconnected" },
   });
+
+  return { newAccounts };
 }
 
 export async function disconnectAccount(

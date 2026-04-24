@@ -4,20 +4,20 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { appRouter } from "@/lib/constants/appRouter";
 import { useSession, signOut } from "@/lib/better-auth/auth-client";
+import { getPlatform } from "@/lib/constants/platforms";
+import useApi from "@/lib/hooks/useApi";
 import {
-  ShareNetworkIcon,
-  RobotIcon,
   CreditCardIcon,
   CoinsIcon,
   GearSixIcon,
   SignOutIcon,
   ListIcon,
-  UserCircleIcon,
-  GiftIcon,
   CaretUpDownIcon,
-  FileTextIcon,
-  ChartLineUpIcon,
-  ImageIcon,
+  SquaresFourIcon,
+  RobotIcon,
+  GiftIcon,
+  PlusIcon,
+  UserCircleIcon,
 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -36,18 +36,12 @@ import {
 } from "@/components/ui/sheet";
 import { useState } from "react";
 
-const navItems = [
-  { href: appRouter.dashboard, label: "Chat", icon: RobotIcon },
-  {
-    href: appRouter.accounts,
-    label: "Social Accounts",
-    icon: ShareNetworkIcon,
-  },
-  { href: appRouter.analytics, label: "Analytics", icon: ChartLineUpIcon },
-  { href: appRouter.posts, label: "Posts", icon: FileTextIcon },
-  { href: appRouter.media, label: "Media", icon: ImageIcon },
-  { href: appRouter.business, label: "My Business", icon: UserCircleIcon },
-];
+interface AccountInfo {
+  id: string;
+  platform: string;
+  username: string;
+  status: string;
+}
 
 const userMenuItems = [
   { href: appRouter.billing, label: "Billing", icon: CreditCardIcon },
@@ -72,118 +66,126 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const { data: session } = useSession();
+  const { useGet } = useApi();
+
+  const { data: status } = useGet("/api/dashboard/status", undefined, {
+    refetchInterval: 5000,
+  });
+
+  const accounts: AccountInfo[] = (status?.accounts ?? []).filter(
+    (a: AccountInfo) => a.status === "active"
+  );
 
   const handleSignOut = async () => {
     await signOut();
     router.push("/");
   };
 
+  const isDashboardActive = pathname === "/d" || pathname === "/d/";
+  const isChatActive = pathname.startsWith("/d/chat");
+  const isBusinessActive = pathname.startsWith(appRouter.business);
+
   return (
-    <div
-      className="flex h-full flex-col"
-      style={{ background: "var(--sidebar-bg)" }}
-    >
+    <div className="flex h-full flex-col">
       {/* Logo */}
-      <div
-        className="flex h-16 items-center px-5 border-b"
-        style={{ borderColor: "var(--sidebar-border)" }}
-      >
+      <div className="flex h-14 items-center px-5">
         <Link
           href={appRouter.dashboard}
-          className="text-lg font-bold tracking-tight text-white"
+          className="text-lg font-bold tracking-tight text-gray-900"
           onClick={onNavigate}
         >
           PostClaw
         </Link>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-1">
-        <p
-          className="px-3 mb-3 text-[11px] font-semibold uppercase tracking-wider"
-          style={{ color: "var(--sidebar-text)" }}
-        >
-          Menu
-        </p>
-        {navItems.map((item) => {
-          const isActive =
-            item.href === "/d"
-              ? pathname === "/d"
-              : pathname.startsWith(item.href);
-
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={onNavigate}
-              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150"
-              style={{
-                background: isActive ? "var(--sidebar-accent)" : "transparent",
-                color: isActive ? "#ffffff" : "var(--sidebar-text)",
-              }}
-              onMouseEnter={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.background = "var(--sidebar-bg-hover)";
-                  e.currentTarget.style.color = "var(--sidebar-text-active)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.background = "transparent";
-                  e.currentTarget.style.color = "var(--sidebar-text)";
-                }
-              }}
-            >
-              <item.icon className="h-[18px] w-[18px] shrink-0" />
-              {item.label}
-            </Link>
-          );
-        })}
+      {/* Main navigation */}
+      <nav className="px-3 pb-1 space-y-0.5">
+        <SidebarLink
+          href={appRouter.dashboard}
+          icon={SquaresFourIcon}
+          label="Dashboard"
+          isActive={isDashboardActive}
+          onNavigate={onNavigate}
+        />
+        <SidebarLink
+          href="/d/chat"
+          icon={RobotIcon}
+          label="Assistant"
+          isActive={isChatActive}
+          onNavigate={onNavigate}
+        />
+        <SidebarLink
+          href={appRouter.business}
+          icon={UserCircleIcon}
+          label="My Business"
+          isActive={isBusinessActive}
+          onNavigate={onNavigate}
+        />
       </nav>
 
-      {/* Affiliates */}
-      <div className="px-3 pb-3">
-        <Link
-          href={appRouter.affiliates}
-          onClick={onNavigate}
-          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150"
-          style={{
-            color: "var(--sidebar-text)",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "var(--sidebar-bg-hover)";
-            e.currentTarget.style.color = "var(--sidebar-text-active)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "transparent";
-            e.currentTarget.style.color = "var(--sidebar-text)";
-          }}
-        >
-          <GiftIcon className="h-[18px] w-[18px] shrink-0" />
-          Affiliates
-        </Link>
+      {/* Scrollable channels area */}
+      <div className="flex-1 overflow-y-auto px-3 pt-4">
+        {/* Connected channels */}
+        <p className="px-2 mb-1 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+          Channels
+        </p>
+        <div className="space-y-0.5">
+          {accounts.map((account) => {
+            const platform = getPlatform(account.platform);
+            const isChannelActive = pathname === `/d/channels/${account.id}`;
+            return (
+              <Link
+                key={account.id}
+                href={`/d/channels/${account.id}`}
+                onClick={onNavigate}
+                className={`flex items-center gap-2.5 rounded-lg px-2 py-2 text-sm transition-colors ${
+                  isChannelActive
+                    ? "bg-gray-100 text-gray-900"
+                    : "text-gray-700 hover:bg-gray-100"
+                }`}
+              >
+                <span
+                  className="flex h-6 w-6 items-center justify-center rounded-full text-white shrink-0"
+                  style={{ backgroundColor: platform?.color ?? "#666" }}
+                >
+                  {platform?.icon}
+                </span>
+                <span className="truncate text-sm font-medium text-gray-800">
+                  {account.username}
+                </span>
+              </Link>
+            );
+          })}
+          <Link
+            href={appRouter.accounts}
+            onClick={onNavigate}
+            className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-sm text-gray-500 hover:bg-gray-100 transition-colors"
+          >
+            <span className="flex h-6 w-6 items-center justify-center rounded-full border border-gray-300 shrink-0">
+              <PlusIcon className="h-3 w-3 text-gray-400" />
+            </span>
+            <span className="text-sm font-medium">More channels</span>
+          </Link>
+        </div>
       </div>
 
-      {/* User section with dropdown */}
-      <div
-        className="border-t"
-        style={{
-          borderColor: "var(--sidebar-border)",
-          background: "var(--sidebar-user-bg)",
-        }}
-      >
+      {/* Affiliates */}
+      <div className="px-3 pb-2">
+        <SidebarLink
+          href={appRouter.affiliates}
+          icon={GiftIcon}
+          label="Affiliates"
+          isActive={pathname.startsWith(appRouter.affiliates)}
+          onNavigate={onNavigate}
+        />
+      </div>
+
+      {/* User section */}
+      <div className="border-t border-gray-200/60">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button
-              className="flex w-full items-center gap-3 p-4 cursor-pointer transition-colors"
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "var(--sidebar-bg-hover)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "transparent";
-              }}
-            >
-              <Avatar className="h-9 w-9 shrink-0">
+            <button className="flex w-full items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-colors cursor-pointer">
+              <Avatar className="h-8 w-8 shrink-0">
                 <AvatarFallback
                   className="text-xs font-semibold text-white"
                   style={{ background: "var(--sidebar-accent)" }}
@@ -192,20 +194,14 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0 text-left">
-                <p className="text-sm font-medium truncate text-white">
+                <p className="text-sm font-medium truncate text-gray-900">
                   {session?.user?.name || "User"}
                 </p>
-                <p
-                  className="text-xs truncate"
-                  style={{ color: "var(--sidebar-text)" }}
-                >
+                <p className="text-xs truncate text-gray-500">
                   {session?.user?.email}
                 </p>
               </div>
-              <CaretUpDownIcon
-                className="h-4 w-4 shrink-0"
-                style={{ color: "var(--sidebar-text)" }}
-              />
+              <CaretUpDownIcon className="h-4 w-4 shrink-0 text-gray-400" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -234,6 +230,42 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
+function SidebarLink({
+  href,
+  icon: Icon,
+  label,
+  isActive,
+  badge,
+  onNavigate,
+}: {
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  isActive: boolean;
+  badge?: string;
+  onNavigate?: () => void;
+}) {
+  return (
+    <Link
+      href={href}
+      onClick={onNavigate}
+      className={`flex items-center gap-3 rounded-lg px-2 py-2 text-sm font-medium transition-colors ${
+        isActive
+          ? "bg-gray-100 text-gray-900"
+          : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+      }`}
+    >
+      <Icon className="h-[18px] w-[18px] shrink-0" />
+      <span className="flex-1">{label}</span>
+      {badge && (
+        <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
+          {badge}
+        </span>
+      )}
+    </Link>
+  );
+}
+
 export function MobileSidebarTrigger() {
   const [open, setOpen] = useState(false);
 
@@ -247,7 +279,6 @@ export function MobileSidebarTrigger() {
       <SheetContent
         side="left"
         className="w-64 p-0 border-0 [&>button]:hidden"
-        style={{ background: "var(--sidebar-bg)" }}
       >
         <SheetTitle className="sr-only">Navigation</SheetTitle>
         <SidebarNav onNavigate={() => setOpen(false)} />

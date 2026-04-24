@@ -5,6 +5,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { appRouter } from "@/lib/constants/appRouter";
 import useApi from "@/lib/hooks/useApi";
 
+interface NewAccount {
+  id: string;
+  platform: string;
+}
+
 export default function AccountsCallbackPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -16,13 +21,28 @@ export default function AccountsCallbackPage() {
   const returnTo = searchParams.get("returnTo");
 
   const { mutate: syncAccounts } = usePost(appRouter.api.accountsCallback, {
-    onSuccess: () => {
+    onSuccess: (data: { newAccounts?: NewAccount[] }) => {
       setStatus("done");
-      // If opened in a popup, close it
+
       if (window.opener) {
+        // Pass new account info to parent before closing
+        if (data.newAccounts?.length) {
+          try {
+            (window.opener as Window).postMessage(
+              { type: "account-connected", channelId: data.newAccounts[0].id },
+              window.location.origin
+            );
+          } catch {
+            // Ignore cross-origin errors
+          }
+        }
         window.close();
       } else {
-        router.push(returnTo || appRouter.accounts);
+        // Redirect to channel page if new account, otherwise returnTo
+        const redirectTo = data.newAccounts?.length
+          ? `/d?channel=${data.newAccounts[0].id}`
+          : returnTo || appRouter.accounts;
+        router.push(redirectTo);
       }
     },
     onError: () => {
@@ -38,7 +58,7 @@ export default function AccountsCallbackPage() {
     <div className="flex items-center justify-center py-20">
       {status === "syncing" && (
         <p className="text-muted-foreground">
-          Syncing your account... Please wait.
+          Connecting your account...
         </p>
       )}
       {status === "done" && (
@@ -49,7 +69,7 @@ export default function AccountsCallbackPage() {
       {status === "error" && (
         <div className="text-center space-y-2">
           <p className="text-destructive">
-            Something went wrong syncing your account.
+            Something went wrong. Please try again.
           </p>
           <button
             onClick={() => router.push(returnTo || appRouter.accounts)}

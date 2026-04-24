@@ -30,7 +30,7 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-[#f3f3f1]">
       <TimezoneSync />
       <Sidebar />
 
@@ -41,9 +41,9 @@ export default async function DashboardLayout({
           <span className="text-sm font-semibold">PostClaw</span>
         </div>
 
-        {/* Main content */}
-        <main className="flex-1 bg-background">
-          <div className="mx-auto max-w-5xl px-6 py-8">{children}</div>
+        {/* Main content — white panel floating over tinted background */}
+        <main className="flex-1 bg-white md:rounded-2xl md:border md:border-gray-200/80 md:m-2 md:ml-0">
+          <div className="px-8 py-6">{children}</div>
         </main>
       </div>
     </div>

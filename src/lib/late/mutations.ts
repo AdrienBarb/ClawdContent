@@ -124,13 +124,14 @@ export interface PaginatedPosts {
 export async function listPosts(
   profileId: string,
   apiKey: string,
-  options?: { status?: string; limit?: number; page?: number; sortBy?: string }
+  options?: { status?: string; limit?: number; page?: number; sortBy?: string; platform?: string }
 ): Promise<PaginatedPosts> {
   const params = new URLSearchParams({ profileId });
   if (options?.status) params.set("status", options.status);
   params.set("limit", String(options?.limit ?? 20));
   if (options?.page) params.set("page", String(options.page));
   if (options?.sortBy) params.set("sortBy", options.sortBy);
+  if (options?.platform) params.set("platform", options.platform);
 
   const data = await lateRequest<{
     posts: LatePostRaw[];

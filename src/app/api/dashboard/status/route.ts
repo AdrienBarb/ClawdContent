@@ -96,6 +96,8 @@ export async function GET() {
           platform: a.platform,
           username: a.username,
           status: a.status,
+          analysisStatus: a.analysisStatus,
+          lastAnalyzedAt: a.lastAnalyzedAt?.toISOString() ?? null,
         })) ?? [],
       credits,
       freeMessageUsed: userMessageCount >= 1,
