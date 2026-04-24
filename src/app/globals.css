@@ -135,6 +135,15 @@ details[open] .faq-chevron {
   animation-play-state: paused;
 }
 
+/* Testimonial marquee */
+.animate-testimonial-marquee {
+  animation: marquee 40s linear infinite;
+}
+
+.animate-testimonial-marquee:hover {
+  animation-play-state: paused;
+}
+
 /* Dashboard CTA animations */
 @keyframes fade-in-up {
   from {

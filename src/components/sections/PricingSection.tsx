@@ -26,21 +26,16 @@ export default function PricingSection() {
       <div className="container mx-auto px-6">
         <div className="mx-auto max-w-5xl">
           <p className="text-center text-sm font-medium text-primary mb-4">
-            A social media manager costs $2,000/mo. Yours starts at $17.
+            A social media manager costs $2,000/mo. Yours is $49.
           </p>
           <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 text-foreground">
             Simple, Transparent Pricing
           </h2>
           <p className="text-center text-secondary-foreground text-lg mb-10">
-            Choose the plan that fits your needs. Upgrade or downgrade
-            anytime.
+            One plan. Everything included. No surprises.
           </p>
 
           <PricingCards onSelectPlan={handleSelectPlan} />
-
-          <p className="text-center text-xs text-muted-foreground mt-8">
-            Cancel anytime. No contracts.
-          </p>
         </div>
       </div>
       <SignInModal

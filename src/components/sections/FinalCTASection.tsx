@@ -26,21 +26,23 @@ export default function FinalCTASection() {
         <div className="mx-auto max-w-4xl">
           <div className="rounded-[2rem] border border-[#1e293b] bg-gradient-to-br from-[#0f172a] to-[#1e293b] p-12 md:p-20 text-center">
               <h2 className="text-4xl md:text-5xl font-bold mb-5 text-white leading-tight">
-                Every day you&apos;re not posting, your competitors are.
+                Every day you&apos;re not posting,
+                <br />
+                your competitors are.
               </h2>
               <p className="text-[#8e93b0] text-lg mb-10 max-w-lg mx-auto">
-                Setup takes 2 minutes. Your AI social media manager starts
-                working for you immediately.
+                Setup takes 2 minutes. Your social media starts
+                running itself immediately.
               </p>
               <Button
                 size="lg"
                 onClick={handleGetStarted}
                 className="text-base px-10 h-14 bg-primary hover:bg-[#E84A36] text-white rounded-full"
               >
-                Start posting today
+                Get my free posts
               </Button>
               <p className="mt-5 text-sm text-[#6b7194]">
-                Plans from $17/mo. Cancel anytime. No contracts.
+                5 free posts. No credit card. $49/mo after.
               </p>
             </div>
         </div>

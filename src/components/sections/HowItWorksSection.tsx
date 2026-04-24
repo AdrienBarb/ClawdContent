@@ -6,14 +6,14 @@ const steps = [
     step: "1",
     title: "Connect your accounts",
     description:
-      "Link your Instagram, Facebook, or whichever platforms your customers use. Takes 2 minutes.",
+      "Link your Instagram, Facebook, or whichever platforms your customers use. Takes 2 minutes, no technical setup.",
   },
   {
     icon: Sparkles,
     step: "2",
     title: "It suggests, you approve",
     description:
-      "Your AI manager creates ready-to-publish posts based on your business. Review them, tweak if you want, or approve as-is.",
+      "Your social media manager creates ready-to-publish posts based on your business. Review them, tweak if you want, or approve as-is.",
   },
   {
     icon: CheckCircle,
@@ -32,12 +32,12 @@ export default function HowItWorksSection() {
           <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 text-foreground">
             How It Works
           </h2>
-          <p className="text-center text-secondary-foreground mb-16 text-lg">
+          <p className="text-center text-secondary-foreground mb-14 text-lg">
             From signup to your first post in under 5 minutes.
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {steps.map((item, index) => (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {steps.map((item) => (
               <div key={item.step} className="bg-card border border-border rounded-2xl p-8 h-full hover:border-primary/30 transition-colors shadow-sm">
                 <div className="flex items-center gap-3 mb-5">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">

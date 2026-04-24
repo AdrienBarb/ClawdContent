@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { CheckIcon, MinusIcon } from "@phosphor-icons/react";
+import { CheckIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import {
   PLANS,
   SHARED_FEATURES,
-  isFeatureIncluded,
+  DEFAULT_PLAN_ID,
   type PlanId,
   type BillingInterval,
   getDisplayPrice,
@@ -26,34 +26,15 @@ export default function PricingCards({
   variant = "landing",
 }: PricingCardsProps) {
   const [interval, setInterval] = useState<BillingInterval>("monthly");
-  const defaultSelected = currentPlanId || "pro";
-  const [selectedPlanId, setSelectedPlanId] =
-    useState<PlanId>(defaultSelected);
 
+  const plan = PLANS[0];
+  const price = getDisplayPrice(plan, interval);
+  const isLoading = loadingPlanId === plan.id;
+  const isCurrent = currentPlanId === plan.id;
   const isModal = variant === "modal";
-  const isExistingSubscriber = !!currentPlanId;
-  const selectedPlan = PLANS.find((p) => p.id === selectedPlanId)!;
-  const isLoading = loadingPlanId === selectedPlanId;
-  const isCurrent = currentPlanId === selectedPlanId;
-
-  const planOrder = PLANS.map((p) => p.id);
-  const currentIndex = currentPlanId
-    ? planOrder.indexOf(currentPlanId)
-    : -1;
-  const selectedIndex = planOrder.indexOf(selectedPlanId);
-  const isUpgrade = isExistingSubscriber && selectedIndex > currentIndex;
-  const isDowngrade = isExistingSubscriber && selectedIndex < currentIndex;
-
-  function getCtaLabel() {
-    if (isLoading) return "Loading...";
-    if (isCurrent) return "Current plan";
-    if (isUpgrade) return "Upgrade";
-    if (isDowngrade) return "Downgrade";
-    return selectedPlan.cta;
-  }
 
   return (
-    <div className="w-full">
+    <div className="w-full max-w-md mx-auto">
       {/* Monthly/Yearly toggle */}
       <div className="flex justify-center mb-10">
         <div className="inline-flex rounded-full p-1 bg-border border border-border">
@@ -81,135 +62,54 @@ export default function PricingCards({
         </div>
       </div>
 
-      {/* Two-column layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10">
-        {/* Left: Plan selector */}
-        <div className="space-y-3">
-          {PLANS.map((plan) => {
-            const price = getDisplayPrice(plan, interval);
-            const isSelected = selectedPlanId === plan.id;
-
-            return (
-              <button
-                key={plan.id}
-                onClick={() => setSelectedPlanId(plan.id)}
-                className={`w-full text-left rounded-2xl p-5 transition-all cursor-pointer ${
-                  isSelected
-                    ? "bg-white border-2 border-primary/60 shadow-md"
-                    : "bg-white border border-border hover:border-border shadow-sm"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    {/* Radio indicator */}
-                    <div
-                      className={`h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                        isSelected
-                          ? "border-primary bg-primary"
-                          : "border-[#c5c8de]"
-                      }`}
-                    >
-                      {isSelected && (
-                        <CheckIcon className="h-3 w-3 text-primary-foreground" strokeWidth={3} />
-                      )}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-foreground">
-                          {plan.name}
-                        </span>
-                        {plan.highlighted && (
-                          <span className="text-[10px] font-semibold bg-primary text-primary-foreground px-2 py-0.5 rounded-full">
-                            Popular
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-secondary-foreground mt-0.5">
-                        {plan.socialAccountLabel}
-                        {isExistingSubscriber && currentPlanId === plan.id && (
-                          <span className="text-primary ml-2">
-                            Current
-                          </span>
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-xl font-bold text-foreground">
-                      ${price % 1 === 0 ? price : price.toFixed(2)}
-                    </span>
-                    <span className="text-secondary-foreground text-sm">/mo</span>
-                    {interval === "yearly" && (
-                      <p className="text-[11px] text-emerald-600">Save 30%</p>
-                    )}
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-
-          {/* CTA button */}
-          <Button
-            className={`w-full bg-primary hover:bg-primary text-primary-foreground mt-2 rounded-full ${
-              isModal ? "h-10" : "h-12"
-            }`}
-            onClick={() => onSelectPlan(selectedPlanId, interval)}
-            disabled={isLoading || isCurrent}
-          >
-            {getCtaLabel()}
-          </Button>
-
-          <p className="text-center text-xs text-muted-foreground">
-            Cancel anytime. No contracts.
+      {/* Single plan card */}
+      <div className="rounded-2xl bg-white border-2 border-primary/30 p-8 shadow-sm">
+        {/* Price */}
+        <div className="text-center mb-8">
+          <div className="flex items-baseline justify-center gap-1">
+            <span className="text-5xl font-bold text-foreground">
+              ${price % 1 === 0 ? price : price.toFixed(2)}
+            </span>
+            <span className="text-secondary-foreground text-lg">/mo</span>
+          </div>
+          {interval === "yearly" && (
+            <p className="text-sm text-emerald-600 mt-1">
+              Save 30% — billed yearly
+            </p>
+          )}
+          <p className="text-sm text-secondary-foreground mt-2">
+            Everything you need. One simple plan.
           </p>
         </div>
 
-        {/* Right: Features */}
-        <div className="rounded-2xl bg-white border border-border p-6 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-secondary-foreground mb-5">
-            Includes
-          </p>
-
-          <div className="space-y-2 mb-5 pb-5 border-b border-border">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-foreground">
-                {selectedPlan.socialAccountLabel}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-foreground">
-                {selectedPlan.imageCreditsPerMonth > 0
-                  ? `${selectedPlan.imageCreditsPerMonth} AI image credits/month`
-                  : "No AI image credits"}
-              </span>
-            </div>
+        {/* Features */}
+        <div className="space-y-3 mb-8">
+          <div className="flex items-center gap-3">
+            <CheckIcon className="h-4 w-4 text-primary shrink-0" strokeWidth={2.5} />
+            <span className="text-sm text-foreground">{plan.socialAccountLabel}</span>
           </div>
-
-          <div className="space-y-4">
-            {SHARED_FEATURES.map((feature, i) => {
-              const included = isFeatureIncluded(feature, selectedPlanId);
-              return (
-                <div key={i} className="flex items-center justify-between">
-                  <span
-                    className={`text-sm ${
-                      included ? "text-foreground" : "text-border"
-                    }`}
-                  >
-                    {feature.label}
-                  </span>
-                  {included ? (
-                    <CheckIcon
-                      className="h-4 w-4 text-primary shrink-0"
-                      strokeWidth={2.5}
-                    />
-                  ) : (
-                    <MinusIcon className="h-4 w-4 text-border shrink-0" />
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          {SHARED_FEATURES.map((feature, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <CheckIcon className="h-4 w-4 text-primary shrink-0" strokeWidth={2.5} />
+              <span className="text-sm text-foreground">{feature.label}</span>
+            </div>
+          ))}
         </div>
+
+        {/* CTA */}
+        <Button
+          className={`w-full bg-primary hover:bg-[#E84A36] text-primary-foreground rounded-full ${
+            isModal ? "h-10" : "h-12"
+          }`}
+          onClick={() => onSelectPlan(DEFAULT_PLAN_ID, interval)}
+          disabled={isLoading || isCurrent}
+        >
+          {isLoading ? "Loading..." : isCurrent ? "Current plan" : plan.cta}
+        </Button>
+
+        <p className="text-center text-xs text-muted-foreground mt-4">
+          5 posts free, then $49/mo. Cancel anytime.
+        </p>
       </div>
     </div>
   );

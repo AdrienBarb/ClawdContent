@@ -20,51 +20,23 @@ const YEARLY_DISCOUNT = 0.7; // 30% off
 
 export const PLANS: Plan[] = [
   {
-    id: "starter",
-    name: "Starter",
-    monthlyPrice: 17,
-    yearlyTotalPrice: Math.round(17 * 12 * YEARLY_DISCOUNT * 100) / 100,
-    yearlyMonthlyEquivalent:
-      Math.round(((17 * 12 * YEARLY_DISCOUNT) / 12) * 100) / 100,
-    socialAccountLimit: 2,
-    socialAccountLabel: "2 social accounts",
-    imageCreditsPerMonth: 0,
-    hasTrial: false,
-    trialDays: 0,
-    highlighted: false,
-    cta: "Start posting today",
-  },
-  {
     id: "pro",
-    name: "Pro",
-    monthlyPrice: 37,
-    yearlyTotalPrice: Math.round(37 * 12 * YEARLY_DISCOUNT * 100) / 100,
+    name: "PostClaw",
+    monthlyPrice: 49,
+    yearlyTotalPrice: Math.round(49 * 12 * YEARLY_DISCOUNT * 100) / 100,
     yearlyMonthlyEquivalent:
-      Math.round(((37 * 12 * YEARLY_DISCOUNT) / 12) * 100) / 100,
-    socialAccountLimit: 6,
-    socialAccountLabel: "6 social accounts",
+      Math.round(((49 * 12 * YEARLY_DISCOUNT) / 12) * 100) / 100,
+    socialAccountLimit: 9,
+    socialAccountLabel: "All social accounts (up to 9)",
     imageCreditsPerMonth: 10,
     hasTrial: false,
     trialDays: 0,
     highlighted: true,
-    cta: "Start posting today",
-  },
-  {
-    id: "business",
-    name: "Business",
-    monthlyPrice: 79,
-    yearlyTotalPrice: Math.round(79 * 12 * YEARLY_DISCOUNT * 100) / 100,
-    yearlyMonthlyEquivalent:
-      Math.round(((79 * 12 * YEARLY_DISCOUNT) / 12) * 100) / 100,
-    socialAccountLimit: 9,
-    socialAccountLabel: "All 9 social accounts",
-    imageCreditsPerMonth: 20,
-    hasTrial: false,
-    trialDays: 0,
-    highlighted: false,
-    cta: "Start posting today",
+    cta: "Start for free",
   },
 ];
+
+export const DEFAULT_PLAN_ID: PlanId = "pro";
 
 export interface SharedFeature {
   label: string;
@@ -72,16 +44,13 @@ export interface SharedFeature {
 }
 
 export const SHARED_FEATURES: SharedFeature[] = [
-  { label: "Personal AI social media manager", includedIn: "all" },
   { label: "Unlimited posts", includedIn: "all" },
-  { label: "AI-adapted content per platform", includedIn: "all" },
-  { label: "AI content generation", includedIn: "all" },
+  { label: "AI content adapted per platform", includedIn: "all" },
   { label: "Scheduling & automation", includedIn: "all" },
   { label: "Brand voice memory", includedIn: "all" },
   { label: "Content calendar planning", includedIn: "all" },
   { label: "Performance analytics", includedIn: "all" },
-  { label: "Strategy advice", includedIn: "all" },
-  { label: "AI image generation", includedIn: ["pro", "business"] },
+  { label: "AI image generation (10/month)", includedIn: "all" },
 ];
 
 export function isFeatureIncluded(

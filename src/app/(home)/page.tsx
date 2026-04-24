@@ -1,10 +1,8 @@
 import HeroSection from "@/components/sections/HeroSection";
-import DemoSection from "@/components/sections/DemoSection";
 import PainSection from "@/components/sections/PainSection";
+import BeforeAfterSection from "@/components/sections/BeforeAfterSection";
 import WhoIsThisForSection from "@/components/sections/WhoIsThisForSection";
 import HowItWorksSection from "@/components/sections/HowItWorksSection";
-import CapabilitiesSection from "@/components/sections/CapabilitiesSection";
-import FeaturesSection from "@/components/sections/FeaturesSection";
 import PoweredBySection from "@/components/sections/PoweredBySection";
 import PricingSection from "@/components/sections/PricingSection";
 import FAQSection from "@/components/sections/FAQSection";
@@ -43,22 +41,8 @@ const softwareAppSchema = {
   offers: [
     {
       "@type": "Offer",
-      name: "Starter",
-      price: "17",
-      priceCurrency: "USD",
-      availability: "https://schema.org/InStock",
-    },
-    {
-      "@type": "Offer",
-      name: "Pro",
-      price: "37",
-      priceCurrency: "USD",
-      availability: "https://schema.org/InStock",
-    },
-    {
-      "@type": "Offer",
-      name: "Business",
-      price: "79",
+      name: "PostClaw",
+      price: "49",
       priceCurrency: "USD",
       availability: "https://schema.org/InStock",
     },
@@ -111,15 +95,13 @@ export default async function Home() {
         }}
       />
       <HeroSection variant={heroVariant} />
-      <DemoSection />
       <PainSection />
+      <BeforeAfterSection />
       <WhoIsThisForSection />
       <HowItWorksSection />
-      <CapabilitiesSection />
-      <FeaturesSection />
-      <PoweredBySection />
       <PricingSection />
       <FAQSection />
+      <PoweredBySection />
       <FinalCTASection />
     </div>
   );

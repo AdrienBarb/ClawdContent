@@ -36,19 +36,15 @@ export default function HeroSection({ variant = "control" }: HeroSectionProps) {
           <div className="flex flex-col items-center gap-2 mb-10">
               <div className="flex -space-x-2">
                 {[
-                  { src: "/images/reassurance/kaya.jpeg", name: "Kaya", linkedin: "https://www.linkedin.com/in/kayayurieff/" },
-                  { src: "/images/reassurance/jorje.jpeg", name: "Jorge", linkedin: "https://www.linkedin.com/in/jorge-zuloaga/" },
-                  { src: "/images/reassurance/Sheryl.jpeg", name: "Sheryl", linkedin: "https://www.linkedin.com/in/sheryl-sandberg-5126652/" },
-                  { src: "/images/reassurance/abhilaksh.jpeg", name: "Abhilaksh", linkedin: "https://www.linkedin.com/in/abhilaksh-sharma-39821696/" },
-                  { src: "/images/reassurance/sawyer.jpeg", name: "Sawyer", linkedin: "https://www.linkedin.com/in/sawyer-hemsley-6b9449111/" },
+                  { src: "/images/testimonial/427228793_1055563818850952_6871033665526776015_n.jpg", name: "Business owner 1" },
+                  { src: "/images/testimonial/18011795_447556958969799_4401819888981639168_a.jpg", name: "Business owner 2" },
+                  { src: "/images/testimonial/10735611_753231391381135_1551863489_a.jpg", name: "Business owner 3" },
+                  { src: "/images/testimonial/501219030_17846298321484295_4697703142460861154_n.jpg", name: "Business owner 4" },
+                  { src: "/images/testimonial/557561785_18546285193016965_4034130549721227625_n.jpg", name: "Business owner 5" },
                 ].map((person) => (
-                  <a
+                  <div
                     key={person.name}
-                    href={person.linkedin}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title={person.name}
-                    className="relative h-8 w-8 rounded-full overflow-hidden ring-2 ring-[#ededf5] hover:scale-110 hover:z-10 transition-transform"
+                    className="relative h-8 w-8 rounded-full overflow-hidden ring-2 ring-[#ededf5]"
                   >
                     <Image
                       src={person.src}
@@ -57,7 +53,7 @@ export default function HeroSection({ variant = "control" }: HeroSectionProps) {
                       height={32}
                       className="h-8 w-8 rounded-full object-cover"
                     />
-                  </a>
+                  </div>
                 ))}
               </div>
               <span className="text-sm text-muted-foreground">
@@ -70,14 +66,14 @@ export default function HeroSection({ variant = "control" }: HeroSectionProps) {
               className="font-serif text-6xl md:text-7xl lg:text-8xl leading-[1.05] tracking-[-0.02em] mb-6"
               style={{ fontWeight: 400 }}
             >
-              <span className="text-foreground">Your AI Social Media</span>
+              <span className="text-foreground">Your social media,</span>
               <br />
-              <span className="text-primary">Manager.</span>
+              <span className="text-primary">handled.</span>
             </h1>
 
           {/* Subhead — sans-serif */}
           <p className="text-lg md:text-xl leading-relaxed text-secondary-foreground max-w-2xl mb-10">
-            You run your business. It runs your Instagram, Facebook, and everything else.
+            You run your business. We run your social media.
           </p>
 
           {/* CTA */}
@@ -87,8 +83,11 @@ export default function HeroSection({ variant = "control" }: HeroSectionProps) {
               aria-label="Get started with PostClaw"
               className="text-base px-10 h-14 bg-primary hover:bg-[#E84A36] text-primary-foreground rounded-full shadow-[0_10px_40px_-10px_rgba(255,94,72,0.5)] hover:shadow-[0_14px_50px_-10px_rgba(255,94,72,0.6)] hover:-translate-y-0.5 transition-all"
             >
-              Start posting today
+              Get my 5 free posts
             </Button>
+          <p className="mt-3 text-sm text-muted-foreground">
+            No credit card required.
+          </p>
         </div>
 
         {/* Platform marquee — more breathing room */}

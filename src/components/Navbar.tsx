@@ -63,9 +63,6 @@ export default function Navbar() {
               <a href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 How It Works
               </a>
-              <a href="#powered-by" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Powered By
-              </a>
               <a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Pricing
               </a>
@@ -106,7 +103,7 @@ export default function Navbar() {
                   variant="outline"
                   className="hidden md:inline-flex px-5 py-2 text-sm font-medium cursor-pointer border-foreground/20 text-foreground hover:bg-foreground hover:text-primary-foreground rounded-full transition-all"
                 >
-                  Start posting today
+                  Get started free
                 </Button>
               )}
             </>
@@ -130,13 +127,6 @@ export default function Navbar() {
               How It Works
             </a>
             <a
-              href="#powered-by"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Powered By
-            </a>
-            <a
               href="#pricing"
               onClick={() => setIsMobileMenuOpen(false)}
               className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -158,7 +148,7 @@ export default function Navbar() {
                 }}
                 className="w-full text-sm font-medium cursor-pointer bg-primary hover:bg-[#E84A36] text-primary-foreground rounded-full"
               >
-                Start posting today
+                Get started free
               </Button>
             )}
           </div>
