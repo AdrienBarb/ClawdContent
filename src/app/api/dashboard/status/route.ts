@@ -36,6 +36,7 @@ export async function GET() {
             websiteUrl: true,
             knowledgeBase: true,
             strategy: true,
+            postsPublished: true,
           },
         }),
         prisma.subscription.findUnique({ where: { userId } }),
@@ -101,6 +102,8 @@ export async function GET() {
         })) ?? [],
       credits,
       freeMessageUsed: userMessageCount >= 1,
+      postsPublished: user?.postsPublished ?? 0,
+      freePostLimit: 5,
     });
   } catch (error) {
     return errorHandler(error);

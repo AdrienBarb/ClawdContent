@@ -1,9 +1,9 @@
 import { auth } from "@/lib/better-auth/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import PublishPage from "@/components/dashboard/PublishPage";
+import ChannelPage from "@/components/dashboard/ChannelPage";
 
-export default async function ChannelPage({
+export default async function ChannelRoute({
   params,
 }: {
   params: Promise<{ channelId: string }>;
@@ -13,5 +13,5 @@ export default async function ChannelPage({
 
   const { channelId } = await params;
 
-  return <PublishPage channelId={channelId} />;
+  return <ChannelPage channelId={channelId} />;
 }

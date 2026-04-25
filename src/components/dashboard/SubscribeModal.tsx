@@ -57,6 +57,7 @@ export default function SubscribeModal({
             onSelectPlan={handleSelectPlan}
             loadingPlanId={loadingPlanId}
             variant="modal"
+            ctaLabel="Subscribe now"
           />
         </div>
       </div>

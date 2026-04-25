@@ -38,6 +38,8 @@ export const PLANS: Plan[] = [
 
 export const DEFAULT_PLAN_ID: PlanId = "pro";
 
+export const FREE_POST_LIMIT = 5;
+
 export interface SharedFeature {
   label: string;
   includedIn: PlanId[] | "all";

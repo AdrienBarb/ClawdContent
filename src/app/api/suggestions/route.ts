@@ -40,7 +40,6 @@ export async function GET(req: NextRequest) {
     const suggestions = await prisma.postSuggestion.findMany({
       where: {
         socialAccountId: accountId ? accountId : { in: userAccountIds },
-        status: "pending",
       },
       orderBy: { createdAt: "desc" },
       include: {

@@ -12,6 +12,7 @@ import {
   getBestTimeToPost,
   listAccounts,
   getLogs,
+  toZernioMediaType,
 } from "@/lib/late/mutations";
 import { lateRequest } from "@/lib/late/client";
 import { getUserMedia } from "@/lib/services/media";
@@ -34,15 +35,7 @@ export function createZernioTools(
   for (const a of accounts) {
     accountsByPlatform.set(a.platform, a.lateAccountId);
   }
-  // Helper: convert MIME type to Zernio media type (image, video, gif, document)
-  function toZernioMediaType(mimeOrType: string): string {
-    if (["image", "video", "gif", "document"].includes(mimeOrType))
-      return mimeOrType;
-    if (mimeOrType.startsWith("video/")) return "video";
-    if (mimeOrType === "image/gif") return "gif";
-    if (mimeOrType.startsWith("image/")) return "image";
-    return "document";
-  }
+  // toZernioMediaType imported from @/lib/late/mutations
 
   // Helper: format an ISO date string in the user's local timezone for display
   function formatLocal(iso: string | null | undefined): string | null {

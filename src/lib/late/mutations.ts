@@ -72,11 +72,23 @@ export async function getConnectUrl(
 
 export interface LatePostPlatform {
   platform: string;
-  accountId?: string;
+  /** Zernio returns accountId as string OR populated object { _id, platform, ... } */
+  accountId?: string | { _id: string; [key: string]: unknown };
   profileId?: string;
   status?: string;
   scheduledFor?: string | null;
+  platformPostUrl?: string | null;
+  errorMessage?: string | null;
+  errorCategory?: string | null;
+  errorSource?: string | null;
   [key: string]: unknown;
+}
+
+/** Extract the raw account ID string from a polymorphic accountId field */
+export function resolveAccountId(accountId: LatePostPlatform["accountId"]): string | undefined {
+  if (!accountId) return undefined;
+  if (typeof accountId === "string") return accountId;
+  return accountId._id;
 }
 
 export interface LateMediaItem {
@@ -254,7 +266,7 @@ export async function unpublishPost(
 
 export async function updatePost(
   postId: string,
-  data: { content?: string; scheduledAt?: string },
+  data: { content?: string; scheduledAt?: string | null; mediaItems?: { url: string; type: string }[] },
   apiKey: string
 ): Promise<void> {
   // Fetch current post to preserve fields not being updated (PUT = full replace)
@@ -268,6 +280,12 @@ export async function updatePost(
   // Explicit scheduledAt overrides the current value (including clearing it with null)
   if (data.scheduledAt !== undefined) {
     body.scheduledFor = data.scheduledAt;
+  }
+
+  if (data.mediaItems !== undefined) {
+    body.mediaItems = data.mediaItems;
+  } else if (current.mediaItems.length > 0) {
+    body.mediaItems = current.mediaItems;
   }
 
   await lateRequest(`/posts/${postId}`, {
@@ -323,6 +341,66 @@ export async function createPost(
     createdAt: p.createdAt,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Validation
+// ---------------------------------------------------------------------------
+
+export function toZernioMediaType(mimeOrType: string): string {
+  if (["image", "video", "gif", "document"].includes(mimeOrType))
+    return mimeOrType;
+  if (mimeOrType.startsWith("video/")) return "video";
+  if (mimeOrType === "image/gif") return "gif";
+  if (mimeOrType.startsWith("image/")) return "image";
+  return "document";
+}
+
+export interface ValidationResult {
+  valid: boolean;
+  errors: { platform: string; error: string }[];
+  warnings: { platform: string; warning: string }[];
+}
+
+export async function validatePost(
+  content: string,
+  platform: string,
+  mediaItems: { url: string; type: string }[] | undefined,
+  apiKey: string
+): Promise<ValidationResult> {
+  const zernioMedia = mediaItems?.map((m) => ({
+    url: m.url,
+    type: toZernioMediaType(m.type),
+  }));
+
+  const result = await lateRequest<{
+    valid: boolean;
+    errors?: { platform: string; error: string }[];
+    warnings?: { platform: string; warning: string }[];
+  }>("/tools/validate/post", {
+    method: "POST",
+    apiKey,
+    body: {
+      content,
+      platforms: [
+        {
+          platform,
+          ...(zernioMedia?.length ? { customMedia: zernioMedia } : {}),
+        },
+      ],
+      ...(zernioMedia?.length ? { mediaItems: zernioMedia } : {}),
+    },
+  });
+
+  return {
+    valid: result.valid,
+    errors: result.errors ?? [],
+    warnings: result.warnings ?? [],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Media
+// ---------------------------------------------------------------------------
 
 export async function uploadMedia(
   url: string,

@@ -17,6 +17,7 @@ interface PricingCardsProps {
   loadingPlanId?: PlanId | null;
   currentPlanId?: PlanId | null;
   variant?: "landing" | "modal";
+  ctaLabel?: string;
 }
 
 export default function PricingCards({
@@ -24,6 +25,7 @@ export default function PricingCards({
   loadingPlanId,
   currentPlanId,
   variant = "landing",
+  ctaLabel,
 }: PricingCardsProps) {
   const [interval, setInterval] = useState<BillingInterval>("monthly");
 
@@ -104,7 +106,7 @@ export default function PricingCards({
           onClick={() => onSelectPlan(DEFAULT_PLAN_ID, interval)}
           disabled={isLoading || isCurrent}
         >
-          {isLoading ? "Loading..." : isCurrent ? "Current plan" : plan.cta}
+          {isLoading ? "Loading..." : isCurrent ? "Current plan" : ctaLabel ?? plan.cta}
         </Button>
 
         <p className="text-center text-xs text-muted-foreground mt-4">

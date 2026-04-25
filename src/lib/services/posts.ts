@@ -12,7 +12,7 @@ import {
 
 export async function getUserPosts(
   userId: string,
-  options?: { status?: string; limit?: number; page?: number; sortBy?: string }
+  options?: { status?: string; limit?: number; page?: number; sortBy?: string; platform?: string }
 ): Promise<PaginatedPosts> {
   const lateProfile = await prisma.lateProfile.findUnique({
     where: { userId },
@@ -93,7 +93,7 @@ export async function unpublishUserPost(
 export async function updateUserPost(
   userId: string,
   postId: string,
-  data: { content?: string; scheduledAt?: string }
+  data: { content?: string; scheduledAt?: string | null; mediaItems?: { url: string; type: string }[] }
 ): Promise<void> {
   const lateProfile = await prisma.lateProfile.findUnique({
     where: { userId },

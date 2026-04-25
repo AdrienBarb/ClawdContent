@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { appRouter } from "@/lib/constants/appRouter";
 import { useSession, signOut } from "@/lib/better-auth/auth-client";
 import { getPlatform } from "@/lib/constants/platforms";
-import useApi from "@/lib/hooks/useApi";
+import { useDashboardStatus } from "@/lib/hooks/useDashboardStatus";
 import {
   CreditCardIcon,
   CoinsIcon,
@@ -66,11 +66,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const { data: session } = useSession();
-  const { useGet } = useApi();
-
-  const { data: status } = useGet("/api/dashboard/status", undefined, {
-    refetchInterval: 5000,
-  });
+  const { data: status } = useDashboardStatus();
 
   const accounts: AccountInfo[] = (status?.accounts ?? []).filter(
     (a: AccountInfo) => a.status === "active"
@@ -103,15 +99,8 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
         <SidebarLink
           href={appRouter.dashboard}
           icon={SquaresFourIcon}
-          label="Dashboard"
+          label="Posts"
           isActive={isDashboardActive}
-          onNavigate={onNavigate}
-        />
-        <SidebarLink
-          href="/d/chat"
-          icon={RobotIcon}
-          label="Assistant"
-          isActive={isChatActive}
           onNavigate={onNavigate}
         />
         <SidebarLink
@@ -127,7 +116,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
       <div className="flex-1 overflow-y-auto px-3 pt-4">
         {/* Connected channels */}
         <p className="px-2 mb-1 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
-          Channels
+          My accounts
         </p>
         <div className="space-y-0.5">
           {accounts.map((account) => {
@@ -164,7 +153,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
             <span className="flex h-6 w-6 items-center justify-center rounded-full border border-gray-300 shrink-0">
               <PlusIcon className="h-3 w-3 text-gray-400" />
             </span>
-            <span className="text-sm font-medium">More channels</span>
+            <span className="text-sm font-medium">Add account</span>
           </Link>
         </div>
       </div>
@@ -276,10 +265,7 @@ export function MobileSidebarTrigger() {
           <ListIcon className="h-5 w-5" />
         </Button>
       </SheetTrigger>
-      <SheetContent
-        side="left"
-        className="w-64 p-0 border-0 [&>button]:hidden"
-      >
+      <SheetContent side="left" className="w-64 p-0 border-0 [&>button]:hidden">
         <SheetTitle className="sr-only">Navigation</SheetTitle>
         <SidebarNav onNavigate={() => setOpen(false)} />
       </SheetContent>

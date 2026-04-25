@@ -25,6 +25,7 @@ export async function GET(req: NextRequest) {
       limit: searchParams.get("limit") || undefined,
       page: searchParams.get("page") || undefined,
       sortBy: searchParams.get("sortBy") || undefined,
+      platform: searchParams.get("platform") || undefined,
     });
 
     const result = await getUserPosts(session.user.id, params);

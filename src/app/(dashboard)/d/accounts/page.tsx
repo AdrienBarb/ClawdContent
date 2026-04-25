@@ -4,6 +4,7 @@ import { useState } from "react";
 import { appRouter } from "@/lib/constants/appRouter";
 import { getPlatform } from "@/lib/constants/platforms";
 import useApi from "@/lib/hooks/useApi";
+import { useDashboardStatus } from "@/lib/hooks/useDashboardStatus";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ShareNetworkIcon, PlusIcon, XIcon, CircleNotchIcon, ArrowsClockwiseIcon, TrashIcon } from "@phosphor-icons/react";
 import ConnectAccountButtons from "@/components/dashboard/ConnectAccountButtons";
@@ -34,9 +35,7 @@ export default function AccountsPage() {
     data: status,
     isLoading,
     refetch,
-  } = useGet(appRouter.api.dashboardStatus, undefined, {
-    refetchInterval: 5000,
-  }) as {
+  } = useDashboardStatus() as {
     data: DashboardStatus | undefined;
     isLoading: boolean;
     refetch: () => void;

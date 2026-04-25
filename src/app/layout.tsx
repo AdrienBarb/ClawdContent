@@ -4,6 +4,7 @@ import { Toaster } from "react-hot-toast";
 import GlobalErrorHandler from "@/components/GlobalErrorHandler";
 import { QueryProviders } from "@/components/providers/QueryProviders";
 import { PostHogProvider } from "@/components/tracking/PostHogProvider";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 import Script from "next/script";
 import "./globals.css";
 import { genPageMetadata } from "@/lib/seo/genPageMetadata";
@@ -49,13 +50,15 @@ export default function RootLayout({
         />
       </head>
       <body className={`${inter.variable} ${instrumentSerif.variable} antialiased`}>
-        <QueryProviders>
-          <PostHogProvider>
-            <div className="flex min-h-screen flex-col">{children}</div>
-            <Toaster position="bottom-center" />
-            <GlobalErrorHandler />
-          </PostHogProvider>
-        </QueryProviders>
+        <NuqsAdapter>
+          <QueryProviders>
+            <PostHogProvider>
+              <div className="flex min-h-screen flex-col">{children}</div>
+              <Toaster position="bottom-center" />
+              <GlobalErrorHandler />
+            </PostHogProvider>
+          </QueryProviders>
+        </NuqsAdapter>
       </body>
     </html>
   );
