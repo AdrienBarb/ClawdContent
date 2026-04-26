@@ -22,7 +22,7 @@ PostClaw is your AI social media manager. It suggests post ideas based on your b
 
 1. Sign up and connect your social media accounts (free)
 2. Try your first post for free
-3. Choose a plan (from $17/month) for unlimited access
+3. Choose a plan ($49/month) for unlimited access
 4. Your AI social media manager suggests posts, you approve, and it publishes across all your platforms
 
 ## Target Audience
@@ -34,11 +34,9 @@ PostClaw is your AI social media manager. It suggests post ideas based on your b
 
 ## Pricing
 
-- Starter: $17/month — 2 social accounts
-- Pro: $37/month — 6 social accounts, 3-day free trial
-- Business: $79/month — all 9 social accounts, 3-day free trial, priority support
-- Annual billing available (30% off)
-- Unlimited posts on all plans
+- Single plan: $49/month — all 9 social accounts, unlimited posts
+- Annual billing available (30% off, ~$34/month equivalent)
+- 5 free posts before subscribing
 - 7-day money-back guarantee
 - Cancel anytime, no contracts
 
