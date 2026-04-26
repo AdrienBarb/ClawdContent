@@ -140,12 +140,15 @@ export async function computeInsights(
     JSON.stringify(insights, null, 2)
   );
 
+  // analysisStatus is intentionally not touched here — it's flipped to
+  // "completed" by the analyze-account Inngest function only after suggestions
+  // have also been generated, so the dashboard loader stays up until the user
+  // has something to see. Silent refreshes (refreshInsights) leave it as-is.
   await prisma.socialAccount.update({
     where: { id: socialAccountId },
     data: {
       insights: insights as unknown as Prisma.InputJsonValue,
       lastAnalyzedAt: new Date(),
-      analysisStatus: "completed",
     },
   });
 

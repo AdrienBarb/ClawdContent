@@ -1,6 +1,14 @@
 import { inngest } from "../client";
+import { prisma } from "@/lib/db/prisma";
 import { computeInsights } from "@/lib/services/accountInsights";
 import { generateSuggestions } from "@/lib/services/postSuggestions";
+
+async function markAnalysisCompleted(socialAccountId: string): Promise<void> {
+  await prisma.socialAccount.updateMany({
+    where: { id: socialAccountId },
+    data: { analysisStatus: "completed" },
+  });
+}
 
 export const analyzeAccount = inngest.createFunction(
   { id: "analyze-account", retries: 3, triggers: [{ event: "account/connected" }] },
@@ -18,6 +26,12 @@ export const analyzeAccount = inngest.createFunction(
 
     await step.run("generate-suggestions", async () => {
       return generateSuggestions(socialAccountId);
+    });
+
+    // Flip status only after suggestions exist, so the dashboard loader doesn't
+    // briefly show the empty state while suggestions are still being generated.
+    await step.run("mark-analysis-completed", async () => {
+      await markAnalysisCompleted(socialAccountId);
     });
 
     if (insights.meta.syncTriggered) {
@@ -47,6 +61,12 @@ export const refreshInsights = inngest.createFunction(
 
     await step.run("generate-suggestions", async () => {
       return generateSuggestions(socialAccountId);
+    });
+
+    // Idempotent: no-op for accounts already "completed", upgrades "pending"
+    // accounts (e.g. backfill-insights script) to "completed".
+    await step.run("mark-analysis-completed", async () => {
+      await markAnalysisCompleted(socialAccountId);
     });
 
     return { success: true, socialAccountId };
