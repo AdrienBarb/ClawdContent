@@ -6,6 +6,7 @@ import Sidebar, {
   MobileSidebarTrigger,
 } from "@/components/dashboard/Sidebar";
 import TimezoneSync from "@/components/dashboard/TimezoneSync";
+import LegacyKBBanner from "@/components/dashboard/LegacyKBBanner";
 
 export default async function DashboardLayout({
   children,
@@ -43,7 +44,10 @@ export default async function DashboardLayout({
 
         {/* Main content — white panel floating over tinted background */}
         <main className="flex-1 bg-white md:rounded-2xl md:border md:border-gray-200/80 md:m-2 md:ml-0">
-          <div className="px-8 py-6">{children}</div>
+          <div className="px-8 py-6">
+            <LegacyKBBanner />
+            {children}
+          </div>
         </main>
       </div>
     </div>

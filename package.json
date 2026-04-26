@@ -11,7 +11,8 @@
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
-    "email:dev": "email dev"
+    "email:dev": "email dev",
+    "backfill:insights": "tsx scripts/backfill-insights.ts"
   },
   "prisma": {
     "schema": "src/lib/db/schema.prisma",
