@@ -8,15 +8,7 @@ import {
   ensureUserProfile,
   cleanupUserProfile,
 } from "@/lib/services/profile";
-import {
-  getPlanFromStripePriceId,
-  type PlanId,
-} from "@/lib/constants/plans";
-import {
-  grantPlanCredits,
-  handleCancellation,
-  addTopUpCredits,
-} from "@/lib/services/credits";
+import { getPlanFromStripePriceId } from "@/lib/constants/plans";
 import {
   trackSubscriptionStarted,
   updateBrevoContact,
@@ -166,16 +158,6 @@ async function handleCheckoutCompleted(
     return;
   }
 
-  // Handle credit top-up (payment mode, no subscription)
-  if (session.metadata?.type === "credit_topup") {
-    const quantity = parseInt(session.metadata?.quantity || "0", 10);
-    if (quantity > 0) {
-      await addTopUpCredits(userId, quantity, session.id);
-      console.log(`Added ${quantity} top-up credits for user ${userId}`);
-    }
-    return;
-  }
-
   const planId = session.metadata?.planId || "pro";
 
   const subscriptionId =
@@ -224,10 +206,6 @@ async function handleCheckoutCompleted(
     },
   });
 
-  // Grant initial plan credits
-  await grantPlanCredits(userId, planId as PlanId);
-
-  // Provision user's bot container in background
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { name: true, email: true },
@@ -332,9 +310,6 @@ async function handleSubscriptionDeleted(
     data: { status: "canceled" },
   });
 
-  // Zero out plan credits (top-up credits persist)
-  await handleCancellation(existing.userId);
-
   // Brevo: mark contact as canceled
   const canceledUser = await prisma.user.findUnique({
     where: { id: existing.userId },
@@ -371,11 +346,10 @@ async function handleInvoiceSucceeded(
 
   const existing = await prisma.subscription.findUnique({
     where: { stripeSubscriptionId: subscriptionId },
+    select: { id: true },
   });
-
   if (!existing) return;
 
-  // Sync latest period dates from Stripe
   const sub = await stripe.subscriptions.retrieve(subscriptionId);
   const period = getSubscriptionPeriod(sub);
 
@@ -387,10 +361,6 @@ async function handleInvoiceSucceeded(
       currentPeriodEnd: period.end,
     },
   });
-
-  // Monthly credit reset
-  const planId = (existing.planId || "pro") as PlanId;
-  await grantPlanCredits(existing.userId, planId);
 }
 
 async function handleInvoiceFailed(invoice: Stripe.Invoice): Promise<void> {

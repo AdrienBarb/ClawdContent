@@ -5,12 +5,7 @@ import {
   type BillingInterval,
   getPlan,
   getStripePriceId,
-  getPlanImageCredits,
 } from "@/lib/constants/plans";
-import {
-  handlePlanUpgrade,
-  handlePlanDowngrade,
-} from "@/lib/services/credits";
 
 export async function createCheckoutSession(
   userId: string,
@@ -138,23 +133,11 @@ export async function changePlan(
     metadata: { userId, planId: newPlanId },
   });
 
-  const oldPlanId = subscription.planId as PlanId;
-
   // Update DB immediately (webhook will also update, idempotent)
   await prisma.subscription.update({
     where: { userId },
     data: { planId: newPlanId },
   });
-
-  // Adjust credits based on plan change direction
-  const oldCredits = getPlanImageCredits(oldPlanId);
-  const newCredits = getPlanImageCredits(newPlanId);
-  if (newCredits > oldCredits) {
-    await handlePlanUpgrade(userId, oldPlanId, newPlanId);
-  } else if (newCredits < oldCredits) {
-    await handlePlanDowngrade(userId, newPlanId);
-  }
-
 }
 
 export async function syncSubscriptionStatus(

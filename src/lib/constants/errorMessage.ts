@@ -16,7 +16,4 @@ export const errorMessages = {
   BOT_NOT_FOUND: "AI social media manager not found. Please subscribe first.",
   SUBSCRIPTION_REQUIRED: "An active subscription is required.",
   ZERNIO_API_ERROR: "Failed to communicate with social media service.",
-  TRANSCRIPTION_FAILED: "Failed to transcribe audio. Please try again.",
-  INSUFFICIENT_CREDITS: "Not enough credits. Purchase more to continue.",
-  GENERATION_FAILED: "Image generation failed. Please try again.",
 };

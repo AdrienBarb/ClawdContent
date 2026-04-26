@@ -177,7 +177,7 @@ src/
 │   ├── brevo/                     # Brevo API client (email automation)
 │   ├── resend/                    # Email client
 │   └── emails/                    # React Email templates
-├── middleware.ts                   # Auth guard for /d/* routes
+├── proxy.ts                        # Next 16 proxy convention (was middleware.ts) — distinct-id + UTM cookies. Auth is enforced in route handlers + (dashboard)/layout.tsx, not here
 └── data/                           # Static data
 ```
 
@@ -265,13 +265,26 @@ The system that powers account analysis and the "Get ideas" feature. Designed ar
 
 ### Architecture
 
+**Core principle: `generateSuggestions()` only runs on user-visible actions.** Never in silent background jobs. The user-facing suggestion IDs stay stable until the user themselves triggers a refresh.
+
 ```
-On connect/reconnect (Inngest):
-  account/connected     → analyzeAccount fn   → computeInsights() → generateSuggestions()
-  account/refresh-insights → refreshInsights fn → computeInsights() → generateSuggestions()
+First connect (Inngest):
+  account/connected → analyzeAccount fn:
+    compute-insights
+    if syncTriggered: sleep 60s → compute-insights-after-sync   (max 2 calls, no loop)
+    generate-suggestions    ← ONCE, on the best data we have
+    mark-analysis-completed
+
+Reconnect / backfill (Inngest):
+  account/refresh-insights → refreshInsights fn:
+    compute-insights        ← refresh insights only
+    mark-analysis-completed (idempotent: pending → completed)
+                            ← suggestions are NOT touched
 
 User clicks "Get ideas":
-  /api/suggestions/generate → generateSuggestions() ONLY (reads cached insights, no Zernio call)
+  /api/suggestions/generate:
+    if insights null or > 7 days old → computeInsights() inline (synchronous)
+    generateSuggestions()
 ```
 
 Three services, single source of truth per concern:
@@ -279,8 +292,8 @@ Three services, single source of truth per concern:
 | Service | Responsibility |
 |---|---|
 | `zernioContext.ts` | Fetch + format raw Zernio data per platform (analytics, best-times, posting frequency, follower stats). Handles 402/403 gracefully. |
-| `accountInsights.ts` | Compute v2 insights, save to `SocialAccount.insights`. Cross-platform voice borrowing for cold-start. |
-| `postSuggestions.ts` | Read cached insights + lazy-refresh if stale, prompt Claude for 5 suggestions, save. |
+| `accountInsights.ts` | Compute v2 insights, save to `SocialAccount.insights` (insights + lastAnalyzedAt only — does NOT touch `analysisStatus`). Cross-platform voice borrowing for cold-start. |
+| `postSuggestions.ts` | Read cached insights as-is, prompt Claude for 5 suggestions, save. Never triggers refreshes — freshness is the caller's responsibility. |
 
 ### Insights v2 schema (three zones, `src/lib/schemas/insights.ts`)
 
@@ -310,12 +323,13 @@ Plus `meta`: `version`, `dataQuality` (`rich`/`thin`/`cold_start`/`platform_no_h
 
 | Event | Trigger | Source param | Behaviour |
 |---|---|---|---|
-| First connect | OAuth callback fires `account/connected` | `external` | Full analyse → suggestions. If `dataStaleness.syncTriggered: true`, sleep 60s and retry once. |
-| Reconnect | `syncAccountsFromLate` detects `disconnected → active`, fires `account/refresh-insights` | `all` | Refresh insights with PostClaw-published posts included. |
-| "Get ideas" click | `/api/suggestions/generate` | — | Read cached insights, generate suggestions. If insights null or > 7 days old, fire background `account/refresh-insights` and use stale data now. |
+| First connect | OAuth callback fires `account/connected` | `external` | Compute insights. If `syncTriggered: true`, sleep 60s + recompute (max once — no loop). Then generate suggestions ONCE. Mark `analysisStatus: completed`. |
+| Reconnect | `syncAccountsFromLate` detects `disconnected → active`, fires `account/refresh-insights` | `all` | Silent refresh of insights only. Suggestions are NOT regenerated (the user's visible cards stay stable). |
+| "Get ideas" click | `/api/suggestions/generate` | — | If insights null or > 7 days old, run `computeInsights()` **inline** (synchronous, user waits). Then generate suggestions. `maxDuration: 120s`. |
 | Disconnect | `disconnectAccount` | — | Status → `disconnected`. Insights kept. No event. |
 | Remove | `removeAccount` | — | Row deleted (cascades to suggestions). No event. |
 | Re-add after Remove | `syncAccountsFromLate` sees `isNew: true`, fires `account/connected` | `external` | Fresh analysis. |
+| Backfill script | `scripts/backfill-insights.ts` fires `account/refresh-insights` | `all` | Refreshes insights + flips `pending → completed`. Does NOT generate suggestions — user must click "Get ideas" to see new ones. |
 
 ### Cross-platform voice borrowing
 
@@ -333,8 +347,12 @@ Pattern: define two schemas when caps matter — one Claude-safe (no constraints
 
 | Function ID | Trigger event | Steps |
 |---|---|---|
-| `analyze-account` | `account/connected` | compute-insights → generate-suggestions → (if syncTriggered) wait 60s → retry-after-sync |
-| `refresh-insights` | `account/refresh-insights` | compute-insights (`source: "all"`) → generate-suggestions |
+| `analyze-account` | `account/connected` | compute-insights → (if syncTriggered) sleep 60s + compute-insights-after-sync → generate-suggestions → mark-analysis-completed |
+| `refresh-insights` | `account/refresh-insights` | compute-insights (`source: "all"`) → mark-analysis-completed |
+
+`analysisStatus` flips from `analyzing` → `completed` only **after** suggestions exist (in `analyzeAccount`), so the dashboard loader stays up until the user has something to see. `refreshInsights` is idempotent on status (`completed` → `completed`, or `pending` → `completed` for backfilled accounts).
+
+`computeInsights` writes `insights` + `lastAnalyzedAt` only; it intentionally does NOT touch `analysisStatus` — that responsibility lives in the Inngest functions.
 
 Both services use `findUnique` (not `findUniqueOrThrow`) and exit cleanly with a warning if the SocialAccount no longer exists (avoids Inngest retry loops on stale events).
 

@@ -2,16 +2,10 @@
 export const appRouter = {
   // Public routes
   home: "/",
-  pricing: "/pricing",
   blog: "/blog",
   affiliates: "/affiliates",
   privacy: "/privacy",
   terms: "/terms",
-
-  // Auth routes
-  signin: "/signin",
-  signup: "/signup",
-  resetPassword: "/reset-password",
 
   // Dashboard routes (protected)
   dashboard: "/d",
@@ -23,7 +17,6 @@ export const appRouter = {
   media: "/d/media",
   settings: "/d/settings",
   billing: "/d/billing",
-  credits: "/d/credits",
   onboarding: "/onboarding",
 
   // API routes
@@ -50,15 +43,9 @@ export const appRouter = {
     media: "/api/media",
     mediaUpload: "/api/media/upload",
     mediaDelete: "/api/media/delete",
-    transcribe: "/api/transcribe",
     userTimezone: "/api/user/timezone",
     onboardingAnalyze: "/api/onboarding/analyze",
     onboardingConfirm: "/api/onboarding/confirm",
-    chat: "/api/chat",
-    chatHistory: "/api/chat/history",
-    credits: "/api/credits",
-    creditsCheckout: "/api/credits/checkout",
-    imageGenerate: "/api/image/generate",
     analytics: "/api/analytics",
     analyticsPosts: "/api/analytics/posts",
     analyticsBestTimes: "/api/analytics/best-times",

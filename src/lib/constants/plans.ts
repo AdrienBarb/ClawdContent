@@ -9,7 +9,6 @@ export interface Plan {
   yearlyMonthlyEquivalent: number;
   socialAccountLimit: number;
   socialAccountLabel: string;
-  imageCreditsPerMonth: number;
   hasTrial: boolean;
   trialDays: number;
   highlighted: boolean;
@@ -28,7 +27,6 @@ export const PLANS: Plan[] = [
       Math.round(((49 * 12 * YEARLY_DISCOUNT) / 12) * 100) / 100,
     socialAccountLimit: 9,
     socialAccountLabel: "All social accounts (up to 9)",
-    imageCreditsPerMonth: 10,
     hasTrial: false,
     trialDays: 0,
     highlighted: true,
@@ -52,7 +50,6 @@ export const SHARED_FEATURES: SharedFeature[] = [
   { label: "Brand voice memory", includedIn: "all" },
   { label: "Content calendar planning", includedIn: "all" },
   { label: "Performance analytics", includedIn: "all" },
-  { label: "AI image generation (10/month)", includedIn: "all" },
 ];
 
 export function isFeatureIncluded(
@@ -67,10 +64,6 @@ export function getPlan(planId: PlanId): Plan {
   const plan = PLANS.find((p) => p.id === planId);
   if (!plan) throw new Error(`Unknown plan: ${planId}`);
   return plan;
-}
-
-export function getPlanImageCredits(planId: PlanId): number {
-  return getPlan(planId).imageCreditsPerMonth;
 }
 
 export function getDisplayPrice(

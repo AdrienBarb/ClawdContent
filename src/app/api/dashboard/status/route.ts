@@ -6,7 +6,6 @@ import { headers } from "next/headers";
 import { after } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { getPlan, type PlanId } from "@/lib/constants/plans";
-import { getCreditBalance } from "@/lib/services/credits";
 import { syncAccountsFromLate } from "@/lib/services/accounts";
 
 // Throttle account sync: once per user per 60 seconds
@@ -27,28 +26,22 @@ export async function GET() {
 
     const userId = session.user.id;
 
-    const [user, subscription, lateProfile, credits, userMessageCount] =
-      await Promise.all([
-        prisma.user.findUnique({
-          where: { id: userId },
-          select: {
-            timezone: true,
-            websiteUrl: true,
-            knowledgeBase: true,
-            strategy: true,
-            postsPublished: true,
-          },
-        }),
-        prisma.subscription.findUnique({ where: { userId } }),
-        prisma.lateProfile.findUnique({
-          where: { userId },
-          include: { socialAccounts: true },
-        }),
-        getCreditBalance(userId),
-        prisma.chatMessage.count({
-          where: { userId, role: "user" },
-        }),
-      ]);
+    const [user, subscription, lateProfile] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          timezone: true,
+          websiteUrl: true,
+          knowledgeBase: true,
+          postsPublished: true,
+        },
+      }),
+      prisma.subscription.findUnique({ where: { userId } }),
+      prisma.lateProfile.findUnique({
+        where: { userId },
+        include: { socialAccounts: true },
+      }),
+    ]);
 
     const planId = (subscription?.planId as PlanId) || "pro";
     const plan = getPlan(planId);
@@ -74,7 +67,6 @@ export async function GET() {
       websiteUrl: user?.websiteUrl ?? null,
       knowledgeBase: user?.knowledgeBase ?? null,
       hasKnowledgeBase: !!user?.knowledgeBase,
-      hasStrategy: !!user?.strategy,
       subscription: subscription
         ? {
             status: subscription.status,
@@ -100,8 +92,6 @@ export async function GET() {
           analysisStatus: a.analysisStatus,
           lastAnalyzedAt: a.lastAnalyzedAt?.toISOString() ?? null,
         })) ?? [],
-      credits,
-      freeMessageUsed: userMessageCount >= 1,
       postsPublished: user?.postsPublished ?? 0,
       freePostLimit: 5,
     });

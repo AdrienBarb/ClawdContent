@@ -8,13 +8,11 @@ import { getPlatform } from "@/lib/constants/platforms";
 import { useDashboardStatus } from "@/lib/hooks/useDashboardStatus";
 import {
   CreditCardIcon,
-  CoinsIcon,
   GearSixIcon,
   SignOutIcon,
   ListIcon,
   CaretUpDownIcon,
   SquaresFourIcon,
-  RobotIcon,
   GiftIcon,
   PlusIcon,
   UserCircleIcon,
@@ -46,7 +44,6 @@ interface AccountInfo {
 const userMenuItems = [
   { href: appRouter.billing, label: "Billing", icon: CreditCardIcon },
   { href: appRouter.settings, label: "Settings", icon: GearSixIcon },
-  { href: appRouter.credits, label: "Credits", icon: CoinsIcon },
 ];
 
 function getInitials(name?: string | null, email?: string | null) {
@@ -78,7 +75,6 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   };
 
   const isDashboardActive = pathname === "/d" || pathname === "/d/";
-  const isChatActive = pathname.startsWith("/d/chat");
   const isBusinessActive = pathname.startsWith(appRouter.business);
 
   return (
