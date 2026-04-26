@@ -443,6 +443,19 @@ export interface AnalyticsPost {
   platform: string;
   platformPostUrl: string | null;
   isExternal: boolean;
+  mediaType?: string | null;
+  thumbnailUrl?: string | null;
+}
+
+export interface AnalyticsAccount {
+  _id: string;
+  platform: string;
+  username: string;
+  displayName?: string | null;
+  profilePicture?: string | null;
+  profileId?: string;
+  followersCount?: number;
+  followersLastUpdated?: string;
 }
 
 export interface AnalyticsResponse {
@@ -450,9 +463,16 @@ export interface AnalyticsResponse {
     totalPosts: number;
     publishedPosts: number;
     scheduledPosts: number;
+    lastSync?: string;
+    dataStaleness?: {
+      staleAccountCount: number;
+      syncTriggered: boolean;
+    };
   };
   posts: AnalyticsPost[];
   pagination: { page: number; limit: number; total: number; pages: number };
+  accounts?: AnalyticsAccount[];
+  hasAnalyticsAccess?: boolean;
 }
 
 // GET /v1/analytics/daily-metrics
@@ -671,4 +691,31 @@ export async function getBestTimeToPost(
 
   const qs = params.toString();
   return lateRequest(`/analytics/best-time${qs ? `?${qs}` : ""}`, { apiKey });
+}
+
+// GET /v1/analytics/posting-frequency
+export interface PostingFrequencyRow {
+  platform: string;
+  posts_per_week: number;
+  avg_engagement_rate: number;
+  avg_engagement: number;
+  weeks_count: number;
+}
+
+export interface PostingFrequencyResponse {
+  frequency: PostingFrequencyRow[];
+}
+
+export async function getPostingFrequency(
+  apiKey: string,
+  options?: { platform?: string; source?: string }
+): Promise<PostingFrequencyResponse> {
+  const params = new URLSearchParams();
+  if (options?.platform) params.set("platform", options.platform);
+  if (options?.source) params.set("source", options.source);
+
+  const qs = params.toString();
+  return lateRequest(`/analytics/posting-frequency${qs ? `?${qs}` : ""}`, {
+    apiKey,
+  });
 }

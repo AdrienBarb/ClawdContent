@@ -158,7 +158,7 @@ export default function ChannelPage({ channelId }: { channelId: string }) {
   return (
     <div>
       {/* Header */}
-      <div className="sticky top-0 z-20 bg-white border-b border-gray-200 pb-4 mb-8 -mx-8 px-8 pt-6 -mt-6">
+      <div className="sticky top-0 z-20 bg-white border-b border-gray-200 pb-4 mb-8 -mx-8 px-8 pt-6 -mt-6 md:rounded-t-2xl">
         <div className="flex items-center gap-3 mb-4">
           <span
             className="flex h-8 w-8 items-center justify-center rounded-full text-white shrink-0"

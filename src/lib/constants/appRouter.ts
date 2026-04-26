@@ -43,7 +43,6 @@ export const appRouter = {
     postsActions: "/api/posts/actions",
     postsCompose: "/api/posts/compose",
     accountsCallback: "/api/accounts/callback",
-    accountsAnalyze: "/api/accounts/analyze",
     suggestions: "/api/suggestions",
     suggestionsGenerate: "/api/suggestions/generate",
     billingPortal: "/api/billing/portal",

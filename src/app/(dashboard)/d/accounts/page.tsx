@@ -6,7 +6,7 @@ import { getPlatform } from "@/lib/constants/platforms";
 import useApi from "@/lib/hooks/useApi";
 import { useDashboardStatus } from "@/lib/hooks/useDashboardStatus";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ShareNetworkIcon, PlusIcon, XIcon, CircleNotchIcon, ArrowsClockwiseIcon, TrashIcon } from "@phosphor-icons/react";
+import { ShareNetworkIcon, PlusIcon, XIcon, CircleNotchIcon, ArrowsClockwiseIcon, TrashIcon, ShieldCheckIcon, LockKeyIcon, SignOutIcon } from "@phosphor-icons/react";
 import ConnectAccountButtons from "@/components/dashboard/ConnectAccountButtons";
 import SubscribeModal from "@/components/dashboard/SubscribeModal";
 import UpgradeModal from "@/components/dashboard/UpgradeModal";
@@ -117,6 +117,7 @@ export default function AccountsPage() {
   const plan = status?.plan;
   const accountLimit = plan?.socialAccountLimit ?? 2;
   const isAtLimit = activeCount >= accountLimit;
+  const isEmptyState = accounts.length === 0;
 
   if (isLoading) {
     return (
@@ -266,44 +267,75 @@ export default function AccountsPage() {
         <></>
       )}
 
-      <div id="connect-section" className="rounded-2xl bg-white p-5 shadow-sm border border-gray-100">
-        <div className="flex items-center gap-2 mb-4">
-          <PlusIcon className="h-4 w-4 text-gray-400" />
-          <h3 className="text-sm font-semibold text-gray-900">Connect a platform</h3>
+      {isEmptyState ? (
+        <div id="connect-section" className="rounded-2xl bg-white p-8 sm:p-10 shadow-sm border border-gray-100">
+          <div className="flex flex-col items-center text-center mb-8">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary mb-4">
+              <ShieldCheckIcon className="h-6 w-6" weight="duotone" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900">
+              Connect your first account
+            </h2>
+            <p className="text-sm text-gray-500 mt-1.5 max-w-sm">
+              You stay in control — nothing gets posted unless you ask for it.
+            </p>
+          </div>
+          <ConnectAccountButtons
+            onAccountConnected={refetch}
+            connectedPlatforms={connectedPlatforms}
+          />
+          <div className="mt-6 flex items-center justify-center gap-3 text-xs text-gray-400">
+            <span className="flex items-center gap-1.5">
+              <LockKeyIcon className="h-3.5 w-3.5" />
+              Secure connection
+            </span>
+            <span className="text-gray-200">·</span>
+            <span className="flex items-center gap-1.5">
+              <SignOutIcon className="h-3.5 w-3.5" />
+              Disconnect anytime
+            </span>
+          </div>
         </div>
-        <ConnectAccountButtons
-          onAccountConnected={refetch}
-          connectedPlatforms={connectedPlatforms}
-          disabled={isAtLimit}
-          onDisabledClick={
-            isAtLimit
-              ? () =>
-                  hasActiveSubscription
-                    ? setShowUpgradeModal(true)
-                    : setShowSubscribeModal(true)
-              : undefined
-          }
-        />
-        {isAtLimit && (
-          <p className="text-xs text-amber-500 mt-2">
-            {hasActiveSubscription ? (
-              <>
-                You&apos;ve reached your {plan?.name} plan limit.{" "}
-                <button onClick={() => setShowUpgradeModal(true)} className="text-primary font-medium hover:underline cursor-pointer">
-                  Upgrade for more accounts
-                </button>
-              </>
-            ) : (
-              <>
-                Connect more accounts by subscribing.{" "}
-                <button onClick={() => setShowSubscribeModal(true)} className="text-primary font-medium hover:underline cursor-pointer">
-                  Choose a plan
-                </button>
-              </>
-            )}
-          </p>
-        )}
-      </div>
+      ) : (
+        <div id="connect-section" className="rounded-2xl bg-white p-5 shadow-sm border border-gray-100">
+          <div className="flex items-center gap-2 mb-4">
+            <PlusIcon className="h-4 w-4 text-gray-400" />
+            <h3 className="text-sm font-semibold text-gray-900">Connect a platform</h3>
+          </div>
+          <ConnectAccountButtons
+            onAccountConnected={refetch}
+            connectedPlatforms={connectedPlatforms}
+            disabled={isAtLimit}
+            onDisabledClick={
+              isAtLimit
+                ? () =>
+                    hasActiveSubscription
+                      ? setShowUpgradeModal(true)
+                      : setShowSubscribeModal(true)
+                : undefined
+            }
+          />
+          {isAtLimit && (
+            <p className="text-xs text-amber-500 mt-2">
+              {hasActiveSubscription ? (
+                <>
+                  You&apos;ve reached your {plan?.name} plan limit.{" "}
+                  <button onClick={() => setShowUpgradeModal(true)} className="text-primary font-medium hover:underline cursor-pointer">
+                    Upgrade for more accounts
+                  </button>
+                </>
+              ) : (
+                <>
+                  Connect more accounts by subscribing.{" "}
+                  <button onClick={() => setShowSubscribeModal(true)} className="text-primary font-medium hover:underline cursor-pointer">
+                    Choose a plan
+                  </button>
+                </>
+              )}
+            </p>
+          )}
+        </div>
+      )}
 
       <SubscribeModal
         open={showSubscribeModal}

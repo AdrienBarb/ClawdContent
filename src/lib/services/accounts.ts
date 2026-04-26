@@ -4,6 +4,7 @@ import {
   deleteAccount as lateDeleteAccount,
   getAccountsHealth,
 } from "@/lib/late/mutations";
+import { inngest } from "@/inngest/client";
 
 export async function getConnectedAccounts(userId: string) {
   const lateProfile = await prisma.lateProfile.findUnique({
@@ -42,14 +43,19 @@ export interface SyncResult {
 export async function syncAccountsFromLate(userId: string): Promise<SyncResult> {
   const lateProfile = await prisma.lateProfile.findUnique({
     where: { userId },
-    include: { socialAccounts: { select: { lateAccountId: true } } },
+    include: {
+      socialAccounts: { select: { lateAccountId: true, status: true } },
+    },
   });
 
   if (!lateProfile) {
     throw new Error("Late profile not found");
   }
 
-  const existingLateIds = new Set(lateProfile.socialAccounts.map((a) => a.lateAccountId));
+  // Map lateAccountId → previous status, so we can detect "disconnected → active" transitions (reconnects).
+  const previousStatusByLateId = new Map(
+    lateProfile.socialAccounts.map((a) => [a.lateAccountId, a.status])
+  );
 
   // Use health endpoint for detailed token status (tokenValid + needsReconnect)
   const health = await getAccountsHealth(
@@ -65,10 +71,13 @@ export async function syncAccountsFromLate(userId: string): Promise<SyncResult> 
 
   // Upsert each account from Zernio with its real status
   const newAccounts: { id: string; platform: string }[] = [];
+  const reconnectedAccountIds: string[] = [];
 
   for (const account of accountStatuses) {
     const status = account.isActive ? "active" : "disconnected";
-    const isNew = !existingLateIds.has(account.id);
+    const previousStatus = previousStatusByLateId.get(account.id);
+    const isNew = previousStatus === undefined;
+    const isReconnect = previousStatus === "disconnected" && status === "active";
 
     const result = await prisma.socialAccount.upsert({
       where: { lateAccountId: account.id },
@@ -88,6 +97,8 @@ export async function syncAccountsFromLate(userId: string): Promise<SyncResult> 
 
     if (isNew && status === "active") {
       newAccounts.push({ id: result.id, platform: result.platform });
+    } else if (isReconnect) {
+      reconnectedAccountIds.push(result.id);
     }
   }
 
@@ -101,6 +112,25 @@ export async function syncAccountsFromLate(userId: string): Promise<SyncResult> 
     },
     data: { status: "disconnected" },
   });
+
+  // Fire refresh-insights events for reconnected accounts (data may have changed since disconnect).
+  // Uses source: "all" so we capture posts the user published via PostClaw between disconnect and reconnect.
+  for (const socialAccountId of reconnectedAccountIds) {
+    console.log(
+      `[accounts] 🔄 reconnect detected for socialAccount=${socialAccountId} → triggering refresh-insights`
+    );
+    await inngest
+      .send({
+        name: "account/refresh-insights",
+        data: { socialAccountId },
+      })
+      .catch((err) =>
+        console.warn(
+          `[accounts] ⚠️  failed to send refresh-insights for ${socialAccountId}:`,
+          err instanceof Error ? err.message : err
+        )
+      );
+  }
 
   return { newAccounts };
 }

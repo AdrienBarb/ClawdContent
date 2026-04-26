@@ -11,7 +11,6 @@ import ConnectAccountButtons from "./ConnectAccountButtons";
 import {
   SpinnerGapIcon,
   ArrowsClockwiseIcon,
-  SquaresFourIcon,
   CaretDownIcon,
   CheckIcon,
   PencilSimpleIcon,
@@ -29,6 +28,9 @@ import {
   XIcon,
   CaretLeftIcon,
   CaretRightIcon,
+  ShieldCheckIcon,
+  LockKeyIcon,
+  SignOutIcon,
 } from "@phosphor-icons/react";
 import {
   DropdownMenu,
@@ -158,19 +160,29 @@ export default function PublishPage() {
             className="flex h-14 w-14 items-center justify-center rounded-2xl mb-5"
             style={{ backgroundColor: "#fef2f0" }}
           >
-            <SquaresFourIcon className="h-7 w-7" style={{ color: "#e8614d" }} />
+            <ShieldCheckIcon className="h-7 w-7" style={{ color: "#e8614d" }} weight="duotone" />
           </div>
           <h2 className="text-lg font-semibold text-gray-900 mb-1.5">
-            No accounts connected yet
+            Connect your first account to get started
           </h2>
           <p className="text-sm text-gray-500 mb-8 text-center max-w-sm">
-            Connect your social accounts and I&apos;ll write your first posts
-            for you — ready to publish.
+            We&apos;ll draft posts for your business — you decide what goes live.
           </p>
           <ConnectAccountButtons
             onAccountConnected={() => refetchStatus()}
             connectedPlatforms={connectedPlatformIds}
           />
+          <div className="mt-6 flex items-center justify-center gap-3 text-xs text-gray-400">
+            <span className="flex items-center gap-1.5">
+              <LockKeyIcon className="h-3.5 w-3.5" />
+              Secure connection
+            </span>
+            <span className="text-gray-200">·</span>
+            <span className="flex items-center gap-1.5">
+              <SignOutIcon className="h-3.5 w-3.5" />
+              Disconnect anytime
+            </span>
+          </div>
         </div>
       </div>
     );
@@ -403,7 +415,7 @@ function Header({
 }) {
   const buttonsDisabled = generating || analyzing;
   return (
-    <div className="sticky top-0 z-20 bg-white border-b border-gray-200 pb-0 mb-8 -mx-8 px-8 pt-6 -mt-6">
+    <div className="sticky top-0 z-20 bg-white border-b border-gray-200 pb-0 mb-8 -mx-8 px-8 pt-6 -mt-6 md:rounded-t-2xl">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">
           Posts

@@ -1,4 +1,4 @@
 export { inngest } from "./client";
-import { analyzeAccount } from "./functions/analyze-account";
+import { analyzeAccount, refreshInsights } from "./functions/analyze-account";
 
-export const functions = [analyzeAccount];
+export const functions = [analyzeAccount, refreshInsights];

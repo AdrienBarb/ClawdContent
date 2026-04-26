@@ -115,9 +115,19 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
       {/* Scrollable channels area */}
       <div className="flex-1 overflow-y-auto px-3 pt-4">
         {/* Connected channels */}
-        <p className="px-2 mb-1 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
-          My accounts
-        </p>
+        <div className="px-2 mb-1 flex items-center justify-between">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+            My accounts
+          </p>
+          <Link
+            href={appRouter.accounts}
+            onClick={onNavigate}
+            title="Manage accounts"
+            className="flex h-5 w-5 items-center justify-center rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+          >
+            <GearSixIcon className="h-3.5 w-3.5" />
+          </Link>
+        </div>
         <div className="space-y-0.5">
           {accounts.map((account) => {
             const platform = getPlatform(account.platform);

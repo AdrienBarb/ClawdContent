@@ -148,16 +148,22 @@ src/
 │   │   └── tools.ts              # 10 Zernio tools as AI SDK tools
 │   ├── firecrawl/                 # Firecrawl website scraping client
 │   ├── late/                      # Zernio API client + mutations (directory name is legacy)
+│   ├── insights/                  # Account insights utilities
+│   │   ├── extract.ts             # Pure functions: hashtags, voice stats, content mix, primary metric
+│   │   └── platformConfig.ts      # Per-platform config (primary metric, defaults, char limits)
 │   ├── services/                  # Business logic
 │   │   ├── profile.ts            # LateProfile creation/cleanup
 │   │   ├── subscription.ts        # Stripe checkout + sync
-│   │   ├── accounts.ts           # Social account CRUD + sync
+│   │   ├── accounts.ts           # Social account CRUD + sync (fires reconnect refresh)
+│   │   ├── accountInsights.ts     # Compute v2 insights from Zernio + cross-platform voice borrowing
+│   │   ├── postSuggestions.ts     # Generate suggestions from cached insights (no Zernio fetch)
+│   │   ├── zernioContext.ts       # Per-platform Zernio data fetcher (analytics, best-times, frequency, followers)
 │   │   ├── analytics.ts          # Analytics data fetching
 │   │   ├── chatMessages.ts       # Chat message persistence
 │   │   ├── credits.ts            # Credit balance
 │   │   ├── media.ts              # Media upload save + list
 │   │   └── email.ts              # Brevo email automation
-│   ├── schemas/                   # Zod validation schemas
+│   ├── schemas/                   # Zod validation schemas (incl. insights v2 with three zones)
 │   ├── better-auth/               # Auth config
 │   ├── stripe/                    # Stripe client
 │   ├── db/                        # Prisma client + schema
@@ -250,6 +256,105 @@ Built fresh from DB on every request. Includes:
 6. Create tools (with user's scoped API key)
 7. `streamText()` with `stepCountIs(10)` safety limit
 8. Save messages via `onFinish` callback
+
+---
+
+## Account Insights & Post Suggestions
+
+The system that powers account analysis and the "Get ideas" feature. Designed around **truth in data** — every field is labelled by source (real Zernio / code-derived / Claude-inferred).
+
+### Architecture
+
+```
+On connect/reconnect (Inngest):
+  account/connected     → analyzeAccount fn   → computeInsights() → generateSuggestions()
+  account/refresh-insights → refreshInsights fn → computeInsights() → generateSuggestions()
+
+User clicks "Get ideas":
+  /api/suggestions/generate → generateSuggestions() ONLY (reads cached insights, no Zernio call)
+```
+
+Three services, single source of truth per concern:
+
+| Service | Responsibility |
+|---|---|
+| `zernioContext.ts` | Fetch + format raw Zernio data per platform (analytics, best-times, posting frequency, follower stats). Handles 402/403 gracefully. |
+| `accountInsights.ts` | Compute v2 insights, save to `SocialAccount.insights`. Cross-platform voice borrowing for cold-start. |
+| `postSuggestions.ts` | Read cached insights + lazy-refresh if stale, prompt Claude for 5 suggestions, save. |
+
+### Insights v2 schema (three zones, `src/lib/schemas/insights.ts`)
+
+`SocialAccount.insights` is a JSON field validated by Zod. Three zones make data provenance explicit:
+
+| Zone | Source | Examples |
+|---|---|---|
+| `zernio` | ✅ Real Zernio API | `followersCount`, `growth30d`, `topPosts[].metrics`, `bestTimes`, `postingFrequency` |
+| `computed` | 🟡 Code-derived from Zernio | `extractedHashtags` (regex over `content`), `voiceStats` (length/emoji/?/links), `contentMix`, `primaryMetric` |
+| `inferred` | 🔮 Claude inference (nullable) | `topics`, `toneSummary`, `performingPatterns`, `confidence` |
+
+Plus `meta`: `version`, `dataQuality` (`rich`/`thin`/`cold_start`/`platform_no_history`), `analyzedAt`, `postsAnalyzed`, `syncTriggered`, `nextRefreshAt`, `voiceBorrowedFromPlatform`.
+
+### Per-platform config (`src/lib/insights/platformConfig.ts`)
+
+| Platform | `primaryMetric` | `noExternalHistory` | Notes |
+|---|---|---|---|
+| Instagram, Facebook, Twitter, Threads | `likes` | false | Standard engagement |
+| TikTok, YouTube | **`views`** | false | Video platforms — rank by views |
+| Pinterest | **`saves`** | false | Save = success |
+| LinkedIn | `likes` | **true** | Personal accounts: only Zernio-published posts visible. Skip post fetch on `source: "external"`, fetch on `source: "all"` (refresh) |
+| Bluesky | `likes` | **true** | No analytics endpoint available |
+
+`defaultBestTimes` per platform used when `bestTimes` is null (cold-start).
+
+### Triggers & flows
+
+| Event | Trigger | Source param | Behaviour |
+|---|---|---|---|
+| First connect | OAuth callback fires `account/connected` | `external` | Full analyse → suggestions. If `dataStaleness.syncTriggered: true`, sleep 60s and retry once. |
+| Reconnect | `syncAccountsFromLate` detects `disconnected → active`, fires `account/refresh-insights` | `all` | Refresh insights with PostClaw-published posts included. |
+| "Get ideas" click | `/api/suggestions/generate` | — | Read cached insights, generate suggestions. If insights null or > 7 days old, fire background `account/refresh-insights` and use stale data now. |
+| Disconnect | `disconnectAccount` | — | Status → `disconnected`. Insights kept. No event. |
+| Remove | `removeAccount` | — | Row deleted (cascades to suggestions). No event. |
+| Re-add after Remove | `syncAccountsFromLate` sees `isNew: true`, fires `account/connected` | `external` | Fresh analysis. |
+
+### Cross-platform voice borrowing
+
+If a platform is cold-start (LinkedIn personal first scan, Bluesky, or any with 0 posts), `accountInsights` looks at the user's other `SocialAccount`s under the same `LateProfile` for one with `dataQuality: "rich"`. If found, it borrows the `inferred` zone (topics, tone, patterns) — but forces `confidence` to `"low"` to signal it's not native.
+
+Result: Casa Lasagna's LinkedIn cold-start uses her Instagram voice instead of being generic.
+
+### Anthropic structured-output gotcha
+
+**Anthropic `generateObject` rejects both `minItems` and `maxItems` on arrays.** Never put `.length()`, `.min()`, or `.max()` on a Zod array sent to Claude. Trim/validate in code instead.
+
+Pattern: define two schemas when caps matter — one Claude-safe (no constraints) and one for internal validation. See `inferredZoneClaudeSchema` vs `inferredZoneSchema` in `src/lib/schemas/insights.ts`.
+
+### Inngest functions (`src/inngest/functions/analyze-account.ts`)
+
+| Function ID | Trigger event | Steps |
+|---|---|---|
+| `analyze-account` | `account/connected` | compute-insights → generate-suggestions → (if syncTriggered) wait 60s → retry-after-sync |
+| `refresh-insights` | `account/refresh-insights` | compute-insights (`source: "all"`) → generate-suggestions |
+
+Both services use `findUnique` (not `findUniqueOrThrow`) and exit cleanly with a warning if the SocialAccount no longer exists (avoids Inngest retry loops on stale events).
+
+### Debug logging
+
+Consistent prefixes for grep-friendly debugging:
+
+| Prefix | Content |
+|---|---|
+| `[zernio:raw]` | Full JSON response from each Zernio endpoint |
+| `[zernioContext]` | Compact summary (counts, dataQuality decision) |
+| `[insights:claude:prompt]` | Full prompt sent to Claude for inference zone |
+| `[insights:claude:output]` | Claude's inferred zone JSON |
+| `[insights:final]` | Full Insights object before DB write |
+| `[suggestions:cache]` | Cached insights read from DB |
+| `[suggestions:claude:prompt]` | Full suggestion-generation prompt |
+| `[suggestions:claude:output]` | Claude's 5 suggestions JSON |
+| `[accounts] 🔄 reconnect detected` | When refresh is triggered after a reconnect |
+
+Run `npm run dev | grep "\[zernio\|\[insights\|\[suggestions"` to follow the full pipeline.
 
 ---
 
