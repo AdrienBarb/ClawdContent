@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import useApi from "@/lib/hooks/useApi";
 import { useDashboardStatus } from "@/lib/hooks/useDashboardStatus";
 import { appRouter } from "@/lib/constants/appRouter";
@@ -42,6 +42,15 @@ interface AccountInfo {
   status: string;
 }
 
+interface ChannelHeaderStatsData {
+  platform: string;
+  followers: { value: number | null; delta30d: number | null; deltaPct: number | null };
+  primary: { key: "likes" | "views" | "saves" | "posts"; label: string; value: number | null };
+  secondary: { key: string; label: string; value: number | null; suffix?: "%" } | null;
+  windowDays: number;
+  hasAnalyticsAccess: boolean;
+}
+
 interface PostItem {
   id: string;
   content: string;
@@ -74,6 +83,13 @@ export default function ChannelPage({ channelId }: { channelId: string }) {
     (a: AccountInfo) => a.status === "active"
   );
   const channel = accounts.find((a) => a.id === channelId);
+
+  // Header stats — independent of the active tab so it doesn't refetch on tab clicks.
+  const { data: headerStats, isLoading: headerLoading } = useGet(
+    appRouter.api.analyticsChannelStats,
+    { accountId: channelId },
+    { staleTime: 60_000, enabled: Boolean(channel) },
+  ) as { data: ChannelHeaderStatsData | null | undefined; isLoading: boolean };
 
   // Fetch posts for active tab
   const postsParams: Record<string, string> = {
@@ -159,19 +175,26 @@ export default function ChannelPage({ channelId }: { channelId: string }) {
     <div>
       {/* Header */}
       <div className="sticky top-0 z-20 bg-white border-b border-gray-200 pb-4 mb-8 -mx-8 px-8 pt-6 -mt-6 md:rounded-t-2xl">
-        <div className="flex items-center gap-3 mb-4">
-          <span
-            className="flex h-8 w-8 items-center justify-center rounded-full text-white shrink-0"
-            style={{ backgroundColor: platform?.color ?? "#666" }}
-          >
-            {platform?.icon}
-          </span>
-          <div className="flex-1">
-            <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">
-              {platform?.label ?? channel.platform}
-            </h1>
-            <p className="text-sm text-gray-500">@{channel.username}</p>
+        <div className="flex flex-col gap-4 mb-4 md:flex-row md:items-center md:justify-between md:gap-6">
+          <div className="flex items-center gap-3 min-w-0">
+            <span
+              className="flex h-8 w-8 items-center justify-center rounded-full text-white shrink-0"
+              style={{ backgroundColor: platform?.color ?? "#666" }}
+            >
+              {platform?.icon}
+            </span>
+            <div className="min-w-0">
+              <h1 className="text-2xl font-semibold text-gray-900 tracking-tight truncate">
+                {platform?.label ?? channel.platform}
+              </h1>
+              <p className="text-sm text-gray-500 truncate">@{channel.username}</p>
+            </div>
           </div>
+          <ChannelHeaderStats
+            stats={headerStats ?? null}
+            loading={headerLoading}
+            platform={channel.platform}
+          />
         </div>
         <div className="flex gap-2">
           <TabButton label="Upcoming" active={activeTab === "upcoming"} count={counts.upcoming} onClick={() => setActiveTab("upcoming")} />
@@ -233,6 +256,108 @@ export default function ChannelPage({ channelId }: { channelId: string }) {
 }
 
 // --- Sub-components ---
+
+type StatCell = {
+  label: string;
+  value: number | null;
+  suffix?: string;
+  delta?: number | null;
+  deltaSuffix?: string;
+};
+
+function formatStat(value: number | null, suffix?: string): string {
+  if (value === null || value === undefined) return "—";
+  if (suffix === "%") {
+    return `${value.toLocaleString(undefined, { maximumFractionDigits: 1 })}%`;
+  }
+  return value.toLocaleString();
+}
+
+// Bluesky has no analytics — show 2 cells instead of 3.
+const PLATFORMS_WITH_TWO_CELLS = new Set(["bluesky"]);
+
+function ChannelHeaderStats({
+  stats,
+  loading,
+  platform,
+}: {
+  stats: ChannelHeaderStatsData | null;
+  loading: boolean;
+  platform: string;
+}) {
+  const expectedCellCount = PLATFORMS_WITH_TWO_CELLS.has(platform) ? 2 : 3;
+  const cells = useMemo<StatCell[]>(() => {
+    if (!stats) return [];
+    const out: StatCell[] = [
+      {
+        label: "Followers",
+        value: stats.followers.value,
+        delta: stats.followers.delta30d,
+      },
+      {
+        label: stats.primary.label,
+        value: stats.primary.value,
+      },
+    ];
+    if (stats.secondary) {
+      out.push({
+        label: stats.secondary.label,
+        value: stats.secondary.value,
+        suffix: stats.secondary.suffix,
+      });
+    }
+    return out;
+  }, [stats]);
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-2 gap-2 md:flex md:items-stretch md:gap-2">
+        {Array.from({ length: expectedCellCount }).map((_, i) => (
+          <div
+            key={i}
+            className="rounded-xl bg-gray-50/80 px-4 py-2.5 md:min-w-[7.5rem]"
+            aria-hidden
+          >
+            <div className="h-3 w-14 rounded bg-gray-200/80 animate-pulse" />
+            <div className="mt-1.5 h-4 w-12 rounded bg-gray-200 animate-pulse" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (cells.length === 0) return null;
+
+  return (
+    <div className="grid grid-cols-2 gap-2 md:flex md:items-stretch md:gap-2">
+      {cells.map((cell, i) => (
+        <div
+          key={`${cell.label}-${i}`}
+          className="rounded-xl bg-gray-50/80 px-4 py-2.5 md:min-w-[7.5rem]"
+        >
+          <div className="text-[11px] font-medium uppercase tracking-wide text-gray-400">
+            {cell.label}
+          </div>
+          <div className="mt-0.5 flex items-baseline gap-1.5">
+            <span className="text-base font-semibold text-gray-900 tabular-nums">
+              {formatStat(cell.value, cell.suffix)}
+            </span>
+            {cell.delta !== null && cell.delta !== undefined && cell.delta !== 0 && (
+              <span
+                className={`text-[11px] font-medium tabular-nums ${
+                  cell.delta > 0 ? "text-emerald-600/80" : "text-rose-600/80"
+                }`}
+              >
+                {cell.delta > 0 ? "+" : ""}
+                {cell.delta.toLocaleString()}
+              </span>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function PostCard({
   post,
