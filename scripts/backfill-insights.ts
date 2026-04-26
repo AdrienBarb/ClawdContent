@@ -40,7 +40,14 @@ if (!process.env.DATABASE_URL) {
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
-const inngest = new Inngest({ id: "postclaw" });
+
+// Pass eventKey explicitly: the SDK otherwise auto-switches to dev mode when
+// NODE_ENV !== "production" and silently drops events.
+const inngest = new Inngest({
+  id: "postclaw",
+  eventKey: process.env.INNGEST_EVENT_KEY,
+  isDev: false,
+});
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 async function main() {
