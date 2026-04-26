@@ -6,7 +6,7 @@ import RevenueSimulator from "@/components/affiliates/RevenueSimulator";
 export const metadata = genPageMetadata({
   title: "Affiliate Program — Earn 40% Recurring Commission",
   description:
-    "Join the PostClaw affiliate program and earn 40% recurring commission on every referral. Share your link, earn monthly income.",
+    "Earn 40% recurring commission promoting PostClaw — the AI social media manager small business owners actually stick with. Real monthly income, no caps.",
   url: "/affiliates",
 });
 
@@ -71,7 +71,7 @@ const faqs = [
   {
     question: "How does recurring commission work?",
     answer:
-      "You earn 40% of every payment your referral makes, for as long as they stay subscribed. Example: Refer someone on the Pro plan ($37/mo) = $14.80/month, every month, forever (as long as they\u2019re a customer). 20 active Pro referrals = $296/month recurring ($3,552/year).",
+      "You earn 40% of every payment your referral makes, for as long as they stay subscribed. PostClaw is $49/mo, so each active referral = $19.60/month, every month. 20 active referrals = $392/month recurring ($4,704/year). Yearly plan referrals pay 40% of the discounted yearly total upfront.",
   },
   {
     question: "What happens if my referral cancels or gets refunded?",
@@ -103,9 +103,9 @@ export default function AffiliatesPage() {
             Earn 40% recurring commission
           </h1>
           <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto">
-            Recommend PostClaw to your audience and earn 40% of every payment —
-            not just the first one. As long as they stay subscribed, you keep
-            earning.
+            Tell the small business owners in your audience — photographers,
+            caterers, coaches, consultants — about PostClaw, and earn 40% of
+            every payment they make. Every month, for as long as they stay.
           </p>
           <div className="mt-10">
             <Link
@@ -149,12 +149,12 @@ export default function AffiliatesPage() {
               {
                 step: "2",
                 title: "Share your link",
-                desc: "Promote PostClaw on your blog, social media, newsletter, or community.",
+                desc: "Recommend PostClaw on your blog, newsletter, social, or community of small business owners.",
               },
               {
                 step: "3",
                 title: "Earn every month",
-                desc: "Get 40% of every payment your referrals make — recurring, forever.",
+                desc: "Get 40% of every payment your referrals make — $19.60/mo per referral, recurring for as long as they stay.",
               },
             ].map((item) => (
               <div key={item.step} className="flex gap-5">
@@ -239,8 +239,8 @@ export default function AffiliatesPage() {
             Ready to start earning?
           </h2>
           <p className="mt-4 text-muted-foreground">
-            Join the PostClaw affiliate program today and start earning 40%
-            recurring commission on every referral.
+            Join the PostClaw affiliate program today and earn $19.60/month for
+            every small business owner you bring on board.
           </p>
           <div className="mt-8">
             <Link
