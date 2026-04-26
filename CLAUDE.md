@@ -2,7 +2,7 @@
 
 ## What is PostClaw?
 
-PostClaw is an AI social media manager for small business owners — photographers, caterers, coaches, consultants, artists, and local businesses. It learns your brand, plans your content, and publishes to your social accounts from a single chat conversation. No dashboard, no editor, no learning curve. Plans start at $17/mo.
+PostClaw is an AI social media manager for small business owners — photographers, caterers, coaches, consultants, artists, and local businesses. It learns your brand, plans your content, and publishes to your social accounts. No dashboard, no editor, no learning curve.
 
 **Target audience (ICP):** Non-tech small business owners who need help with social media but can't afford a marketing agency ($2K+/mo). NOT indie hackers or SaaS founders — they churn.
 
@@ -12,19 +12,21 @@ PostClaw is an AI social media manager for small business owners — photographe
 
 **How it works:**
 
-1. User signs up → LateProfile (Zernio) auto-created
-2. Onboarding: user enters website URL (scraped via Firecrawl) or business description
-3. AI analyzes and builds knowledgeBase → user validates extracted data
-4. User connects social accounts (free, no subscription needed)
-5. User gets 1 free chat message to try the AI
-6. User subscribes via Stripe for unlimited access
-7. User chats with their AI social media manager to create and publish content
+1. User signs up → LateProfile (Zernio) auto-created via Better Auth `user.create.after` hook
+2. Onboarding: user enters website URL (scraped via Firecrawl) or business description → AI extracts a `knowledgeBase` → user validates / edits
+3. User connects social accounts (free, no subscription needed)
+4. First connect kicks off insights analysis + one batch of post suggestions (Inngest)
+5. User reviews suggestions on `/d`, edits, schedules, and publishes
+6. User subscribes via Stripe for unlimited use (single plan, $49/mo)
+
+**Pricing:** One plan only — `pro` at $49/mo (or 30% off yearly). Legacy `starter` / `business` IDs still resolve to `pro` for old subscribers.
 
 **Key services:**
 
-- **Vercel AI SDK** — `streamText()` with tool calling in Next.js API routes
-- **Anthropic Claude** — LLM powering the AI (claude-sonnet-4-6)
+- **Vercel AI SDK** + **Anthropic Claude** — `generateObject()` for insights inference and post suggestions. Call sites currently hard-code `claude-sonnet-4-6`; `src/lib/ai/provider.ts` exports a shared `claude-haiku-4-5-20251001` model that is **not** used yet (drift to clean up).
 - **Zernio** (zernio.com) — Unified social media API (9 platforms)
+- **Inngest** — Background workflows (account analysis, insights refresh)
+- **Sanity** — Headless CMS for blog and competitor-comparison content
 - **Vercel** — Hosting (Next.js)
 
 ---
@@ -32,40 +34,40 @@ PostClaw is an AI social media manager for small business owners — photographe
 ## Architecture
 
 ```
-User ─── Web Chat (Next.js on Vercel) ─── Anthropic Claude (via AI SDK)
-                                                  │
-                                                  └── Zernio API tools (10 tools)
-
-Dashboard (Next.js on Vercel)
-    ├── Stripe (payments)
-    ├── Zernio API (account connections + social posting)
-    └── PostgreSQL (Supabase)
+User ── Web Dashboard (Next.js on Vercel)
+            ├── Better Auth (magic link + Google OAuth)
+            ├── Stripe (single $49 plan + webhook)
+            ├── Zernio API (account connect + post compose + analytics)
+            ├── Inngest (account/connected, account/refresh-insights)
+            ├── Anthropic (Sonnet 4.6 at call sites — insights + suggestions + rewrites)
+            ├── PostgreSQL (Supabase via Prisma 7 + adapter-pg)
+            └── Sanity (blog + alternatives content)
 ```
 
-**Per-user isolation:** Each user gets a **profile-scoped Zernio API key** that can only access their own social accounts. One master Zernio account, many scoped keys.
+**Per-user isolation:** Each user gets a profile-scoped Zernio API key that can only access their own social accounts. One master Zernio account, many scoped keys (created on signup in `ensureUserProfile`).
 
-**AI Architecture:**
-- System prompt built dynamically from DB on each request (user context, accounts, capabilities)
-- 10 typed AI SDK tools wrap Zernio API mutations
-- `stepCountIs(10)` limits agent loops
-- Anti-hallucination rules in system prompt (exact number reporting, no fabrication)
+**There is no chat interface.** The dashboard is suggestion + compose driven. The Vercel AI SDK is used non-interactively (`generateObject` for structured output).
 
 ---
 
 ## Tech Stack
 
 - **Next.js 16** (App Router) + TypeScript + React 19
-- **Vercel AI SDK** (`ai` + `@ai-sdk/anthropic` + `@ai-sdk/react`)
-- **Anthropic Claude Sonnet 4.6** — LLM
-- **Prisma 7** + PostgreSQL (Supabase)
-- **Better Auth** (magic links + Google OAuth)
-- **Stripe** (subscriptions)
+- **Vercel AI SDK** (`ai` + `@ai-sdk/anthropic`) — `generateObject` only, no streaming chat
+- **Anthropic Claude Sonnet 4.6** (`claude-sonnet-4-6`) at every call site. A shared Haiku 4.5 model in `src/lib/ai/provider.ts` is exported but currently unused.
+- **Prisma 7** + PostgreSQL (Supabase) via `@prisma/adapter-pg`
+- **Better Auth** (magic links via Resend + Google OAuth)
+- **Stripe** SDK v20 (API version `2026-01-28.clover`)
+- **Inngest** for background workflows
+- **Sanity** (`next-sanity`) for blog content
 - **Resend** + React Email (transactional emails)
+- **Brevo** (lifecycle automation)
 - **React Query** via `useApi` hook
-- **Tailwind CSS v4** + shadcn/ui
-- **PostHog** (analytics)
+- **Tailwind CSS v4** + shadcn/ui + `@phosphor-icons/react`
+- **PostHog** (`posthog-js` + `posthog-node`)
 - **Cloudinary** (media uploads)
-- **Firecrawl** (website scraping for onboarding)
+- **Firecrawl** (`@mendable/firecrawl-js`) — onboarding website scrape
+- **Zustand** (`stores/errorStore.ts`) + **nuqs** (URL state)
 
 ---
 
@@ -73,26 +75,26 @@ Dashboard (Next.js on Vercel)
 
 ```
 User (1:1) ── Subscription
-     (1:1) ── LateProfile (1:N) ── SocialAccount
-     (1:N) ── ChatMessage
+     (1:1) ── LateProfile (1:N) ── SocialAccount (1:N) ── PostSuggestion
      (1:N) ── Media
      (1:N) ── Session
-     (1:N) ── Account
+     (1:N) ── Account     // Better Auth provider/password records
 ```
 
-| Model             | Purpose                                                                    |
-| ----------------- | -------------------------------------------------------------------------- |
-| **User**          | Authenticated user (Better Auth)                                           |
-| **Subscription**  | Stripe subscription: customerId, subscriptionId, status, period dates      |
-| **LateProfile**   | User's Zernio profile: profileId, scoped API key (model name is legacy)    |
-| **SocialAccount** | Connected social platform: accountId, platform, username, status           |
-| **ChatMessage**   | Persisted chat messages (role, content, userId)                             |
-| **Media**         | Uploaded media: cloudinaryId, url, resourceType, format, bytes, dimensions |
-| **CreditBalance** | User credit balance: planCredits, topUpCredits                             |
-| **Session**       | Auth session                                                               |
-| **Account**       | OAuth/password account info                                                |
+| Model            | Purpose                                                                       |
+| ---------------- | ----------------------------------------------------------------------------- |
+| **User**         | Auth user + onboarding fields: `timezone`, `websiteUrl`, `businessDescription`, `knowledgeBase` (JSON), `postsPublished` |
+| **Session**      | Better Auth session                                                           |
+| **Account**      | Better Auth provider/password account                                         |
+| **Verification** | Better Auth verification tokens                                               |
+| **Subscription** | Stripe: `stripeCustomerId`, `stripeSubscriptionId`, `status`, `planId`, period dates, `cancelAtPeriodEnd` |
+| **LateProfile**  | User's Zernio profile: `lateProfileId`, scoped `lateApiKey`, `profileName` (directory + model name are legacy "Late") |
+| **SocialAccount**| Connected platform: `lateAccountId`, `platform`, `username`, `status` (`active`/`disconnected`), `analysisStatus` (`pending`/`analyzing`/`completed`), `insights` (JSON), `lastAnalyzedAt` |
+| **PostSuggestion** | Generated idea: `content`, `contentType` (text/image/carousel), `suggestedDay` (0=Mon), `suggestedHour`, `reasoning`, `mediaUrl`, `mediaType` |
+| **Media**        | Cloudinary upload record: `cloudinaryId`, `url`, `resourceType`, `format`, `bytes`, `width`, `height` |
+| **StripeEvent**  | Webhook idempotency (just the event ID + `processedAt`)                       |
 
-Schema: `src/lib/db/schema.prisma`
+Schema: `src/lib/db/schema.prisma`. No enums — status fields are plain strings with comments. `knowledgeBase` is `Json?` and may be `null` (triggers `/onboarding` redirect).
 
 ---
 
@@ -101,241 +103,215 @@ Schema: `src/lib/db/schema.prisma`
 ```
 src/
 ├── app/
-│   ├── (home)/                    # Public pages (with Navbar + Footer)
-│   │   ├── page.tsx               # Landing page
-│   │   ├── privacy/               # Privacy policy
-│   │   └── terms/                 # Terms of service
-│   ├── (dashboard)/               # Protected dashboard layout (sidebar)
-│   │   ├── layout.tsx             # Sidebar + auth guard
+│   ├── (home)/                       # Public pages (Navbar + Footer)
+│   │   ├── page.tsx                  # Landing
+│   │   ├── blog/                     # Sanity-backed blog (list, [slug], category/[slug])
+│   │   ├── alternatives/             # Competitor comparison ([slug] + index)
+│   │   ├── affiliates/               # Affiliate program + RevenueSimulator
+│   │   ├── privacy/, terms/          # Legal
+│   │   └── layout.tsx, loading.tsx
+│   ├── (dashboard)/                  # Auth-guarded layout (redirects to / or /onboarding)
+│   │   ├── layout.tsx                # Sidebar shell + LegacyKBBanner + TimezoneSync
 │   │   └── d/
-│   │       ├── page.tsx           # Chat (default view)
-│   │       ├── accounts/          # Social accounts (connect/disconnect)
-│   │       │   └── callback/      # OAuth return handler
-│   │       ├── business/          # Edit business info (knowledgeBase)
-│   │       ├── billing/           # Subscription info
-│   │       └── subscribe/         # Stripe checkout card
-│   ├── api/
-│   │   ├── auth/[...all]/         # Better Auth
-│   │   ├── checkout/              # Stripe Checkout session
-│   │   ├── chat/                  # AI chat (streamText + tools)
-│   │   ├── media/upload/          # Media upload callback (POST)
-│   │   ├── accounts/              # List accounts (GET)
-│   │   ├── accounts/connect/      # Zernio OAuth URL (POST)
-│   │   ├── accounts/callback/     # Sync after OAuth (POST)
-│   │   ├── accounts/disconnect/   # Disconnect account (POST)
-│   │   ├── accounts/remove/       # Remove account (POST)
-│   │   ├── analytics/             # Analytics endpoints
-│   │   ├── onboarding/analyze/     # Scrape website + AI analysis (POST)
-│   │   ├── onboarding/confirm/    # Save knowledgeBase (POST)
-│   │   ├── dashboard/status/      # Dashboard polling endpoint (GET)
-│   │   └── webhooks/stripe/       # Stripe webhooks
-│   └── checkout/success/          # Post-payment redirect
+│   │       ├── page.tsx              # PublishPage (suggestions + compose) — default view
+│   │       ├── posts/                # Published / scheduled / draft list
+│   │       ├── channels/[channelId]/ # Per-channel feed
+│   │       ├── accounts/             # Connect/disconnect/reconnect/remove + /callback
+│   │       ├── analytics/            # AnalyticsDashboard
+│   │       ├── media/                # Cloudinary library
+│   │       ├── business/             # Edit knowledgeBase
+│   │       ├── billing/              # Plan + ManageSubscriptionButton
+│   │       └── settings/             # Timezone preference
+│   ├── (onboarding)/onboarding/      # Two-step onboarding (input → validate)
+│   ├── api/                          # See API Routes section
+│   ├── checkout/success/             # Post-payment redirect
+│   ├── layout.tsx, error.tsx, not-found.tsx
+│   ├── manifest.ts, robots.ts, sitemap.ts
+│   └── globals.css
 ├── components/
-│   ├── ui/                        # shadcn/ui
-│   ├── sections/                  # Landing page sections
-│   ├── dashboard/                 # Dashboard components
-│   │   ├── Sidebar.tsx            # Dark sidebar navigation
-│   │   ├── ChatWithLoader.tsx     # Thin wrapper → ChatInterface
-│   │   ├── ChatInterface.tsx      # AI chat with streaming + media upload + paywall
-│   │   ├── ConnectAccountButtons.tsx # Platform connect buttons with icons
-│   │   ├── AnalyticsDashboard.tsx # Analytics charts
-│   │   └── ContentList.tsx        # Published content list
-│   └── providers/                 # Context providers
+│   ├── ui/                           # shadcn/ui primitives
+│   ├── sections/                     # Landing sections (Hero, Pain, BeforeAfter, WhoIsThisFor, HowItWorks, PoweredBy, Pricing, FAQ, FinalCTA)
+│   ├── dashboard/                    # PublishPage, Sidebar, AnalyticsDashboard, ContentList, ChannelPage, ConnectAccountButtons, MediaUploadModal, BillingUnsubscribed, ChangePlanSection, SubscribeModal, UpgradeModal, TimezoneSync, LegacyKBBanner
+│   ├── blog/                         # Sanity renderers (BlogPortableText, BlogPostCard, BlogCategoryCard, BlogTableOfContents, BlogFAQ)
+│   ├── affiliates/RevenueSimulator.tsx
+│   ├── tracking/PostHogProvider.tsx
+│   ├── providers/                    # Context providers (React Query, etc.)
+│   ├── Navbar.tsx, Footer.tsx, PricingCards.tsx, SignInModal.tsx, GlobalErrorHandler.tsx
 ├── lib/
-│   ├── ai/                        # AI SDK integration
-│   │   ├── provider.ts            # Anthropic provider config
-│   │   ├── system-prompt.ts       # Dynamic system prompt builder
-│   │   └── tools.ts              # 10 Zernio tools as AI SDK tools
-│   ├── firecrawl/                 # Firecrawl website scraping client
-│   ├── late/                      # Zernio API client + mutations (directory name is legacy)
-│   ├── insights/                  # Account insights utilities
-│   │   ├── extract.ts             # Pure functions: hashtags, voice stats, content mix, primary metric
-│   │   └── platformConfig.ts      # Per-platform config (primary metric, defaults, char limits)
-│   ├── services/                  # Business logic
-│   │   ├── profile.ts            # LateProfile creation/cleanup
-│   │   ├── subscription.ts        # Stripe checkout + sync
-│   │   ├── accounts.ts           # Social account CRUD + sync (fires reconnect refresh)
-│   │   ├── accountInsights.ts     # Compute v2 insights from Zernio + cross-platform voice borrowing
-│   │   ├── postSuggestions.ts     # Generate suggestions from cached insights (no Zernio fetch)
-│   │   ├── zernioContext.ts       # Per-platform Zernio data fetcher (analytics, best-times, frequency, followers)
-│   │   ├── analytics.ts          # Analytics data fetching
-│   │   ├── chatMessages.ts       # Chat message persistence
-│   │   ├── credits.ts            # Credit balance
-│   │   ├── media.ts              # Media upload save + list
-│   │   └── email.ts              # Brevo email automation
-│   ├── schemas/                   # Zod validation schemas (incl. insights v2 with three zones)
-│   ├── better-auth/               # Auth config
-│   ├── stripe/                    # Stripe client
-│   ├── db/                        # Prisma client + schema
-│   ├── constants/
-│   │   ├── appRouter.ts           # Centralized route config
-│   │   ├── errorMessage.ts        # Error message constants
-│   │   ├── plans.ts              # Plan definitions + limits
-│   │   └── platforms.tsx          # Social platform icons + brand colors (9 platforms)
-│   ├── errors/                    # Error handler
-│   ├── hooks/                     # useApi (React Query)
-│   ├── brevo/                     # Brevo API client (email automation)
-│   ├── resend/                    # Email client
-│   └── emails/                    # React Email templates
-├── proxy.ts                        # Next 16 proxy convention (was middleware.ts) — distinct-id + UTM cookies. Auth is enforced in route handlers + (dashboard)/layout.tsx, not here
-└── data/                           # Static data
+│   ├── ai/
+│   │   ├── provider.ts               # Anthropic Haiku 4.5 model export
+│   │   └── rewrite.ts                # Prompt builder for post rewrites (shorten/casual/professional/hashtag/fix)
+│   ├── late/                         # Zernio API (directory name is legacy)
+│   │   ├── client.ts                 # lateRequest wrapper, master + scoped key support
+│   │   └── mutations.ts              # createProfile, createScopedApiKey, getConnectUrl, deleteAccount, listPosts, getPost, getAnalytics, getBestTimeToPost, getFollowerStats, getPostingFrequency, getAccountsHealth, etc.
+│   ├── insights/
+│   │   ├── extract.ts                # Pure functions: hashtags, voice stats, content mix, primary metric ranking
+│   │   └── platformConfig.ts         # Per-platform config (9 platforms): primaryMetric, charLimit, defaultBestTimes, noExternalHistory
+│   ├── services/
+│   │   ├── user.ts                   # User CRUD wrappers
+│   │   ├── profile.ts                # ensureUserProfile / cleanupUserProfile / formatUserContext / buildAccountsContext
+│   │   ├── accounts.ts               # getConnectUrl, syncAccountsFromLate (fires reconnect refresh-insights), disconnectAccount, removeAccount
+│   │   ├── accountInsights.ts        # computeInsights — three-zone insights with cross-platform voice borrowing
+│   │   ├── postSuggestions.ts        # generateSuggestions — Claude generates 5 ideas from cached insights
+│   │   ├── zernioContext.ts          # gatherAccountContext — per-platform Zernio fetcher (handles 402/403)
+│   │   ├── analytics.ts              # Overview/top-posts/best-times/follower-growth aggregations
+│   │   ├── posts.ts                  # CRUD wrapper around Zernio posts (list/get/delete/retry/unpublish/update)
+│   │   ├── subscription.ts           # createCheckoutSession, createPortalSession, changePlan, syncSubscriptionStatus
+│   │   ├── media.ts                  # Cloudinary upload save + listing + delete
+│   │   └── email.ts                  # Brevo: createBrevoContact, trackSignupCompleted, trackSubscriptionStarted, updateBrevoContact
+│   ├── schemas/                      # Zod: accounts, analytics, checkout, common, insights (v2 three-zone), knowledgeBase, media, posts, user
+│   ├── sanity/                       # client.ts, image.ts, queries.ts, types.ts (blog + competitor pages)
+│   ├── better-auth/                  # auth.ts, auth-client.ts
+│   ├── stripe/client.ts              # API version 2026-01-28.clover
+│   ├── db/                           # prisma.ts (adapter-pg client), schema.prisma, seed.ts
+│   ├── constants/                    # appRouter, errorMessage, plans (single $49 pro plan + legacy resolution), platforms.tsx (9 platforms with icons + brand colors)
+│   ├── errors/errorHandler.ts
+│   ├── hooks/                        # useApi (React Query), useDashboardStatus, useTimezoneSync
+│   ├── brevo/client.ts
+│   ├── resend/resendClient.ts
+│   ├── cloudinary/upload.ts
+│   ├── firecrawl/client.ts
+│   ├── emails/                       # MagicLinkEmail, WelcomeEmail, AccountDisconnectedEmail (React Email)
+│   ├── api/axiosInstance.ts          # Axios with errorStore mapping
+│   ├── stores/errorStore.ts          # Zustand error store
+│   ├── tracking/                     # distinctId, postHogClient, utm
+│   ├── seo/genPageMetadata.ts
+│   └── config.ts                     # Imports config.json
+├── inngest/
+│   ├── client.ts                     # Inngest({ id: "postclaw" })
+│   ├── index.ts                      # Functions registry
+│   └── functions/analyze-account.ts  # analyzeAccount + refreshInsights
+├── proxy.ts                          # Next 16 proxy: distinct-id + UTM cookies. Auth lives in route handlers + (dashboard)/layout.tsx
+├── data/                             # faq.ts, siteMetadata.ts
+└── utils/environments.ts             # isProduction / isStaging / isDevelopment
 ```
 
 ---
 
 ## API Routes
 
-| Route                      | Methods | Auth | Purpose                                    |
-| -------------------------- | ------- | ---- | ------------------------------------------ |
-| `/api/auth/[...all]`       | All     | Var  | Better Auth                                |
-| `/api/checkout`            | POST    | Yes  | Create Stripe Checkout session             |
-| `/api/chat`                | POST    | Yes  | AI chat (streamText + Zernio tools)        |
-| `/api/media/upload`        | POST    | Yes  | Save media upload record                   |
-| `/api/accounts`            | GET     | Yes  | List connected accounts                    |
-| `/api/accounts/connect`    | POST    | Yes  | Get Zernio OAuth URL                       |
-| `/api/accounts/callback`   | POST    | Yes  | Sync accounts after OAuth                  |
-| `/api/accounts/disconnect` | POST    | Yes  | Disconnect a social account                |
-| `/api/accounts/remove`     | POST    | Yes  | Remove a social account                    |
-| `/api/analytics/*`         | GET     | Yes  | Analytics data (overview, posts, best-times, followers) |
-| `/api/dashboard/status`    | GET     | Yes  | Dashboard polling (accounts, subscription, plan) |
-| `/api/user/timezone`       | POST    | Yes  | Update user timezone                       |
-| `/api/user/context`        | POST    | Yes  | Update user onboarding context             |
-| `/api/webhooks/stripe`     | POST    | No   | Stripe webhook handler                     |
+All routes live under `src/app/api/`. Auth = Better Auth session check unless noted.
+
+| Route                              | Methods | Auth | Purpose                                                       |
+| ---------------------------------- | ------- | ---- | ------------------------------------------------------------- |
+| `/api/auth/[...all]`               | All     | Var  | Better Auth handler                                           |
+| `/api/checkout`                    | POST    | Yes  | Create Stripe Checkout session                                |
+| `/api/dashboard/status`            | GET     | Yes  | Polling endpoint (accounts, subscription, plan)               |
+| `/api/user/timezone`               | POST    | Yes  | Update user timezone                                          |
+| `/api/onboarding/analyze`          | POST    | Yes  | Scrape website (Firecrawl) + Claude extract knowledgeBase     |
+| `/api/onboarding/confirm`          | POST    | Yes  | Save validated knowledgeBase to user                          |
+| `/api/accounts`                    | GET     | Yes  | List connected accounts                                       |
+| `/api/accounts/connect`            | POST    | Yes  | Get Zernio OAuth URL for a platform                           |
+| `/api/accounts/callback`           | POST    | Yes  | Sync accounts after OAuth (fires `account/connected` Inngest event for new accounts) |
+| `/api/accounts/disconnect`         | POST    | Yes  | Revoke OAuth + flip status to disconnected                    |
+| `/api/accounts/remove`             | POST    | Yes  | Delete the SocialAccount row (cascades suggestions)           |
+| `/api/posts`                       | GET     | Yes  | List user's posts                                             |
+| `/api/posts/compose`               | POST    | Yes  | Publish/schedule (per-platform via Zernio)                    |
+| `/api/posts/detail`                | GET     | Yes  | Single-post details                                           |
+| `/api/posts/update`                | POST    | Yes  | Edit a draft/scheduled post                                   |
+| `/api/posts/delete`                | POST    | Yes  | Delete a draft/scheduled post                                 |
+| `/api/posts/unpublish`             | POST    | Yes  | Remove a published post                                       |
+| `/api/posts/retry`                 | POST    | Yes  | Retry a failed post                                           |
+| `/api/posts/actions`               | POST    | Yes  | Batch actions                                                 |
+| `/api/posts/rewrite`               | POST    | Yes  | Claude rewrite (shorten/casual/professional/hashtag/fix)      |
+| `/api/suggestions`                 | GET     | Yes  | List cached suggestions                                       |
+| `/api/suggestions/generate`        | POST    | Yes  | Generate new suggestions (refreshes stale insights inline). `maxDuration = 120s` |
+| `/api/suggestions/[id]`            | GET     | Yes  | Get one suggestion                                            |
+| `/api/suggestions/[id]/rewrite`    | POST    | Yes  | Claude rewrite a suggestion                                   |
+| `/api/analytics`                   | GET     | Yes  | Overview metrics                                              |
+| `/api/analytics/posts`             | GET     | Yes  | Top posts                                                     |
+| `/api/analytics/best-times`        | GET     | Yes  | Best posting times                                            |
+| `/api/analytics/followers`         | GET     | Yes  | Follower growth                                               |
+| `/api/media`                       | GET     | Yes  | List user media                                               |
+| `/api/media/upload`                | POST    | Yes  | Save Cloudinary upload record                                 |
+| `/api/media/delete`                | POST    | Yes  | Delete a Media row                                            |
+| `/api/billing/portal`              | GET     | Yes  | Stripe billing portal redirect                                |
+| `/api/billing/change-plan`         | POST    | Yes  | Change subscription plan (legacy — single plan today)         |
+| `/api/inngest`                     | GET/POST/PUT | No (Inngest) | `serve()` handler for Inngest functions                |
+| `/api/webhooks/stripe`             | POST    | No   | Stripe webhook (signature-verified, deduped via `StripeEvent`) |
+| `/api/webhooks/zernio`             | POST    | No   | Zernio webhook (HMAC-verified): `account.disconnected` (sends reconnect email), `account.connected`, `post.failed`, `post.partial` |
 
 ---
 
 ## Dashboard UI
 
-The dashboard is **chat-first** — users land directly on the chat interface.
+The dashboard is **suggestion + compose driven** (no chat). Users land on `/d` (`PublishPage`).
 
-- **Sidebar** (`Sidebar.tsx`): Dark navy sidebar (`#151929`) with coral accent (`#e8614d`), nav items: Chat, Content, Analytics, Accounts, Billing. User section at bottom. Mobile: sheet drawer.
-- **Chat** (`/d`): `ChatWithLoader` → `ChatInterface` (streaming AI chat via `@ai-sdk/react`). No provisioning step — chat is instant.
-- **Paywall**: 1 free message, then modal prompts subscription. Enforced server-side (403 `SUBSCRIPTION_REQUIRED`) + client-side (intercepts send button).
-- **Accounts** (`/d/accounts`): Connect/disconnect/reconnect/remove social accounts. Free access (no subscription needed).
-- **Connect buttons** (`ConnectAccountButtons.tsx`): Platform icons with brand colors.
-- **Content area**: Light gray background (`#f8f9fc`), white rounded cards, `max-w-5xl`.
+- **Auth gate** (`(dashboard)/layout.tsx`): Redirects to `/` if no session, to `/onboarding` if `knowledgeBase` is `null`.
+- **Sidebar** (`Sidebar.tsx`): Mounts `useDashboardStatus`. Nav items pull from `appRouter`: Posts (`/d`), My Business (`/d/business`), My Accounts list (with connect/settings affordances), Affiliates. User dropdown at bottom: Billing, Settings, Sign out. Mobile: sheet drawer.
+- **Main view** (`/d`): `PublishPage` — generate / edit / schedule / publish posts, with media upload via Cloudinary unsigned widget.
+- **Channels** (`/d/channels/[channelId]`): Per-account feed.
+- **Posts** (`/d/posts`): Cross-account post history (`ContentList`).
+- **Accounts** (`/d/accounts` + `/d/accounts/callback`): `ConnectAccountButtons` (one button per platform with brand color + icon).
+- **Billing** (`/d/billing`): Plan info + `ManageSubscriptionButton` (Stripe portal).
+- **Layout**: Light tinted background `#f3f3f1`, white panel with `md:rounded-2xl` border. Sidebar fixed `md:w-64`.
 
-Supported platforms: **9 social media platforms** via Zernio (Twitter/X, LinkedIn, Bluesky, Threads, Facebook, Instagram, Pinterest, TikTok, YouTube). Media uploads (images/videos) supported via Cloudinary.
-
----
-
-## AI Chat System
-
-### System Prompt (`src/lib/ai/system-prompt.ts`)
-
-Built fresh from DB on every request. Includes:
-- PostClaw identity + capabilities
-- User context (name, role, niche, topics, timezone)
-- Connected accounts list
-- Current date/time
-- Anti-hallucination rules (7 critical rules)
-- Content guidelines per platform
-- "What you CAN do" / "What you CANNOT do" sections
-
-### Tools (`src/lib/ai/tools.ts`)
-
-10 tools wrapping `src/lib/late/mutations.ts`:
-- `createPost` — Create and publish/schedule posts (per-platform via `Promise.allSettled`)
-- `listPosts` — List user's posts with filtering
-- `updatePost` — Update draft/scheduled posts
-- `deletePost` — Delete draft/scheduled posts
-- `unpublishPost` — Remove published posts from platforms
-- `retryPost` — Retry failed posts
-- `uploadMedia` — Upload media via Zernio presign
-- `getAnalytics` — Get analytics overview
-- `getDailyMetrics` — Get daily metrics for charts
-- `getBestTimeToPost` — Get optimal posting times (day_of_week: 0=Monday)
-
-### Chat Flow
-
-1. Auth check
-2. Fetch user + subscription + LateProfile + messageCount (parallel)
-3. No subscription + messageCount >= 1 → 403 `SUBSCRIPTION_REQUIRED`
-4. No connected accounts → 400 `NO_CONNECTED_ACCOUNTS`
-5. Build system prompt
-6. Create tools (with user's scoped API key)
-7. `streamText()` with `stepCountIs(10)` safety limit
-8. Save messages via `onFinish` callback
+Supported platforms (9, in `src/lib/insights/platformConfig.ts` + `src/lib/constants/platforms.tsx`): Instagram, Facebook, Twitter/X, Threads, LinkedIn, TikTok, YouTube, Pinterest, Bluesky.
 
 ---
 
 ## Account Insights & Post Suggestions
 
-The system that powers account analysis and the "Get ideas" feature. Designed around **truth in data** — every field is labelled by source (real Zernio / code-derived / Claude-inferred).
+Powers account analysis and the "Get ideas" feature. Every field is labelled by source (real Zernio / code-derived / Claude-inferred).
 
 ### Architecture
 
 **Core principle: `generateSuggestions()` only runs on user-visible actions.** Never in silent background jobs. The user-facing suggestion IDs stay stable until the user themselves triggers a refresh.
 
 ```
-First connect (Inngest):
-  account/connected → analyzeAccount fn:
-    compute-insights
+First connect (Inngest analyzeAccount):
+  account/connected →
+    compute-insights (source: external)
     if syncTriggered: sleep 60s → compute-insights-after-sync   (max 2 calls, no loop)
     generate-suggestions    ← ONCE, on the best data we have
     mark-analysis-completed
 
-Reconnect / backfill (Inngest):
-  account/refresh-insights → refreshInsights fn:
-    compute-insights        ← refresh insights only
+Reconnect / backfill (Inngest refreshInsights):
+  account/refresh-insights →
+    compute-insights (source: all)
     mark-analysis-completed (idempotent: pending → completed)
-                            ← suggestions are NOT touched
+                             ← suggestions are NOT touched
 
-User clicks "Get ideas":
-  /api/suggestions/generate:
-    if insights null or > 7 days old → computeInsights() inline (synchronous)
-    generateSuggestions()
+User clicks "Get ideas" (/api/suggestions/generate, maxDuration 120s):
+  if insights null or > 7 days old → computeInsights() inline (synchronous, source: all)
+  generateSuggestions()
 ```
 
 Three services, single source of truth per concern:
 
 | Service | Responsibility |
 |---|---|
-| `zernioContext.ts` | Fetch + format raw Zernio data per platform (analytics, best-times, posting frequency, follower stats). Handles 402/403 gracefully. |
-| `accountInsights.ts` | Compute v2 insights, save to `SocialAccount.insights` (insights + lastAnalyzedAt only — does NOT touch `analysisStatus`). Cross-platform voice borrowing for cold-start. |
-| `postSuggestions.ts` | Read cached insights as-is, prompt Claude for 5 suggestions, save. Never triggers refreshes — freshness is the caller's responsibility. |
+| `zernioContext.ts` | Fetch + format raw Zernio data per platform (account, posts, analytics, best-times, posting frequency, followers). Handles 402/403 gracefully. |
+| `accountInsights.ts` | `computeInsights` writes `insights` + `lastAnalyzedAt` only — does NOT touch `analysisStatus`. Cross-platform voice borrowing for cold-start. Returns `null` if account no longer exists. |
+| `postSuggestions.ts` | `generateSuggestions` reads cached insights as-is, asks Claude for 5 suggestions, saves rows. Never triggers refreshes — freshness is the caller's responsibility. |
 
 ### Insights v2 schema (three zones, `src/lib/schemas/insights.ts`)
 
-`SocialAccount.insights` is a JSON field validated by Zod. Three zones make data provenance explicit:
+`SocialAccount.insights` is JSON validated by Zod. Three zones make data provenance explicit:
 
 | Zone | Source | Examples |
 |---|---|---|
-| `zernio` | ✅ Real Zernio API | `followersCount`, `growth30d`, `topPosts[].metrics`, `bestTimes`, `postingFrequency` |
-| `computed` | 🟡 Code-derived from Zernio | `extractedHashtags` (regex over `content`), `voiceStats` (length/emoji/?/links), `contentMix`, `primaryMetric` |
-| `inferred` | 🔮 Claude inference (nullable) | `topics`, `toneSummary`, `performingPatterns`, `confidence` |
+| `zernio` | Real Zernio API | `followersCount`, `growth30d`, `topPosts[].metrics`, `bestTimes`, `postingFrequency` |
+| `computed` | Code-derived from Zernio | `extractedHashtags` (regex), `voiceStats` (length / emoji % / `?` / links), `contentMix`, `primaryMetric` |
+| `inferred` | Claude inference (nullable) | `topics`, `toneSummary`, `performingPatterns`, `confidence` |
 
-Plus `meta`: `version`, `dataQuality` (`rich`/`thin`/`cold_start`/`platform_no_history`), `analyzedAt`, `postsAnalyzed`, `syncTriggered`, `nextRefreshAt`, `voiceBorrowedFromPlatform`.
+Plus `meta`: `version: 2`, `dataQuality` (`rich`/`thin`/`cold_start`/`platform_no_history`), `analyzedAt`, `postsAnalyzed`, `syncTriggered`, `nextRefreshAt`, `voiceBorrowedFromPlatform`.
 
 ### Per-platform config (`src/lib/insights/platformConfig.ts`)
 
-| Platform | `primaryMetric` | `noExternalHistory` | Notes |
-|---|---|---|---|
-| Instagram, Facebook, Twitter, Threads | `likes` | false | Standard engagement |
-| TikTok, YouTube | **`views`** | false | Video platforms — rank by views |
-| Pinterest | **`saves`** | false | Save = success |
-| LinkedIn | `likes` | **true** | Personal accounts: only Zernio-published posts visible. Skip post fetch on `source: "external"`, fetch on `source: "all"` (refresh) |
-| Bluesky | `likes` | **true** | No analytics endpoint available |
+| Platform | `primaryMetric` | `noExternalHistory` | `charLimit` | Notes |
+|---|---|---|---|---|
+| Instagram, Facebook, Twitter, Threads | `likes` | false | 2200 / null / 280 / 500 | Standard engagement |
+| TikTok, YouTube | **`views`** | false | 2200 / null | Video — rank by views |
+| Pinterest | **`saves`** | false | 500 | Save = success |
+| LinkedIn | `likes` | **true** | 3000 | Personal accounts: only Zernio-published posts visible. Skip post fetch on `source: "external"`, fetch on `source: "all"` |
+| Bluesky | `likes` | **true** (no analytics) | 300 | `supportsAnalytics: false` |
 
-`defaultBestTimes` per platform used when `bestTimes` is null (cold-start).
-
-### Triggers & flows
-
-| Event | Trigger | Source param | Behaviour |
-|---|---|---|---|
-| First connect | OAuth callback fires `account/connected` | `external` | Compute insights. If `syncTriggered: true`, sleep 60s + recompute (max once — no loop). Then generate suggestions ONCE. Mark `analysisStatus: completed`. |
-| Reconnect | `syncAccountsFromLate` detects `disconnected → active`, fires `account/refresh-insights` | `all` | Silent refresh of insights only. Suggestions are NOT regenerated (the user's visible cards stay stable). |
-| "Get ideas" click | `/api/suggestions/generate` | — | If insights null or > 7 days old, run `computeInsights()` **inline** (synchronous, user waits). Then generate suggestions. `maxDuration: 120s`. |
-| Disconnect | `disconnectAccount` | — | Status → `disconnected`. Insights kept. No event. |
-| Remove | `removeAccount` | — | Row deleted (cascades to suggestions). No event. |
-| Re-add after Remove | `syncAccountsFromLate` sees `isNew: true`, fires `account/connected` | `external` | Fresh analysis. |
-| Backfill script | `scripts/backfill-insights.ts` fires `account/refresh-insights` | `all` | Refreshes insights + flips `pending → completed`. Does NOT generate suggestions — user must click "Get ideas" to see new ones. |
+`defaultBestTimes` per platform used when `bestTimes` is null (cold-start). `dayOfWeek` is 0=Monday in this codebase (also matches Zernio).
 
 ### Cross-platform voice borrowing
 
-If a platform is cold-start (LinkedIn personal first scan, Bluesky, or any with 0 posts), `accountInsights` looks at the user's other `SocialAccount`s under the same `LateProfile` for one with `dataQuality: "rich"`. If found, it borrows the `inferred` zone (topics, tone, patterns) — but forces `confidence` to `"low"` to signal it's not native.
-
-Result: Casa Lasagna's LinkedIn cold-start uses her Instagram voice instead of being generic.
+When a platform is cold-start (LinkedIn personal first scan, Bluesky, or any with 0 posts), `accountInsights` looks at the user's other `SocialAccount`s under the same `LateProfile` for one with `dataQuality: "rich"`. If found, it borrows the `inferred` zone (topics, tone, patterns) but forces `confidence: "low"` and sets `meta.voiceBorrowedFromPlatform`.
 
 ### Anthropic structured-output gotcha
 
@@ -347,70 +323,68 @@ Pattern: define two schemas when caps matter — one Claude-safe (no constraints
 
 | Function ID | Trigger event | Steps |
 |---|---|---|
-| `analyze-account` | `account/connected` | compute-insights → (if syncTriggered) sleep 60s + compute-insights-after-sync → generate-suggestions → mark-analysis-completed |
-| `refresh-insights` | `account/refresh-insights` | compute-insights (`source: "all"`) → mark-analysis-completed |
+| `analyze-account` | `account/connected` | compute-insights → (if syncTriggered) sleep 60s + compute-insights-after-sync → generate-suggestions → mark-analysis-completed (retries: 3) |
+| `refresh-insights` | `account/refresh-insights` | compute-insights (`source: all`) → mark-analysis-completed (retries: 2) |
 
-`analysisStatus` flips from `analyzing` → `completed` only **after** suggestions exist (in `analyzeAccount`), so the dashboard loader stays up until the user has something to see. `refreshInsights` is idempotent on status (`completed` → `completed`, or `pending` → `completed` for backfilled accounts).
+`analysisStatus` flips `analyzing` → `completed` only **after** suggestions exist (in `analyzeAccount`), so the dashboard loader stays up until the user has something to see. `refreshInsights` is idempotent (`completed` → `completed`, `pending` → `completed`).
 
-`computeInsights` writes `insights` + `lastAnalyzedAt` only; it intentionally does NOT touch `analysisStatus` — that responsibility lives in the Inngest functions.
-
-Both services use `findUnique` (not `findUniqueOrThrow`) and exit cleanly with a warning if the SocialAccount no longer exists (avoids Inngest retry loops on stale events).
+`computeInsights` and `generateSuggestions` both exit cleanly if the SocialAccount has been deleted (`findUnique` + null guard) — avoids retry loops on stale events.
 
 ### Debug logging
 
-Consistent prefixes for grep-friendly debugging:
+Grep-friendly prefixes: `[zernio:raw]`, `[zernioContext]`, `[insights:claude:prompt]`, `[insights:claude:output]`, `[insights:final]`, `[suggestions:cache]`, `[suggestions:claude:prompt]`, `[suggestions:claude:output]`, `[accounts] 🔄 reconnect detected`, `[Zernio Webhook]`, `[analyze-account]`.
 
-| Prefix | Content |
-|---|---|
-| `[zernio:raw]` | Full JSON response from each Zernio endpoint |
-| `[zernioContext]` | Compact summary (counts, dataQuality decision) |
-| `[insights:claude:prompt]` | Full prompt sent to Claude for inference zone |
-| `[insights:claude:output]` | Claude's inferred zone JSON |
-| `[insights:final]` | Full Insights object before DB write |
-| `[suggestions:cache]` | Cached insights read from DB |
-| `[suggestions:claude:prompt]` | Full suggestion-generation prompt |
-| `[suggestions:claude:output]` | Claude's 5 suggestions JSON |
-| `[accounts] 🔄 reconnect detected` | When refresh is triggered after a reconnect |
-
-Run `npm run dev | grep "\[zernio\|\[insights\|\[suggestions"` to follow the full pipeline.
+```bash
+npm run dev | grep -E "\[zernio|\[insights|\[suggestions"
+```
 
 ---
 
 ## Service Layer
 
-Services live in `src/lib/services/`. Routes call services, services call adapters (`src/lib/late/`, `src/lib/stripe/`).
+Services live in `src/lib/services/`. Routes call services; services call adapters (`src/lib/late/`, `src/lib/stripe/`, `src/lib/brevo/`, `src/lib/firecrawl/`, `src/lib/cloudinary/`).
 
 ### Key flows
 
-**User signup (Better Auth `user.create.after` hook):**
-1. Create Zernio profile → scoped API key → save LateProfile to DB
-2. Create Brevo contact + trigger onboarding automation
-3. Capture PostHog event
+**User signup (Better Auth `databaseHooks.user.create.after`):**
+1. PostHog identify + `user_signed_up` capture (with UTM from cookie)
+2. `ensureUserProfile` → Zernio `createProfile` + `createScopedApiKey` → save `LateProfile`
+3. `createBrevoContact` + `trackSignupCompleted` (fires Brevo onboarding automation)
 
-**Social account connection:**
-1. Get Zernio OAuth URL → redirect user
-2. On callback, sync accounts from Zernio API → upsert DB
+**Onboarding (`/onboarding` two-step form):**
+1. Step 1 (input): website URL or business description → `POST /api/onboarding/analyze` (Firecrawl scrape → Claude extracts business info)
+2. Step 2 (validate): user edits → `POST /api/onboarding/confirm` saves `knowledgeBase` to `User`
+3. Redirect to `/d`
 
-**Subscription (on checkout.session.completed):**
-1. Upsert subscription record
-2. Ensure LateProfile exists (idempotent)
+**Account connect:**
+1. `POST /api/accounts/connect` → `getConnectUrl` (Zernio OAuth URL)
+2. User completes OAuth → returns to `/d/accounts/callback`
+3. Frontend calls `POST /api/accounts/callback` → `syncAccountsFromLate` (uses `getAccountsHealth` for `tokenValid` + `needsReconnect`) → upsert SocialAccount rows
+4. New accounts → fire `account/connected` Inngest event (analyzeAccount). Reconnects (`disconnected → active`) → fire `account/refresh-insights` (refreshInsights only).
 
-**Deprovisioning (on subscription.deleted):**
-1. Status → canceled
-2. Clean up LateProfile + social accounts
+**Subscription (Stripe webhook on `checkout.session.completed`):**
+1. Upsert `Subscription` (resolve plan via `getPlanFromStripePriceId`)
+2. Idempotent `ensureUserProfile`
+3. `trackSubscriptionStarted` Brevo automation
+
+**Deprovisioning (Stripe webhook on `customer.subscription.deleted`):**
+1. `Subscription.status → "canceled"`, `updateBrevoContact`
+2. Background `cleanupUserProfile` (delete SocialAccounts + LateProfile) via `next/server`'s `after()`
 
 ---
 
 ## Stripe Webhooks
 
+Handler: `src/app/api/webhooks/stripe/route.ts`. Signature-verified. Deduped via `StripeEvent.id` unique insert.
+
 | Event                           | Action                                              |
 | ------------------------------- | --------------------------------------------------- |
-| `checkout.session.completed`    | Upsert subscription, ensure profile exists          |
-| `customer.subscription.created` | Idempotent upsert subscription                      |
-| `customer.subscription.updated` | Sync status + period dates                          |
-| `customer.subscription.deleted` | Status → canceled, cleanup profile (non-blocking)   |
-| `invoice.payment_succeeded`     | Extend period                                       |
-| `invoice.payment_failed`        | Status → past_due (do NOT deprovision)              |
+| `checkout.session.completed`    | Upsert subscription, ensure profile, Brevo subscription_started |
+| `customer.subscription.created` | Idempotent upsert                                   |
+| `customer.subscription.updated` | Sync status, plan, period dates, `cancelAtPeriodEnd` |
+| `customer.subscription.deleted` | Status → canceled, Brevo update, cleanup profile in `after()` |
+| `invoice.payment_succeeded`     | Update period dates                                 |
+| `invoice.payment_failed`        | Status → `past_due` (do NOT deprovision; Stripe retries) |
 
 ---
 
@@ -418,20 +392,30 @@ Services live in `src/lib/services/`. Routes call services, services call adapte
 
 ```env
 # Database (Supabase PostgreSQL)
-DATABASE_URL=
-DIRECT_URL=
+DATABASE_URL=                    # Used by adapter-pg at runtime
+DIRECT_URL=                      # Used by Prisma CLI (prisma.config.ts)
 
 # Authentication
 BETTER_AUTH_SECRET=
 BETTER_AUTH_URL=
 NEXT_PUBLIC_BASE_URL=
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
 
 # Payments (Stripe)
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
-STRIPE_PRICE_ID=
+STRIPE_PRICE_POSTCLAW_MONTHLY=
+STRIPE_PRICE_POSTCLAW_YEARLY=
+# Legacy (still resolved for old subscribers, optional):
+STRIPE_PRICE_PRO_MONTHLY=
+STRIPE_PRICE_PRO_YEARLY=
+STRIPE_PRICE_STARTER_MONTHLY=
+STRIPE_PRICE_STARTER_YEARLY=
+STRIPE_PRICE_BUSINESS_MONTHLY=
+STRIPE_PRICE_BUSINESS_YEARLY=
 
-# Email (Resend)
+# Email (Resend — magic links + transactional)
 RESEND_API_KEY=
 
 # Email Automation (Brevo)
@@ -439,13 +423,22 @@ BREVO_API_KEY=
 BREVO_LIST_ID=
 
 # AI (Anthropic)
-ANTHROPIC_API_KEY=
+ANTHROPIC_API_KEY=               # Read by @ai-sdk/anthropic provider
 
-# Website Scraping (Firecrawl)
+# Website Scraping (Firecrawl, onboarding only)
 FIRECRAWL_API_KEY=
 
-# Zernio (master key — not per-user)
+# Zernio (master key — falls back to LATE_API_KEY for legacy)
 ZERNIO_API_KEY=
+LATE_API_KEY=                    # Legacy alias, optional
+ZERNIO_WEBHOOK_SECRET=           # HMAC-SHA256 for /api/webhooks/zernio
+
+# Inngest
+INNGEST_EVENT_KEY=               # Required in cloud mode (scripts must pass eventKey + isDev:false)
+
+# Sanity (blog content)
+NEXT_PUBLIC_SANITY_PROJECT_ID=
+NEXT_PUBLIC_SANITY_DATASET=
 
 # Analytics (PostHog)
 NEXT_PUBLIC_POSTHOG_KEY=
@@ -457,7 +450,8 @@ CLOUDINARY_API_KEY=
 CLOUDINARY_API_SECRET=
 
 # App
-NEXT_PUBLIC_APP_ENV=
+NEXT_PUBLIC_APP_ENV=             # production / staging / development
+NEXT_PUBLIC_API_URL=             # Used by axiosInstance baseURL
 ```
 
 ---
@@ -465,13 +459,21 @@ NEXT_PUBLIC_APP_ENV=
 ## Commands
 
 ```bash
-npm run dev                # Start dev server
-npm run build              # Build for production
-npm run lint               # ESLint
-npx prisma migrate dev     # Run migrations
-npx prisma generate        # Generate Prisma client
-npx prisma studio          # Prisma Studio GUI
-npm run email:dev          # Preview email templates
+npm run dev                    # Start dev server
+npm run build                  # Build for production
+npm run vercel-build           # prisma generate + (prod) prisma migrate deploy + next build
+npm run lint                   # ESLint
+npm run db:generate            # prisma generate
+npm run db:migrate             # prisma migrate dev
+npm run db:push                # prisma db push
+npm run db:studio              # Prisma Studio
+npm run email:dev              # React Email preview server
+npm run backfill:insights      # tsx scripts/backfill-insights.ts (--apply)
+
+# One-off scripts (require dotenv)
+tsx scripts/check-accounts.ts  # Inspect SocialAccount metadata by id(s)
+tsx scripts/insights-stats.ts  # Aggregate analysisStatus / status counts
+tsx scripts/inspect-user.ts    # Look up a user by email + their accounts
 ```
 
 ---
@@ -488,7 +490,7 @@ npm run email:dev          # Preview email templates
 
 ### File Naming
 
-- **Components**: PascalCase (`Sidebar.tsx`)
+- **Components**: PascalCase (`PublishPage.tsx`)
 - **Utilities/Hooks/Services**: camelCase (`profile.ts`, `useApi.ts`)
 - **Constants**: UPPER_SNAKE_CASE inside files
 
@@ -503,9 +505,7 @@ import { headers } from "next/headers";
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const session = await auth.api.getSession({ headers: await headers() });
     if (!session?.user) {
       return NextResponse.json(
         { error: errorMessages.UNAUTHORIZED },
@@ -526,7 +526,7 @@ export async function POST(req: NextRequest) {
 
 ### Client-Side Data Fetching
 
-Always use `useApi` hook. Never use axios directly.
+Use the `useApi` hook (`src/lib/hooks/useApi.ts`) — wraps React Query with the axios instance and the global error store. `useDashboardStatus` is a pre-built hook for the polling status endpoint.
 
 ```typescript
 const { useGet, usePost } = useApi();
@@ -536,79 +536,100 @@ const { mutate } = usePost("/api/accounts/connect", { onSuccess: () => { ... } }
 
 ### Styling
 
-- Tailwind CSS v4 + shadcn/ui components from `@/components/ui/`
-- Dashboard: dark sidebar with CSS variables (`--sidebar-*`), light content area (`#f8f9fc`)
-- Cards: `rounded-2xl`, `border-gray-100`, `shadow-sm`, white background
-- Platform config with icons/colors in `src/lib/constants/platforms.tsx`
+- Tailwind CSS v4 + shadcn/ui from `@/components/ui/`
+- Dashboard: tinted background `#f3f3f1`, white floating panel with `md:rounded-2xl` border
+- Cards: `rounded-2xl`, soft borders, white background
+- Platform config (icon + brand color) lives in `src/lib/constants/platforms.tsx`
 - Match existing design — don't introduce new colors without approval
 
 ---
 
 ## Key Technical Notes
 
-### Prisma 7
+### Prisma 7 (driver adapter)
 
-- Config in `prisma.config.ts` (loads `.env` via dotenv) — used by CLI only (migrate, generate)
-- Runtime client uses `@prisma/adapter-pg` driver adapter: `new PrismaClient({ adapter })`
-- No `url` in schema.prisma, no `datasourceUrl` in constructor — adapter is the only way
-- Schema at `src/lib/db/schema.prisma`
+- `prisma.config.ts` loads `.env` via dotenv and points the CLI at `DIRECT_URL` (used by `migrate`, `generate`).
+- Runtime client uses `@prisma/adapter-pg`: `new PrismaClient({ adapter: new PrismaPg({ connectionString: DATABASE_URL }) })`. In production, SSL is enabled with `rejectUnauthorized: false`.
+- `schema.prisma` has no `url` field; the constructor takes no `datasourceUrl` — adapter is the only path.
+- Schema lives at `src/lib/db/schema.prisma`.
 
 ### Stripe SDK v20 (2026 API)
 
-- API version: `2026-01-28.clover`
-- Period dates on subscription **items** (`sub.items.data[0].current_period_start`), not on subscription
-- Invoice subscription via `invoice.parent?.subscription_details?.subscription`
+- API version: `2026-01-28.clover`.
+- Period dates on subscription **items** (`sub.items.data[0].current_period_start`), not on the subscription.
+- Invoice subscription via `invoice.parent?.subscription_details?.subscription`.
+- Webhooks deduped through `StripeEvent` (insert event ID, swallow unique violation).
 
-### Zernio API (formerly Late API)
+### Zernio API (formerly Late)
 
-- Base URL: `https://zernio.com/api/v1`
-- Client: `src/lib/late/client.ts` (directory name is legacy)
-- Profile-scoped API keys for per-user isolation
-- `publishNow: true` required for immediate posts (default is draft)
-- `day_of_week`: 0=Monday (not Sunday)
-- Media types: `image/video/gif/document` (not MIME types)
+- Base URL: `https://zernio.com/api/v1`.
+- Client: `src/lib/late/client.ts` (directory + DB model named "Late" for legacy reasons).
+- Master key falls back: `process.env.ZERNIO_API_KEY ?? process.env.LATE_API_KEY`.
+- Profile-scoped API keys for per-user isolation.
+- `publishNow: true` required for immediate posts (default is draft).
+- `day_of_week`: 0=Monday (matches `platformConfig.defaultBestTimes`).
+- Media types: `image/video/gif/document` (not MIME types).
+- Webhook (`/api/webhooks/zernio`) verifies HMAC-SHA256 with `ZERNIO_WEBHOOK_SECRET`.
 
 ### Vercel AI SDK
 
-- `streamText()` with `@ai-sdk/anthropic` provider
-- Tools use `inputSchema` (not `parameters`) with Zod schemas
-- `stepCountIs(10)` for multi-step agent loops
-- `toUIMessageStreamResponse()` for streaming to client
-- `@ai-sdk/react` `useChat()` on client side
+- `generateObject` only — there is no streaming chat surface.
+- Provider: `@ai-sdk/anthropic`. Call sites pass `anthropic("claude-sonnet-4-6")` inline (insights, suggestions, rewrites, onboarding analyze). The shared `src/lib/ai/provider.ts` exports `claude-haiku-4-5-20251001` but **no call site imports it** — drift between intent and reality.
+- Used for: insights inference (`accountInsights.ts`), post suggestions (`postSuggestions.ts`), rewrites (`api/posts/rewrite`, `api/suggestions/[id]/rewrite`), onboarding extraction (`api/onboarding/analyze`).
+- **No `minItems` / `maxItems` on arrays** sent to Claude — see Anthropic gotcha above.
+
+### Inngest
+
+- Client: `new Inngest({ id: "postclaw" })`.
+- Endpoint: `src/app/api/inngest/route.ts` exports `serve({ client, functions })`.
+- Two functions today: `analyze-account` (`account/connected`), `refresh-insights` (`account/refresh-insights`).
+- One-off scripts that send Inngest events must explicitly construct `new Inngest({ id, eventKey: INNGEST_EVENT_KEY, isDev: false })` — env var alone silently drops events.
 
 ### Media Upload (Cloudinary)
 
-- `next-cloudinary` package with `CldUploadWidget` in ChatInterface
-- Unsigned upload preset: `postclaw_unsigned`, cloud: `postclaw`
-- Media saved to `Media` table via `/api/media/upload` (fire-and-forget from client)
-- Chat messages include `[MEDIA: <url>]` + `[MEDIA_TYPE: <mime>]` tags
-- AI tools can reference media URLs directly in `createPost`
+- Cloudinary unsigned upload widget on the client (in `PublishPage.tsx` and `MediaUploadModal.tsx`).
+- Cloud name from `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`.
+- Server-side admin SDK in `src/lib/cloudinary/upload.ts` and `src/lib/services/media.ts`.
+- After upload, the client posts the metadata to `/api/media/upload` to insert a `Media` row.
 
-### PostHog A/B Testing
+### PostHog
 
-- Server-side experiments via `posthog-node` feature flags
-- `src/proxy.ts` sets a `postclaw_distinct_id` cookie (UUID, 1-year TTL) on first visit
-- Distinct ID helpers in `src/lib/tracking/distinctId.ts`
-- `user_signed_up` event captured in Better Auth `databaseHooks.user.create.after`
+- Server: `posthog-node` via `src/lib/tracking/postHogClient.ts`. `captureServerEvent`, `identifyUser`.
+- Client: `posthog-js` in `src/components/tracking/PostHogProvider.tsx`.
+- `src/proxy.ts` sets a `postclaw_distinct_id` cookie (UUID, 1y TTL) and a `postclaw_utm` first-touch cookie (30d TTL) on first visit.
+- `user_signed_up` captured in Better Auth `databaseHooks.user.create.after`, with UTM data attached.
+
+### Sanity
+
+- Read-only client in `src/lib/sanity/client.ts` (uses `NEXT_PUBLIC_SANITY_PROJECT_ID` + `NEXT_PUBLIC_SANITY_DATASET`).
+- GROQ queries in `src/lib/sanity/queries.ts`. Types in `src/lib/sanity/types.ts`.
+- Powers `/blog`, `/blog/[slug]`, `/blog/category/[slug]`, `/alternatives`, `/alternatives/[slug]`. PortableText rendering in `components/blog/BlogPortableText.tsx`.
+
+### Proxy (Next 16)
+
+- `src/proxy.ts` (Next 16 convention; replaces `middleware.ts`).
+- Sets `postclaw_distinct_id` (anonymous, 1 year, httpOnly) and `postclaw_utm` (first-touch, 30 days, httpOnly).
+- **Auth is NOT enforced here.** Auth lives in route handlers and `(dashboard)/layout.tsx`.
+- Matcher excludes `api`, `_next/static`, `_next/image`, `favicon.ico`.
 
 ### Dashboard Layout
 
-- Root layout (`app/layout.tsx`): providers only, no Navbar/Footer
-- Public pages in `(home)/` route group: includes Navbar + Footer
-- Dashboard in `(dashboard)/` route group: sidebar layout, no Navbar/Footer
-- Sidebar uses CSS custom properties (`--sidebar-bg`, etc.) with inline styles
+- Root layout (`app/layout.tsx`): providers only (no Navbar/Footer).
+- `(home)/layout.tsx`: public-page chrome.
+- `(dashboard)/layout.tsx`: redirects to `/` (no session) or `/onboarding` (no `knowledgeBase`); sidebar shell + `LegacyKBBanner` + `TimezoneSync`.
+- `(onboarding)/`: bare layout — used while `knowledgeBase === null`.
 
 ---
 
 ## Configuration
 
-App config is centralized in `config.json`:
+App config in `config.json`:
 
-- Project name, description, tagline, URL
-- SEO metadata (title: "PostClaw — Your AI Social Media Manager")
-- Contact info
-- Pricing tiers (Starter $17/mo, Pro $37/mo, Business $79/mo)
-- Feature flags
+- Project name, description, tagline, URL, logo, favicon
+- SEO metadata (title: "PostClaw - Your AI Social Media Manager")
+- Contact info (`no-reply@postclaw.io`, `admin@postclaw.io`)
+- Pricing meta (single plan, 30% yearly discount). Plan definition itself lives in `src/lib/constants/plans.ts`.
+- Feature flags (auth: magic link + email/password; payments: stripe; waitlist: disabled)
 
 ---
 
