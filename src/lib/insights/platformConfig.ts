@@ -20,6 +20,12 @@ export interface PlatformConfig {
   defaultBestTimes: BestTimeSlot[];
   /** Hard character limit, or null when very long. */
   charLimit: number | null;
+  /**
+   * How many "Posting Slots" pills to surface in the schedule picker.
+   * Aligned with industry recommendations for posts/day on each platform.
+   * Capped 1–4 to keep the popover compact.
+   */
+  recommendedPostsPerDay: number;
 }
 
 export const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
@@ -35,6 +41,7 @@ export const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
       { dayOfWeek: 5, hour: 10 }, // Sat 10h
     ],
     charLimit: 2200,
+    recommendedPostsPerDay: 2,
   },
   facebook: {
     platform: "facebook",
@@ -48,6 +55,7 @@ export const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
       { dayOfWeek: 6, hour: 11 }, // Sun 11h
     ],
     charLimit: null,
+    recommendedPostsPerDay: 2,
   },
   twitter: {
     platform: "twitter",
@@ -61,6 +69,7 @@ export const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
       { dayOfWeek: 4, hour: 17 },
     ],
     charLimit: 280,
+    recommendedPostsPerDay: 4,
   },
   threads: {
     platform: "threads",
@@ -74,6 +83,7 @@ export const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
       { dayOfWeek: 4, hour: 12 },
     ],
     charLimit: 500,
+    recommendedPostsPerDay: 3,
   },
   tiktok: {
     platform: "tiktok",
@@ -87,6 +97,7 @@ export const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
       { dayOfWeek: 6, hour: 16 },
     ],
     charLimit: 2200,
+    recommendedPostsPerDay: 2,
   },
   youtube: {
     platform: "youtube",
@@ -100,6 +111,7 @@ export const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
       { dayOfWeek: 6, hour: 14 },
     ],
     charLimit: null,
+    recommendedPostsPerDay: 1,
   },
   pinterest: {
     platform: "pinterest",
@@ -113,6 +125,7 @@ export const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
       { dayOfWeek: 4, hour: 14 },
     ],
     charLimit: 500,
+    recommendedPostsPerDay: 4,
   },
   linkedin: {
     platform: "linkedin",
@@ -126,6 +139,7 @@ export const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
       { dayOfWeek: 3, hour: 9 },
     ],
     charLimit: 3000,
+    recommendedPostsPerDay: 1,
   },
   bluesky: {
     platform: "bluesky",
@@ -139,6 +153,7 @@ export const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
       { dayOfWeek: 4, hour: 9 },
     ],
     charLimit: 300,
+    recommendedPostsPerDay: 3,
   },
 };
 

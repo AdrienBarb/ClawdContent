@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef } from "react";
 import { useQueryState } from "nuqs";
 import toast from "react-hot-toast";
 import useApi from "@/lib/hooks/useApi";
@@ -24,10 +24,7 @@ import {
   ArrowsInIcon,
   SuitcaseIcon,
   PlusIcon,
-  CalendarIcon,
   XIcon,
-  CaretLeftIcon,
-  CaretRightIcon,
   ShieldCheckIcon,
   LockKeyIcon,
   SignOutIcon,
@@ -43,10 +40,9 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
 import MediaUploadModal from "./MediaUploadModal";
 import SubscribeModal from "./SubscribeModal";
+import { SchedulePicker } from "./SchedulePicker";
 
 interface AccountInfo {
   id: string;
@@ -577,6 +573,7 @@ function SuggestionList({
                 </button>
                 <SchedulePicker
                   disabled={isBusy}
+                  platform={suggestion.socialAccount.platform}
                   onSchedule={(date) => handleSchedule(suggestion.id, date.toISOString())}
                 />
                 <button
@@ -996,6 +993,7 @@ function ComposeModal({
             <div className="flex items-center gap-2">
               <SchedulePicker
                 disabled={!content.trim() || posting}
+                platform={selectedAccount?.platform}
                 onSchedule={(date) => handlePost("schedule", date.toISOString())}
               />
               <button
@@ -1016,167 +1014,6 @@ function ComposeModal({
         </DialogContent>
       </Dialog>
     </>
-  );
-}
-
-// --- Time Slot Picker (horizontal scroll with arrows) ---
-
-function TimeSlotPicker({
-  selected,
-  onSelect,
-}: {
-  selected: string;
-  onSelect: (time: string) => void;
-}) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(true);
-
-  const updateScrollState = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    setCanScrollLeft(el.scrollLeft > 0);
-    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 1);
-  }, []);
-
-  const scroll = (direction: "left" | "right") => {
-    const el = scrollRef.current;
-    if (!el) return;
-    el.scrollBy({ left: direction === "left" ? -150 : 150, behavior: "smooth" });
-    setTimeout(updateScrollState, 300);
-  };
-
-  return (
-    <div className="border-t border-gray-100 py-3">
-      <div className="flex items-center justify-between px-4 mb-2">
-        <p className="text-xs font-medium text-gray-500">Time</p>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => scroll("left")}
-            disabled={!canScrollLeft}
-            className="flex h-6 w-6 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 transition-colors cursor-pointer disabled:opacity-30"
-          >
-            <CaretLeftIcon className="h-3.5 w-3.5" weight="bold" />
-          </button>
-          <button
-            onClick={() => scroll("right")}
-            disabled={!canScrollRight}
-            className="flex h-6 w-6 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 transition-colors cursor-pointer disabled:opacity-30"
-          >
-            <CaretRightIcon className="h-3.5 w-3.5" weight="bold" />
-          </button>
-        </div>
-      </div>
-      <div
-        ref={scrollRef}
-        onScroll={updateScrollState}
-        className="flex gap-1.5 px-4 overflow-x-auto"
-        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-      >
-        {TIME_SLOTS.map((t) => (
-          <button
-            key={t}
-            onClick={() => onSelect(t)}
-            className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer shrink-0 whitespace-nowrap ${
-              selected === t
-                ? "bg-gray-900 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
-          >
-            {formatTimeLabel(t)}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// --- Schedule Picker ---
-
-const TIME_SLOTS = [
-  "08:00", "09:00", "10:00", "11:00", "12:00",
-  "13:00", "14:00", "15:00", "16:00", "17:00",
-  "18:00", "19:00", "20:00", "21:00",
-];
-
-function formatTimeLabel(t: string) {
-  const [h, m] = t.split(":").map(Number);
-  const hour = h % 12 || 12;
-  const ampm = h < 12 ? "AM" : "PM";
-  return `${hour}:${m.toString().padStart(2, "0")} ${ampm}`;
-}
-
-function SchedulePicker({
-  disabled,
-  onSchedule,
-  variant = "outline",
-}: {
-  disabled: boolean;
-  onSchedule: (date: Date) => void;
-  variant?: "outline" | "primary";
-}) {
-  const [open, setOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [selectedTime, setSelectedTime] = useState("10:00");
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const handleConfirm = () => {
-    if (!selectedDate) return;
-    const date = new Date(selectedDate);
-    const [h, m] = selectedTime.split(":").map(Number);
-    date.setHours(h, m, 0, 0);
-    onSchedule(date);
-    setOpen(false);
-  };
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          disabled={disabled}
-          className={`flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-medium transition-colors cursor-pointer disabled:opacity-50 ${
-            variant === "primary"
-              ? "text-white"
-              : "text-gray-700 border border-gray-200 hover:bg-gray-50"
-          }`}
-          style={variant === "primary" ? { backgroundColor: "#e8614d" } : undefined}
-        >
-          <CalendarIcon className="h-3.5 w-3.5" />
-          Schedule
-        </button>
-      </PopoverTrigger>
-      <PopoverContent align="end" className="w-[340px] p-0 rounded-2xl z-[70]" sideOffset={8}>
-        <div className="overflow-hidden rounded-t-2xl">
-          <Calendar
-            mode="single"
-            selected={selectedDate}
-            onSelect={setSelectedDate}
-            disabled={{ before: today }}
-            className="p-4 [--cell-size:2.75rem]"
-          />
-        </div>
-
-        {/* Time slots */}
-        <TimeSlotPicker selected={selectedTime} onSelect={setSelectedTime} />
-
-        {/* Confirm */}
-        <div className="px-4 py-3 border-t border-gray-100">
-          <button
-            onClick={handleConfirm}
-            disabled={!selectedDate}
-            className="w-full flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-white transition-colors cursor-pointer disabled:opacity-50"
-            style={{ backgroundColor: "#e8614d" }}
-          >
-            <CalendarIcon className="h-4 w-4" />
-            {selectedDate
-              ? `Schedule for ${selectedDate.toLocaleDateString(undefined, { month: "short", day: "numeric" })} at ${formatTimeLabel(selectedTime)}`
-              : "Pick a date"}
-          </button>
-        </div>
-      </PopoverContent>
-    </Popover>
   );
 }
 

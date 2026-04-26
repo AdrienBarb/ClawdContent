@@ -42,3 +42,7 @@ export const analyticsBestTimesQuerySchema = z.object({
 export const analyticsFollowersQuerySchema = z.object({
   platform: platformEnum,
 });
+
+export const channelStatsQuerySchema = z.object({
+  accountId: z.string().min(1),
+});

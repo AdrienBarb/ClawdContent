@@ -50,6 +50,7 @@ export const appRouter = {
     analyticsPosts: "/api/analytics/posts",
     analyticsBestTimes: "/api/analytics/best-times",
     analyticsFollowers: "/api/analytics/followers",
+    analyticsChannelStats: "/api/analytics/channel-stats",
     dashboardStatus: "/api/dashboard/status",
     webhooks: {
       stripe: "/api/webhooks/stripe",
