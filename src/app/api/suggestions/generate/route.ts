@@ -9,13 +9,24 @@ import {
   generateSuggestions,
   type SuggestionWithAccount,
 } from "@/lib/services/postSuggestions";
+import { computeInsights } from "@/lib/services/accountInsights";
 
-export const maxDuration = 60;
+// Generation can include an inline insights refresh (Zernio fetches + Claude
+// inference) when the cache is missing/stale, so we leave headroom over the
+// default 60s.
+export const maxDuration = 120;
+
+const STALE_INSIGHTS_MS = 7 * 24 * 60 * 60 * 1000;
 
 const generateInputSchema = z.object({
   topic: z.string().optional(),
   accountId: z.string().optional(),
 });
+
+function insightsAreStale(lastAnalyzedAt: Date | null, insights: unknown): boolean {
+  if (!insights || !lastAnalyzedAt) return true;
+  return Date.now() - lastAnalyzedAt.getTime() > STALE_INSIGHTS_MS;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -52,6 +63,16 @@ export async function POST(req: NextRequest) {
 
     const allSuggestions: SuggestionWithAccount[] = [];
     for (const account of accounts) {
+      // Refresh insights inline (synchronously, while the user waits) when
+      // they're missing or older than 7 days. Avoids the old fire-and-forget
+      // background refresh that silently invalidated suggestion IDs.
+      if (insightsAreStale(account.lastAnalyzedAt, account.insights)) {
+        console.log(
+          `[suggestions:generate] insights stale for ${account.id} — refreshing inline before generating`
+        );
+        await computeInsights(account.id, { source: "all" });
+      }
+
       const created = await generateSuggestions(account.id, {
         topic: input.topic,
       });

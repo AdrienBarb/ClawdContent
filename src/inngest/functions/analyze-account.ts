@@ -15,41 +15,53 @@ export const analyzeAccount = inngest.createFunction(
   async ({ event, step }) => {
     const { socialAccountId } = event.data as { socialAccountId: string };
 
-    const insights = await step.run("compute-insights", async () => {
+    // First pass — Zernio may still be backfilling, in which case insights
+    // come back with syncTriggered=true and the post list is shallow.
+    let insights = await step.run("compute-insights", async () => {
       return computeInsights(socialAccountId, { source: "external" });
     });
 
-    // Account no longer exists (deleted between event firing and processing) — exit cleanly.
+    // Account no longer exists (deleted between event firing and processing).
     if (insights === null) {
       return { success: true, socialAccountId, skipped: "account-not-found" };
     }
 
+    // If Zernio kicked off a sync, wait once and recompute on the better data.
+    // We do NOT recurse on syncTriggered — at most one retry, then we accept
+    // whatever data we have (no infinite loop).
+    if (insights.meta.syncTriggered) {
+      console.log(
+        `[analyze-account] ⏳ syncTriggered=true, waiting 60s for Zernio backfill (socialAccountId=${socialAccountId})`
+      );
+      await step.sleep("wait-for-sync", "60s");
+
+      const refreshed = await step.run("compute-insights-after-sync", async () => {
+        return computeInsights(socialAccountId, { source: "external" });
+      });
+
+      if (refreshed === null) {
+        return { success: true, socialAccountId, skipped: "account-not-found" };
+      }
+      insights = refreshed;
+    }
+
+    // Generate suggestions ONCE, on the best data we have. The user only ever
+    // sees one batch from this flow — no silent rugpull mid-session.
     await step.run("generate-suggestions", async () => {
       return generateSuggestions(socialAccountId);
     });
 
-    // Flip status only after suggestions exist, so the dashboard loader doesn't
-    // briefly show the empty state while suggestions are still being generated.
     await step.run("mark-analysis-completed", async () => {
       await markAnalysisCompleted(socialAccountId);
     });
-
-    if (insights.meta.syncTriggered) {
-      console.log(
-        `[analyze-account] ⏳ syncTriggered=true, scheduling re-analysis in 60s for ${socialAccountId}`
-      );
-      await step.sleep("wait-for-sync", "60s");
-
-      await step.run("retry-after-sync", async () => {
-        await computeInsights(socialAccountId, { source: "external" });
-        await generateSuggestions(socialAccountId);
-      });
-    }
 
     return { success: true, socialAccountId };
   }
 );
 
+// Refreshes insights only — never regenerates suggestions. Fired on reconnect
+// (accounts.ts) and by the backfill-insights script. Suggestions are only ever
+// (re)generated when the user explicitly asks (first connect, or "Get ideas").
 export const refreshInsights = inngest.createFunction(
   { id: "refresh-insights", retries: 2, triggers: [{ event: "account/refresh-insights" }] },
   async ({ event, step }) => {
@@ -59,12 +71,8 @@ export const refreshInsights = inngest.createFunction(
       return computeInsights(socialAccountId, { source: "all" });
     });
 
-    await step.run("generate-suggestions", async () => {
-      return generateSuggestions(socialAccountId);
-    });
-
-    // Idempotent: no-op for accounts already "completed", upgrades "pending"
-    // accounts (e.g. backfill-insights script) to "completed".
+    // Idempotent: no-op for "completed" accounts, upgrades "pending" accounts
+    // (e.g. backfill-insights script) to "completed".
     await step.run("mark-analysis-completed", async () => {
       await markAnalysisCompleted(socialAccountId);
     });

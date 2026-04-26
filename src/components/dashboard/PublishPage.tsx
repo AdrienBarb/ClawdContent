@@ -205,8 +205,10 @@ export default function PublishPage() {
       {activeAccount?.analysisStatus === "analyzing" && (
         <div className="flex flex-col items-center justify-center py-20">
           <SpinnerGapIcon className="h-8 w-8 animate-spin text-gray-400 mb-4" />
-          <p className="text-sm font-medium text-gray-900">Analyzing your account...</p>
-          <p className="text-xs text-gray-500 mt-1">We&apos;re looking at your content to write better posts for you</p>
+          <p className="text-sm font-medium text-gray-900">Studying your account...</p>
+          <p className="text-xs text-gray-500 mt-1 max-w-xs text-center">
+            This can take 1–2 minutes. We&apos;re learning your voice from your past posts so the suggestions sound like you.
+          </p>
         </div>
       )}
 

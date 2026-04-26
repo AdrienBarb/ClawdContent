@@ -2,7 +2,6 @@ import { prisma } from "@/lib/db/prisma";
 import { generateObject } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
-import { inngest } from "@/inngest/client";
 import { getPlatformConfig } from "@/lib/insights/platformConfig";
 import {
   insightsV2Schema,
@@ -59,20 +58,21 @@ export async function generateSuggestions(
   const knowledgeBase =
     (account.lateProfile.user.knowledgeBase as Record<string, unknown> | null) ?? null;
 
-  // Read cached insights — may be missing or stale
+  // Read cached insights — may be missing or stale. Freshness is the caller's
+  // responsibility now (see /api/suggestions/generate). We never trigger a
+  // background refresh here — that used to silently regenerate suggestions
+  // and 404 the cards the user was looking at.
   const insights = parseInsights(account.insights);
   const isStale =
     insights !== null &&
     Date.now() - new Date(insights.meta.analyzedAt).getTime() > STALE_THRESHOLD_MS;
 
   if (insights === null) {
-    console.log(`[postSuggestions] ⚠️  insights missing — triggering background refresh`);
-    await triggerBackgroundRefresh(socialAccountId);
+    console.log(`[postSuggestions] ⚠️  insights missing — generating without cached signal`);
   } else if (isStale) {
     console.log(
-      `[postSuggestions] ⏰ insights stale (analysedAt=${insights.meta.analyzedAt}) — triggering background refresh, using stale data now`
+      `[postSuggestions] ⏰ insights stale (analysedAt=${insights.meta.analyzedAt}) — using as-is`
     );
-    await triggerBackgroundRefresh(socialAccountId);
   } else {
     console.log(
       `[postSuggestions] ✓ using cached insights — dataQuality=${insights.meta.dataQuality}, postsAnalyzed=${insights.meta.postsAnalyzed}`
@@ -156,20 +156,6 @@ function parseInsights(raw: unknown): Insights | null {
     return null;
   }
   return parsed.data;
-}
-
-async function triggerBackgroundRefresh(socialAccountId: string): Promise<void> {
-  try {
-    await inngest.send({
-      name: "account/refresh-insights",
-      data: { socialAccountId },
-    });
-  } catch (err) {
-    console.warn(
-      `[postSuggestions] ⚠️  failed to trigger refresh:`,
-      err instanceof Error ? err.message : err
-    );
-  }
 }
 
 interface PromptInput {
