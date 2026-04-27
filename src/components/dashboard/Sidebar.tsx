@@ -12,10 +12,10 @@ import {
   SignOutIcon,
   ListIcon,
   CaretUpDownIcon,
-  SquaresFourIcon,
   GiftIcon,
   PlusIcon,
   UserCircleIcon,
+  PencilSimpleIcon,
 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -94,8 +94,8 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
       <nav className="px-3 pb-1 space-y-0.5">
         <SidebarLink
           href={appRouter.dashboard}
-          icon={SquaresFourIcon}
-          label="Posts"
+          icon={PencilSimpleIcon}
+          label="Create"
           isActive={isDashboardActive}
           onNavigate={onNavigate}
         />

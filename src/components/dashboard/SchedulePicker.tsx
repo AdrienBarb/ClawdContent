@@ -347,7 +347,7 @@ export function SchedulePicker({
       <PopoverTrigger asChild>
         <button
           disabled={disabled}
-          className="flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border border-gray-200 px-3 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex h-10 md:h-8 cursor-pointer items-center gap-1.5 rounded-lg border border-gray-200 px-3 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <CalendarIcon className="h-3.5 w-3.5" />
           Schedule

@@ -1,7 +1,6 @@
 import { inngest } from "../client";
 import { prisma } from "@/lib/db/prisma";
 import { computeInsights } from "@/lib/services/accountInsights";
-import { generateSuggestions } from "@/lib/services/postSuggestions";
 
 async function markAnalysisCompleted(socialAccountId: string): Promise<void> {
   await prisma.socialAccount.updateMany({
@@ -21,15 +20,11 @@ export const analyzeAccount = inngest.createFunction(
       return computeInsights(socialAccountId, { source: "external" });
     });
 
-    // Account no longer exists (deleted between event firing and processing).
-    if (insights === null) {
-      return { success: true, socialAccountId, skipped: "account-not-found" };
-    }
-
     // If Zernio kicked off a sync, wait once and recompute on the better data.
     // We do NOT recurse on syncTriggered — at most one retry, then we accept
-    // whatever data we have (no infinite loop).
-    if (insights.meta.syncTriggered) {
+    // whatever data we have (no infinite loop). Skipped if the first pass
+    // returned null (account deleted between event and processing).
+    if (insights?.meta.syncTriggered) {
       console.log(
         `[analyze-account] ⏳ syncTriggered=true, waiting 60s for Zernio backfill (socialAccountId=${socialAccountId})`
       );
@@ -39,29 +34,28 @@ export const analyzeAccount = inngest.createFunction(
         return computeInsights(socialAccountId, { source: "external" });
       });
 
-      if (refreshed === null) {
-        return { success: true, socialAccountId, skipped: "account-not-found" };
-      }
-      insights = refreshed;
+      if (refreshed !== null) insights = refreshed;
     }
 
-    // Generate suggestions ONCE, on the best data we have. The user only ever
-    // sees one batch from this flow — no silent rugpull mid-session.
-    await step.run("generate-suggestions", async () => {
-      return generateSuggestions(socialAccountId);
-    });
-
+    // Always flip to "completed" — markAnalysisCompleted is a no-op when the
+    // row has been deleted, and unconditionally clearing the flag prevents the
+    // dashboard from sticking on "analyzing" if computeInsights ever returns
+    // null for a reason other than account-not-found.
     await step.run("mark-analysis-completed", async () => {
       await markAnalysisCompleted(socialAccountId);
     });
 
-    return { success: true, socialAccountId };
+    return {
+      success: true,
+      socialAccountId,
+      ...(insights === null ? { skipped: "account-not-found" } : {}),
+    };
   }
 );
 
 // Refreshes insights only — never regenerates suggestions. Fired on reconnect
 // (accounts.ts) and by the backfill-insights script. Suggestions are only ever
-// (re)generated when the user explicitly asks (first connect, or "Get ideas").
+// (re)generated when the user explicitly asks ("Get ideas" or from a brief).
 export const refreshInsights = inngest.createFunction(
   { id: "refresh-insights", retries: 2, triggers: [{ event: "account/refresh-insights" }] },
   async ({ event, step }) => {

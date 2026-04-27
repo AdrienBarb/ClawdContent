@@ -24,6 +24,7 @@ model User {
   businessDescription String?
   knowledgeBase       Json?
   postsPublished      Int             @default(0)
+  lastSuggestionsGeneratedAt DateTime?
   @@unique([email])
   @@map("user")
 }

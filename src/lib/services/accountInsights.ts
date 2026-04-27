@@ -21,6 +21,8 @@ import {
   type InsightsMeta,
   type ZernioZone,
 } from "@/lib/schemas/insights";
+import { isDevelopment } from "@/utils/environments";
+import { formatBusinessContext } from "@/lib/services/promptContext";
 import type { AnalyticsPost } from "@/lib/late/mutations";
 import type { Prisma } from "@prisma/client";
 
@@ -135,15 +137,21 @@ export async function computeInsights(
   // Validate before storing
   insightsV2Schema.parse(insights);
 
-  console.log(
-    `[insights:final] full insights object for ${account.platform} →`,
-    JSON.stringify(insights, null, 2)
-  );
+  if (isDevelopment) {
+    console.log(
+      `[insights:final] full insights object for ${account.platform} →`,
+      JSON.stringify(insights, null, 2)
+    );
+  } else {
+    console.log(
+      `[insights:final] insights saved for ${account.platform} → dataQuality=${meta.dataQuality}, postsAnalyzed=${meta.postsAnalyzed}, hasInferred=${inferred !== null}`
+    );
+  }
 
   // analysisStatus is intentionally not touched here — it's flipped to
-  // "completed" by the analyze-account Inngest function only after suggestions
-  // have also been generated, so the dashboard loader stays up until the user
-  // has something to see. Silent refreshes (refreshInsights) leave it as-is.
+  // "completed" by the analyze-account / refresh-insights Inngest functions
+  // right after insights are saved. Suggestions are generated separately, only
+  // when the user explicitly asks (Get ideas / from-brief).
   await prisma.socialAccount.update({
     where: { id: socialAccountId },
     data: {
@@ -185,7 +193,7 @@ interface InferOptions {
 }
 
 async function inferZoneFromPosts(opts: InferOptions): Promise<InferredZone> {
-  const businessContext = formatBusinessContext(opts.knowledgeBase);
+  const businessContext = formatBusinessContext(opts.knowledgeBase, { withHeader: false });
   const postsBlock = opts.posts
     .map((p, i) => {
       const e = p.analytics;
@@ -211,9 +219,11 @@ From these ${opts.postCount} post(s), produce a JSON object with:
 Be specific. Avoid generic marketing-speak.`;
 
   console.log(`[accountInsights] 🧠 inferring zone from ${opts.posts.length} posts`);
-  console.log(
-    `[insights:claude:prompt] (${prompt.length} chars) →\n${prompt}`
-  );
+  if (isDevelopment) {
+    console.log(`[insights:claude:prompt] (${prompt.length} chars) →\n${prompt}`);
+  } else {
+    console.log(`[insights:claude:prompt] (${prompt.length} chars)`);
+  }
 
   const { object } = await generateObject({
     model: anthropic("claude-sonnet-4-6"),
@@ -221,10 +231,16 @@ Be specific. Avoid generic marketing-speak.`;
     prompt,
   });
 
-  console.log(
-    `[insights:claude:output] inferred zone →`,
-    JSON.stringify(object, null, 2)
-  );
+  if (isDevelopment) {
+    console.log(
+      `[insights:claude:output] inferred zone →`,
+      JSON.stringify(object, null, 2)
+    );
+  } else {
+    console.log(
+      `[insights:claude:output] inferred zone → topics=${object.topics?.length ?? 0}, patterns=${object.performingPatterns?.length ?? 0}, confidence=${object.confidence ?? "n/a"}`
+    );
+  }
 
   // Trim to internal caps (Anthropic schema can't enforce maxItems, we do it here)
   return {
@@ -257,16 +273,6 @@ async function borrowInferredFromOtherPlatform(
   }
 
   return null;
-}
-
-function formatBusinessContext(kb: Record<string, unknown> | null): string {
-  if (!kb) return "No business info available.";
-  const services = Array.isArray(kb.services)
-    ? (kb.services as string[]).join(", ")
-    : "Not specified";
-  return `Business: ${kb.businessName ?? "Unknown"}
-Description: ${kb.description ?? "No description"}
-Services: ${services}`;
 }
 
 function truncate(s: string | null | undefined, max: number): string {
