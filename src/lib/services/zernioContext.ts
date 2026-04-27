@@ -9,6 +9,7 @@ import {
 } from "@/lib/late/mutations";
 import { getPlatformConfig } from "@/lib/insights/platformConfig";
 import type { DataQuality } from "@/lib/schemas/insights";
+import { isDevelopment } from "@/utils/environments";
 
 export interface AccountMeta {
   followersCount: number | null;
@@ -54,10 +55,14 @@ async function safeGetBestTimes(
 ): Promise<BestTimeSlot[] | null> {
   try {
     const res = await getBestTimeToPost(apiKey, { platform, source: "all" });
-    console.log(
-      `[zernio:raw] getBestTimeToPost(${platform}) →`,
-      JSON.stringify(res, null, 2)
-    );
+    if (isDevelopment) {
+      console.log(
+        `[zernio:raw] getBestTimeToPost(${platform}) →`,
+        JSON.stringify(res, null, 2)
+      );
+    } else {
+      console.log(`[zernio:raw] getBestTimeToPost(${platform}) → ${res.slots.length} slots`);
+    }
     return res.slots;
   } catch (err) {
     console.warn(
@@ -74,10 +79,14 @@ async function safeGetPostingFrequency(
 ): Promise<PostingFrequencySummary | null> {
   try {
     const res = await getPostingFrequency(apiKey, { platform, source: "all" });
-    console.log(
-      `[zernio:raw] getPostingFrequency(${platform}) →`,
-      JSON.stringify(res, null, 2)
-    );
+    if (isDevelopment) {
+      console.log(
+        `[zernio:raw] getPostingFrequency(${platform}) →`,
+        JSON.stringify(res, null, 2)
+      );
+    } else {
+      console.log(`[zernio:raw] getPostingFrequency(${platform}) → ${res.frequency.length} rows`);
+    }
     return summarisePostingFrequency(res.frequency);
   } catch (err) {
     console.warn(
@@ -117,10 +126,14 @@ async function safeGetFollowerStats(
 ): Promise<{ growth30d: number | null; growth30dPercentage: number | null }> {
   try {
     const res = await getFollowerStats(apiKey, { accountIds: lateAccountId });
-    console.log(
-      `[zernio:raw] getFollowerStats(${lateAccountId}) →`,
-      JSON.stringify(res, null, 2)
-    );
+    if (isDevelopment) {
+      console.log(
+        `[zernio:raw] getFollowerStats(${lateAccountId}) →`,
+        JSON.stringify(res, null, 2)
+      );
+    } else {
+      console.log(`[zernio:raw] getFollowerStats(${lateAccountId}) → ${res.accounts.length} accounts`);
+    }
     const account = res.accounts.find((a) => a._id === lateAccountId);
     if (!account) return { growth30d: null, growth30dPercentage: null };
     return {
@@ -167,10 +180,16 @@ export async function gatherAccountContext(
     limit,
   });
 
-  console.log(
-    `[zernio:raw] getAnalytics(${platform}, source=${source}, sortBy=${sortBy}, limit=${limit}) →`,
-    JSON.stringify(analytics, null, 2)
-  );
+  if (isDevelopment) {
+    console.log(
+      `[zernio:raw] getAnalytics(${platform}, source=${source}, sortBy=${sortBy}, limit=${limit}) →`,
+      JSON.stringify(analytics, null, 2)
+    );
+  } else {
+    console.log(
+      `[zernio:raw] getAnalytics(${platform}, source=${source}, sortBy=${sortBy}, limit=${limit}) → ${analytics.posts?.length ?? 0} posts`
+    );
+  }
 
   console.log(
     `[zernioContext] 📦 analytics summary — posts=${analytics.posts.length}, accounts=${analytics.accounts?.length ?? 0}, syncTriggered=${analytics.overview.dataStaleness?.syncTriggered ?? false}`
