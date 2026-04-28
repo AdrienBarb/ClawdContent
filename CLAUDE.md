@@ -18,7 +18,7 @@ PostClaw is an AI social media manager for small business owners — photographe
 2. Onboarding: website URL (Firecrawl scrape) or business description → AI-extracted `knowledgeBase` → user validates
 3. Connect social accounts (free)
 4. First connect → Inngest `analyze-account` (insights only — suggestions are NOT generated here)
-5. User clicks "Get ideas" on `/d` → suggestions generated on demand
+5. `/d` shows the chat composer + drafts board. User chats ("draft 5 posts about my Easter menu") → `generate_posts` tool → drafts appear on the board
 6. User reviews, edits, schedules, publishes
 7. Stripe subscribe ($49/mo) for unlimited use
 
@@ -37,7 +37,7 @@ Next.js 16 (App Router, RSC) on Vercel
 
 **Per-user isolation:** Each user gets a profile-scoped Zernio API key. One master Zernio account, many scoped keys (created in `ensureUserProfile`).
 
-**No chat interface.** Vercel AI SDK is `generateObject` only — non-interactive structured output.
+**Chat surface scoped to drafts.** `/d` has a chat composer (`ChatPanel` → `/api/chat` via `streamText`). The model has exactly five tools — `generate_posts`, `update_post`, `regenerate_post`, `delete_draft`, `set_schedule` — all wrapping `PostSuggestion` CRUD. `set_schedule` only *stages* a time on the draft; **publishing and committing schedules still require the user to click Post / Schedule on the `PostCard` or `BulkBar`** in `SuggestionsBoard`. Chat is ephemeral (no `chat_message` persistence). Insights/onboarding extraction still use `generateObject`.
 
 **Supported platforms (9):** Instagram, Facebook, Twitter/X, Threads, LinkedIn, TikTok, YouTube, Pinterest, Bluesky. Defined in `src/lib/insights/platformConfig.ts` + `src/lib/constants/platforms.tsx`.
 
@@ -88,7 +88,7 @@ These bite — keep them in mind everywhere:
 - **Stripe SDK v20 (`2026-01-28.clover`)** — period dates live on subscription **items** (`sub.items.data[0].current_period_start`). Invoice→subscription via `invoice.parent?.subscription_details?.subscription`. Webhooks deduped via `StripeEvent.id` insert.
 - **Zernio `day_of_week` is 0=Monday** (matches `platformConfig.defaultBestTimes`). Media types are `image` / `video` / `gif` / `document` (not MIME). Immediate posts need `publishNow: true`.
 - **The proxy enforces NO auth.** Auth lives in route handlers + `(dashboard)/layout.tsx`. `src/proxy.ts` only sets `postclaw_distinct_id` (1y) + `postclaw_utm` first-touch (30d).
-- **`generateSuggestions()` runs on user-visible actions only** (`/api/suggestions/generate`, `/api/suggestions/from-brief`). Never in Inngest. Suggestion IDs stay stable until the user themselves refreshes.
+- **Post generation runs on user-visible actions only** — the chat tool `generate_posts` calls `createFromBrief` synchronously inside `/api/chat`. Never in Inngest. Suggestion IDs stay stable until the user themselves triggers a new generation (which fully replaces drafts on the targeted accounts).
 
 ## Coding standards
 

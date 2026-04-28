@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import {
   ArrowLeftIcon,
+  CalendarIcon,
   PencilSimpleIcon,
   TrashIcon,
   SpinnerGapIcon,
@@ -26,15 +27,13 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { SchedulePicker } from "../SchedulePicker";
+import { useConfirm, type ConfirmFn } from "@/lib/hooks/useConfirm";
 import type { Suggestion } from "./types";
 
 // Inject a Cloudinary delivery transform so the kanban thumbnail isn't the
 // full-resolution upload. Falls through unchanged for non-Cloudinary URLs.
 function cloudinaryThumbnail(url: string): string {
-  return url.replace(
-    "/upload/",
-    "/upload/c_fill,w_400,h_220,q_auto,f_auto/"
-  );
+  return url.replace("/upload/", "/upload/c_fill,w_400,h_220,q_auto,f_auto/");
 }
 
 interface AccountLite {
@@ -78,18 +77,46 @@ export function ResultsView({
   onSchedule,
   onAction,
   onMediaChanged,
+  onBulkComplete,
+  embedded = false,
+  quotaRemaining,
 }: {
   accounts: AccountLite[];
   suggestions: Suggestion[];
-  onBack: () => void;
+  onBack?: () => void;
   onEdit: (s: Suggestion) => void;
-  onSchedule: (id: string, scheduledAt: string) => Promise<void>;
-  onAction: (action: string, s: Suggestion) => Promise<void>;
+  onSchedule: (
+    id: string,
+    scheduledAt: string | null,
+    opts?: { silent?: boolean }
+  ) => Promise<boolean | void>;
+  onAction: (
+    action: string,
+    s: Suggestion,
+    opts?: { silent?: boolean }
+  ) => Promise<boolean | void>;
   onMediaChanged: (id: string, mediaItems: MediaItem[]) => Promise<void>;
+  onBulkComplete?: (publishedOrScheduledCount: number) => void;
+  embedded?: boolean;
+  /** Free posts remaining; null = unlimited (subscribed). */
+  quotaRemaining: number | null;
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [activeAccount, setActiveAccount] = useState<string | null>(null);
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState<{
+    current: number;
+    total: number;
+  } | null>(null);
+  // Synchronous guard against double-click — React state updates can't beat
+  // a fast second click that fires before the next commit.
+  const bulkBusyRef = useRef(false);
+  // Latest snapshot of suggestions, re-read each iteration of the bulk loop
+  // so mid-run edits (e.g. via the chat panel) don't ship the stale action.
+  const suggestionsRef = useRef(suggestions);
+  suggestionsRef.current = suggestions;
+
+  const { confirm, dialog: confirmDialog } = useConfirm();
 
   // Only show filter pills + columns for accounts that actually have
   // suggestions in this batch — not every connected account.
@@ -99,9 +126,7 @@ export function ResultsView({
         (s) => `${s.socialAccount.platform}|${s.socialAccount.username}`
       )
     );
-    return accounts.filter((a) =>
-      keys.has(`${a.platform}|${a.username}`)
-    );
+    return accounts.filter((a) => keys.has(`${a.platform}|${a.username}`));
   }, [accounts, suggestions]);
 
   const visibleAccounts = useMemo(
@@ -145,99 +170,186 @@ export function ResultsView({
 
   const clearSelection = () => setSelected(new Set());
 
-  const runBulk = async (action: "delete" | "publish") => {
+  // Removes the given IDs from the current selection (used after bulk runs to
+  // keep failed rows still selected so the user can retry them).
+  const dropFromSelection = (ids: string[]) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      for (const id of ids) next.delete(id);
+      return next;
+    });
+
+  const runBulkDelete = async () => {
     const ids = Array.from(selected);
-    if (ids.length === 0 || bulkBusy) return;
+    if (ids.length === 0 || bulkBusyRef.current) return;
+    bulkBusyRef.current = true;
     setBulkBusy(true);
     try {
-      for (const id of ids) {
-        const s = suggestions.find((x) => x.id === id);
-        if (!s) continue;
-        await onAction(action, s);
+      // Deletes are independent and idempotent — run them in parallel.
+      const results = await Promise.allSettled(
+        ids.map((id) => {
+          const s = suggestions.find((x) => x.id === id);
+          if (!s) return Promise.resolve(false as const);
+          return onAction("delete", s, { silent: true });
+        })
+      );
+      const successIds = ids.filter(
+        (_, i) => results[i].status === "fulfilled" && results[i].value === true
+      );
+      dropFromSelection(successIds);
+      const failed = ids.length - successIds.length;
+      if (successIds.length > 0) {
+        toast.success(
+          `Deleted ${successIds.length} post${successIds.length === 1 ? "" : "s"}`
+        );
       }
-      clearSelection();
+      if (failed > 0) {
+        toast.error(`${failed} couldn't be deleted — still selected for retry`);
+      }
+      onBulkComplete?.(0);
     } finally {
+      bulkBusyRef.current = false;
       setBulkBusy(false);
     }
   };
 
-  const runBulkSchedule = async (date: Date) => {
+  // Send all is sequential — Zernio rate-limits per-account, and ordering
+  // keeps per-row toasts predictable on failure. The server enforces the
+  // free-post quota on both publish AND schedule (route.ts:141), so the
+  // pre-flight trim treats them the same.
+  const runSendAll = async () => {
     const ids = Array.from(selected);
-    if (ids.length === 0 || bulkBusy) return;
-    setBulkBusy(true);
-    try {
-      const iso = date.toISOString();
-      for (const id of ids) {
-        await onSchedule(id, iso);
+    if (ids.length === 0 || bulkBusyRef.current) return;
+    bulkBusyRef.current = true;
+
+    const snapshot = ids
+      .map((id) => suggestions.find((s) => s.id === id))
+      .filter((s): s is Suggestion => Boolean(s));
+
+    const mediaSkipped: Suggestion[] = [];
+    const eligible: Suggestion[] = [];
+    for (const s of snapshot) {
+      const cfg = getPlatformConfig(s.socialAccount.platform);
+      if (cfg.requiresMedia !== null && s.mediaItems.length === 0) {
+        mediaSkipped.push(s);
+      } else {
+        eligible.push(s);
       }
-      clearSelection();
+    }
+
+    let ready = eligible;
+    let limitTrimmed: Suggestion[] = [];
+    if (quotaRemaining !== null && eligible.length > quotaRemaining) {
+      ready = eligible.slice(0, quotaRemaining);
+      limitTrimmed = eligible.slice(quotaRemaining);
+    }
+
+    const skipReason = (media: number, limit: number): string[] => {
+      const parts: string[] = [];
+      if (media > 0) parts.push(`${media} missing media`);
+      if (limit > 0) parts.push(`${limit} over free plan limit`);
+      return parts;
+    };
+
+    if (ready.length === 0) {
+      const reasons = skipReason(mediaSkipped.length, limitTrimmed.length);
+      toast.error(
+        reasons.length > 0
+          ? `Nothing to send — ${reasons.join(", ")}`
+          : "Nothing to send"
+      );
+      bulkBusyRef.current = false;
+      return;
+    }
+
+    const reasons = skipReason(mediaSkipped.length, limitTrimmed.length);
+    const ok = await confirm({
+      title: `Send ${ready.length} post${ready.length === 1 ? "" : "s"}?`,
+      description:
+        reasons.length > 0
+          ? `${reasons.join(", ")} will be skipped.`
+          : "This will publish or schedule each post immediately.",
+      confirmLabel: "Send all",
+    });
+    if (!ok) {
+      bulkBusyRef.current = false;
+      return;
+    }
+
+    setBulkBusy(true);
+    setBulkProgress({ current: 0, total: ready.length });
+    try {
+      const successIds: string[] = [];
+      let sentCount = 0;
+      for (let i = 0; i < ready.length; i++) {
+        const id = ready[i].id;
+        setBulkProgress({ current: i + 1, total: ready.length });
+        // Re-read latest — the user can edit a draft mid-run (chat panel,
+        // per-card schedule picker), and `scheduledAt` decides the action.
+        const fresh = suggestionsRef.current.find((x) => x.id === id);
+        if (!fresh) continue;
+        const ok = await onAction(
+          fresh.scheduledAt ? "schedule" : "publish",
+          fresh,
+          { silent: true }
+        );
+        if (ok) {
+          successIds.push(id);
+          sentCount += 1;
+        }
+      }
+      dropFromSelection(successIds);
+      const failed = ready.length - successIds.length;
+      if (sentCount > 0) {
+        toast.success(
+          `Sent ${sentCount} post${sentCount === 1 ? "" : "s"}`
+        );
+      }
+      if (failed > 0) {
+        toast.error(`${failed} couldn't be sent — still selected for retry`);
+      }
+      const skipParts = skipReason(mediaSkipped.length, limitTrimmed.length);
+      if (skipParts.length > 0) {
+        const totalSkipped = mediaSkipped.length + limitTrimmed.length;
+        toast.error(`${totalSkipped} skipped — ${skipParts.join(", ")}`);
+      }
+      onBulkComplete?.(sentCount);
     } finally {
+      bulkBusyRef.current = false;
       setBulkBusy(false);
+      setBulkProgress(null);
     }
   };
 
   return (
-    /* Kanban screen: breaks out of layout padding with -mx-8 -my-6, owns a
-       single h-[100dvh] scroll container so column headers can be sticky top-0. */
-    <div className="-mx-8 -my-6 flex flex-col min-w-0 h-[calc(100dvh-3.5rem)] md:h-[100dvh] overflow-hidden">
-      <header className="flex-shrink-0 px-8 pt-6 pb-4 border-b border-gray-200 flex items-start gap-4">
-        <button
-          type="button"
-          onClick={onBack}
-          className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-gray-600 hover:bg-black/[0.04] hover:text-gray-900 transition-colors cursor-pointer whitespace-nowrap shrink-0"
-        >
-          <ArrowLeftIcon className="h-4 w-4" />
-          Back to home
-        </button>
-
-        <div className="flex-1 min-w-0 flex flex-col items-center gap-2">
-          <h1 className="text-[15px] font-semibold tracking-tight text-gray-900 whitespace-nowrap">
-            <span className="tabular-nums">{total}</span>{" "}
-            {total === 1 ? "post" : "posts"} ready to publish
-          </h1>
-          {accountsWithPosts.length > 0 && (
-            <div className="flex flex-wrap items-center justify-center gap-1">
-              {accountsWithPosts.length > 1 && (
-                <FilterPill
-                  active={!activeAccount}
-                  onClick={() => setActiveAccount(null)}
-                >
-                  All accounts
-                </FilterPill>
-              )}
-              {accountsWithPosts.map((a) => {
-                const platform = getPlatform(a.platform);
-                return (
-                  <FilterPill
-                    key={a.id}
-                    active={activeAccount === a.id}
-                    onClick={() => setActiveAccount(a.id)}
-                  >
-                    <span
-                      className="h-1.5 w-1.5 rounded-full"
-                      style={{ backgroundColor: platform?.color ?? "#666" }}
-                    />
-                    {platform?.label ?? a.platform}
-                  </FilterPill>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Right spacer to keep title centered, same width as back button */}
-        <div className="shrink-0 w-[120px]" aria-hidden />
-      </header>
-
-      {/* Board — own scroll container so sticky column headers work */}
+    /* Standalone (wizard) mode breaks out of layout padding and owns its own
+       100dvh scroll container so column headers can be sticky top-0.
+       Embedded mode renders inline within the page scroll — no breakout, no
+       full-height clamp, no sticky column headers. */
+    <div
+      className={
+        embedded
+          ? "flex flex-col min-w-0"
+          : "-mx-8 -my-6 flex flex-col min-w-0 h-[calc(100dvh-3.5rem)] md:h-[100dvh] overflow-hidden"
+      }
+    >
+      {/* Board — standalone owns its own scroll container; embedded scrolls with the page. */}
       {total === 0 ? (
-        <div className="flex-1 flex items-center justify-center">
-          <p className="text-sm text-gray-500">
-            All posts handled. Go back to generate more.
-          </p>
-        </div>
+        embedded ? null : (
+          <div className="flex-1 flex items-center justify-center">
+            <p className="text-sm text-gray-500">
+              All posts handled. Go back to generate more.
+            </p>
+          </div>
+        )
       ) : (
-        <div className="flex-1 min-w-0 overflow-auto px-8 pt-3 pb-24">
+        <div
+          className={
+            embedded
+              ? "min-w-0 overflow-x-auto pb-4"
+              : "flex-1 min-w-0 overflow-auto px-8 pt-3 pb-24"
+          }
+        >
           <div
             className={
               activeAccount
@@ -251,12 +363,14 @@ export function ResultsView({
                 group={group}
                 selected={selected}
                 fullWidth={!!activeAccount}
+                stickyHeader={!embedded}
                 onToggleOne={toggleOne}
                 onToggleColumn={toggleColumn}
                 onEdit={onEdit}
                 onSchedule={onSchedule}
                 onAction={onAction}
                 onMediaChanged={onMediaChanged}
+                confirm={confirm}
               />
             ))}
           </div>
@@ -267,21 +381,21 @@ export function ResultsView({
         <BulkBar
           count={selected.size}
           busy={bulkBusy}
+          progress={bulkProgress}
           onClear={clearSelection}
-          onDelete={() => {
-            if (
-              typeof window !== "undefined" &&
-              !window.confirm(
-                `Delete ${selected.size} post${selected.size === 1 ? "" : "s"}?`
-              )
-            )
-              return;
-            runBulk("delete");
+          onDelete={async () => {
+            const ok = await confirm({
+              title: `Delete ${selected.size} post${selected.size === 1 ? "" : "s"}?`,
+              description: "This can't be undone.",
+              confirmLabel: "Delete",
+              destructive: true,
+            });
+            if (ok) runBulkDelete();
           }}
-          onPublishAll={() => runBulk("publish")}
-          onScheduleAll={runBulkSchedule}
+          onSendAll={runSendAll}
         />
       )}
+      {confirmDialog}
     </div>
   );
 }
@@ -314,37 +428,49 @@ function PlatformColumn({
   group,
   selected,
   fullWidth,
+  stickyHeader = true,
   onToggleOne,
   onToggleColumn,
   onEdit,
   onSchedule,
   onAction,
   onMediaChanged,
+  confirm,
 }: {
   group: PlatformGroup;
   selected: Set<string>;
   fullWidth: boolean;
+  stickyHeader?: boolean;
   onToggleOne: (id: string) => void;
   onToggleColumn: (postIds: string[]) => void;
   onEdit: (s: Suggestion) => void;
-  onSchedule: (id: string, scheduledAt: string) => Promise<void>;
-  onAction: (action: string, s: Suggestion) => Promise<void>;
+  onSchedule: (
+    id: string,
+    scheduledAt: string | null
+  ) => Promise<boolean | void>;
+  onAction: (action: string, s: Suggestion) => Promise<boolean | void>;
   onMediaChanged: (id: string, mediaItems: MediaItem[]) => Promise<void>;
+  confirm: ConfirmFn;
 }) {
   const platform = getPlatform(group.account.platform);
   const color = platform?.color ?? "#666";
   const ids = group.posts.map((p) => p.id);
   const colSelected = group.posts.filter((p) => selected.has(p.id)).length;
-  const allSelected = colSelected === group.posts.length && group.posts.length > 0;
+  const allSelected =
+    colSelected === group.posts.length && group.posts.length > 0;
   const partial = colSelected > 0 && !allSelected;
 
   return (
     <section
       className={`flex flex-col gap-3.5 ${
-        fullWidth ? "w-full" : "w-[340px] flex-shrink-0"
+        fullWidth ? "w-full" : "w-[500px] flex-shrink-0"
       }`}
     >
-      <header className="sticky top-0 z-10 flex items-center gap-2.5 bg-[#faf9f5] px-1 pt-1 pb-2.5">
+      <header
+        className={`${
+          stickyHeader ? "sticky top-0 z-10 " : ""
+        }flex items-center gap-2.5 bg-[#faf9f5] px-1 pt-1 pb-2.5`}
+      >
         <button
           type="button"
           onClick={() => onToggleColumn(ids)}
@@ -405,9 +531,10 @@ function PlatformColumn({
             selected={selected.has(post.id)}
             onToggleSelect={() => onToggleOne(post.id)}
             onEdit={() => onEdit(post)}
-            onSchedule={(date) => onSchedule(post.id, date.toISOString())}
+            onSchedule={(scheduledAt) => onSchedule(post.id, scheduledAt)}
             onAction={(action) => onAction(action, post)}
             onMediaChanged={onMediaChanged}
+            confirm={confirm}
           />
         ))}
       </div>
@@ -424,16 +551,19 @@ function PostCard({
   onSchedule,
   onAction,
   onMediaChanged,
+  confirm,
 }: {
   post: Suggestion;
   color: string;
   selected: boolean;
   onToggleSelect: () => void;
   onEdit: () => void;
-  onSchedule: (date: Date) => Promise<void>;
-  onAction: (action: string) => Promise<void>;
+  onSchedule: (scheduledAt: string | null) => Promise<boolean | void>;
+  onAction: (action: string) => Promise<boolean | void>;
   onMediaChanged: (id: string, mediaItems: MediaItem[]) => Promise<void>;
+  confirm: ConfirmFn;
 }) {
+  const isScheduled = post.scheduledAt !== null;
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const isBusy = busyAction !== null;
   const platform = getPlatform(post.socialAccount.platform);
@@ -449,13 +579,13 @@ function PostCard({
   const hasVideo = post.mediaItems.some((m) => m.type === "video");
   const hasImage = post.mediaItems.some((m) => m.type === "image");
   const imagesFull =
-    post.mediaItems.filter((m) => m.type === "image").length >= mediaRules.maxImages;
+    post.mediaItems.filter((m) => m.type === "image").length >=
+    mediaRules.maxImages;
   const videosFull =
-    post.mediaItems.filter((m) => m.type === "video").length >= mediaRules.maxVideos;
+    post.mediaItems.filter((m) => m.type === "video").length >=
+    mediaRules.maxVideos;
   const addDisabled =
-    isBusy ||
-    (hasVideo && videosFull) ||
-    (hasImage && imagesFull);
+    isBusy || (hasVideo && videosFull) || (hasImage && imagesFull);
 
   let acceptAttr = "image/*,video/*";
   if (hasVideo) acceptAttr = "video/*";
@@ -464,7 +594,10 @@ function PostCard({
   else if (mediaRules.maxVideos === 0) acceptAttr = "image/*";
   const swapMultiple = !hasVideo && mediaRules.maxImages > 1 && !imagesFull;
 
-  const run = async (action: string, fn: () => Promise<void>) => {
+  const run = async (
+    action: string,
+    fn: () => Promise<boolean | void>
+  ) => {
     setBusyAction(action);
     try {
       await fn();
@@ -480,7 +613,9 @@ function PostCard({
     try {
       const tentative = Array.from(files).map((f) => ({
         url: "https://res.cloudinary.com/_/preflight",
-        type: f.type.startsWith("video/") ? ("video" as const) : ("image" as const),
+        type: f.type.startsWith("video/")
+          ? ("video" as const)
+          : ("image" as const),
       }));
       const preflight = validateMediaItems(
         [...post.mediaItems, ...tentative],
@@ -492,7 +627,10 @@ function PostCard({
       }
       const uploaded = await upload(files);
       const merged = [...post.mediaItems, ...uploaded];
-      const validation = validateMediaItems(merged, post.socialAccount.platform);
+      const validation = validateMediaItems(
+        merged,
+        post.socialAccount.platform
+      );
       if (!validation.ok) {
         toast.error(validation.error);
         return;
@@ -625,17 +763,13 @@ function PostCard({
                   }
             }
             title={
-              mediaMissing
-                ? mediaMissingTitle
-                : "Attach media for this post"
+              mediaMissing ? mediaMissingTitle : "Attach media for this post"
             }
             aria-label={
               mediaMissing ? mediaMissingTitle : "Attach media for this post"
             }
           >
-            <span
-              className={mediaMissing ? "text-amber-700" : "text-gray-700"}
-            >
+            <span className={mediaMissing ? "text-amber-700" : "text-gray-700"}>
               {mediaMissing ? (
                 <WarningIcon className="h-3.5 w-3.5" weight="fill" />
               ) : post.contentType === "video" ? (
@@ -667,13 +801,14 @@ function PostCard({
         <div className="flex items-center gap-1 ml-auto">
           <button
             type="button"
-            onClick={() => {
-              if (
-                typeof window !== "undefined" &&
-                !window.confirm("Delete this post idea?")
-              )
-                return;
-              run("delete", () => onAction("delete"));
+            onClick={async () => {
+              const ok = await confirm({
+                title: "Delete this post idea?",
+                description: "This can't be undone.",
+                confirmLabel: "Delete",
+                destructive: true,
+              });
+              if (ok) run("delete", () => onAction("delete"));
             }}
             disabled={isBusy}
             title="Delete"
@@ -727,29 +862,35 @@ function PostCard({
           <TooltipProvider delayDuration={150}>
             <Tooltip open={mediaMissing ? undefined : false}>
               <TooltipTrigger asChild>
-                {/* Wrapping span keeps the tooltip clickable when the
-                    SchedulePicker trigger is disabled (Radix swallows pointer
-                    events on disabled triggers). */}
-                <span className="inline-flex">
+                {/* Split-button: schedule selector + CTA flush against each
+                    other. Wrapping span keeps the tooltip clickable when the
+                    inner trigger is disabled (Radix swallows pointer events on
+                    disabled triggers). */}
+                <span className="inline-flex items-stretch">
                   <SchedulePicker
                     disabled={isBusy || mediaMissing}
                     platform={post.socialAccount.platform}
+                    variant="verbose"
+                    scheduledAt={post.scheduledAt}
+                    joinRight
                     onSchedule={(date) =>
-                      run("schedule", () => onSchedule(date))
+                      run("stage-schedule", () =>
+                        onSchedule(date.toISOString())
+                      )
+                    }
+                    onCancelSchedule={() =>
+                      run("clear-schedule", () => onSchedule(null))
                     }
                   />
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="top">{mediaMissingTitle}</TooltipContent>
-            </Tooltip>
-            <Tooltip open={mediaMissing ? undefined : false}>
-              <TooltipTrigger asChild>
-                <span className="inline-flex">
                   <button
                     type="button"
-                    onClick={() => run("publish", () => onAction("publish"))}
+                    onClick={() =>
+                      isScheduled
+                        ? run("schedule", () => onAction("schedule"))
+                        : run("publish", () => onAction("publish"))
+                    }
                     disabled={isBusy || mediaMissing}
-                    className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-[12.5px] font-medium text-white transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex h-10 md:h-8 items-center gap-1.5 rounded-r-lg px-3 text-[12.5px] font-medium text-white transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{
                       background:
                         "linear-gradient(180deg, #ec6f5b 0%, #c84a35 100%)",
@@ -757,13 +898,22 @@ function PostCard({
                         "inset 0 1px 0 rgba(255,255,255,0.18), 0 1px 2px rgba(200,74,53,0.25)",
                     }}
                   >
-                    {busyAction === "publish" ? (
+                    {busyAction === "publish" ||
+                    busyAction === "schedule" ? (
                       <SpinnerGapIcon className="h-3.5 w-3.5 animate-spin" />
+                    ) : isScheduled ? (
+                      <CalendarIcon className="h-3.5 w-3.5" weight="fill" />
                     ) : (
                       <PaperPlaneTiltIcon className="h-3.5 w-3.5" />
                     )}
                     <span>
-                      {busyAction === "publish" ? "Posting…" : "Post"}
+                      {busyAction === "publish"
+                        ? "Posting…"
+                        : busyAction === "schedule"
+                          ? "Scheduling…"
+                          : isScheduled
+                            ? "Schedule post"
+                            : "Post now"}
                     </span>
                   </button>
                 </span>
@@ -780,17 +930,17 @@ function PostCard({
 function BulkBar({
   count,
   busy,
+  progress,
   onClear,
   onDelete,
-  onPublishAll,
-  onScheduleAll,
+  onSendAll,
 }: {
   count: number;
   busy: boolean;
+  progress: { current: number; total: number } | null;
   onClear: () => void;
   onDelete: () => void;
-  onPublishAll: () => void;
-  onScheduleAll: (date: Date) => Promise<void>;
+  onSendAll: () => void;
 }) {
   return (
     <div className="fixed left-1/2 bottom-6 -translate-x-1/2 z-30 flex items-center gap-2 rounded-xl bg-[#2d2a25] py-2 pl-4 pr-2 text-white shadow-[0_12px_32px_rgba(0,0,0,0.20),0_4px_8px_rgba(0,0,0,0.10)] animate-in fade-in slide-in-from-bottom-2 duration-200">
@@ -807,15 +957,9 @@ function BulkBar({
         <TrashIcon className="h-3.5 w-3.5" />
         Delete
       </button>
-      <SchedulePicker
-        disabled={busy}
-        onSchedule={(date) => {
-          void onScheduleAll(date);
-        }}
-      />
       <button
         type="button"
-        onClick={onPublishAll}
+        onClick={onSendAll}
         disabled={busy}
         className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12.5px] font-medium text-white transition-all cursor-pointer disabled:opacity-50"
         style={{
@@ -829,7 +973,11 @@ function BulkBar({
         ) : (
           <PaperPlaneTiltIcon className="h-3.5 w-3.5" />
         )}
-        Post all
+        <span className="tabular-nums">
+          {busy && progress
+            ? `Sending ${progress.current}/${progress.total}…`
+            : "Send all"}
+        </span>
       </button>
       <button
         type="button"

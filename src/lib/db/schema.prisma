@@ -134,6 +134,7 @@ model PostSuggestion {
   suggestedHour   Int           // 0-23 local time
   reasoning       String?
   mediaItems      Json?         // [{url, type: "image"|"video"}, ...]
+  scheduledAt     DateTime?
   createdAt       DateTime      @default(now())
 
   @@index([socialAccountId])

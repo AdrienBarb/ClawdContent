@@ -17,6 +17,7 @@ export interface Suggestion {
   suggestedHour: number;
   reasoning: string | null;
   mediaItems: MediaItem[];
+  scheduledAt: string | null;
   status: string;
   socialAccount: { platform: string; username: string };
 }

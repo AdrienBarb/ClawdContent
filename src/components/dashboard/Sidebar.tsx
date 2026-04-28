@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { appRouter } from "@/lib/constants/appRouter";
@@ -60,30 +61,14 @@ function getInitials(name?: string | null, email?: string | null) {
 
 function BrandMark() {
   return (
-    <div
-      className="flex h-7 w-7 items-center justify-center rounded-lg text-white shadow-sm shrink-0"
-      style={{
-        background: "linear-gradient(135deg, #ec6f5b, #c84a35)",
-        boxShadow:
-          "inset 0 1px 0 rgba(255,255,255,0.25), 0 1px 2px rgba(0,0,0,0.06)",
-      }}
-    >
-      <svg
-        viewBox="0 0 24 24"
-        width="18"
-        height="18"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M6 4c2 1 3 3 3 5s-1 4-3 5" />
-        <path d="M14 4c-2 1-3 3-3 5s1 4 3 5" />
-        <path d="M9 14l-1 6" />
-        <path d="M15 14l1 6" />
-      </svg>
-    </div>
+    <Image
+      src="/logo.svg"
+      alt="PostClaw"
+      width={28}
+      height={28}
+      priority
+      className="h-7 w-7 shrink-0 rounded-lg"
+    />
   );
 }
 

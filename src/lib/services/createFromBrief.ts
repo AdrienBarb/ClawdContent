@@ -2,11 +2,8 @@ import { prisma } from "@/lib/db/prisma";
 import { generateObject } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import {
-  contentTypeRule,
-  enforceMediaContentType,
+  defaultContentType,
   getPlatformConfig,
-  type PlatformConfig,
-  type SuggestionContentType,
 } from "@/lib/insights/platformConfig";
 import { briefOutputClaudeSchema } from "@/lib/schemas/createFromBrief";
 import type { Insights } from "@/lib/schemas/insights";
@@ -85,7 +82,6 @@ async function generateForAccount(
   const prompt = buildBriefPrompt({
     platformDisplayName: config.displayName,
     charLimit: config.charLimit,
-    requiresMedia: config.requiresMedia,
     insights,
     knowledgeBase,
     brief,
@@ -115,34 +111,19 @@ async function generateForAccount(
   const finalPosts = object.posts.slice(0, MAX_POSTS_PER_ACCOUNT);
   const slots = pickTimeSlots(insights, config.defaultBestTimes, finalPosts.length);
 
-  // Safety net: coerce contentType for media-required platforms in case Claude
-  // ignored the prompt and emitted "text" for TikTok/Instagram/Pinterest/YouTube.
-  let coercedCount = 0;
-  const enforced = finalPosts.map((p) => {
-    const next = enforceMediaContentType(
-      p.contentType as SuggestionContentType,
-      config.requiresMedia
-    );
-    if (next !== p.contentType) coercedCount += 1;
-    return { ...p, contentType: next };
-  });
-  if (coercedCount > 0) {
-    console.warn(
-      `[createFromBrief] ⚠️  coerced contentType on ${coercedCount}/${enforced.length} post(s) for ${account.platform} (requiresMedia=${config.requiresMedia})`
-    );
-  }
+  const contentType = defaultContentType(config.requiresMedia);
 
   // Wipe-and-replace contract (matches generateSuggestions): each generation
   // run is the user's full new batch. Atomic — if any insert fails, the old
   // suggestions survive.
   const txResults = await prisma.$transaction([
     prisma.postSuggestion.deleteMany({ where: { socialAccountId } }),
-    ...enforced.map((p, i) =>
+    ...finalPosts.map((p, i) =>
       prisma.postSuggestion.create({
         data: {
           socialAccountId,
           content: p.content,
-          contentType: p.contentType,
+          contentType,
           suggestedDay: slots[i].dayOfWeek,
           suggestedHour: slots[i].hour,
           reasoning: p.reasoning,
@@ -165,7 +146,6 @@ async function generateForAccount(
 interface PromptInput {
   platformDisplayName: string;
   charLimit: number | null;
-  requiresMedia: PlatformConfig["requiresMedia"];
   insights: Insights | null;
   knowledgeBase: Record<string, unknown> | null;
   brief: string;
@@ -249,7 +229,6 @@ Each post must be:
 
 ## Each post object
 - content: the post text. No surrounding quotes. No "Post 1:" prefix. Ready to publish.
-- contentType: ${contentTypeRule(input.requiresMedia)}.
 - reasoning: ONE short sentence on why this would land with their audience.`);
 
   return sections.join("\n\n");

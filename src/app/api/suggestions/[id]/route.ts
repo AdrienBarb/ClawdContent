@@ -16,13 +16,13 @@ const patchInputSchema = z
     mediaItems: mediaItemsSchema.optional(),
     suggestedDay: z.number().int().min(0).max(6).optional(),
     suggestedHour: z.number().int().min(0).max(23).optional(),
+    scheduledAt: z.union([z.string().datetime(), z.null()]).optional(),
   })
   .strict();
 
 const postActionSchema = z
   .object({
-    action: z.enum(["schedule", "publish"]).optional(),
-    scheduledAt: z.string().datetime().optional(),
+    action: z.enum(["schedule", "publish"]),
   })
   .strict();
 
@@ -37,44 +37,6 @@ async function findSuggestion(id: string, userId: string) {
     where: { id, socialAccount: { lateProfile: { userId } } },
     include: { socialAccount: { include: { lateProfile: true } } },
   });
-}
-
-function computeScheduledDate(
-  suggestedDay: number,
-  suggestedHour: number,
-  userTz: string
-): Date {
-  const now = new Date();
-  const nowParts = new Intl.DateTimeFormat("en-US", {
-    timeZone: userTz,
-    weekday: "short",
-    hour: "numeric",
-    hourCycle: "h23",
-  }).formatToParts(now);
-  const userDayName = nowParts.find((p) => p.type === "weekday")?.value ?? "";
-  const userHour = parseInt(nowParts.find((p) => p.type === "hour")?.value ?? "0");
-
-  const jsMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
-  const userJsDay = jsMap[userDayName] ?? 0;
-  const targetJsDow = suggestedDay === 6 ? 0 : suggestedDay + 1;
-
-  let daysUntil = targetJsDow - userJsDay;
-  if (daysUntil < 0) daysUntil += 7;
-  if (daysUntil === 0 && suggestedHour <= userHour) daysUntil = 7;
-
-  const scheduledDate = new Date(now);
-  scheduledDate.setUTCDate(scheduledDate.getUTCDate() + daysUntil);
-  scheduledDate.setUTCHours(suggestedHour, 0, 0, 0);
-
-  const checkParts = new Intl.DateTimeFormat("en-US", {
-    timeZone: userTz,
-    hour: "numeric",
-    hourCycle: "h23",
-  }).formatToParts(scheduledDate);
-  const checkHour = parseInt(checkParts.find((p) => p.type === "hour")?.value ?? "0");
-  scheduledDate.setUTCHours(scheduledDate.getUTCHours() - (checkHour - suggestedHour));
-
-  return scheduledDate;
 }
 
 export async function PATCH(
@@ -107,11 +69,38 @@ export async function PATCH(
       }
     }
 
+    if (typeof input.scheduledAt === "string") {
+      const parsed = new Date(input.scheduledAt);
+      if (parsed.getTime() <= Date.now()) {
+        return NextResponse.json(
+          {
+            error: "INVALID_SCHEDULE",
+            message: "Schedule time must be in the future.",
+          },
+          { status: 400 }
+        );
+      }
+      const oneYearMs = 365 * 24 * 60 * 60 * 1000;
+      if (parsed.getTime() > Date.now() + oneYearMs) {
+        return NextResponse.json(
+          {
+            error: "INVALID_SCHEDULE",
+            message: "Schedule time can't be more than a year out.",
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     const data: Record<string, unknown> = {};
     if (input.content !== undefined) data.content = input.content;
     if (input.mediaItems !== undefined) data.mediaItems = input.mediaItems;
     if (input.suggestedDay !== undefined) data.suggestedDay = input.suggestedDay;
     if (input.suggestedHour !== undefined) data.suggestedHour = input.suggestedHour;
+    if (input.scheduledAt !== undefined) {
+      data.scheduledAt =
+        input.scheduledAt === null ? null : new Date(input.scheduledAt);
+    }
 
     const updated = await prisma.postSuggestion.update({ where: { id }, data });
     return NextResponse.json({
@@ -132,8 +121,7 @@ export async function POST(
 
     const { id } = await params;
     const raw = await req.json().catch(() => ({}));
-    const input = postActionSchema.parse(raw);
-    const action = input.action ?? "schedule";
+    const { action } = postActionSchema.parse(raw);
 
     const suggestion = await findSuggestion(id, session.user.id);
     if (!suggestion) return NextResponse.json({ error: "Suggestion not found" }, { status: 404 });
@@ -205,15 +193,31 @@ export async function POST(
       return NextResponse.json({ success: true, postId: post.id, action: "published" });
     }
 
-    const scheduledDate = input.scheduledAt
-      ? new Date(input.scheduledAt)
-      : computeScheduledDate(suggestion.suggestedDay, suggestion.suggestedHour, userTz);
+    if (!suggestion.scheduledAt) {
+      return NextResponse.json(
+        {
+          error: "NO_SCHEDULE_STAGED",
+          message: "Pick a schedule time first.",
+        },
+        { status: 422 }
+      );
+    }
+    if (suggestion.scheduledAt.getTime() <= Date.now()) {
+      return NextResponse.json(
+        {
+          error: "SCHEDULE_IN_PAST",
+          message: "That schedule time has passed. Pick a new one.",
+        },
+        { status: 422 }
+      );
+    }
+
     const post = await createPost(
       lateProfile.lateProfileId,
       {
         content: suggestion.content,
         platform: { platform: socialAccount.platform, accountId: socialAccount.lateAccountId },
-        scheduledAt: scheduledDate.toISOString(),
+        scheduledAt: suggestion.scheduledAt.toISOString(),
         publishNow: false,
         timezone: userTz,
         ...(mediaForCreate ? { mediaItems: mediaForCreate } : {}),

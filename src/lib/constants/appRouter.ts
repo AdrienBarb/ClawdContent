@@ -38,6 +38,7 @@ export const appRouter = {
     accountsCallback: "/api/accounts/callback",
     suggestions: "/api/suggestions",
     suggestionsGenerate: "/api/suggestions/generate",
+    chat: "/api/chat",
     billingPortal: "/api/billing/portal",
     billingChangePlan: "/api/billing/change-plan",
     media: "/api/media",

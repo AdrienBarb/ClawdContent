@@ -4,6 +4,7 @@ import { auth } from "@/lib/better-auth/auth";
 import { NextResponse, NextRequest } from "next/server";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/db/prisma";
+import { coerceMediaItems } from "@/lib/schemas/mediaItems";
 
 export async function GET(req: NextRequest) {
   try {
@@ -47,7 +48,12 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ suggestions });
+    return NextResponse.json({
+      suggestions: suggestions.map((s) => ({
+        ...s,
+        mediaItems: coerceMediaItems(s.mediaItems),
+      })),
+    });
   } catch (error) {
     return errorHandler(error);
   }

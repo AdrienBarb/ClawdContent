@@ -3,11 +3,8 @@ import { generateObject } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
 import {
-  contentTypeRule,
-  enforceMediaContentType,
+  defaultContentType,
   getPlatformConfig,
-  type PlatformConfig,
-  type SuggestionContentType,
 } from "@/lib/insights/platformConfig";
 import { type Insights } from "@/lib/schemas/insights";
 import { planChunks, themeForChunk } from "@/lib/services/chunking";
@@ -31,7 +28,6 @@ const generatedPostsSchema = z.object({
   suggestions: z.array(
     z.object({
       content: z.string(),
-      contentType: z.enum(["text", "image", "video", "carousel"]),
       reasoning: z.string(),
     })
   ),
@@ -115,7 +111,6 @@ export async function generateSuggestions(
       generateChunk({
         platformDisplayName: config.displayName,
         charLimit: config.charLimit,
-        requiresMedia: config.requiresMedia,
         insights,
         knowledgeBase,
         topic,
@@ -158,22 +153,7 @@ export async function generateSuggestions(
   // Pick suggestedDay/Hour: prefer real bestTimes, rotate through top 3, fall back to platform defaults
   const slots = pickTimeSlots(insights, config.defaultBestTimes, finalSuggestions.length);
 
-  // Safety net: coerce contentType for media-required platforms in case Claude
-  // ignored the prompt and emitted "text" for TikTok/Instagram/Pinterest/YouTube.
-  let coercedCount = 0;
-  const enforced = finalSuggestions.map((s) => {
-    const next = enforceMediaContentType(
-      s.contentType as SuggestionContentType,
-      config.requiresMedia
-    );
-    if (next !== s.contentType) coercedCount += 1;
-    return { ...s, contentType: next };
-  });
-  if (coercedCount > 0) {
-    console.warn(
-      `[postSuggestions] ⚠️  coerced contentType on ${coercedCount}/${enforced.length} suggestion(s) for ${account.platform} (requiresMedia=${config.requiresMedia})`
-    );
-  }
+  const contentType = defaultContentType(config.requiresMedia);
 
   // Atomic: delete old + create new in one transaction. If anything fails, the old suggestions survive.
   // Using the batch (sequential-array) form rather than an interactive
@@ -182,12 +162,12 @@ export async function generateSuggestions(
   // cross-region under load).
   const txResults = await prisma.$transaction([
     prisma.postSuggestion.deleteMany({ where: { socialAccountId } }),
-    ...enforced.map((s, i) =>
+    ...finalSuggestions.map((s, i) =>
       prisma.postSuggestion.create({
         data: {
           socialAccountId,
           content: s.content,
-          contentType: s.contentType,
+          contentType,
           suggestedDay: slots[i].dayOfWeek,
           suggestedHour: slots[i].hour,
           reasoning: s.reasoning,
@@ -206,7 +186,6 @@ export async function generateSuggestions(
 interface ChunkInput {
   platformDisplayName: string;
   charLimit: number | null;
-  requiresMedia: PlatformConfig["requiresMedia"];
   insights: Insights | null;
   knowledgeBase: Record<string, unknown> | null;
   topic?: string;
@@ -353,7 +332,6 @@ Return EXACTLY ${input.chunkSize} post ${input.chunkSize === 1 ? "suggestion" : 
 
 For each:
 - content: the post text${input.charLimit ? ` (max ${input.charLimit} characters)` : ""}. Use hashtags they actually use when natural. Match their tone, length, and emoji habits.
-- contentType: ${contentTypeRule(input.requiresMedia)}.
 - reasoning: ONE short sentence explaining why this would land with their audience.`);
 
   return sections.join("\n\n");

@@ -212,36 +212,14 @@ export function isSupportedPlatform(platform: string): boolean {
 export type SuggestionContentType = "text" | "image" | "video" | "carousel";
 
 /**
- * Prompt fragment that constrains Claude's `contentType` choice based on
- * what the platform actually accepts. Returned string ends without a trailing
- * period so the caller can chain.
+ * Deterministic contentType from the platform's media rule. The model never
+ * picks contentType — it's purely a function of what the platform accepts.
+ * Free-choice platforms default to "text"; the user attaches media if they want.
  */
-export function contentTypeRule(
-  requiresMedia: PlatformConfig["requiresMedia"]
-): string {
-  if (requiresMedia === "video") {
-    return `"video" — this platform only accepts video posts, never "text", "image", or "carousel"`;
-  }
-  if (requiresMedia === "image_or_video") {
-    return `"image", "video", or "carousel" — this platform requires media, never "text"`;
-  }
-  return `"text", "image", "video", or "carousel" — bias towards what works for them based on their content mix`;
-}
-
-/**
- * Safety net: if Claude ignores the prompt and emits `"text"` for a
- * media-required platform, coerce to a valid type so the suggestion is at
- * least postable (the user will still need to attach media).
- */
-export function enforceMediaContentType(
-  contentType: SuggestionContentType,
+export function defaultContentType(
   requiresMedia: PlatformConfig["requiresMedia"]
 ): SuggestionContentType {
-  if (requiresMedia === "video" && contentType !== "video") {
-    return "video";
-  }
-  if (requiresMedia === "image_or_video" && contentType === "text") {
-    return "image";
-  }
-  return contentType;
+  if (requiresMedia === "video") return "video";
+  if (requiresMedia === "image_or_video") return "image";
+  return "text";
 }
