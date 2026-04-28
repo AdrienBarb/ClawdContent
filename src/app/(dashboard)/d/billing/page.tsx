@@ -14,9 +14,15 @@ async function BillingContent() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) redirect("/");
 
-  const subscription = await prisma.subscription.findUnique({
-    where: { userId: session.user.id },
-  });
+  const [subscription, lateProfile] = await Promise.all([
+    prisma.subscription.findUnique({
+      where: { userId: session.user.id },
+    }),
+    prisma.lateProfile.findUnique({
+      where: { userId: session.user.id },
+      include: { socialAccounts: { where: { status: "active" } } },
+    }),
+  ]);
 
   if (!subscription) {
     return <BillingUnsubscribed />;
@@ -27,11 +33,6 @@ async function BillingContent() {
 
   const planId = (subscription.planId as PlanId) || "pro";
   const plan = getPlan(planId);
-
-  const lateProfile = await prisma.lateProfile.findUnique({
-    where: { userId: session.user.id },
-    include: { socialAccounts: { where: { status: "active" } } },
-  });
 
   const activeAccountCount = lateProfile?.socialAccounts?.length ?? 0;
 

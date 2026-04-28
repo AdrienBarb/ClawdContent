@@ -14,13 +14,12 @@ import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { buildChatSystemPrompt } from "@/lib/ai/chat-system-prompt";
 import { createChatTools } from "@/lib/ai/chat-tools";
-import { formatNextOccurrences, getBestSlots } from "@/lib/services/bestTimes";
+import { preview } from "@/lib/ai/preview";
+import { getBestSlots } from "@/lib/services/bestTimes";
 
 // /generate-objects calls under generate_posts can take 90–120s for the
 // slowest account chunk. 240 leaves comfortable headroom (Vercel Pro max 300).
 export const maxDuration = 240;
-
-const PREVIEW_LEN = 80;
 
 const bodySchema = z.object({
   messages: z.array(z.unknown()).min(1),
@@ -32,13 +31,6 @@ const bodySchema = z.object({
       message: "Duplicate accountIds are not allowed",
     }),
 });
-
-function preview(text: string): string {
-  const cleaned = text.replace(/\s+/g, " ").trim();
-  return cleaned.length > PREVIEW_LEN
-    ? `${cleaned.slice(0, PREVIEW_LEN)}…`
-    : cleaned;
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -114,7 +106,6 @@ export async function POST(req: NextRequest) {
     );
 
     const userTimezone = user?.timezone ?? "UTC";
-    const now = new Date();
 
     const accountsBestTimes = lateProfile.socialAccounts
       .filter((a) => validSelectedIds.includes(a.id))
@@ -128,12 +119,11 @@ export async function POST(req: NextRequest) {
             | null,
           platform: a.platform,
         });
-        const nextSlots = formatNextOccurrences(slots, 3, now, userTimezone);
         return {
           accountId: a.id,
           platform: a.platform,
           username: a.username,
-          nextSlots,
+          weeklySlots: slots.map((s) => ({ day: s.day, hour: s.hour })),
         };
       });
 

@@ -32,8 +32,6 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
-  LineChart,
-  Line,
 } from "recharts";
 
 // ---------------------------------------------------------------------------
@@ -171,13 +169,6 @@ function formatNumber(n: number): string {
   return String(n);
 }
 
-function formatSignedNumber(n: number): string {
-  const formatted = formatNumber(Math.abs(n));
-  if (n > 0) return `+${formatted}`;
-  if (n < 0) return `-${formatted}`;
-  return "0";
-}
-
 function formatChartDate(dateStr: string): string {
   const d = new Date(dateStr);
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -190,24 +181,6 @@ function getHeatmapColor(value: number, max: number): string {
   if (ratio > 0.5) return "bg-[var(--sidebar-accent)] opacity-60";
   if (ratio > 0.25) return "bg-[var(--sidebar-accent)] opacity-35";
   return "bg-[var(--sidebar-accent)] opacity-15";
-}
-
-function buildPlatformBreakdown(
-  dailyMetrics: DailyChartPoint[]
-): { platform: string; posts: number; color: string }[] {
-  const totals: Record<string, number> = {};
-  for (const day of dailyMetrics) {
-    for (const [platform, count] of Object.entries(day.platforms ?? {})) {
-      totals[platform] = (totals[platform] ?? 0) + count;
-    }
-  }
-  return Object.entries(totals)
-    .map(([platform, posts]) => ({
-      platform: getPlatform(platform)?.label ?? platform,
-      posts,
-      color: getPlatform(platform)?.color ?? "#6b7280",
-    }))
-    .sort((a, b) => b.posts - a.posts);
 }
 
 // ---------------------------------------------------------------------------
@@ -504,11 +477,6 @@ export default function AnalyticsDashboard() {
     [overviewData]
   );
 
-  const platformBreakdown = useMemo(
-    () => buildPlatformBreakdown(overviewData?.dailyMetrics ?? []),
-    [overviewData]
-  );
-
   const followerChartData = useMemo(
     () => buildFollowerChartData(followersData),
     [followersData]
@@ -528,7 +496,11 @@ export default function AnalyticsDashboard() {
     });
   }, [followersData]);
 
-  const connectedPlatforms = overviewData?.connectedPlatforms ?? [];
+  const connectedPlatforms = useMemo(
+    () => overviewData?.connectedPlatforms ?? [],
+    [overviewData]
+  );
+
   const platformOptions = useMemo(
     () => [
       { value: "all" as const, label: "All Platforms" },
@@ -672,7 +644,7 @@ export default function AnalyticsDashboard() {
                   </span>
                   <div>
                     <p className="text-sm font-medium text-gray-900">Best time to post</p>
-                    <p className="text-xs text-gray-500">AI-powered scheduling based on your audience</p>
+                    <p className="text-xs text-gray-500">Personalized timing based on when your audience is active</p>
                   </div>
                 </div>
               </div>

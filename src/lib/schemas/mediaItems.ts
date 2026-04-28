@@ -12,9 +12,10 @@ const cloudinaryUrlSchema = z
         const u = new URL(raw);
         if (u.protocol !== "https:") return false;
         if (u.hostname !== CLOUDINARY_HOSTNAME) return false;
-        if (CLOUDINARY_CLOUD && !u.pathname.startsWith(`/${CLOUDINARY_CLOUD}/`)) {
-          return false;
-        }
+        // Fail-closed: if the cloud name env var is missing, reject every URL
+        // rather than silently accepting URLs from other tenants.
+        if (!CLOUDINARY_CLOUD) return false;
+        if (!u.pathname.startsWith(`/${CLOUDINARY_CLOUD}/`)) return false;
         return true;
       } catch {
         return false;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, useId } from "react";
 import { appRouter } from "@/lib/constants/appRouter";
 import useApi from "@/lib/hooks/useApi";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,7 +18,12 @@ export default function SettingsPage() {
   const { useGet, usePatch } = useApi();
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
+  const [highlight, setHighlight] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const listboxId = useId();
+  const optionPrefix = useId();
 
   const {
     data: status,
@@ -42,6 +47,20 @@ export default function SettingsPage() {
     return ALL_TIMEZONES.filter((tz) => tz.toLowerCase().includes(q));
   }, [search]);
 
+  // Reset highlight when filter changes so ArrowDown lands on a real option.
+  useEffect(() => {
+    setHighlight(0);
+  }, [search]);
+
+  // Keep the highlighted option scrolled into view as the user arrows.
+  useEffect(() => {
+    if (!open || !listRef.current) return;
+    const el = listRef.current.querySelector<HTMLElement>(
+      `[data-option-index="${highlight}"]`
+    );
+    el?.scrollIntoView({ block: "nearest" });
+  }, [highlight, open]);
+
   // Close dropdown on outside click
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -56,6 +75,53 @@ export default function SettingsPage() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
+  const commitSelection = (tz: string) => {
+    updateTimezone({ timezone: tz });
+    setOpen(false);
+    setSearch("");
+    inputRef.current?.blur();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (!open) setOpen(true);
+      setHighlight((h) => Math.min(h + 1, Math.max(filtered.length - 1, 0)));
+      return;
+    }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlight((h) => Math.max(h - 1, 0));
+      return;
+    }
+    if (e.key === "Home") {
+      e.preventDefault();
+      setHighlight(0);
+      return;
+    }
+    if (e.key === "End") {
+      e.preventDefault();
+      setHighlight(Math.max(filtered.length - 1, 0));
+      return;
+    }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const tz = filtered[highlight];
+      if (tz) commitSelection(tz);
+      return;
+    }
+    if (e.key === "Escape") {
+      e.preventDefault();
+      if (open) {
+        setOpen(false);
+        setSearch("");
+      } else {
+        inputRef.current?.blur();
+      }
+      return;
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -64,6 +130,11 @@ export default function SettingsPage() {
       </div>
     );
   }
+
+  const activeOptionId =
+    open && filtered[highlight]
+      ? `${optionPrefix}-option-${highlight}`
+      : undefined;
 
   return (
     <div className="space-y-8">
@@ -86,7 +157,12 @@ export default function SettingsPage() {
         </div>
 
         <div ref={containerRef} className="relative max-w-sm">
+          <label htmlFor={`${optionPrefix}-input`} className="sr-only">
+            Timezone
+          </label>
           <Input
+            id={`${optionPrefix}-input`}
+            ref={inputRef}
             placeholder="Search timezone..."
             value={open ? search : currentTimezone ?? ""}
             onChange={(e) => {
@@ -97,35 +173,57 @@ export default function SettingsPage() {
               setOpen(true);
               setSearch("");
             }}
+            onKeyDown={handleKeyDown}
             disabled={isPending}
+            role="combobox"
+            aria-expanded={open}
+            aria-controls={listboxId}
+            aria-autocomplete="list"
+            aria-activedescendant={activeOptionId}
           />
 
           {open && (
-            <div className="absolute z-50 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg max-h-60 overflow-y-auto">
+            <div
+              ref={listRef}
+              id={listboxId}
+              role="listbox"
+              aria-label="Timezones"
+              className="absolute z-50 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg max-h-60 overflow-y-auto"
+            >
               {filtered.length === 0 ? (
                 <p className="px-3 py-2 text-sm text-gray-400">
                   No timezones found
                 </p>
               ) : (
-                filtered.map((tz) => (
-                  <button
-                    key={tz}
-                    type="button"
-                    className="flex w-full items-center justify-between px-3 py-2 text-sm text-left hover:bg-gray-50 cursor-pointer"
-                    onClick={() => {
-                      updateTimezone({ timezone: tz });
-                      setOpen(false);
-                      setSearch("");
-                    }}
-                  >
-                    <span className="text-gray-700">
-                      {tz.replaceAll("_", " ")}
-                    </span>
-                    {tz === currentTimezone && (
-                      <CheckIcon className="h-4 w-4 text-emerald-500 shrink-0" />
-                    )}
-                  </button>
-                ))
+                filtered.map((tz, idx) => {
+                  const isHighlighted = idx === highlight;
+                  const isSelected = tz === currentTimezone;
+                  return (
+                    <div
+                      key={tz}
+                      id={`${optionPrefix}-option-${idx}`}
+                      data-option-index={idx}
+                      role="option"
+                      aria-selected={isSelected}
+                      onMouseDown={(e) => {
+                        // Prevent input blur from closing the listbox before click fires.
+                        e.preventDefault();
+                      }}
+                      onMouseEnter={() => setHighlight(idx)}
+                      onClick={() => commitSelection(tz)}
+                      className={`flex items-center justify-between px-3 py-2 text-sm cursor-pointer ${
+                        isHighlighted ? "bg-gray-100" : "hover:bg-gray-50"
+                      }`}
+                    >
+                      <span className="text-gray-700">
+                        {tz.replaceAll("_", " ")}
+                      </span>
+                      {isSelected && (
+                        <CheckIcon className="h-4 w-4 text-emerald-500 shrink-0" />
+                      )}
+                    </div>
+                  );
+                })
               )}
             </div>
           )}

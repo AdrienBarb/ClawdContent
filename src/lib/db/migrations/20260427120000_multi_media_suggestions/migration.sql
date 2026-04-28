@@ -1,5 +1,14 @@
+-- PHASE 1 of a two-phase rollout. This migration ONLY adds and backfills the
+-- new `mediaItems` column. The legacy `mediaUrl` / `mediaType` columns are
+-- left in place so older serverless instances still serving traffic during
+-- a Vercel rolling deploy don't 5xx on `SELECT *`-shaped queries.
+--
+-- Once this branch has been fully deployed and old instances have drained,
+-- ship the follow-up migration `_drop_legacy_media_columns` (separate PR /
+-- release) to actually drop the columns.
+
 -- Add new mediaItems column
-ALTER TABLE "post_suggestion" ADD COLUMN "mediaItems" JSONB;
+ALTER TABLE "post_suggestion" ADD COLUMN IF NOT EXISTS "mediaItems" JSONB;
 
 -- Backfill: convert existing single-media rows into a one-element array.
 -- mediaType was a free-form string ("image" | "video" | "gif" | "document"),
@@ -13,11 +22,8 @@ SET "mediaItems" = jsonb_build_array(
     'type', CASE WHEN "mediaType" = 'video' THEN 'video' ELSE 'image' END
   )
 )
-WHERE "mediaUrl" IS NOT NULL;
-
--- Drop legacy single-slot columns
-ALTER TABLE "post_suggestion" DROP COLUMN "mediaUrl";
-ALTER TABLE "post_suggestion" DROP COLUMN "mediaType";
+WHERE "mediaUrl" IS NOT NULL
+  AND "mediaItems" IS NULL;
 
 -- YouTube `requiresMedia` flipped from "image_or_video" to "video" in this
 -- release. Any pre-existing YouTube suggestion with a non-video contentType

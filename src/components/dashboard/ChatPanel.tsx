@@ -21,7 +21,7 @@ import ReactMarkdown from "react-markdown";
 import { appRouter } from "@/lib/constants/appRouter";
 import { AccountChipSelector } from "./AccountChipSelector";
 
-const STARTER_PROMPT = "Generate me 1 posts about my business";
+const STARTER_PROMPT = "Write me 1 posts about my business";
 const STICK_THRESHOLD_PX = 24;
 
 interface AccountInfo {

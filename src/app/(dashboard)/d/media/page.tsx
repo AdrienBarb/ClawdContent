@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
+import dynamic from "next/dynamic";
 import { appRouter } from "@/lib/constants/appRouter";
 import useApi from "@/lib/hooks/useApi";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,12 +17,19 @@ import {
   MagicWandIcon,
   FolderOpenIcon,
 } from "@phosphor-icons/react";
-import MediaUploadModal, {
-  type UploadResult,
-} from "@/components/dashboard/MediaUploadModal";
-import SubscribeModal from "@/components/dashboard/SubscribeModal";
+import type { UploadResult } from "@/components/dashboard/MediaUploadModal";
 import PageHeader from "@/components/dashboard/PageHeader";
 import toast from "react-hot-toast";
+
+// Modals are only mounted on user click — defer their JS until needed.
+const MediaUploadModal = dynamic(
+  () => import("@/components/dashboard/MediaUploadModal"),
+  { ssr: false }
+);
+const SubscribeModal = dynamic(
+  () => import("@/components/dashboard/SubscribeModal"),
+  { ssr: false }
+);
 
 interface Media {
   id: string;
@@ -211,8 +220,8 @@ export default function MediaPage() {
                     <MagicWandIcon className="h-4 w-4" />
                   </span>
                   <div>
-                    <p className="text-sm font-medium text-gray-900">AI picks the right visuals</p>
-                    <p className="text-xs text-gray-500">Your AI manager can browse and attach your media</p>
+                    <p className="text-sm font-medium text-gray-900">Picks the right visuals</p>
+                    <p className="text-xs text-gray-500">We browse and attach your media for you</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 rounded-xl bg-gray-50 px-4 py-2.5">
@@ -267,12 +276,13 @@ export default function MediaPage() {
                 className="group relative rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden"
               >
                 {/* Preview */}
-                <div className="aspect-square bg-gray-50 flex items-center justify-center overflow-hidden">
+                <div className="aspect-square bg-gray-50 flex items-center justify-center overflow-hidden relative">
                   {isImage ? (
-                    <img
+                    <Image
                       src={item.url}
                       alt=""
-                      className="h-full w-full object-cover"
+                      fill
+                      className="object-cover"
                     />
                   ) : (
                     <div className="flex flex-col items-center gap-2 text-gray-400">

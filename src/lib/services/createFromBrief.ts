@@ -13,6 +13,19 @@ import { formatBusinessContext } from "@/lib/services/promptContext";
 
 const MAX_POSTS_PER_ACCOUNT = 14;
 
+// Postgres advisory locks need a bigint key. Hash the string CUID into a
+// stable 63-bit integer (negative bit avoided so the lock surface is
+// predictable across drivers).
+function lockKeyFor(socialAccountId: string): bigint {
+  let hash = BigInt(0);
+  const prime = BigInt(1099511628211);
+  for (let i = 0; i < socialAccountId.length; i++) {
+    hash = (hash * prime + BigInt(socialAccountId.charCodeAt(i))) &
+      BigInt("0x7fffffffffffffff");
+  }
+  return hash;
+}
+
 interface CreateFromBriefArgs {
   userId: string;
   accountIds: string[];
@@ -68,10 +81,14 @@ async function generateForAccount(
   });
 
   if (!account || account.lateProfile.userId !== userId) {
-    console.warn(
-      `[createFromBrief] ⚠️  socialAccount ${socialAccountId} not found or not owned by user — skipping`
+    throw new Error(
+      `socialAccount ${socialAccountId} not found or not owned by user`
     );
-    return [];
+  }
+  if (!account.lateProfile.user) {
+    throw new Error(
+      `socialAccount ${socialAccountId} has orphaned lateProfile (missing user)`
+    );
   }
 
   const config = getPlatformConfig(account.platform);
@@ -114,12 +131,25 @@ async function generateForAccount(
   const contentType = defaultContentType(config.requiresMedia);
 
   // Wipe-and-replace contract (matches generateSuggestions): each generation
-  // run is the user's full new batch. Atomic — if any insert fails, the old
-  // suggestions survive.
-  const txResults = await prisma.$transaction([
-    prisma.postSuggestion.deleteMany({ where: { socialAccountId } }),
-    ...finalPosts.map((p, i) =>
-      prisma.postSuggestion.create({
+  // run is the user's full new batch.
+  //
+  // Use the callback form so deleteMany + N creates run in a single
+  // BEGIN/COMMIT block — guaranteed atomic on every Prisma adapter, including
+  // pgBouncer transaction-mode poolers where the array form has caveats.
+  //
+  // Per-account advisory lock prevents two concurrent generations for the
+  // same socialAccount from racing (the 30s cooldown is per-user and shorter
+  // than worst-case generation time, so it can't serialize on its own).
+  const accountLockKey = lockKeyFor(socialAccountId);
+  const created = await prisma.$transaction(async (tx) => {
+    // pg_advisory_xact_lock returns void → use $executeRaw (which doesn't
+    // try to deserialize a result set) rather than $queryRaw.
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(${accountLockKey})`;
+    await tx.postSuggestion.deleteMany({ where: { socialAccountId } });
+    const rows: SuggestionWithAccount[] = [];
+    for (let i = 0; i < finalPosts.length; i++) {
+      const p = finalPosts[i];
+      const row = await tx.postSuggestion.create({
         data: {
           socialAccountId,
           content: p.content,
@@ -131,10 +161,11 @@ async function generateForAccount(
         include: {
           socialAccount: { select: { platform: true, username: true } },
         },
-      })
-    ),
-  ]);
-  const created = txResults.slice(1) as SuggestionWithAccount[];
+      });
+      rows.push(row as SuggestionWithAccount);
+    }
+    return rows;
+  }, { timeout: 30_000 });
 
   console.log(
     `[createFromBrief] ✓ saved ${created.length} posts for ${account.platform}`

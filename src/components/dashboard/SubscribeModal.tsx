@@ -49,7 +49,7 @@ export default function SubscribeModal({
               Choose your plan
             </h1>
             <p className="text-sm text-muted-foreground">
-              Start publishing everywhere with your AI social media manager.
+              Start publishing everywhere with your social media manager.
             </p>
           </div>
 

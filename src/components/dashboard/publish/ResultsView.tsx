@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import toast from "react-hot-toast";
 import {
-  ArrowLeftIcon,
   CalendarIcon,
   PencilSimpleIcon,
   TrashIcon,
@@ -72,7 +72,6 @@ function groupByAccount(
 export function ResultsView({
   accounts,
   suggestions,
-  onBack,
   onEdit,
   onSchedule,
   onAction,
@@ -83,7 +82,6 @@ export function ResultsView({
 }: {
   accounts: AccountLite[];
   suggestions: Suggestion[];
-  onBack?: () => void;
   onEdit: (s: Suggestion) => void;
   onSchedule: (
     id: string,
@@ -102,7 +100,6 @@ export function ResultsView({
   quotaRemaining: number | null;
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [activeAccount, setActiveAccount] = useState<string | null>(null);
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkProgress, setBulkProgress] = useState<{
     current: number;
@@ -129,26 +126,13 @@ export function ResultsView({
     return accounts.filter((a) => keys.has(`${a.platform}|${a.username}`));
   }, [accounts, suggestions]);
 
-  const visibleAccounts = useMemo(
-    () =>
-      activeAccount
-        ? accountsWithPosts.filter((a) => a.id === activeAccount)
-        : accountsWithPosts,
-    [accountsWithPosts, activeAccount]
+  const visibleAccounts = accountsWithPosts;
+  const filteredSuggestions = suggestions;
+
+  const grouped = useMemo(
+    () => groupByAccount(filteredSuggestions, visibleAccounts),
+    [filteredSuggestions, visibleAccounts]
   );
-
-  const filteredSuggestions = useMemo(() => {
-    if (!activeAccount) return suggestions;
-    const acc = accountsWithPosts.find((a) => a.id === activeAccount);
-    if (!acc) return [];
-    return suggestions.filter(
-      (s) =>
-        s.socialAccount.platform === acc.platform &&
-        s.socialAccount.username === acc.username
-    );
-  }, [suggestions, activeAccount, accountsWithPosts]);
-
-  const grouped = groupByAccount(filteredSuggestions, visibleAccounts);
   const total = filteredSuggestions.length;
 
   const toggleOne = (id: string) =>
@@ -350,19 +334,13 @@ export function ResultsView({
               : "flex-1 min-w-0 overflow-auto px-8 pt-3 pb-24"
           }
         >
-          <div
-            className={
-              activeAccount
-                ? "max-w-2xl mx-auto"
-                : "flex gap-4 items-start w-max"
-            }
-          >
+          <div className="flex gap-4 items-start w-max">
             {grouped.map((group) => (
               <PlatformColumn
                 key={group.account.id}
                 group={group}
                 selected={selected}
-                fullWidth={!!activeAccount}
+                fullWidth={false}
                 stickyHeader={!embedded}
                 onToggleOne={toggleOne}
                 onToggleColumn={toggleColumn}
@@ -397,30 +375,6 @@ export function ResultsView({
       )}
       {confirmDialog}
     </div>
-  );
-}
-
-function FilterPill({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] transition-colors cursor-pointer border ${
-        active
-          ? "bg-white border-gray-200 text-gray-900 shadow-sm"
-          : "border-transparent text-gray-600 hover:bg-black/[0.03] hover:text-gray-900"
-      }`}
-    >
-      {children}
-    </button>
   );
 }
 
@@ -719,11 +673,10 @@ function PostCard({
                     aria-label={`Attached video ${idx + 1}`}
                   />
                 ) : (
-                  <img
+                  <Image
                     src={cloudinaryThumbnail(item.url)}
                     alt={`Attached media ${idx + 1}`}
                     className="h-20 w-20 rounded-lg object-cover"
-                    loading="lazy"
                     width={160}
                     height={160}
                   />
@@ -943,7 +896,11 @@ function BulkBar({
   onSendAll: () => void;
 }) {
   return (
-    <div className="fixed left-1/2 bottom-6 -translate-x-1/2 z-30 flex items-center gap-2 rounded-xl bg-[#2d2a25] py-2 pl-4 pr-2 text-white shadow-[0_12px_32px_rgba(0,0,0,0.20),0_4px_8px_rgba(0,0,0,0.10)] animate-in fade-in slide-in-from-bottom-2 duration-200">
+    <div
+      role="region"
+      aria-label="Bulk actions"
+      className="fixed left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 rounded-xl bg-[#2d2a25] py-2 pl-4 pr-2 text-white shadow-[0_12px_32px_rgba(0,0,0,0.20),0_4px_8px_rgba(0,0,0,0.10)] animate-in fade-in slide-in-from-bottom-2 duration-200 bottom-[calc(1.5rem+env(safe-area-inset-bottom,0px))]"
+    >
       <span className="text-[13px] font-medium tabular-nums">
         {count} selected
       </span>
@@ -952,7 +909,7 @@ function BulkBar({
         type="button"
         onClick={onDelete}
         disabled={busy}
-        className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12.5px] font-medium text-white/85 hover:bg-white/10 hover:text-white transition-colors cursor-pointer disabled:opacity-50"
+        className="inline-flex items-center gap-1.5 rounded-lg px-3 min-h-11 md:min-h-8 md:py-1.5 text-[12.5px] font-medium text-white/85 hover:bg-white/10 hover:text-white transition-colors cursor-pointer disabled:opacity-50"
       >
         <TrashIcon className="h-3.5 w-3.5" />
         Delete
@@ -961,7 +918,7 @@ function BulkBar({
         type="button"
         onClick={onSendAll}
         disabled={busy}
-        className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12.5px] font-medium text-white transition-all cursor-pointer disabled:opacity-50"
+        className="inline-flex items-center gap-1.5 rounded-lg px-3 min-h-11 md:min-h-8 md:py-1.5 text-[12.5px] font-medium text-white transition-all cursor-pointer disabled:opacity-50"
         style={{
           background: "linear-gradient(180deg, #ec6f5b 0%, #c84a35 100%)",
           boxShadow:
@@ -983,9 +940,9 @@ function BulkBar({
         type="button"
         onClick={onClear}
         aria-label="Clear selection"
-        className="ml-1 flex h-7 w-7 items-center justify-center rounded-lg text-white/60 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+        className="ml-1 flex h-11 w-11 md:h-7 md:w-7 items-center justify-center rounded-lg text-white/60 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
       >
-        ×
+        <XIcon className="h-3.5 w-3.5" weight="bold" />
       </button>
     </div>
   );

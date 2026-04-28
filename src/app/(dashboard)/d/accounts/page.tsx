@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { appRouter } from "@/lib/constants/appRouter";
 import { getPlatform } from "@/lib/constants/platforms";
 import useApi from "@/lib/hooks/useApi";
@@ -19,10 +20,18 @@ import {
   WarningCircleIcon,
 } from "@phosphor-icons/react";
 import ConnectAccountButtons from "@/components/dashboard/ConnectAccountButtons";
-import SubscribeModal from "@/components/dashboard/SubscribeModal";
-import UpgradeModal from "@/components/dashboard/UpgradeModal";
 import PageHeader from "@/components/dashboard/PageHeader";
 import toast from "react-hot-toast";
+
+// Modals only mount on user click — defer their JS.
+const SubscribeModal = dynamic(
+  () => import("@/components/dashboard/SubscribeModal"),
+  { ssr: false }
+);
+const UpgradeModal = dynamic(
+  () => import("@/components/dashboard/UpgradeModal"),
+  { ssr: false }
+);
 
 interface DashboardStatus {
   subscription: { status: string; planId: string } | null;

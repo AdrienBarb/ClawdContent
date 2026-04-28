@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Image from "next/image";
 import toast from "react-hot-toast";
 import {
   SpinnerGapIcon,
@@ -184,10 +185,12 @@ export default function EditSuggestionModal({
                       muted
                     />
                   ) : (
-                    <img
+                    <Image
                       src={item.url}
                       alt={`Attached image ${idx + 1}`}
                       className="h-24 w-24 rounded-lg object-cover"
+                      width={96}
+                      height={96}
                     />
                   )}
                   <button

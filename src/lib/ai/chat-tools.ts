@@ -14,14 +14,7 @@ interface CreateChatToolsArgs {
   accountIds: string[];
 }
 
-const PREVIEW_LEN = 80;
-
-function preview(text: string): string {
-  const cleaned = text.replace(/\s+/g, " ").trim();
-  return cleaned.length > PREVIEW_LEN
-    ? `${cleaned.slice(0, PREVIEW_LEN)}…`
-    : cleaned;
-}
+import { preview } from "./preview";
 
 export function createChatTools({ userId, accountIds }: CreateChatToolsArgs) {
   return {
@@ -274,7 +267,7 @@ export function createChatTools({ userId, accountIds }: CreateChatToolsArgs) {
       inputSchema: z.object({
         id: z.string().min(1).describe("The draft id"),
         scheduledAt: z
-          .union([z.string().datetime(), z.null()])
+          .union([z.string().datetime({ offset: true }), z.null()])
           .describe(
             "ISO 8601 datetime (e.g. 2026-04-29T17:00:00.000Z) to stage, or null to clear."
           ),

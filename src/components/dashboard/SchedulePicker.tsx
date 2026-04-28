@@ -153,13 +153,24 @@ export function SchedulePicker({
   const [pickedDate, setPickedDate] = useState<Date | undefined>(undefined);
   const [pickedTime, setPickedTime] = useState<string>("");
 
-  // Captured once on mount — purity-safe vs calling new Date() in render.
-  const [now] = useState(() => new Date());
-  const [today] = useState(() => {
+  // Refresh `now`/`today` whenever the popover opens, so a picker left open
+  // across midnight still computes against the current day. Falls back to a
+  // mount-time value if it's never opened (won't render any date logic anyway).
+  const [now, setNow] = useState(() => new Date());
+  const [today, setToday] = useState(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
     return d;
   });
+
+  useEffect(() => {
+    if (!open) return;
+    const fresh = new Date();
+    setNow(fresh);
+    const startOfDay = new Date(fresh);
+    startOfDay.setHours(0, 0, 0, 0);
+    setToday(startOfDay);
+  }, [open]);
 
   const { useGet } = useApi();
 

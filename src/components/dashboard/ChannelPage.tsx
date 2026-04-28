@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Image from "next/image";
 import useApi from "@/lib/hooks/useApi";
 import { useDashboardStatus } from "@/lib/hooks/useDashboardStatus";
 import { appRouter } from "@/lib/constants/appRouter";
@@ -104,22 +105,15 @@ export default function ChannelPage({ channelId }: { channelId: string }) {
   );
   const posts: PostItem[] = postsData?.posts ?? [];
 
-  // Fetch counts for all tabs
-  const countParams = (s: string) => {
-    const p: Record<string, string> = { status: s, limit: "1" };
-    if (channel) p.platform = channel.platform;
-    return p;
-  };
-  const { data: scheduledData } = useGet(appRouter.api.posts, countParams("scheduled"));
-  const { data: publishedData } = useGet(appRouter.api.posts, countParams("published"));
-  const { data: draftData } = useGet(appRouter.api.posts, countParams("draft"));
-  const { data: failedData } = useGet(appRouter.api.posts, countParams("failed"));
+  // Single counts call — replaces 4 parallel /api/posts requests.
+  const countsParams = channel ? { platform: channel.platform } : undefined;
+  const { data: countsData } = useGet(appRouter.api.postsCounts, countsParams);
 
   const counts: Record<Tab, number> = {
-    upcoming: scheduledData?.pagination?.total ?? 0,
-    published: publishedData?.pagination?.total ?? 0,
-    drafts: draftData?.pagination?.total ?? 0,
-    failed: failedData?.pagination?.total ?? 0,
+    upcoming: countsData?.scheduled ?? 0,
+    published: countsData?.published ?? 0,
+    drafts: countsData?.draft ?? 0,
+    failed: countsData?.failed ?? 0,
   };
 
   if (statusLoading) {
@@ -174,7 +168,7 @@ export default function ChannelPage({ channelId }: { channelId: string }) {
   return (
     <div>
       {/* Header */}
-      <div className="sticky top-0 z-20 bg-[#faf9f5] border-b border-gray-200 pb-4 mb-8 -mx-8 px-8 pt-6 -mt-6">
+      <div className="sticky top-14 md:top-0 z-20 bg-[#faf9f5] border-b border-gray-200 pb-4 mb-8 -mx-8 px-8 pt-6 -mt-6">
         <div className="flex items-start justify-between gap-4 pb-5">
           <div className="flex items-center gap-3 min-w-0">
             <span
@@ -424,7 +418,7 @@ function PostCard({
               media.type === "video" ? (
                 <video key={i} src={media.url} className="h-20 rounded-lg" controls />
               ) : (
-                <img key={i} src={media.url} alt="" className="h-20 rounded-lg object-cover" />
+                <Image key={i} src={media.url} alt="" className="h-20 w-20 rounded-lg object-cover" width={80} height={80} />
               )
             ))}
           </div>
@@ -569,7 +563,8 @@ function EditPostModal({
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className="w-full min-h-[180px] text-sm text-gray-900 leading-relaxed resize-none focus:outline-none placeholder:text-gray-400"
+            className="w-full min-h-[180px] text-base text-gray-900 leading-relaxed resize-none focus:outline-none placeholder:text-gray-400"
+            aria-label="Post content"
             placeholder="Write your post..."
           />
           {post.mediaItems && post.mediaItems.length > 0 && (
@@ -578,7 +573,7 @@ function EditPostModal({
                 media.type === "video" ? (
                   <video key={i} src={media.url} className="h-20 rounded-lg" controls />
                 ) : (
-                  <img key={i} src={media.url} alt="" className="h-20 rounded-lg object-cover" />
+                  <Image key={i} src={media.url} alt="" className="h-20 w-20 rounded-lg object-cover" width={80} height={80} />
                 )
               ))}
             </div>
