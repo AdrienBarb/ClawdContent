@@ -21,6 +21,7 @@ import {
   Clock as ClockIcon,
 } from "@phosphor-icons/react";
 import SubscribeModal from "@/components/dashboard/SubscribeModal";
+import PageHeader from "@/components/dashboard/PageHeader";
 import {
   AreaChart,
   Area,
@@ -31,8 +32,6 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
-  LineChart,
-  Line,
 } from "recharts";
 
 // ---------------------------------------------------------------------------
@@ -170,13 +169,6 @@ function formatNumber(n: number): string {
   return String(n);
 }
 
-function formatSignedNumber(n: number): string {
-  const formatted = formatNumber(Math.abs(n));
-  if (n > 0) return `+${formatted}`;
-  if (n < 0) return `-${formatted}`;
-  return "0";
-}
-
 function formatChartDate(dateStr: string): string {
   const d = new Date(dateStr);
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -189,24 +181,6 @@ function getHeatmapColor(value: number, max: number): string {
   if (ratio > 0.5) return "bg-[var(--sidebar-accent)] opacity-60";
   if (ratio > 0.25) return "bg-[var(--sidebar-accent)] opacity-35";
   return "bg-[var(--sidebar-accent)] opacity-15";
-}
-
-function buildPlatformBreakdown(
-  dailyMetrics: DailyChartPoint[]
-): { platform: string; posts: number; color: string }[] {
-  const totals: Record<string, number> = {};
-  for (const day of dailyMetrics) {
-    for (const [platform, count] of Object.entries(day.platforms ?? {})) {
-      totals[platform] = (totals[platform] ?? 0) + count;
-    }
-  }
-  return Object.entries(totals)
-    .map(([platform, posts]) => ({
-      platform: getPlatform(platform)?.label ?? platform,
-      posts,
-      color: getPlatform(platform)?.color ?? "#6b7280",
-    }))
-    .sort((a, b) => b.posts - a.posts);
 }
 
 // ---------------------------------------------------------------------------
@@ -407,9 +381,7 @@ function LoadingSkeleton() {
 function EmptyState() {
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-        Analytics
-      </h1>
+      <PageHeader title="Analytics" />
       <div className="rounded-2xl border-2 border-dashed border-gray-200 bg-white/50 p-12 text-center">
         <ChartLineUpIcon className="h-10 w-10 text-gray-300 mx-auto mb-4" />
         <p className="text-sm font-medium text-gray-500 mb-1">
@@ -505,11 +477,6 @@ export default function AnalyticsDashboard() {
     [overviewData]
   );
 
-  const platformBreakdown = useMemo(
-    () => buildPlatformBreakdown(overviewData?.dailyMetrics ?? []),
-    [overviewData]
-  );
-
   const followerChartData = useMemo(
     () => buildFollowerChartData(followersData),
     [followersData]
@@ -529,7 +496,11 @@ export default function AnalyticsDashboard() {
     });
   }, [followersData]);
 
-  const connectedPlatforms = overviewData?.connectedPlatforms ?? [];
+  const connectedPlatforms = useMemo(
+    () => overviewData?.connectedPlatforms ?? [],
+    [overviewData]
+  );
+
   const platformOptions = useMemo(
     () => [
       { value: "all" as const, label: "All Platforms" },
@@ -565,9 +536,7 @@ export default function AnalyticsDashboard() {
   if (showGlassPreview) {
     return (
       <div className="relative min-h-[calc(100vh-8rem)]">
-        <h1 className="text-2xl font-semibold tracking-tight text-gray-900 mb-6">
-          Analytics
-        </h1>
+        <PageHeader title="Analytics" className="mb-6" />
 
         <div className="absolute inset-0 mt-16">
           {/* Blurred fake data */}
@@ -675,7 +644,7 @@ export default function AnalyticsDashboard() {
                   </span>
                   <div>
                     <p className="text-sm font-medium text-gray-900">Best time to post</p>
-                    <p className="text-xs text-gray-500">AI-powered scheduling based on your audience</p>
+                    <p className="text-xs text-gray-500">Personalized timing based on when your audience is active</p>
                   </div>
                 </div>
               </div>
@@ -720,12 +689,17 @@ export default function AnalyticsDashboard() {
 
       {/* Header + filters */}
       <div className="flex flex-col gap-4">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-            Analytics
-          </h1>
-          <PillSelector options={PERIODS} value={period} onChange={setPeriod} ariaLabel="Time period" />
-        </div>
+        <PageHeader
+          title="Analytics"
+          right={
+            <PillSelector
+              options={PERIODS}
+              value={period}
+              onChange={setPeriod}
+              ariaLabel="Time period"
+            />
+          }
+        />
         {connectedPlatforms.length > 1 && (
           <PillSelector
             options={platformOptions}

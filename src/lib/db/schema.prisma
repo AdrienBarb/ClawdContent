@@ -121,6 +121,7 @@ model SocialAccount {
   updatedAt      DateTime    @updatedAt
   suggestions    PostSuggestion[]
 
+  @@index([lateProfileId])
   @@map("social_account")
 }
 
@@ -129,13 +130,23 @@ model PostSuggestion {
   socialAccountId String
   socialAccount   SocialAccount @relation(fields: [socialAccountId], references: [id], onDelete: Cascade)
   content         String
-  contentType     String        // text, image, carousel
+  contentType     String        // text, image, video, carousel
   suggestedDay    Int           // 0=Monday, 6=Sunday
   suggestedHour   Int           // 0-23 local time
   reasoning       String?
-  mediaUrl        String?
-  mediaType       String?       // image, video
+  mediaItems      Json?         // [{url, type: "image"|"video"}, ...]
+  scheduledAt     DateTime?
   createdAt       DateTime      @default(now())
+
+  // --- Publish-flow idempotency ---
+  // Stamped just before we hit Zernio. Acts as a soft lock so a second click
+  // before the response lands is rejected with "already in progress".
+  publishingStartedAt DateTime?
+  // The Zernio post id Zernio handed back, captured AFTER createPost succeeds.
+  // If a transient DB error stops the cleanup transaction from committing,
+  // this field stays null but is populated by retry logic; if it's already
+  // set on retry, we skip the second Zernio call (avoids double-post).
+  publishedExternalId String?
 
   @@index([socialAccountId])
   @@map("post_suggestion")

@@ -26,6 +26,26 @@ export interface PlatformConfig {
    * Capped 1–4 to keep the popover compact.
    */
   recommendedPostsPerDay: number;
+  /**
+   * Whether the platform refuses (or effectively refuses) text-only posts.
+   * - "video"          → only video posts are allowed (TikTok, YouTube)
+   * - "image_or_video" → image or video required (Instagram feed, Pinterest)
+   * - null             → text posts are fine
+   *
+   * Used to (a) steer the suggestion prompt and (b) override Claude's
+   * contentType server-side if it ever ignores the steer.
+   */
+  requiresMedia: "video" | "image_or_video" | null;
+  /**
+   * Per-platform media-attachment limits (verified against Zernio OpenAPI).
+   * Universal invariant: a single post never mixes images and videos —
+   * platforms accept "carousel of images" OR "single video", never both.
+   * `maxImages: 0` means images aren't supported (YouTube).
+   */
+  mediaRules: {
+    maxImages: number;
+    maxVideos: number;
+  };
 }
 
 export const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
@@ -42,6 +62,8 @@ export const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
     ],
     charLimit: 2200,
     recommendedPostsPerDay: 2,
+    requiresMedia: "image_or_video",
+    mediaRules: { maxImages: 10, maxVideos: 1 },
   },
   facebook: {
     platform: "facebook",
@@ -56,6 +78,8 @@ export const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
     ],
     charLimit: null,
     recommendedPostsPerDay: 2,
+    requiresMedia: null,
+    mediaRules: { maxImages: 10, maxVideos: 1 },
   },
   twitter: {
     platform: "twitter",
@@ -70,6 +94,8 @@ export const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
     ],
     charLimit: 280,
     recommendedPostsPerDay: 4,
+    requiresMedia: null,
+    mediaRules: { maxImages: 4, maxVideos: 1 },
   },
   threads: {
     platform: "threads",
@@ -84,6 +110,8 @@ export const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
     ],
     charLimit: 500,
     recommendedPostsPerDay: 3,
+    requiresMedia: null,
+    mediaRules: { maxImages: 10, maxVideos: 1 },
   },
   tiktok: {
     platform: "tiktok",
@@ -98,6 +126,8 @@ export const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
     ],
     charLimit: 2200,
     recommendedPostsPerDay: 2,
+    requiresMedia: "video",
+    mediaRules: { maxImages: 35, maxVideos: 1 },
   },
   youtube: {
     platform: "youtube",
@@ -112,6 +142,8 @@ export const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
     ],
     charLimit: null,
     recommendedPostsPerDay: 1,
+    requiresMedia: "video",
+    mediaRules: { maxImages: 0, maxVideos: 1 },
   },
   pinterest: {
     platform: "pinterest",
@@ -126,6 +158,8 @@ export const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
     ],
     charLimit: 500,
     recommendedPostsPerDay: 4,
+    requiresMedia: "image_or_video",
+    mediaRules: { maxImages: 1, maxVideos: 1 },
   },
   linkedin: {
     platform: "linkedin",
@@ -140,6 +174,8 @@ export const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
     ],
     charLimit: 3000,
     recommendedPostsPerDay: 1,
+    requiresMedia: null,
+    mediaRules: { maxImages: 20, maxVideos: 1 },
   },
   bluesky: {
     platform: "bluesky",
@@ -154,6 +190,8 @@ export const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
     ],
     charLimit: 300,
     recommendedPostsPerDay: 3,
+    requiresMedia: null,
+    mediaRules: { maxImages: 4, maxVideos: 1 },
   },
 };
 
@@ -169,4 +207,19 @@ export function getPlatformConfig(platform: string): PlatformConfig {
 
 export function isSupportedPlatform(platform: string): boolean {
   return platform in PLATFORM_CONFIG;
+}
+
+export type SuggestionContentType = "text" | "image" | "video" | "carousel";
+
+/**
+ * Deterministic contentType from the platform's media rule. The model never
+ * picks contentType — it's purely a function of what the platform accepts.
+ * Free-choice platforms default to "text"; the user attaches media if they want.
+ */
+export function defaultContentType(
+  requiresMedia: PlatformConfig["requiresMedia"]
+): SuggestionContentType {
+  if (requiresMedia === "video") return "video";
+  if (requiresMedia === "image_or_video") return "image";
+  return "text";
 }

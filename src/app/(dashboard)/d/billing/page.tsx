@@ -7,15 +7,22 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ManageSubscriptionButton } from "./ManageSubscriptionButton";
 import BillingUnsubscribed from "@/components/dashboard/BillingUnsubscribed";
 import ChangePlanSection from "@/components/dashboard/ChangePlanSection";
+import PageHeader from "@/components/dashboard/PageHeader";
 import { getPlan, type PlanId } from "@/lib/constants/plans";
 
 async function BillingContent() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) redirect("/");
 
-  const subscription = await prisma.subscription.findUnique({
-    where: { userId: session.user.id },
-  });
+  const [subscription, lateProfile] = await Promise.all([
+    prisma.subscription.findUnique({
+      where: { userId: session.user.id },
+    }),
+    prisma.lateProfile.findUnique({
+      where: { userId: session.user.id },
+      include: { socialAccounts: { where: { status: "active" } } },
+    }),
+  ]);
 
   if (!subscription) {
     return <BillingUnsubscribed />;
@@ -27,23 +34,14 @@ async function BillingContent() {
   const planId = (subscription.planId as PlanId) || "pro";
   const plan = getPlan(planId);
 
-  const lateProfile = await prisma.lateProfile.findUnique({
-    where: { userId: session.user.id },
-    include: { socialAccounts: { where: { status: "active" } } },
-  });
-
   const activeAccountCount = lateProfile?.socialAccounts?.length ?? 0;
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-          Billing
-        </h1>
-        <p className="text-gray-500 mt-1">
-          Manage your subscription and billing details.
-        </p>
-      </div>
+      <PageHeader
+        title="Billing"
+        subtitle="Manage your subscription and billing details."
+      />
 
       <div className="rounded-2xl bg-white p-6 shadow-sm border border-gray-100">
         <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-5">

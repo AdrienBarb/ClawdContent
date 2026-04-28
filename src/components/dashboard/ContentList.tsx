@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { appRouter } from "@/lib/constants/appRouter";
 import SubscribeModal from "@/components/dashboard/SubscribeModal";
+import PageHeader from "@/components/dashboard/PageHeader";
 import { getPlatform } from "@/lib/constants/platforms";
 import useApi, { fetchData } from "@/lib/hooks/useApi";
 import { Button } from "@/components/ui/button";
@@ -17,27 +19,27 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Plus,
-  Trash2,
-  RefreshCw,
-  Loader2,
-  CalendarClock,
-  Share2,
-  EyeOff,
-  ChevronDown,
-  ChevronUp,
-  ChevronLeft,
-  ChevronRight,
-  AlertCircle,
-  Link2,
-  Pencil,
-  ShieldAlert,
-  Clock,
-  ServerCrash,
-  CheckCircle2,
-  XCircle,
-  FileEdit,
-} from "lucide-react";
+  PlusIcon,
+  TrashIcon,
+  ArrowsClockwiseIcon,
+  SpinnerGapIcon,
+  CalendarBlankIcon,
+  ShareNetworkIcon,
+  EyeSlashIcon,
+  CaretDownIcon,
+  CaretUpIcon,
+  CaretLeftIcon,
+  CaretRightIcon,
+  WarningCircleIcon,
+  LinkIcon,
+  PencilSimpleIcon,
+  ShieldWarningIcon,
+  ClockIcon,
+  WarningOctagonIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  NotePencilIcon,
+} from "@phosphor-icons/react";
 import toast from "react-hot-toast";
 
 // ---------------------------------------------------------------------------
@@ -88,46 +90,46 @@ interface PostErrorDetail {
 const STATUS_TABS: {
   value: StatusFilter;
   label: string;
-  icon: typeof CalendarClock;
+  icon: typeof CalendarBlankIcon;
 }[] = [
-  { value: "scheduled", label: "Queue", icon: CalendarClock },
-  { value: "published", label: "Published", icon: CheckCircle2 },
-  { value: "draft", label: "Drafts", icon: FileEdit },
-  { value: "failed", label: "Failed", icon: XCircle },
+  { value: "scheduled", label: "Queue", icon: CalendarBlankIcon },
+  { value: "published", label: "Published", icon: CheckCircleIcon },
+  { value: "draft", label: "Drafts", icon: NotePencilIcon },
+  { value: "failed", label: "Failed", icon: XCircleIcon },
 ];
 
 const MAX_PREVIEW_LENGTH = 280;
 
 const UNSUPPORTED_UNPUBLISH_PLATFORMS = ["instagram", "tiktok", "snapchat"];
 
-const ERROR_HINTS: Record<string, { icon: typeof AlertCircle; hint: string }> =
+const ERROR_HINTS: Record<string, { icon: typeof WarningCircleIcon; hint: string }> =
   {
     auth_expired: {
-      icon: Link2,
+      icon: LinkIcon,
       hint: "Reconnect your account in Social Accounts.",
     },
     user_content: {
-      icon: Pencil,
+      icon: PencilSimpleIcon,
       hint: "Edit the content — it may be too long or in the wrong format.",
     },
     user_abuse: {
-      icon: Clock,
+      icon: ClockIcon,
       hint: "Rate limited. Wait a bit then retry.",
     },
     account_issue: {
-      icon: ShieldAlert,
+      icon: ShieldWarningIcon,
       hint: "Check your account settings on the platform.",
     },
     platform_rejected: {
-      icon: ShieldAlert,
+      icon: ShieldWarningIcon,
       hint: "The platform rejected this content. Edit and retry.",
     },
     platform_error: {
-      icon: ServerCrash,
+      icon: WarningOctagonIcon,
       hint: "Platform outage. Try again later.",
     },
     system_error: {
-      icon: ServerCrash,
+      icon: WarningOctagonIcon,
       hint: "Temporary system issue. Retry should work.",
     },
   };
@@ -363,7 +365,7 @@ export default function ContentList() {
     },
     scheduled: {
       title: "No scheduled posts",
-      sub: "Chat with your AI social media manager to schedule content.",
+      sub: "Chat with your social media manager to schedule posts.",
     },
     published: {
       title: "No published posts yet",
@@ -381,19 +383,20 @@ export default function ContentList() {
 
   return (
     <div className={showGlassPreview ? "relative min-h-[calc(100vh-8rem)]" : "space-y-6"}>
-      {/* Page title — always visible */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Posts</h1>
-        {!showGlassPreview && (
-          <Link
-            href={appRouter.dashboard}
-            className="inline-flex items-center gap-2 rounded-xl bg-[var(--sidebar-accent)] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:opacity-90"
-          >
-            <Plus className="h-4 w-4" />
-            Create post
-          </Link>
-        )}
-      </div>
+      <PageHeader
+        title="Posts"
+        right={
+          !showGlassPreview ? (
+            <Link
+              href={appRouter.dashboard}
+              className="inline-flex items-center gap-2 rounded-xl bg-[var(--sidebar-accent)] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:opacity-90"
+            >
+              <PlusIcon className="h-4 w-4" />
+              Create post
+            </Link>
+          ) : undefined
+        }
+      />
 
       {showGlassPreview ? (
         <div className="absolute inset-0 mt-24">
@@ -422,9 +425,9 @@ export default function ContentList() {
                 </div>
                 <div className="space-y-4">
                   {[
-                    { time: "9:00 AM", platforms: ["twitter", "linkedin"], content: "Just shipped a major update to our product! Here's what changed and why it matters for your workflow..." },
-                    { time: "2:30 PM", platforms: ["instagram"], content: "Behind the scenes of our creative process. Swipe to see how we go from idea to final design" },
-                    { time: "6:00 PM", platforms: ["twitter", "bluesky"], content: "Quick tip: The best time to engage with your audience is when they're already scrolling. Here's how to find your peak hours..." },
+                    { time: "9:00 AM", platforms: ["instagram", "facebook"], content: "Big news for our regulars — our spring menu is live this week. Swing by Wednesday for the launch tasting." },
+                    { time: "2:30 PM", platforms: ["instagram"], content: "Behind the scenes from this morning's prep. The little touches that make every plate feel like home." },
+                    { time: "6:00 PM", platforms: ["facebook", "instagram"], content: "Booked your weekend yet? Two tables left for Saturday — message us to grab one." },
                   ].map((item, idx) => (
                     <div key={idx} className="flex gap-4">
                       <div className="w-20 shrink-0 pt-4 text-right">
@@ -441,7 +444,7 @@ export default function ContentList() {
                               const platform = getPlatform(platformId);
                               return (
                                 <span key={platformId} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-white" style={{ backgroundColor: platform?.color ?? "#6b7280" }}>
-                                  {platform?.icon ?? <Share2 className="h-3.5 w-3.5" />}
+                                  {platform?.icon ?? <ShareNetworkIcon className="h-3.5 w-3.5" />}
                                 </span>
                               );
                             })}
@@ -466,13 +469,13 @@ export default function ContentList() {
                 Your posts will show up here
               </h3>
               <p className="text-sm text-gray-500 leading-relaxed mb-5">
-                Chat with your AI manager to create content. It handles the rest.
+                Chat with your manager to write posts. It handles the rest.
               </p>
 
               <div className="flex flex-col gap-2.5 mb-6 text-left">
                 <div className="flex items-center gap-3 rounded-xl bg-gray-50 px-4 py-2.5">
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--sidebar-accent)]/10 text-[var(--sidebar-accent)]">
-                    <CalendarClock className="h-4 w-4" />
+                    <CalendarBlankIcon className="h-4 w-4" />
                   </span>
                   <div>
                     <p className="text-sm font-medium text-gray-900">Schedule across platforms</p>
@@ -481,16 +484,16 @@ export default function ContentList() {
                 </div>
                 <div className="flex items-center gap-3 rounded-xl bg-gray-50 px-4 py-2.5">
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--sidebar-accent)]/10 text-[var(--sidebar-accent)]">
-                    <FileEdit className="h-4 w-4" />
+                    <NotePencilIcon className="h-4 w-4" />
                   </span>
                   <div>
-                    <p className="text-sm font-medium text-gray-900">AI writes your content</p>
+                    <p className="text-sm font-medium text-gray-900">We write your posts</p>
                     <p className="text-xs text-gray-500">Just describe what you want — your manager drafts it</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 rounded-xl bg-gray-50 px-4 py-2.5">
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--sidebar-accent)]/10 text-[var(--sidebar-accent)]">
-                    <CheckCircle2 className="h-4 w-4" />
+                    <CheckCircleIcon className="h-4 w-4" />
                   </span>
                   <div>
                     <p className="text-sm font-medium text-gray-900">Track what went live</p>
@@ -587,7 +590,7 @@ export default function ContentList() {
                                       style={{ backgroundColor: platform?.color ?? "#6b7280" }}
                                       title={platform?.label ?? platformId}
                                     >
-                                      {platform?.icon ?? <Share2 className="h-3.5 w-3.5" />}
+                                      {platform?.icon ?? <ShareNetworkIcon className="h-3.5 w-3.5" />}
                                     </span>
                                   );
                                 })}
@@ -602,9 +605,9 @@ export default function ContentList() {
                                     className="mt-1 inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
                                   >
                                     {isExpanded ? (
-                                      <>Show less <ChevronUp className="h-3 w-3" /></>
+                                      <>Show less <CaretUpIcon className="h-3 w-3" /></>
                                     ) : (
-                                      <>Show more <ChevronDown className="h-3 w-3" /></>
+                                      <>Show more <CaretDownIcon className="h-3 w-3" /></>
                                     )}
                                   </button>
                                 )}
@@ -614,7 +617,7 @@ export default function ContentList() {
                                   {post.mediaItems.map((media, i) =>
                                     media.type === "image" ? (
                                       <a key={i} href={media.url} target="_blank" rel="noopener noreferrer" className="shrink-0">
-                                        <img src={media.url} alt="" className="h-20 w-20 rounded-lg object-cover border border-gray-100" />
+                                        <Image src={media.url} alt="" className="h-20 w-20 rounded-lg object-cover border border-gray-100" width={80} height={80} />
                                       </a>
                                     ) : (
                                       <div key={i} className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-xs text-gray-400 border border-gray-100">
@@ -631,7 +634,7 @@ export default function ContentList() {
                                   if (!detail && !isLoadingError) {
                                     return (
                                       <button onClick={() => fetchErrorDetail(post.id)} className="mt-3 inline-flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 transition-colors cursor-pointer">
-                                        <AlertCircle className="h-3.5 w-3.5" />
+                                        <WarningCircleIcon className="h-3.5 w-3.5" />
                                         Show error details
                                       </button>
                                     );
@@ -639,7 +642,7 @@ export default function ContentList() {
                                   if (isLoadingError) {
                                     return (
                                       <div className="mt-3 flex items-center gap-1.5 text-xs text-gray-400">
-                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                        <SpinnerGapIcon className="h-3.5 w-3.5 animate-spin" />
                                         Loading error details...
                                       </div>
                                     );
@@ -650,7 +653,7 @@ export default function ContentList() {
                                       return (
                                         <div className="mt-3 rounded-xl bg-red-50 border border-red-100 p-3">
                                           <div className="flex items-start gap-2">
-                                            <AlertCircle className="h-4 w-4 text-red-400 mt-0.5 shrink-0" />
+                                            <WarningCircleIcon className="h-4 w-4 text-red-400 mt-0.5 shrink-0" />
                                             <p className="text-xs font-medium text-red-700">Publishing failed</p>
                                           </div>
                                         </div>
@@ -660,7 +663,7 @@ export default function ContentList() {
                                       <div className="mt-3 space-y-2">
                                         {errors.map((err) => {
                                           const hintConfig = err.errorCategory ? ERROR_HINTS[err.errorCategory] : undefined;
-                                          const HintIcon = hintConfig?.icon ?? AlertCircle;
+                                          const HintIcon = hintConfig?.icon ?? WarningCircleIcon;
                                           const platform = getPlatform(err.platform);
                                           return (
                                             <div key={err.platform} className="rounded-xl bg-red-50 border border-red-100 p-3 space-y-1.5">
@@ -685,7 +688,7 @@ export default function ContentList() {
                                 <div className="mt-3 flex items-center gap-2 flex-wrap">
                                   <input type="datetime-local" value={rescheduleDate} onChange={(e) => setRescheduleDate(e.target.value)} className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[var(--sidebar-accent)]/20 focus:border-[var(--sidebar-accent)]" autoFocus />
                                   <Button size="sm" className="h-8 text-xs bg-[var(--sidebar-accent)] hover:opacity-90 text-white cursor-pointer" onClick={() => handleReschedule(post.id)} disabled={rescheduleMutation.isPending || !rescheduleDate}>
-                                    {rescheduleMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />}
+                                    {rescheduleMutation.isPending && <SpinnerGapIcon className="h-3.5 w-3.5 animate-spin mr-1" />}
                                     Save
                                   </Button>
                                   <Button variant="ghost" size="sm" className="h-8 text-xs cursor-pointer" onClick={() => setReschedulingPostId(null)} disabled={rescheduleMutation.isPending}>Cancel</Button>
@@ -696,22 +699,22 @@ export default function ContentList() {
                                   {(post.status === "scheduled" || post.status === "draft") && (
                                     <>
                                       <Button variant="outline" size="sm" className="h-8 text-xs cursor-pointer" onClick={() => startRescheduling(post)}>
-                                        <CalendarClock className="h-3.5 w-3.5 mr-1" />
+                                        <CalendarBlankIcon className="h-3.5 w-3.5 mr-1" />
                                         {post.status === "draft" ? "Schedule" : "Reschedule"}
                                       </Button>
                                       <Button variant="ghost" size="sm" className="h-8 text-xs text-gray-400 hover:text-red-500 hover:bg-red-50 cursor-pointer" onClick={() => setDeleteTarget(post)}>
-                                        <Trash2 className="h-3.5 w-3.5" />
+                                        <TrashIcon className="h-3.5 w-3.5" />
                                       </Button>
                                     </>
                                   )}
                                   {post.status === "failed" && (
                                     <>
                                       <Button size="sm" className="h-8 text-xs bg-[var(--sidebar-accent)] hover:opacity-90 text-white cursor-pointer" onClick={() => retryMutation.mutate({ postId: post.id })} disabled={retryMutation.isPending}>
-                                        {retryMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <RefreshCw className="h-3.5 w-3.5 mr-1" />}
+                                        {retryMutation.isPending ? <SpinnerGapIcon className="h-3.5 w-3.5 animate-spin mr-1" /> : <ArrowsClockwiseIcon className="h-3.5 w-3.5 mr-1" />}
                                         Retry
                                       </Button>
                                       <Button variant="ghost" size="sm" className="h-8 text-xs text-gray-400 hover:text-red-500 hover:bg-red-50 cursor-pointer" onClick={() => setDeleteTarget(post)}>
-                                        <Trash2 className="h-3.5 w-3.5" />
+                                        <TrashIcon className="h-3.5 w-3.5" />
                                       </Button>
                                     </>
                                   )}
@@ -725,7 +728,7 @@ export default function ContentList() {
                                       }
                                       return (
                                         <Button key={platformId} variant="ghost" size="sm" className="h-8 text-xs text-gray-400 hover:text-red-500 hover:bg-red-50 cursor-pointer" onClick={() => unpublishMutation.mutate({ postId: post.id, platform: platformId })} disabled={unpublishMutation.isPending}>
-                                          {unpublishMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <EyeOff className="h-3.5 w-3.5 mr-1" />}
+                                          {unpublishMutation.isPending ? <SpinnerGapIcon className="h-3.5 w-3.5 animate-spin mr-1" /> : <EyeSlashIcon className="h-3.5 w-3.5 mr-1" />}
                                           Unpublish from {platform?.label ?? platformId}
                                         </Button>
                                       );
@@ -743,7 +746,7 @@ export default function ContentList() {
             </div>
           ) : (
             <div className="rounded-2xl border-2 border-dashed border-gray-200 bg-white/50 p-12 text-center">
-              <CalendarClock className="h-10 w-10 text-gray-300 mx-auto mb-4" />
+              <CalendarBlankIcon className="h-10 w-10 text-gray-300 mx-auto mb-4" />
               <p className="text-sm font-medium text-gray-500 mb-1">
                 {emptyMessages[statusFilter].title}
               </p>
@@ -755,7 +758,7 @@ export default function ContentList() {
                   href={appRouter.dashboard}
                   className="inline-flex items-center gap-2 rounded-xl bg-[var(--sidebar-accent)] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:opacity-90"
                 >
-                  <Plus className="h-4 w-4" />
+                  <PlusIcon className="h-4 w-4" />
                   Create post
                 </Link>
               )}
@@ -772,7 +775,7 @@ export default function ContentList() {
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page <= 1}
               >
-                <ChevronLeft className="h-4 w-4" />
+                <CaretLeftIcon className="h-4 w-4" />
               </Button>
               <span className="text-sm text-gray-500 tabular-nums px-2">
                 {page} / {pagination.pages}
@@ -784,7 +787,7 @@ export default function ContentList() {
                 onClick={() => setPage((p) => Math.min(pagination.pages, p + 1))}
                 disabled={page >= pagination.pages}
               >
-                <ChevronRight className="h-4 w-4" />
+                <CaretRightIcon className="h-4 w-4" />
               </Button>
             </div>
           )}
@@ -825,7 +828,7 @@ export default function ContentList() {
             >
               {deleteMutation.isPending ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <SpinnerGapIcon className="h-4 w-4 animate-spin mr-2" />
                   Deleting...
                 </>
               ) : (

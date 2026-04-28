@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { Insights } from "@/lib/schemas/insights";
 
 export const rewriteOutputSchema = z.object({
   content: z.string(),
@@ -37,6 +38,7 @@ export function buildRewritePrompt(
   platform: string,
   instruction: string,
   knowledgeBase: Record<string, unknown> | null,
+  insights: Insights | null = null,
 ): string {
   const platformLabel = platformNames[platform] ?? platform;
   const limit = platformLimits[platform] ?? "";
@@ -45,12 +47,45 @@ export function buildRewritePrompt(
     ? `\nBusiness: ${knowledgeBase.businessName ?? "Unknown"}\nDescription: ${knowledgeBase.description ?? ""}\n`
     : "";
 
+  const voiceContext = formatVoiceSlice(insights);
+
   return `You are editing a social media post for ${platformLabel}.
-${businessContext}
+${businessContext}${voiceContext}
 Original post:
 ${content}
 
 Instruction: ${instructionMap[instruction] ?? instruction}
 ${limit ? `\nCharacter limit: ${limit}. Make sure the output respects this limit.` : ""}
 Write the new version. Keep it natural and human-sounding. Match the business owner's voice. Do not add quotes around the content.`;
+}
+
+function formatVoiceSlice(insights: Insights | null): string {
+  if (!insights || insights.meta.postsAnalyzed === 0) return "";
+
+  const { computed, inferred } = insights;
+  const blocks: string[] = [];
+
+  blocks.push(`Voice fingerprint (computed from their actual posts):
+- Average post length: ${computed.voiceStats.avgPostLengthChars} characters
+- Posts with emoji: ${Math.round(computed.voiceStats.emojiDensity * 100)}%
+- Hashtags per post: ${computed.voiceStats.hashtagsPerPost}
+- Posts with a question: ${Math.round(computed.voiceStats.questionFrequency * 100)}%`);
+
+  if (computed.extractedHashtags.length > 0) {
+    blocks.push(
+      `Hashtags they actually use: ${computed.extractedHashtags
+        .slice(0, 5)
+        .map((h) => h.tag)
+        .join(", ")}`
+    );
+  }
+
+  if (inferred) {
+    const patterns = inferred.performingPatterns.slice(0, 2).join("; ");
+    blocks.push(
+      `Tone: ${inferred.toneSummary}${patterns ? `\nPatterns that perform: ${patterns}` : ""}`
+    );
+  }
+
+  return `\n${blocks.join("\n\n")}\n`;
 }

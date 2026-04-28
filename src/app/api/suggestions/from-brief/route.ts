@@ -7,6 +7,7 @@ import { prisma } from "@/lib/db/prisma";
 import { createFromBrief } from "@/lib/services/createFromBrief";
 import { createFromBriefRequestSchema } from "@/lib/schemas/createFromBrief";
 import { claimSuggestionsCooldown } from "@/lib/services/rateLimit";
+import { coerceMediaItems } from "@/lib/schemas/mediaItems";
 
 // Generation runs N parallel chunks per account (5 posts each). The slowest
 // account in Promise.allSettled can approach 90–120s for large batches; 240
@@ -63,7 +64,10 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({
-      suggestions,
+      suggestions: suggestions.map((s) => ({
+        ...s,
+        mediaItems: coerceMediaItems(s.mediaItems),
+      })),
       failedAccountIds,
       failedCount: failedAccountIds.length,
     });

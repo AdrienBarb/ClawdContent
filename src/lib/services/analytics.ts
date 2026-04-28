@@ -248,10 +248,6 @@ export async function getOverviewMetrics(
     (sum, a) => sum + (a.currentFollowers ?? 0),
     0
   );
-  const totalGrowth = relevantAccounts.reduce(
-    (sum, a) => sum + (a.growth ?? 0),
-    0
-  );
   // Compute weighted average growth percentage
   const followerChange =
     relevantAccounts.length > 0 && totalFollowers > 0

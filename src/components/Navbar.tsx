@@ -58,7 +58,7 @@ export default function Navbar() {
             </Link>
             <div className="hidden md:flex items-center gap-6">
               <a href="#who-is-this-for" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Who It's For
+                Who It&apos;s For
               </a>
               <a href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 How It Works
@@ -117,7 +117,7 @@ export default function Navbar() {
               onClick={() => setIsMobileMenuOpen(false)}
               className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
-              Who It's For
+              Who It&apos;s For
             </a>
             <a
               href="#how-it-works"

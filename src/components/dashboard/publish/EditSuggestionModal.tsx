@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Image from "next/image";
 import toast from "react-hot-toast";
 import {
   SpinnerGapIcon,
@@ -22,6 +23,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { getPlatform } from "@/lib/constants/platforms";
+import { getPlatformConfig } from "@/lib/insights/platformConfig";
+import { useCloudinaryUpload } from "@/lib/hooks/useCloudinaryUpload";
+import { validateMediaItems } from "@/lib/services/mediaValidation";
+import type { MediaItem } from "@/lib/schemas/mediaItems";
 import type { Suggestion } from "./types";
 
 export default function EditSuggestionModal({
@@ -31,22 +36,34 @@ export default function EditSuggestionModal({
 }: {
   suggestion: Suggestion;
   onClose: () => void;
-  onSave: (updated: {
-    content: string;
-    mediaUrl?: string;
-    mediaType?: string;
-  }) => void;
+  onSave: (updated: { content: string; mediaItems: MediaItem[] }) => void;
 }) {
   const [content, setContent] = useState(suggestion.content);
-  const [mediaUrl, setMediaUrl] = useState<string | null>(suggestion.mediaUrl);
-  const [mediaType, setMediaType] = useState<string | null>(
-    suggestion.mediaType
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>(
+    suggestion.mediaItems
   );
   const [rewriting, setRewriting] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const editFileInputRef = useRef<HTMLInputElement>(null);
+  const { upload, uploading, progress } = useCloudinaryUpload();
 
   const platform = getPlatform(suggestion.socialAccount.platform);
+  const platformConfig = getPlatformConfig(suggestion.socialAccount.platform);
+  const { maxImages, maxVideos } = platformConfig.mediaRules;
+
+  const hasVideo = mediaItems.some((m) => m.type === "video");
+  const hasImage = mediaItems.some((m) => m.type === "image");
+  const imagesFull =
+    mediaItems.filter((m) => m.type === "image").length >= maxImages;
+  const videosFull =
+    mediaItems.filter((m) => m.type === "video").length >= maxVideos;
+  const addDisabled =
+    uploading || (hasVideo && videosFull) || (hasImage && imagesFull);
+
+  let acceptAttr = "image/jpeg,image/png,image/gif,image/webp,video/mp4,video/quicktime";
+  if (hasVideo) acceptAttr = "video/mp4,video/quicktime";
+  else if (hasImage && !imagesFull) acceptAttr = "image/jpeg,image/png,image/gif,image/webp";
+  else if (maxImages === 0) acceptAttr = "video/mp4,video/quicktime";
+  else if (maxVideos === 0) acceptAttr = "image/jpeg,image/png,image/gif,image/webp";
 
   const handleRewrite = async (instruction: string) => {
     if (!content.trim()) return;
@@ -80,34 +97,44 @@ export default function EditSuggestionModal({
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("upload_preset", "postclaw_unsigned");
-      const res = await fetch(
-        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/auto/upload`,
-        { method: "POST", body: formData }
+      const tentative = Array.from(files).map((f) => ({
+        url: "https://res.cloudinary.com/_/preflight",
+        type: f.type.startsWith("video/") ? ("video" as const) : ("image" as const),
+      }));
+      const preflight = validateMediaItems(
+        [...mediaItems, ...tentative],
+        suggestion.socialAccount.platform
       );
-      if (!res.ok) {
-        toast.error("Couldn't upload that file. Try a different one.");
+      if (!preflight.ok) {
+        toast.error(preflight.error);
         return;
       }
-      const data = await res.json().catch(() => null);
-      if (!data?.secure_url) {
-        toast.error("Couldn't upload that file. Try a different one.");
-        return;
-      }
-      setMediaUrl(data.secure_url);
-      setMediaType(data.resource_type === "video" ? "video" : "image");
-    } catch {
-      toast.error("Couldn't upload that file. Try a different one.");
+      const uploaded = await upload(files);
+      let rejected = false;
+      setMediaItems((prev) => {
+        const next = [...prev, ...uploaded];
+        const v = validateMediaItems(next, suggestion.socialAccount.platform);
+        if (!v.ok) {
+          rejected = true;
+          toast.error(v.error);
+          return prev;
+        }
+        return next;
+      });
+      if (rejected) return;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Couldn't upload that file. Try a different one.";
+      toast.error(msg);
     } finally {
-      setUploading(false);
       if (editFileInputRef.current) editFileInputRef.current.value = "";
     }
+  };
+
+  const removeItem = (idx: number) => {
+    setMediaItems((prev) => prev.filter((_, i) => i !== idx));
   };
 
   return (
@@ -144,31 +171,38 @@ export default function EditSuggestionModal({
             className="w-full min-h-[180px] text-sm text-gray-900 leading-relaxed resize-none focus:outline-none placeholder:text-gray-400"
             placeholder="Write your post..."
           />
-          {mediaUrl && (
-            <div className="mt-3 relative inline-block">
-              {mediaType === "video" ? (
-                <video
-                  src={mediaUrl}
-                  className="h-24 rounded-lg"
-                  controls
-                  aria-label="Attached video"
-                />
-              ) : (
-                <img
-                  src={mediaUrl}
-                  alt="Attached image"
-                  className="h-24 w-24 rounded-lg object-cover"
-                />
-              )}
-              <button
-                onClick={() => {
-                  setMediaUrl(null);
-                  setMediaType(null);
-                }}
-                className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-gray-900 text-white flex items-center justify-center cursor-pointer"
-              >
-                <XIcon className="h-3 w-3" weight="bold" />
-              </button>
+          {mediaItems.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {mediaItems.map((item, idx) => (
+                <div key={`${item.url}-${idx}`} className="relative">
+                  {item.type === "video" ? (
+                    <video
+                      src={item.url}
+                      className="h-24 w-24 rounded-lg object-cover"
+                      aria-label={`Attached video ${idx + 1}`}
+                      preload="metadata"
+                      playsInline
+                      muted
+                    />
+                  ) : (
+                    <Image
+                      src={item.url}
+                      alt={`Attached image ${idx + 1}`}
+                      className="h-24 w-24 rounded-lg object-cover"
+                      width={96}
+                      height={96}
+                    />
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => removeItem(idx)}
+                    className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-gray-900 text-white flex items-center justify-center cursor-pointer"
+                    aria-label="Remove media"
+                  >
+                    <XIcon className="h-3 w-3" weight="bold" />
+                  </button>
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -229,32 +263,42 @@ export default function EditSuggestionModal({
         <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100 bg-gray-50/50">
           <button
             onClick={() => editFileInputRef.current?.click()}
-            disabled={uploading}
+            disabled={addDisabled}
             className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer disabled:opacity-50"
+            title={
+              hasVideo && videosFull
+                ? "Remove the video first to add photos"
+                : hasImage && imagesFull
+                  ? `Up to ${maxImages} photo${maxImages === 1 ? "" : "s"} on ${platformConfig.displayName}`
+                  : undefined
+            }
           >
             {uploading ? (
               <SpinnerGapIcon className="h-4 w-4 animate-spin" />
             ) : (
               <ImageIcon className="h-4 w-4" />
             )}
-            {uploading ? "Uploading..." : "Add photo"}
+            {uploading
+              ? progress.total > 1
+                ? `Uploading ${progress.current}/${progress.total}…`
+                : "Uploading…"
+              : hasVideo
+                ? "Replace video"
+                : maxImages > 1
+                  ? "Add photos"
+                  : "Add photo"}
           </button>
           <input
             ref={editFileInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/quicktime"
+            accept={acceptAttr}
+            multiple={!hasVideo && maxImages > 1}
             onChange={handleFileSelect}
             className="hidden"
           />
           <div className="flex items-center gap-2">
             <button
-              onClick={() =>
-                onSave({
-                  content,
-                  mediaUrl: mediaUrl ?? undefined,
-                  mediaType: mediaType ?? undefined,
-                })
-              }
+              onClick={() => onSave({ content, mediaItems })}
               className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-medium text-white transition-colors cursor-pointer"
               style={{ backgroundColor: "#e8614d" }}
             >

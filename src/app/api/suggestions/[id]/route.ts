@@ -3,18 +3,35 @@ import { errorHandler } from "@/lib/errors/errorHandler";
 import { auth } from "@/lib/better-auth/auth";
 import { NextResponse, NextRequest } from "next/server";
 import { headers } from "next/headers";
+import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { createPost, validatePost } from "@/lib/late/mutations";
 import { FREE_POST_LIMIT } from "@/lib/constants/plans";
+import { coerceMediaItems, mediaItemsSchema } from "@/lib/schemas/mediaItems";
+import { validateMediaItems } from "@/lib/services/mediaValidation";
 
-// Helper: get user session or return 401
+const patchInputSchema = z
+  .object({
+    content: z.string().trim().min(1).max(10000).optional(),
+    mediaItems: mediaItemsSchema.optional(),
+    suggestedDay: z.number().int().min(0).max(6).optional(),
+    suggestedHour: z.number().int().min(0).max(23).optional(),
+    scheduledAt: z.union([z.string().datetime(), z.null()]).optional(),
+  })
+  .strict();
+
+const postActionSchema = z
+  .object({
+    action: z.enum(["schedule", "publish"]),
+  })
+  .strict();
+
 async function getSession() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) return null;
   return session;
 }
 
-// Helper: find suggestion belonging to user
 async function findSuggestion(id: string, userId: string) {
   return prisma.postSuggestion.findFirst({
     where: { id, socialAccount: { lateProfile: { userId } } },
@@ -22,37 +39,6 @@ async function findSuggestion(id: string, userId: string) {
   });
 }
 
-// Helper: compute scheduled date from day + hour in user timezone
-function computeScheduledDate(suggestedDay: number, suggestedHour: number, userTz: string): Date {
-  const now = new Date();
-  const nowParts = new Intl.DateTimeFormat("en-US", {
-    timeZone: userTz, weekday: "short", hour: "numeric", hourCycle: "h23",
-  }).formatToParts(now);
-  const userDayName = nowParts.find((p) => p.type === "weekday")?.value ?? "";
-  const userHour = parseInt(nowParts.find((p) => p.type === "hour")?.value ?? "0");
-
-  const jsMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
-  const userJsDay = jsMap[userDayName] ?? 0;
-  const targetJsDow = suggestedDay === 6 ? 0 : suggestedDay + 1;
-
-  let daysUntil = targetJsDow - userJsDay;
-  if (daysUntil < 0) daysUntil += 7;
-  if (daysUntil === 0 && suggestedHour <= userHour) daysUntil = 7;
-
-  const scheduledDate = new Date(now);
-  scheduledDate.setUTCDate(scheduledDate.getUTCDate() + daysUntil);
-  scheduledDate.setUTCHours(suggestedHour, 0, 0, 0);
-
-  const checkParts = new Intl.DateTimeFormat("en-US", {
-    timeZone: userTz, hour: "numeric", hourCycle: "h23",
-  }).formatToParts(scheduledDate);
-  const checkHour = parseInt(checkParts.find((p) => p.type === "hour")?.value ?? "0");
-  scheduledDate.setUTCHours(scheduledDate.getUTCHours() - (checkHour - suggestedHour));
-
-  return scheduledDate;
-}
-
-// PATCH /api/suggestions/[id] — Update suggestion content/media/time
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -62,29 +48,108 @@ export async function PATCH(
     if (!session) return NextResponse.json({ error: errorMessages.UNAUTHORIZED }, { status: 401 });
 
     const { id } = await params;
-    const body = await req.json();
-    const { content, mediaUrl, mediaType, suggestedDay, suggestedHour } = body;
+    const raw = await req.json().catch(() => ({}));
+    const input = patchInputSchema.parse(raw);
 
-    const suggestion = await prisma.postSuggestion.findFirst({
+    const existing = await prisma.postSuggestion.findFirst({
       where: { id, socialAccount: { lateProfile: { userId: session.user.id } } },
+      include: { socialAccount: { select: { platform: true } } },
     });
-    if (!suggestion) return NextResponse.json({ error: "Suggestion not found" }, { status: 404 });
+    if (!existing) {
+      return NextResponse.json({ error: "Suggestion not found" }, { status: 404 });
+    }
+
+    if (input.mediaItems !== undefined) {
+      const result = validateMediaItems(input.mediaItems, existing.socialAccount.platform);
+      if (!result.ok) {
+        return NextResponse.json(
+          { error: "MEDIA_VALIDATION_FAILED", message: result.error },
+          { status: 422 }
+        );
+      }
+    }
+
+    if (typeof input.scheduledAt === "string") {
+      const parsed = new Date(input.scheduledAt);
+      if (parsed.getTime() <= Date.now()) {
+        return NextResponse.json(
+          {
+            error: "INVALID_SCHEDULE",
+            message: "Schedule time must be in the future.",
+          },
+          { status: 400 }
+        );
+      }
+      const oneYearMs = 365 * 24 * 60 * 60 * 1000;
+      if (parsed.getTime() > Date.now() + oneYearMs) {
+        return NextResponse.json(
+          {
+            error: "INVALID_SCHEDULE",
+            message: "Schedule time can't be more than a year out.",
+          },
+          { status: 400 }
+        );
+      }
+    }
 
     const data: Record<string, unknown> = {};
-    if (content !== undefined) data.content = content;
-    if (mediaUrl !== undefined) data.mediaUrl = mediaUrl;
-    if (mediaType !== undefined) data.mediaType = mediaType;
-    if (suggestedDay !== undefined) data.suggestedDay = suggestedDay;
-    if (suggestedHour !== undefined) data.suggestedHour = suggestedHour;
+    if (input.content !== undefined) data.content = input.content;
+    if (input.mediaItems !== undefined) data.mediaItems = input.mediaItems;
+    if (input.suggestedDay !== undefined) data.suggestedDay = input.suggestedDay;
+    if (input.suggestedHour !== undefined) data.suggestedHour = input.suggestedHour;
+    if (input.scheduledAt !== undefined) {
+      data.scheduledAt =
+        input.scheduledAt === null ? null : new Date(input.scheduledAt);
+    }
 
     const updated = await prisma.postSuggestion.update({ where: { id }, data });
-    return NextResponse.json({ suggestion: updated });
+    return NextResponse.json({
+      suggestion: { ...updated, mediaItems: coerceMediaItems(updated.mediaItems) },
+    });
   } catch (error) {
     return errorHandler(error);
   }
 }
 
-// POST /api/suggestions/[id] — Actions: schedule, publish
+// If a publish attempt's cleanup transaction failed but Zernio already
+// accepted the post, the next click would re-fire Zernio and double-post.
+// We stamp `publishedExternalId` between Zernio call and cleanup so a retry
+// can detect "already sent" and just clean up locally without re-calling
+// Zernio. STALE_LOCK_MS lets retries through if the soft lock from a
+// previous attempt is older than this window (covers crashed responses).
+const STALE_LOCK_MS = 5 * 60 * 1000;
+
+async function finalizeAfterZernio(
+  suggestionId: string,
+  userId: string,
+  externalPostId: string
+): Promise<{ ok: true } | { ok: false }> {
+  // 1. Checkpoint: single atomic write so a retry can detect "already sent".
+  await prisma.postSuggestion.update({
+    where: { id: suggestionId },
+    data: { publishedExternalId: externalPostId },
+  });
+
+  // 2. Atomic cleanup: increment counter + delete the draft together so
+  // the counter never disagrees with the suggestion list.
+  try {
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: userId },
+        data: { postsPublished: { increment: 1 } },
+      }),
+      prisma.postSuggestion.delete({ where: { id: suggestionId } }),
+    ]);
+    return { ok: true };
+  } catch (txError) {
+    console.error(
+      `[publish] cleanup tx failed for suggestion=${suggestionId} externalPostId=${externalPostId} user=${userId}`,
+      txError
+    );
+    return { ok: false };
+  }
+}
+
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -94,19 +159,80 @@ export async function POST(
     if (!session) return NextResponse.json({ error: errorMessages.UNAUTHORIZED }, { status: 401 });
 
     const { id } = await params;
-    const body = await req.json().catch(() => ({}));
-    const action = (body as { action?: string }).action ?? "schedule";
-    const scheduledAt = (body as { scheduledAt?: string }).scheduledAt;
+    const raw = await req.json().catch(() => ({}));
+    const { action } = postActionSchema.parse(raw);
 
     const suggestion = await findSuggestion(id, session.user.id);
     if (!suggestion) return NextResponse.json({ error: "Suggestion not found" }, { status: 404 });
 
-    // Check free post limit
+    // ── Idempotency short-circuit ─────────────────────────────────────────
+    // A previous attempt already created the post on Zernio but its DB
+    // cleanup didn't commit. Don't call Zernio again — just finish the
+    // cleanup locally and report success with the existing post id.
+    if (suggestion.publishedExternalId) {
+      const result = await finalizeAfterZernio(
+        id,
+        session.user.id,
+        suggestion.publishedExternalId
+      );
+      if (!result.ok) {
+        return NextResponse.json(
+          {
+            error: "PUBLISH_PARTIAL",
+            postId: suggestion.publishedExternalId,
+            message: "Post published — refresh to clear it from your drafts.",
+          },
+          { status: 500 }
+        );
+      }
+      return NextResponse.json({
+        success: true,
+        postId: suggestion.publishedExternalId,
+        action: action === "publish" ? "published" : "scheduled",
+      });
+    }
+
+    // ── Soft lock against double-click ────────────────────────────────────
+    // updateMany returns count of rows it actually wrote. If it's 0, the
+    // suggestion is being published right now in another request.
+    const claim = await prisma.postSuggestion.updateMany({
+      where: {
+        id,
+        publishedExternalId: null,
+        OR: [
+          { publishingStartedAt: null },
+          {
+            publishingStartedAt: {
+              lt: new Date(Date.now() - STALE_LOCK_MS),
+            },
+          },
+        ],
+      },
+      data: { publishingStartedAt: new Date() },
+    });
+    if (claim.count === 0) {
+      return NextResponse.json(
+        {
+          error: "ALREADY_PUBLISHING",
+          message:
+            "This post is already being published — give it a few seconds.",
+        },
+        { status: 409 }
+      );
+    }
+
     const [user, subscription] = await Promise.all([
-      prisma.user.findUniqueOrThrow({ where: { id: session.user.id }, select: { timezone: true, postsPublished: true } }),
-      prisma.subscription.findUnique({ where: { userId: session.user.id }, select: { status: true } }),
+      prisma.user.findUniqueOrThrow({
+        where: { id: session.user.id },
+        select: { timezone: true, postsPublished: true },
+      }),
+      prisma.subscription.findUnique({
+        where: { userId: session.user.id },
+        select: { status: true },
+      }),
     ]);
-    const hasSubscription = subscription?.status === "active" || subscription?.status === "trialing";
+    const hasSubscription =
+      subscription?.status === "active" || subscription?.status === "trialing";
     if (!hasSubscription && user.postsPublished >= FREE_POST_LIMIT) {
       return NextResponse.json({ error: "FREE_POST_LIMIT_REACHED" }, { status: 403 });
     }
@@ -115,15 +241,20 @@ export async function POST(
     const { lateProfile } = socialAccount;
     const userTz = user.timezone ?? "UTC";
 
-    const mediaItems = suggestion.mediaUrl
-      ? [{ url: suggestion.mediaUrl, type: suggestion.mediaType ?? "image" }]
-      : undefined;
+    const mediaItems = coerceMediaItems(suggestion.mediaItems);
 
-    // Validate with Zernio before sending
+    const localValidation = validateMediaItems(mediaItems, socialAccount.platform);
+    if (!localValidation.ok) {
+      return NextResponse.json(
+        { error: "MEDIA_VALIDATION_FAILED", message: localValidation.error },
+        { status: 422 }
+      );
+    }
+
     const validation = await validatePost(
       suggestion.content,
       socialAccount.platform,
-      mediaItems,
+      mediaItems.length > 0 ? mediaItems : undefined,
       lateProfile.lateApiKey
     );
     if (!validation.valid) {
@@ -133,8 +264,9 @@ export async function POST(
       );
     }
 
+    const mediaForCreate = mediaItems.length > 0 ? mediaItems : undefined;
+
     if (action === "publish") {
-      // Publish immediately
       const post = await createPost(
         lateProfile.lateProfileId,
         {
@@ -142,44 +274,80 @@ export async function POST(
           platform: { platform: socialAccount.platform, accountId: socialAccount.lateAccountId },
           publishNow: true,
           timezone: userTz,
-          ...(mediaItems ? { mediaItems } : {}),
+          ...(mediaForCreate ? { mediaItems: mediaForCreate } : {}),
         },
         lateProfile.lateApiKey
       );
-      await Promise.all([
-        prisma.postSuggestion.delete({ where: { id } }),
-        prisma.user.update({ where: { id: session.user.id }, data: { postsPublished: { increment: 1 } } }),
-      ]);
-      return NextResponse.json({ success: true, postId: post.id, action: "published" });
+      const result = await finalizeAfterZernio(id, session.user.id, post.id);
+      if (!result.ok) {
+        return NextResponse.json(
+          {
+            error: "PUBLISH_PARTIAL",
+            postId: post.id,
+            message: "Post published — refresh to clear it from your drafts.",
+          },
+          { status: 500 }
+        );
+      }
+      return NextResponse.json({
+        success: true,
+        postId: post.id,
+        action: "published",
+      });
     }
 
-    // Default: schedule
-    const scheduledDate = scheduledAt
-      ? new Date(scheduledAt)
-      : computeScheduledDate(suggestion.suggestedDay, suggestion.suggestedHour, userTz);
+    if (!suggestion.scheduledAt) {
+      return NextResponse.json(
+        {
+          error: "NO_SCHEDULE_STAGED",
+          message: "Pick a schedule time first.",
+        },
+        { status: 422 }
+      );
+    }
+    if (suggestion.scheduledAt.getTime() <= Date.now()) {
+      return NextResponse.json(
+        {
+          error: "SCHEDULE_IN_PAST",
+          message: "That schedule time has passed. Pick a new one.",
+        },
+        { status: 422 }
+      );
+    }
+
     const post = await createPost(
       lateProfile.lateProfileId,
       {
         content: suggestion.content,
         platform: { platform: socialAccount.platform, accountId: socialAccount.lateAccountId },
-        scheduledAt: scheduledDate.toISOString(),
+        scheduledAt: suggestion.scheduledAt.toISOString(),
         publishNow: false,
         timezone: userTz,
-        ...(mediaItems ? { mediaItems } : {}),
+        ...(mediaForCreate ? { mediaItems: mediaForCreate } : {}),
       },
       lateProfile.lateApiKey
     );
-    await Promise.all([
-      prisma.postSuggestion.delete({ where: { id } }),
-      prisma.user.update({ where: { id: session.user.id }, data: { postsPublished: { increment: 1 } } }),
-    ]);
-    return NextResponse.json({ success: true, postId: post.id, action: "scheduled" });
+    const result = await finalizeAfterZernio(id, session.user.id, post.id);
+    if (!result.ok) {
+      return NextResponse.json(
+        {
+          error: "PUBLISH_PARTIAL",
+          postId: post.id,
+          message: "Post scheduled — refresh to clear it from your drafts.",
+        },
+        { status: 500 }
+      );
+    }
+    return NextResponse.json({
+      success: true,
+      postId: post.id,
+      action: "scheduled",
+    });
   } catch (error) {
     return errorHandler(error);
   }
 }
 
-// DELETE /api/suggestions/[id] — Delete a suggestion
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }

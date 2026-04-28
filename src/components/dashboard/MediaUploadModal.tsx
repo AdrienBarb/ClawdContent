@@ -1,10 +1,14 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { XIcon, ImageIcon, FilmStripIcon, CircleNotchIcon } from "@phosphor-icons/react";
+import { ImageIcon, XIcon } from "@phosphor-icons/react";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
-const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!;
-const UPLOAD_PRESET = "postclaw_unsigned";
 const MAX_IMAGE_SIZE = 25 * 1024 * 1024; // 25 MB
 const MAX_VIDEO_SIZE = 200 * 1024 * 1024; // 200 MB
 const ALLOWED_TYPES = [
@@ -53,15 +57,8 @@ export default function MediaUploadModal({
   const xhrRef = useRef<XMLHttpRequest | null>(null);
   const queueRef = useRef<File[]>([]);
 
-  // Close on Escape
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [open, onClose]);
+  // Escape, focus trap, focus restoration are all handled by the Dialog
+  // primitive — no custom listener needed.
 
   // Cleanup XHR on unmount
   useEffect(() => {
@@ -101,7 +98,8 @@ export default function MediaUploadModal({
 
   const processNextRef = useRef<() => void>(() => {});
 
-  processNextRef.current = () => {
+  useEffect(() => {
+    processNextRef.current = async () => {
     const file = queueRef.current.shift();
     if (!file) {
       resetState();
@@ -112,9 +110,41 @@ export default function MediaUploadModal({
     setCurrentFileIndex((prev) => prev + 1);
     setProgress({ percent: 0, startedAt: Date.now() });
 
+    // Fetch a short-lived signature from our server before talking to
+    // Cloudinary. The unsigned preset has been retired (cost-burn risk).
+    const resourceType = file.type.startsWith("video/") ? "video" : "image";
+    let sign: {
+      signature: string;
+      timestamp: number;
+      folder: string;
+      allowedFormats: string;
+      maxBytes: number;
+      apiKey: string;
+      cloudName: string;
+      resourceType: "image" | "video";
+    };
+    try {
+      const signRes = await fetch("/api/uploads/sign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resourceType }),
+      });
+      if (!signRes.ok) throw new Error(`sign ${signRes.status}`);
+      sign = await signRes.json();
+    } catch {
+      setError("Upload failed. Please try again.");
+      setUploading(false);
+      setProgress(null);
+      return;
+    }
+
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("upload_preset", UPLOAD_PRESET);
+    formData.append("api_key", sign.apiKey);
+    formData.append("timestamp", String(sign.timestamp));
+    formData.append("signature", sign.signature);
+    formData.append("folder", sign.folder);
+    formData.append("allowed_formats", sign.allowedFormats);
 
     const xhr = new XMLHttpRequest();
     xhrRef.current = xhr;
@@ -130,7 +160,30 @@ export default function MediaUploadModal({
 
     xhr.addEventListener("load", () => {
       if (xhr.status >= 200 && xhr.status < 300) {
-        const data = JSON.parse(xhr.responseText);
+        let data: {
+          resource_type?: string;
+          secure_url?: string;
+          format?: string;
+          public_id?: string;
+          bytes?: number;
+          width?: number;
+          height?: number;
+          thumbnail_url?: string;
+        };
+        try {
+          data = JSON.parse(xhr.responseText);
+        } catch {
+          setError("Upload failed. Please try again.");
+          setUploading(false);
+          setProgress(null);
+          return;
+        }
+        if (!data.secure_url || !data.public_id || !data.format || data.bytes == null) {
+          setError("Upload failed. Please try again.");
+          setUploading(false);
+          setProgress(null);
+          return;
+        }
         const resourceType =
           data.resource_type === "video" ? "video" : "image";
 
@@ -174,10 +227,11 @@ export default function MediaUploadModal({
 
     xhr.open(
       "POST",
-      `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`
+      `https://api.cloudinary.com/v1_1/${sign.cloudName}/${sign.resourceType}/upload`
     );
     xhr.send(formData);
-  };
+    };
+  }, [onClose, onUploadComplete, resetState]);
 
   const uploadFiles = useCallback(
     (files: File[]) => {
@@ -226,40 +280,42 @@ export default function MediaUploadModal({
     xhrRef.current = null;
   }, []);
 
-  if (!open) return null;
+  const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
 
-  const remainingSeconds =
-    progress && progress.percent > 0
-      ? Math.round(
-          ((Date.now() - progress.startedAt) / progress.percent) *
-            (100 - progress.percent) /
-            1000
-        )
-      : null;
+  useEffect(() => {
+    if (!progress || progress.percent <= 0) return;
+    const { startedAt, percent } = progress;
+    const id = window.setInterval(() => {
+      const elapsed = Date.now() - startedAt;
+      setRemainingSeconds(
+        Math.round(((elapsed / percent) * (100 - percent)) / 1000)
+      );
+    }, 500);
+    return () => window.clearInterval(id);
+  }, [progress]);
 
   return (
-    <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) handleClose();
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) handleClose();
       }}
     >
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-5 pb-3">
-          <h2 className="text-lg font-semibold text-gray-900">Upload</h2>
-          <button
-            type="button"
-            onClick={handleClose}
-            className="h-8 w-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-          >
-            <XIcon className="h-5 w-5" weight="bold" />
-          </button>
+      <DialogContent className="max-w-md p-0 overflow-hidden">
+        <div className="px-6 pt-5 pb-3">
+          <DialogTitle className="text-lg font-semibold text-gray-900">
+            Upload
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            Pick image or video files from your device, or drop them onto the
+            zone below.
+          </DialogDescription>
         </div>
 
-        {/* Drop zone */}
+        {/* Drop zone — real <button> so keyboard users can open the picker */}
         <div className="px-6 pb-4">
-          <div
+          <button
+            type="button"
             onDragOver={(e) => {
               e.preventDefault();
               setDragOver(true);
@@ -267,11 +323,13 @@ export default function MediaUploadModal({
             onDragLeave={() => setDragOver(false)}
             onDrop={handleDrop}
             onClick={() => !uploading && fileInputRef.current?.click()}
-            className={`relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed py-10 px-4 transition-colors cursor-pointer ${
+            disabled={uploading}
+            aria-label="Browse files to upload"
+            className={`relative flex w-full flex-col items-center justify-center rounded-xl border-2 border-dashed py-10 px-4 transition-colors cursor-pointer ${
               dragOver
                 ? "border-primary bg-primary/5"
                 : "border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-gray-100/50"
-            } ${uploading ? "pointer-events-none opacity-60" : ""}`}
+            } disabled:cursor-not-allowed disabled:opacity-60`}
           >
             <div className="h-12 w-12 rounded-xl bg-gray-100 flex items-center justify-center mb-3">
               <ImageIcon className="h-6 w-6 text-gray-400" />
@@ -280,8 +338,10 @@ export default function MediaUploadModal({
               Drop your file(s) here or{" "}
               <span className="text-primary font-medium">browse</span>
             </p>
-            <p className="text-xs text-gray-400 mt-1">Max: 25 MB images, 200 MB videos</p>
-          </div>
+            <p className="text-xs text-gray-400 mt-1">
+              Max: 25 MB images, 200 MB videos
+            </p>
+          </button>
 
           <input
             ref={fileInputRef}
@@ -295,7 +355,7 @@ export default function MediaUploadModal({
 
         {/* Error */}
         {error && (
-          <div className="px-6 pb-4">
+          <div className="px-6 pb-4" role="alert">
             <p className="text-sm text-red-600">{error}</p>
           </div>
         )}
@@ -307,27 +367,39 @@ export default function MediaUploadModal({
               <div className="flex items-center justify-between mb-2">
                 <div>
                   <p className="text-sm font-medium text-gray-900">
-                    Uploading{totalFiles > 1 ? ` (${currentFileIndex}/${totalFiles})` : ""}
+                    Uploading
+                    {totalFiles > 1
+                      ? ` (${currentFileIndex}/${totalFiles})`
+                      : ""}
                   </p>
-                  <p className="text-xs text-gray-500 mt-0.5">
+                  <p
+                    className="text-xs text-gray-500 mt-0.5"
+                    aria-live="polite"
+                  >
                     {progress.percent} %
-                    {remainingSeconds !== null &&
+                    {progress &&
+                      remainingSeconds !== null &&
                       remainingSeconds > 0 &&
                       ` · ${remainingSeconds} second${remainingSeconds !== 1 ? "s" : ""} remaining`}
                   </p>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={handleCancel}
-                    className="h-7 w-7 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                    title="Cancel upload"
-                  >
-                    <XIcon className="h-4 w-4" weight="bold" />
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  aria-label="Cancel upload"
+                  className="flex h-11 w-11 md:h-9 md:w-9 items-center justify-center rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
+                >
+                  <XIcon className="h-4 w-4" weight="bold" />
+                </button>
               </div>
-              <div className="h-1.5 w-full rounded-full bg-gray-200 overflow-hidden">
+              <div
+                className="h-1.5 w-full rounded-full bg-gray-200 overflow-hidden"
+                role="progressbar"
+                aria-valuenow={progress.percent}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label="Upload progress"
+              >
                 <div
                   className="h-full rounded-full bg-primary transition-all duration-300"
                   style={{ width: `${progress.percent}%` }}
@@ -336,7 +408,7 @@ export default function MediaUploadModal({
             </div>
           </div>
         )}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

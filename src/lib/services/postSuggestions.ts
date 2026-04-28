@@ -2,7 +2,10 @@ import { prisma } from "@/lib/db/prisma";
 import { generateObject } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
-import { getPlatformConfig } from "@/lib/insights/platformConfig";
+import {
+  defaultContentType,
+  getPlatformConfig,
+} from "@/lib/insights/platformConfig";
 import { type Insights } from "@/lib/schemas/insights";
 import { planChunks, themeForChunk } from "@/lib/services/chunking";
 import { parseInsights, pickTimeSlots } from "@/lib/services/insightsHelpers";
@@ -25,7 +28,6 @@ const generatedPostsSchema = z.object({
   suggestions: z.array(
     z.object({
       content: z.string(),
-      contentType: z.enum(["text", "image", "carousel"]),
       reasoning: z.string(),
     })
   ),
@@ -151,6 +153,8 @@ export async function generateSuggestions(
   // Pick suggestedDay/Hour: prefer real bestTimes, rotate through top 3, fall back to platform defaults
   const slots = pickTimeSlots(insights, config.defaultBestTimes, finalSuggestions.length);
 
+  const contentType = defaultContentType(config.requiresMedia);
+
   // Atomic: delete old + create new in one transaction. If anything fails, the old suggestions survive.
   // Using the batch (sequential-array) form rather than an interactive
   // `$transaction(async tx => ...)` so we don't hit the 5s interactive
@@ -163,7 +167,7 @@ export async function generateSuggestions(
         data: {
           socialAccountId,
           content: s.content,
-          contentType: s.contentType,
+          contentType,
           suggestedDay: slots[i].dayOfWeek,
           suggestedHour: slots[i].hour,
           reasoning: s.reasoning,
@@ -328,7 +332,6 @@ Return EXACTLY ${input.chunkSize} post ${input.chunkSize === 1 ? "suggestion" : 
 
 For each:
 - content: the post text${input.charLimit ? ` (max ${input.charLimit} characters)` : ""}. Use hashtags they actually use when natural. Match their tone, length, and emoji habits.
-- contentType: "text", "image", or "carousel" — bias towards what works for them based on their content mix.
 - reasoning: ONE short sentence explaining why this would land with their audience.`);
 
   return sections.join("\n\n");

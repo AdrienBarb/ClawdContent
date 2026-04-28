@@ -116,7 +116,7 @@ const useApi = () => {
 
   const useDelete = (url: string, options = {}) =>
     useMutation({
-      mutationFn: (_data?: unknown) => deleter({ url }),
+      mutationFn: () => deleter({ url }),
       ...options,
     });
 

@@ -1,7 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CalendarIcon, CheckIcon, ClockIcon } from "@phosphor-icons/react";
+import {
+  CalendarIcon,
+  CaretDownIcon,
+  CheckIcon,
+  ClockIcon,
+  PushPinIcon,
+  XIcon,
+} from "@phosphor-icons/react";
 import { RemoveScroll } from "react-remove-scroll";
 import type { DayButtonProps } from "react-day-picker";
 import { Calendar } from "@/components/ui/calendar";
@@ -13,6 +20,15 @@ import {
 import useApi from "@/lib/hooks/useApi";
 import { appRouter } from "@/lib/constants/appRouter";
 import { PLATFORM_CONFIG } from "@/lib/insights/platformConfig";
+import {
+  type NormalizedSlot,
+  atTime,
+  dayOfWeekZernio,
+  getBestSlots,
+  isSameDay,
+  pad2,
+  pickNextSlot,
+} from "@/lib/services/bestTimes";
 import { cn } from "@/lib/utils";
 
 interface BestTimeSlotApi {
@@ -21,18 +37,6 @@ interface BestTimeSlotApi {
   avg_engagement?: number;
   post_count?: number;
 }
-
-interface NormalizedSlot {
-  day: number; // 0=Mon..6=Sun
-  hour: number; // 0-23
-  engagement: number; // higher = better
-}
-
-const GENERIC_DEFAULT_SLOTS: NormalizedSlot[] = [
-  { day: 1, hour: 10, engagement: 3 },
-  { day: 3, hour: 13, engagement: 2 },
-  { day: 5, hour: 17, engagement: 1 },
-];
 
 // 96 quarter-hour options across a day. Stable across renders.
 const TIME_OPTIONS: string[] = (() => {
@@ -47,36 +51,12 @@ const TIME_OPTIONS: string[] = (() => {
   return out;
 })();
 
-function pad2(n: number): string {
-  return n.toString().padStart(2, "0");
-}
-
 function formatTimeLabel(time: string): string {
   if (!time) return "";
   const [h, m] = time.split(":").map(Number);
   const hour = h % 12 || 12;
   const ampm = h < 12 ? "AM" : "PM";
   return `${hour}:${pad2(m)} ${ampm}`;
-}
-
-// Returns a new Date with hour/minute applied; preserves the calendar day of `base`.
-function atTime(base: Date, hour: number, minute = 0): Date {
-  const d = new Date(base);
-  d.setHours(hour, minute, 0, 0);
-  return d;
-}
-
-// JS getDay() is Sun=0..Sat=6; project data is Mon=0..Sun=6.
-function dayOfWeekZernio(date: Date): number {
-  return (date.getDay() + 6) % 7;
-}
-
-function isSameDay(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
 }
 
 // Hoisted so the function reference is stable across renders. Defining this
@@ -127,49 +107,43 @@ const CALENDAR_CLASS_NAMES = {
 
 const CALENDAR_COMPONENTS = { DayButton: PickerDayButton };
 
-// Default selection: TODAY at today's highest-engagement upcoming hour.
-// If no remaining slot today, falls forward to the next day with a slot
-// (date becomes that next day). Slots must be sorted by engagement DESC.
-function findDefaultSelection(
-  slots: NormalizedSlot[],
-  now: Date,
-  today: Date
-): { date: Date; time: string } {
-  // Try today first — highest-engagement slot whose hour hasn't passed.
-  const todayDow = dayOfWeekZernio(today);
-  for (const slot of slots) {
-    if (slot.day !== todayDow) continue;
-    const candidate = atTime(today, slot.hour);
-    if (candidate.getTime() > now.getTime()) {
-      return { date: candidate, time: `${pad2(slot.hour)}:00` };
-    }
-  }
-  // No future slot today — walk forward day by day, take each day's best.
-  for (let offset = 1; offset <= 7; offset++) {
-    const day = new Date(today);
-    day.setDate(day.getDate() + offset);
-    const dow = dayOfWeekZernio(day);
-    const best = slots.find((s) => s.day === dow);
-    if (best) {
-      return { date: atTime(day, best.hour), time: `${pad2(best.hour)}:00` };
-    }
-  }
-  // Final fallback: today/tomorrow at 10:00.
-  const fallback = atTime(today, 10);
-  if (fallback.getTime() <= now.getTime()) {
-    fallback.setDate(fallback.getDate() + 1);
-  }
-  return { date: fallback, time: "10:00" };
+function formatVerboseLabel(iso: string | null | undefined): string {
+  if (!iso) return "Now";
+  return new Date(iso).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 export function SchedulePicker({
   disabled,
   onSchedule,
   platform,
+  variant = "compact",
+  scheduledAt,
+  onCancelSchedule,
+  joinRight = false,
 }: {
   disabled: boolean;
   onSchedule: (date: Date) => void;
   platform?: string;
+  /**
+   * "compact": small icon trigger labelled "Schedule" (used by BulkBar + the
+   * legacy single-purpose schedule button). "verbose": the wider split-button
+   * left segment that displays the current scheduledAt (or "Now") plus a
+   * chevron.
+   */
+  variant?: "compact" | "verbose";
+  /** Only used when variant="verbose" — drives the displayed label. */
+  scheduledAt?: string | null;
+  /** Shown in the popover footer when scheduled. Single click clears the
+   *  staged time on the draft (does NOT publish — the draft stays as-is). */
+  onCancelSchedule?: () => void;
+  /** When true, the trigger has no right-side rounding/border so it can sit
+   *  flush against an adjacent CTA in a split-button layout. */
+  joinRight?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [timeOpen, setTimeOpen] = useState(false);
@@ -179,13 +153,24 @@ export function SchedulePicker({
   const [pickedDate, setPickedDate] = useState<Date | undefined>(undefined);
   const [pickedTime, setPickedTime] = useState<string>("");
 
-  // Captured once on mount — purity-safe vs calling new Date() in render.
-  const [now] = useState(() => new Date());
-  const [today] = useState(() => {
+  // Refresh `now`/`today` whenever the popover opens, so a picker left open
+  // across midnight still computes against the current day. Falls back to a
+  // mount-time value if it's never opened (won't render any date logic anyway).
+  const [now, setNow] = useState(() => new Date());
+  const [today, setToday] = useState(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
     return d;
   });
+
+  useEffect(() => {
+    if (!open) return;
+    const fresh = new Date();
+    setNow(fresh);
+    const startOfDay = new Date(fresh);
+    startOfDay.setHours(0, 0, 0, 0);
+    setToday(startOfDay);
+  }, [open]);
 
   const { useGet } = useApi();
 
@@ -207,37 +192,23 @@ export function SchedulePicker({
       ? Intl.DateTimeFormat().resolvedOptions().timeZone
       : "");
 
-  // Single source of truth for posting slots. API data wins when present
-  // (sorted by avg_engagement descending). Otherwise PLATFORM_CONFIG. Otherwise
-  // a generic 3-slot fallback.
-  const allSlots: NormalizedSlot[] = useMemo(() => {
-    const apiSlots = bestTimesData?.slots ?? [];
-    if (apiSlots.length > 0) {
-      return apiSlots
-        .map((s) => ({
-          day: s.day_of_week,
-          hour: s.hour,
-          engagement: s.avg_engagement ?? 0,
-        }))
-        .sort((a, b) => b.engagement - a.engagement);
-    }
-    if (platform && PLATFORM_CONFIG[platform]) {
-      const defaults = PLATFORM_CONFIG[platform].defaultBestTimes;
-      return defaults.map((s, i) => ({
-        day: s.dayOfWeek,
-        hour: s.hour,
-        engagement: defaults.length - i,
-      }));
-    }
-    return GENERIC_DEFAULT_SLOTS;
-  }, [bestTimesData, platform]);
+  // Single source of truth for posting slots. API data wins when present.
+  // Three-tier fallback (API → platformConfig → generic) lives in bestTimes.
+  const allSlots: NormalizedSlot[] = useMemo(
+    () =>
+      getBestSlots({
+        insightsBestTimes: bestTimesData?.slots,
+        platform,
+      }),
+    [bestTimesData, platform]
+  );
 
   // Default selection derives from the same `allSlots` as the pills, so they
   // can never disagree. When API data arrives, the default updates with it
   // (unless the user has already picked something — see `selectedDate/Time`
   // below).
   const defaultSelection = useMemo(
-    () => findDefaultSelection(allSlots, now, today),
+    () => pickNextSlot(allSlots, now, today),
     [allSlots, now, today]
   );
 
@@ -345,13 +316,29 @@ export function SchedulePicker({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button
-          disabled={disabled}
-          className="flex h-10 md:h-8 cursor-pointer items-center gap-1.5 rounded-lg border border-gray-200 px-3 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <CalendarIcon className="h-3.5 w-3.5" />
-          Schedule
-        </button>
+        {variant === "verbose" ? (
+          <button
+            disabled={disabled}
+            className={cn(
+              "flex h-10 md:h-8 cursor-pointer items-center gap-1.5 border border-gray-200 px-2.5 text-[12px] font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50",
+              joinRight ? "rounded-l-lg border-r-0" : "rounded-lg"
+            )}
+          >
+            <PushPinIcon className="h-3.5 w-3.5" weight="duotone" />
+            <span className="tabular-nums">
+              {formatVerboseLabel(scheduledAt)}
+            </span>
+            <CaretDownIcon className="h-3 w-3 text-gray-400" weight="bold" />
+          </button>
+        ) : (
+          <button
+            disabled={disabled}
+            className="flex h-10 md:h-8 cursor-pointer items-center gap-1.5 rounded-lg border border-gray-200 px-3 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <CalendarIcon className="h-3.5 w-3.5" />
+            Schedule
+          </button>
+        )}
       </PopoverTrigger>
       <PopoverContent
         align="end"
@@ -475,7 +462,7 @@ export function SchedulePicker({
         </div>
 
         {/* Confirm */}
-        <div className="border-t border-gray-100 px-4 py-3">
+        <div className="border-t border-gray-100 px-4 py-3 flex flex-col gap-2">
           <button
             onClick={handleConfirm}
             disabled={!selectedTime}
@@ -484,6 +471,21 @@ export function SchedulePicker({
             <CalendarIcon className="h-4 w-4" />
             {`Schedule for ${selectedDate.toLocaleDateString(undefined, { month: "short", day: "numeric" })} at ${formatTimeLabel(selectedTime)}`}
           </button>
+          {onCancelSchedule && scheduledAt && (
+            <button
+              type="button"
+              onClick={() => {
+                onCancelSchedule();
+                setOpen(false);
+                setPickedDate(undefined);
+                setPickedTime("");
+              }}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 cursor-pointer"
+            >
+              <XIcon className="h-4 w-4" weight="bold" />
+              Cancel schedule
+            </button>
+          )}
         </div>
       </PopoverContent>
     </Popover>

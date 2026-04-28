@@ -13,6 +13,7 @@ export default function PricingSection() {
   const router = useRouter();
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleSelectPlan = (_planId: PlanId, _interval: BillingInterval) => {
     if (session?.user) {
       router.push(appRouter.dashboard);

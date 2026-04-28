@@ -39,7 +39,7 @@ export default function LegacyKBBanner() {
             Complete your business profile
           </p>
           <p className="text-xs text-gray-600 mt-0.5">
-            Add your business name, description, and services so the AI can write posts that match your brand.
+            Add your business name, description, and services so we can write posts that match your brand.
           </p>
         </div>
       </div>

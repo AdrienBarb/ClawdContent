@@ -12,7 +12,7 @@ export default function FAQSection() {
           </h2>
 
           <div className="space-y-3">
-            {faqs.map((faq, index) => (
+            {faqs.map((faq) => (
               <details key={faq.question} className="group bg-card border border-border rounded-2xl p-6 shadow-sm">
                   <summary className="flex cursor-pointer items-center justify-between font-semibold text-[0.95rem] list-none text-foreground">
                     {faq.question}

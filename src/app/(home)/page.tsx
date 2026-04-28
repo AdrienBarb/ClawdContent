@@ -1,4 +1,5 @@
 import HeroSection from "@/components/sections/HeroSection";
+import DemoSection from "@/components/sections/DemoSection";
 import PainSection from "@/components/sections/PainSection";
 import BeforeAfterSection from "@/components/sections/BeforeAfterSection";
 import WhoIsThisForSection from "@/components/sections/WhoIsThisForSection";
@@ -95,6 +96,7 @@ export default async function Home() {
         }}
       />
       <HeroSection variant={heroVariant} />
+      <DemoSection />
       <PainSection />
       <BeforeAfterSection />
       <WhoIsThisForSection />

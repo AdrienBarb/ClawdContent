@@ -7,6 +7,8 @@ export interface AccountInfo {
   lastAnalyzedAt: string | null;
 }
 
+import type { MediaItem } from "@/lib/schemas/mediaItems";
+
 export interface Suggestion {
   id: string;
   content: string;
@@ -14,8 +16,8 @@ export interface Suggestion {
   suggestedDay: number;
   suggestedHour: number;
   reasoning: string | null;
-  mediaUrl: string | null;
-  mediaType: string | null;
+  mediaItems: MediaItem[];
+  scheduledAt: string | null;
   status: string;
   socialAccount: { platform: string; username: string };
 }
