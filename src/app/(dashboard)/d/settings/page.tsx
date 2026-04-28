@@ -5,6 +5,7 @@ import { appRouter } from "@/lib/constants/appRouter";
 import useApi from "@/lib/hooks/useApi";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
+import PageHeader from "@/components/dashboard/PageHeader";
 import { GlobeIcon, CheckIcon } from "@phosphor-icons/react";
 
 const ALL_TIMEZONES = Intl.supportedValuesOf("timeZone");
@@ -66,12 +67,10 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-          Settings
-        </h1>
-        <p className="text-gray-500 mt-1">Manage your account preferences.</p>
-      </div>
+      <PageHeader
+        title="Settings"
+        subtitle="Manage your account preferences."
+      />
 
       <div className="rounded-2xl bg-white p-6 shadow-sm border border-gray-100">
         <div className="flex items-center gap-3 mb-4">

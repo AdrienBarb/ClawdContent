@@ -15,7 +15,7 @@ export type CreateFromBriefRequest = z.infer<typeof createFromBriefRequestSchema
 
 const briefPostSchema = z.object({
   content: z.string(),
-  contentType: z.enum(["text", "image", "carousel"]),
+  contentType: z.enum(["text", "image", "video", "carousel"]),
   reasoning: z.string(),
 });
 

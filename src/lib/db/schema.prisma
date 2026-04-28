@@ -129,12 +129,11 @@ model PostSuggestion {
   socialAccountId String
   socialAccount   SocialAccount @relation(fields: [socialAccountId], references: [id], onDelete: Cascade)
   content         String
-  contentType     String        // text, image, carousel
+  contentType     String        // text, image, video, carousel
   suggestedDay    Int           // 0=Monday, 6=Sunday
   suggestedHour   Int           // 0-23 local time
   reasoning       String?
-  mediaUrl        String?
-  mediaType       String?       // image, video
+  mediaItems      Json?         // [{url, type: "image"|"video"}, ...]
   createdAt       DateTime      @default(now())
 
   @@index([socialAccountId])

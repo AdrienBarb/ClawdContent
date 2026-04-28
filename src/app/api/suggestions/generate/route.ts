@@ -11,6 +11,7 @@ import {
 } from "@/lib/services/postSuggestions";
 import { computeInsights } from "@/lib/services/accountInsights";
 import { claimSuggestionsCooldown } from "@/lib/services/rateLimit";
+import { coerceMediaItems } from "@/lib/schemas/mediaItems";
 
 // Generation runs N parallel chunks per account (5 posts each), plus an
 // optional inline insights refresh when the cache is missing/stale. The
@@ -119,7 +120,10 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({
-      suggestions: allSuggestions,
+      suggestions: allSuggestions.map((s) => ({
+        ...s,
+        mediaItems: coerceMediaItems(s.mediaItems),
+      })),
       failedAccountIds,
       failedCount: failedAccountIds.length,
     });

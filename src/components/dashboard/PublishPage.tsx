@@ -21,8 +21,6 @@ import { LoadingView } from "./publish/LoadingView";
 import { ResultsView } from "./publish/ResultsView";
 import type { AccountInfo, Mode, Suggestion, View } from "./publish/types";
 
-// Lazy-load the edit modal — only fetched when the user clicks Edit, keeping
-// the initial /d bundle smaller (image upload + Cloudinary widget code).
 const EditSuggestionModal = dynamic(
   () => import("./publish/EditSuggestionModal"),
   { ssr: false }
@@ -384,6 +382,26 @@ export default function PublishPage() {
                 }
               )
             }
+            onMediaChanged={async (id, mediaItems) => {
+              const res = await fetch(`/api/suggestions/${id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ mediaItems }),
+              });
+              if (!res.ok) {
+                const data = await res.json().catch(() => null);
+                toast.error(
+                  data?.message ?? "Couldn't save the media. Try again."
+                );
+                return;
+              }
+              setGeneratedSuggestions((prev) =>
+                prev.map((s) =>
+                  s.id === id ? { ...s, mediaItems } : s
+                )
+              );
+              toast.success("Media updated");
+            }}
             onAction={async (action, suggestion) => {
               if (action === "publish") {
                 await submitSuggestionAction(
@@ -424,7 +442,10 @@ export default function PublishPage() {
                 body: JSON.stringify(updated),
               });
               if (!res.ok) {
-                toast.error("Couldn't save your changes. Try again.");
+                const data = await res.json().catch(() => null);
+                toast.error(
+                  data?.message ?? "Couldn't save your changes. Try again."
+                );
                 return;
               }
               setGeneratedSuggestions((prev) =>
@@ -433,8 +454,7 @@ export default function PublishPage() {
                     ? {
                         ...s,
                         content: updated.content,
-                        mediaUrl: updated.mediaUrl ?? null,
-                        mediaType: updated.mediaType ?? null,
+                        mediaItems: updated.mediaItems,
                       }
                     : s
                 )

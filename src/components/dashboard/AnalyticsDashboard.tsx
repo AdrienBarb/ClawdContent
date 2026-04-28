@@ -21,6 +21,7 @@ import {
   Clock as ClockIcon,
 } from "@phosphor-icons/react";
 import SubscribeModal from "@/components/dashboard/SubscribeModal";
+import PageHeader from "@/components/dashboard/PageHeader";
 import {
   AreaChart,
   Area,
@@ -407,9 +408,7 @@ function LoadingSkeleton() {
 function EmptyState() {
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-        Analytics
-      </h1>
+      <PageHeader title="Analytics" />
       <div className="rounded-2xl border-2 border-dashed border-gray-200 bg-white/50 p-12 text-center">
         <ChartLineUpIcon className="h-10 w-10 text-gray-300 mx-auto mb-4" />
         <p className="text-sm font-medium text-gray-500 mb-1">
@@ -565,9 +564,7 @@ export default function AnalyticsDashboard() {
   if (showGlassPreview) {
     return (
       <div className="relative min-h-[calc(100vh-8rem)]">
-        <h1 className="text-2xl font-semibold tracking-tight text-gray-900 mb-6">
-          Analytics
-        </h1>
+        <PageHeader title="Analytics" className="mb-6" />
 
         <div className="absolute inset-0 mt-16">
           {/* Blurred fake data */}
@@ -720,12 +717,17 @@ export default function AnalyticsDashboard() {
 
       {/* Header + filters */}
       <div className="flex flex-col gap-4">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-            Analytics
-          </h1>
-          <PillSelector options={PERIODS} value={period} onChange={setPeriod} ariaLabel="Time period" />
-        </div>
+        <PageHeader
+          title="Analytics"
+          right={
+            <PillSelector
+              options={PERIODS}
+              value={period}
+              onChange={setPeriod}
+              ariaLabel="Time period"
+            />
+          }
+        />
         {connectedPlatforms.length > 1 && (
           <PillSelector
             options={platformOptions}

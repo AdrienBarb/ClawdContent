@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { appRouter } from "@/lib/constants/appRouter";
 import SubscribeModal from "@/components/dashboard/SubscribeModal";
+import PageHeader from "@/components/dashboard/PageHeader";
 import { getPlatform } from "@/lib/constants/platforms";
 import useApi, { fetchData } from "@/lib/hooks/useApi";
 import { Button } from "@/components/ui/button";
@@ -381,19 +382,20 @@ export default function ContentList() {
 
   return (
     <div className={showGlassPreview ? "relative min-h-[calc(100vh-8rem)]" : "space-y-6"}>
-      {/* Page title — always visible */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Posts</h1>
-        {!showGlassPreview && (
-          <Link
-            href={appRouter.dashboard}
-            className="inline-flex items-center gap-2 rounded-xl bg-[var(--sidebar-accent)] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:opacity-90"
-          >
-            <Plus className="h-4 w-4" />
-            Create post
-          </Link>
-        )}
-      </div>
+      <PageHeader
+        title="Posts"
+        right={
+          !showGlassPreview ? (
+            <Link
+              href={appRouter.dashboard}
+              className="inline-flex items-center gap-2 rounded-xl bg-[var(--sidebar-accent)] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:opacity-90"
+            >
+              <Plus className="h-4 w-4" />
+              Create post
+            </Link>
+          ) : undefined
+        }
+      />
 
       {showGlassPreview ? (
         <div className="absolute inset-0 mt-24">

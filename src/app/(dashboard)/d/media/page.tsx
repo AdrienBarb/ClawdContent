@@ -19,6 +19,7 @@ import MediaUploadModal, {
   type UploadResult,
 } from "@/components/dashboard/MediaUploadModal";
 import SubscribeModal from "@/components/dashboard/SubscribeModal";
+import PageHeader from "@/components/dashboard/PageHeader";
 import toast from "react-hot-toast";
 
 interface Media {
@@ -131,26 +132,21 @@ export default function MediaPage() {
 
   return (
     <div className={showGlassPreview ? "relative min-h-[calc(100vh-8rem)]" : "space-y-8"}>
-      {/* Page title — always visible */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-            Media
-          </h1>
-          <p className="text-gray-500 mt-1">
-            Manage your uploaded images and videos.
-          </p>
-        </div>
-        {!showGlassPreview && (
-          <button
-            onClick={() => setUploadOpen(true)}
-            className="flex items-center gap-2 rounded-xl bg-[var(--sidebar-accent)] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:opacity-90 cursor-pointer"
-          >
-            <PlusIcon className="h-4 w-4" />
-            Upload
-          </button>
-        )}
-      </div>
+      <PageHeader
+        title="Media"
+        subtitle="Manage your uploaded images and videos."
+        right={
+          !showGlassPreview ? (
+            <button
+              onClick={() => setUploadOpen(true)}
+              className="flex items-center gap-2 rounded-xl bg-[var(--sidebar-accent)] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:opacity-90 cursor-pointer"
+            >
+              <PlusIcon className="h-4 w-4" />
+              Upload
+            </button>
+          ) : undefined
+        }
+      />
 
       {showGlassPreview ? (
         <div className="absolute inset-0 mt-24">

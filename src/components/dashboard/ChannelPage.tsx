@@ -174,11 +174,11 @@ export default function ChannelPage({ channelId }: { channelId: string }) {
   return (
     <div>
       {/* Header */}
-      <div className="sticky top-0 z-20 bg-white border-b border-gray-200 pb-4 mb-8 -mx-8 px-8 pt-6 -mt-6 md:rounded-t-2xl">
-        <div className="flex flex-col gap-4 mb-4 md:flex-row md:items-center md:justify-between md:gap-6">
+      <div className="sticky top-0 z-20 bg-[#faf9f5] border-b border-gray-200 pb-4 mb-8 -mx-8 px-8 pt-6 -mt-6">
+        <div className="flex items-start justify-between gap-4 pb-5">
           <div className="flex items-center gap-3 min-w-0">
             <span
-              className="flex h-8 w-8 items-center justify-center rounded-full text-white shrink-0"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-white shrink-0"
               style={{ backgroundColor: platform?.color ?? "#666" }}
             >
               {platform?.icon}
@@ -187,16 +187,20 @@ export default function ChannelPage({ channelId }: { channelId: string }) {
               <h1 className="text-2xl font-semibold text-gray-900 tracking-tight truncate">
                 {platform?.label ?? channel.platform}
               </h1>
-              <p className="text-sm text-gray-500 truncate">@{channel.username}</p>
+              <p className="text-sm text-gray-500 truncate mt-1">
+                @{channel.username}
+              </p>
             </div>
           </div>
-          <ChannelHeaderStats
-            stats={headerStats ?? null}
-            loading={headerLoading}
-            platform={channel.platform}
-          />
+          <div className="shrink-0">
+            <ChannelHeaderStats
+              stats={headerStats ?? null}
+              loading={headerLoading}
+              platform={channel.platform}
+            />
+          </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 pt-4 border-t border-gray-200">
           <TabButton label="Upcoming" active={activeTab === "upcoming"} count={counts.upcoming} onClick={() => setActiveTab("upcoming")} />
           <TabButton label="Published" active={activeTab === "published"} count={counts.published} onClick={() => setActiveTab("published")} />
           <TabButton label="Drafts" active={activeTab === "drafts"} count={counts.drafts} onClick={() => setActiveTab("drafts")} />

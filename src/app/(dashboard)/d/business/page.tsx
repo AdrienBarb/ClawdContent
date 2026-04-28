@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { appRouter } from "@/lib/constants/appRouter";
 import useApi from "@/lib/hooks/useApi";
 import toast from "react-hot-toast";
@@ -11,6 +12,7 @@ import {
   GlobeIcon,
   FloppyDiskIcon,
 } from "@phosphor-icons/react";
+import PageHeader from "@/components/dashboard/PageHeader";
 import type { KnowledgeBase } from "@/lib/schemas/knowledgeBase";
 
 export default function BusinessPage() {
@@ -91,40 +93,40 @@ export default function BusinessPage() {
 
   if (!loaded) {
     return (
-      <div className="space-y-6">
-        <h1 className="text-xl font-semibold text-gray-900">My Business</h1>
-        <div className="animate-pulse space-y-4">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-12 bg-gray-100 rounded-xl" />
-          ))}
-        </div>
+      <div className="space-y-8">
+        <PageHeader
+          title="My Business"
+          subtitle="This information helps the AI create posts that match your business."
+        />
+        <Skeleton className="h-24 rounded-2xl" />
+        <Skeleton className="h-72 rounded-2xl" />
       </div>
     );
   }
 
   if (!knowledgeBase) {
     return (
-      <div className="space-y-6">
-        <h1 className="text-xl font-semibold text-gray-900">My Business</h1>
-        <p className="text-gray-500">
-          No business info yet. Complete the setup from the onboarding.
-        </p>
+      <div className="space-y-8">
+        <PageHeader title="My Business" />
+        <div className="rounded-2xl border border-gray-200 bg-white p-6">
+          <p className="text-sm text-gray-500">
+            No business info yet. Complete the setup from the onboarding.
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold text-gray-900">My Business</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          This information helps the AI create posts that match your business.
-        </p>
-      </div>
+    <div className="space-y-8">
+      <PageHeader
+        title="My Business"
+        subtitle="This information helps the AI create posts that match your business."
+      />
 
       {/* Re-analyze from website */}
-      <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-        <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+      <div className="rounded-2xl border border-gray-200 bg-white p-5">
+        <label className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-700">
           <GlobeIcon className="h-4 w-4" />
           Website URL
         </label>
@@ -133,13 +135,13 @@ export default function BusinessPage() {
             value={websiteUrl}
             onChange={(e) => setWebsiteUrl(e.target.value)}
             placeholder="https://www.yourbusiness.com"
-            className="rounded-xl flex-1 bg-white"
+            className="flex-1 rounded-lg bg-white"
           />
           <Button
             variant="outline"
             onClick={handleReAnalyze}
             disabled={!websiteUrl || isReAnalyzing}
-            className="rounded-xl"
+            className="rounded-lg"
           >
             {isReAnalyzing ? (
               <SpinnerGapIcon className="h-4 w-4 animate-spin" />
@@ -151,7 +153,7 @@ export default function BusinessPage() {
       </div>
 
       {/* Editable fields */}
-      <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm space-y-4">
+      <div className="space-y-4 rounded-2xl border border-gray-200 bg-white p-5">
         <Field
           label="Business name"
           value={knowledgeBase.businessName}
@@ -183,18 +185,24 @@ export default function BusinessPage() {
       </div>
 
       <div className="flex justify-end">
-        <Button
+        <button
+          type="button"
           onClick={handleSave}
-          className="bg-primary hover:bg-[#E84A36] text-white"
           disabled={isSaving}
+          className="inline-flex h-10 items-center gap-1.5 rounded-lg px-4 text-sm font-medium text-white transition-all cursor-pointer disabled:opacity-50"
+          style={{
+            background: "linear-gradient(180deg, #ec6f5b 0%, #c84a35 100%)",
+            boxShadow:
+              "inset 0 1px 0 rgba(255,255,255,0.18), 0 1px 2px rgba(200,74,53,0.25)",
+          }}
         >
           {isSaving ? (
-            <SpinnerGapIcon className="h-4 w-4 mr-1.5 animate-spin" />
+            <SpinnerGapIcon className="h-4 w-4 animate-spin" />
           ) : (
-            <FloppyDiskIcon className="h-4 w-4 mr-1.5" />
+            <FloppyDiskIcon className="h-4 w-4" />
           )}
           Save changes
-        </Button>
+        </button>
       </div>
     </div>
   );
@@ -217,7 +225,7 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+      <label className="mb-1.5 block text-sm font-medium text-gray-700">
         {label}
       </label>
       {multiline ? (
@@ -225,7 +233,7 @@ function Field({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+          className="w-full resize-none rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           rows={3}
         />
       ) : (
@@ -233,10 +241,10 @@ function Field({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="rounded-xl bg-white"
+          className="rounded-lg bg-white"
         />
       )}
-      {hint && <p className="text-xs text-gray-400 mt-1">{hint}</p>}
+      {hint && <p className="mt-1 text-xs text-gray-400">{hint}</p>}
     </div>
   );
 }

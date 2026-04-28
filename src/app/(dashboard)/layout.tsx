@@ -31,19 +31,20 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-[#f3f3f1]">
+    <div className="flex min-h-screen bg-[#faf9f5]">
       <TimezoneSync />
       <Sidebar />
 
-      <div className="flex-1 md:ml-64 flex flex-col min-h-screen">
+      <div className="flex-1 min-w-0 md:ml-64 flex flex-col min-h-screen">
         {/* Mobile header */}
-        <div className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-white px-4 md:hidden">
+        <div className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-gray-200 bg-[#faf9f5] px-4 md:hidden">
           <MobileSidebarTrigger />
           <span className="text-sm font-semibold">PostClaw</span>
         </div>
 
-        {/* Main content — white panel floating over tinted background */}
-        <main className="flex-1 bg-white md:rounded-2xl md:border md:border-gray-200/80 md:m-2 md:ml-0">
+        {/* Main content — flat, flush with sidebar.
+            min-w-0 + overflow-x-clip prevents wide content from causing horizontal page scroll. */}
+        <main className="flex-1 min-w-0 bg-[#faf9f5] overflow-x-clip">
           <div className="px-8 py-6">
             <LegacyKBBanner />
             {children}
