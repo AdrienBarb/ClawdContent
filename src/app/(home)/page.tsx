@@ -1,12 +1,14 @@
 import HeroSection from "@/components/sections/HeroSection";
 import DemoSection from "@/components/sections/DemoSection";
-import PainSection from "@/components/sections/PainSection";
-import BeforeAfterSection from "@/components/sections/BeforeAfterSection";
-import WhoIsThisForSection from "@/components/sections/WhoIsThisForSection";
+import PlatformsSection from "@/components/sections/PlatformsSection";
 import HowItWorksSection from "@/components/sections/HowItWorksSection";
-import PoweredBySection from "@/components/sections/PoweredBySection";
+import OutcomesSection from "@/components/sections/OutcomesSection";
+import WhoIsThisForSection from "@/components/sections/WhoIsThisForSection";
+import TestimonialsSection from "@/components/sections/TestimonialsSection";
+import CompareSection from "@/components/sections/CompareSection";
 import PricingSection from "@/components/sections/PricingSection";
 import FAQSection from "@/components/sections/FAQSection";
+import PoweredBySection from "@/components/sections/PoweredBySection";
 import FinalCTASection from "@/components/sections/FinalCTASection";
 import { faqs } from "@/data/faq";
 import config from "@/lib/config";
@@ -97,10 +99,12 @@ export default async function Home() {
       />
       <HeroSection variant={heroVariant} />
       <DemoSection />
-      <PainSection />
-      <BeforeAfterSection />
-      <WhoIsThisForSection />
+      <PlatformsSection />
       <HowItWorksSection />
+      <OutcomesSection />
+      <WhoIsThisForSection />
+      <TestimonialsSection />
+      <CompareSection />
       <PricingSection />
       <FAQSection />
       <PoweredBySection />

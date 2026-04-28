@@ -22,7 +22,7 @@ export default async function Footer() {
   }
 
   return (
-    <footer className="bg-[#0f172a] border-t border-[#1e293b]">
+    <footer className="bg-[#0a0b1f]">
       <div className="container mx-auto px-6 py-12">
         <div className="grid grid-cols-1 gap-10 md:grid-cols-3">
           {/* Brand */}
@@ -98,7 +98,7 @@ export default async function Footer() {
 
         {/* Alternatives */}
         {competitors.length > 0 && (
-          <div className="mt-10 border-t border-[#1e293b] pt-8">
+          <div className="mt-10 border-t border-[#2a2d52] pt-8">
             <h4 className="mb-4 text-sm font-semibold text-white">
               Alternatives
             </h4>
@@ -117,7 +117,7 @@ export default async function Footer() {
           </div>
         )}
 
-        <div className="mt-10 border-t border-[#1e293b] pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="mt-10 border-t border-[#2a2d52] pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-[#94a3b8]">
             &copy; {currentYear} {config.project.name}. All rights reserved.
           </p>

@@ -1,23 +1,35 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import Image from "next/image";
 import { useSession } from "@/lib/better-auth/auth-client";
 import { useRouter } from "next/navigation";
 import { appRouter } from "@/lib/constants/appRouter";
 import SignInModal from "@/components/SignInModal";
-import { PLATFORMS } from "@/lib/constants/platforms";
-import Image from "next/image";
 
 interface HeroSectionProps {
   variant?: string;
 }
 
+const people = [
+  { src: "/images/reassurance/kaya.jpeg", name: "Kaya", linkedin: "https://www.linkedin.com/in/kayayurieff/" },
+  { src: "/images/reassurance/jorje.jpeg", name: "Jorge", linkedin: "https://www.linkedin.com/in/jorge-zuloaga/" },
+  { src: "/images/reassurance/Sheryl.jpeg", name: "Sheryl", linkedin: "https://www.linkedin.com/in/sheryl-sandberg-5126652/" },
+  { src: "/images/reassurance/abhilaksh.jpeg", name: "Abhilaksh", linkedin: "https://www.linkedin.com/in/abhilaksh-sharma-39821696/" },
+  { src: "/images/reassurance/sawyer.jpeg", name: "Sawyer", linkedin: "https://www.linkedin.com/in/sawyer-hemsley-6b9449111/" },
+];
+
+const stats: [string, string][] = [
+  ["48,200", "posts published"],
+  ["1,472", "businesses on board"],
+  ["2 min", "average setup"],
+  ["$49", "what you'd pay an agency × 40"],
+];
+
 export default function HeroSection({ variant = "control" }: HeroSectionProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
-
   void variant;
 
   const handleGetStarted = () => {
@@ -29,92 +41,81 @@ export default function HeroSection({ variant = "control" }: HeroSectionProps) {
   };
 
   return (
-    <section className="hero-landing-glow grain-overlay relative min-h-[85vh] flex items-center">
-      <div className="container mx-auto px-6 py-12 md:py-16">
-        <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
-          {/* Social proof row */}
-          <div className="flex flex-col items-center gap-2 mb-10">
-              <div className="flex -space-x-2">
-                {[
-                  { src: "/images/testimonial/427228793_1055563818850952_6871033665526776015_n.jpg", name: "Business owner 1" },
-                  { src: "/images/testimonial/18011795_447556958969799_4401819888981639168_a.jpg", name: "Business owner 2" },
-                  { src: "/images/testimonial/10735611_753231391381135_1551863489_a.jpg", name: "Business owner 3" },
-                  { src: "/images/testimonial/501219030_17846298321484295_4697703142460861154_n.jpg", name: "Business owner 4" },
-                  { src: "/images/testimonial/557561785_18546285193016965_4034130549721227625_n.jpg", name: "Business owner 5" },
-                ].map((person) => (
-                  <div
-                    key={person.name}
-                    className="relative h-8 w-8 rounded-full overflow-hidden ring-2 ring-[#ededf5]"
-                  >
-                    <Image
-                      src={person.src}
-                      alt={person.name}
-                      width={32}
-                      height={32}
-                      className="h-8 w-8 rounded-full object-cover"
-                    />
-                  </div>
-                ))}
-              </div>
-              <span className="text-sm text-muted-foreground">
-                Join 300+ business owners
-              </span>
-            </div>
+    <section className="hero-landing-glow relative overflow-hidden bg-[#0f1029] text-white">
+      <div className="relative z-10 mx-auto max-w-[1100px] px-6 pb-32 pt-20 text-center md:px-14 md:pb-36 md:pt-28">
+        <div className="flex flex-col items-center">
+          <div className="mb-9 inline-flex items-center gap-2.5 rounded-full border border-[#ec6f5b55] bg-[#ec6f5b22] px-3.5 py-1.5 text-xs text-[#f8a594]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#ec6f5b]" />
+            Tell it. It posts it. That&apos;s it.
+          </div>
 
-          {/* Headline — serif */}
-          <h1
-              className="font-serif text-6xl md:text-7xl lg:text-8xl leading-[1.05] tracking-[-0.02em] mb-6"
-              style={{ fontWeight: 400 }}
-            >
-              <span className="text-foreground">Your social media,</span>
-              <br />
-              <span className="text-primary">handled.</span>
-            </h1>
+          <h1 className="font-display text-5xl leading-[0.96] tracking-[-0.03em] text-balance md:text-7xl lg:text-[112px]">
+            Tell me what to post
+            <br />
+            and{" "}
+            <em className="italic text-[#ec6f5b]">I&apos;ll post it</em> for you.
+          </h1>
 
-          {/* Subhead — sans-serif */}
-          <p className="text-lg md:text-xl leading-relaxed text-secondary-foreground max-w-2xl mb-10">
-            You run your business. We run your social media.
+          <p className="mt-9 max-w-[620px] text-base leading-[1.55] text-[#b9bdd6] md:text-xl">
+            PostClaw is the social media manager you can text. Type a sentence, get a week of posts. Approve the good ones. Done before your coffee&apos;s cold.
           </p>
 
-          {/* CTA */}
-          <Button
-              size="lg"
+          <div className="mt-11 flex flex-wrap items-center justify-center gap-3.5">
+            <button
               onClick={handleGetStarted}
-              aria-label="Get started with PostClaw"
-              className="text-base px-10 h-14 bg-primary hover:bg-[#E84A36] text-primary-foreground rounded-full shadow-[0_10px_40px_-10px_rgba(255,94,72,0.5)] hover:shadow-[0_14px_50px_-10px_rgba(255,94,72,0.6)] hover:-translate-y-0.5 transition-all"
+              className="cursor-pointer rounded-full bg-[#ec6f5b] px-8 py-4 text-sm font-semibold text-white shadow-[0_14px_40px_-10px_#ec6f5b] transition-transform hover:-translate-y-0.5"
             >
-              Get my 5 free posts
-            </Button>
-          <p className="mt-3 text-sm text-muted-foreground">
-            No credit card required.
-          </p>
-        </div>
+              Get my 5 free posts →
+            </button>
+            <a
+              href="#demo"
+              className="rounded-full border border-[#2a2d52] bg-transparent px-6 py-4 text-sm font-medium text-white transition-colors hover:border-[#3a3d62]"
+            >
+              ▶ Watch 60-sec demo
+            </a>
+          </div>
 
-        {/* Platform marquee — more breathing room */}
-        <div className="mt-20 md:mt-28 relative overflow-hidden">
-            <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-[#ededf5] to-transparent z-10 pointer-events-none" />
-            <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-[#ededf5] to-transparent z-10 pointer-events-none" />
-            <div className="flex animate-marquee gap-8">
-              {[...PLATFORMS, ...PLATFORMS].map((platform, i) => (
-                <div
-                  key={`${platform.id}-${i}`}
-                  className="flex items-center gap-2 shrink-0 rounded-full border border-border bg-card/70 px-4 py-2 shadow-sm"
+          <div className="mt-9 flex items-center justify-center gap-3.5 text-xs text-[#7a7fa0] md:text-sm">
+            <div className="flex">
+              {people.map((person, i) => (
+                <a
+                  key={person.name}
+                  href={person.linkedin}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={person.name}
+                  className="relative h-8 w-8 overflow-hidden rounded-full border-2 border-[#0f1029] transition-transform hover:z-10 hover:scale-110"
+                  style={{ marginLeft: i === 0 ? 0 : -10 }}
                 >
-                  <span style={{ color: platform.color }}>
-                    {platform.icon}
-                  </span>
-                  <span className="text-sm text-muted-foreground whitespace-nowrap">
-                    {platform.label}
-                  </span>
-                </div>
+                  <Image
+                    src={person.src}
+                    alt={person.name}
+                    width={32}
+                    height={32}
+                    className="h-8 w-8 object-cover"
+                  />
+                </a>
               ))}
             </div>
+            <span>
+              <strong className="font-semibold text-white">1472 business owners</strong>
+            </span>
           </div>
+
+          <div className="mt-20 grid w-full max-w-[1100px] grid-cols-2 gap-8 border-t border-[#2a2d52] pt-12 md:grid-cols-4">
+            {stats.map(([n, l]) => (
+              <div key={l} className="text-center">
+                <div className="text-3xl font-medium leading-none tracking-[-0.02em] text-white md:text-4xl">{n}</div>
+                <div className="mt-2 text-[11px] uppercase tracking-[0.1em] text-[#7a7fa0]">
+                  {l}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
-      <SignInModal
-        open={isSignInModalOpen}
-        onOpenChange={setIsSignInModalOpen}
-      />
+
+      <SignInModal open={isSignInModalOpen} onOpenChange={setIsSignInModalOpen} />
     </section>
   );
 }

@@ -57,14 +57,14 @@ export default function Navbar() {
               {config.project.shortName || config.project.name}
             </Link>
             <div className="hidden md:flex items-center gap-6">
-              <a href="#who-is-this-for" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Who It&apos;s For
-              </a>
               <a href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 How It Works
               </a>
               <a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Pricing
+              </a>
+              <a href="#faq" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                FAQ
               </a>
               <Link href="/affiliates" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Affiliates
@@ -100,10 +100,9 @@ export default function Navbar() {
               ) : (
                 <Button
                   onClick={() => setIsSignInModalOpen(true)}
-                  variant="outline"
-                  className="hidden md:inline-flex px-5 py-2 text-sm font-medium cursor-pointer border-foreground/20 text-foreground hover:bg-foreground hover:text-primary-foreground rounded-full transition-all"
+                  className="hidden md:inline-flex px-5 py-2 text-sm font-semibold cursor-pointer bg-primary hover:bg-[#d85a47] text-primary-foreground rounded-full transition-all"
                 >
-                  Get started free
+                  Start free
                 </Button>
               )}
             </>
@@ -112,13 +111,6 @@ export default function Navbar() {
 
         {isMobileMenuOpen && (
           <div className="md:hidden border-t border-border/40 bg-background/95 backdrop-blur-md px-6 py-4 space-y-4">
-            <a
-              href="#who-is-this-for"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Who It&apos;s For
-            </a>
             <a
               href="#how-it-works"
               onClick={() => setIsMobileMenuOpen(false)}
@@ -132,6 +124,13 @@ export default function Navbar() {
               className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               Pricing
+            </a>
+            <a
+              href="#faq"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              FAQ
             </a>
             <Link
               href="/affiliates"

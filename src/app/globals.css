@@ -23,9 +23,10 @@
   --color-input: #d4d6e5;
   --color-ring: #FF5E48;
   --radius: 0.75rem;
-  --font-sans: var(--font-inter);
-  --font-serif: var(--font-instrument-serif);
-  --font-mono: var(--font-inter);
+  --font-sans: var(--font-inter), -apple-system, system-ui, sans-serif;
+  --font-serif: var(--font-inter), -apple-system, system-ui, sans-serif;
+  --font-mono: var(--font-inter), ui-monospace, monospace;
+  --font-display: var(--font-instrument-serif), "Cormorant Garamond", Georgia, serif;
 }
 
 :root {
@@ -39,27 +40,43 @@
   --sidebar-user-bg: #fafafa;
 }
 
-/* Landing page theme — editorial lavender */
+/* Landing page theme — Direction B (Bold Conversational, dark navy) */
 .landing-theme {
-  --color-background: #ededf5;
-  --color-foreground: #0f1437;
-  --color-card: #ffffff;
-  --color-card-foreground: #0f1437;
-  --color-popover: #ffffff;
-  --color-popover-foreground: #0f1437;
-  --color-primary: #FF5E48;
+  --color-background: #0f1029;
+  --color-foreground: #ffffff;
+  --color-card: #191b3a;
+  --color-card-foreground: #ffffff;
+  --color-popover: #191b3a;
+  --color-popover-foreground: #ffffff;
+  --color-primary: #ec6f5b;
   --color-primary-foreground: #ffffff;
-  --color-secondary: #f5f5fa;
-  --color-secondary-foreground: #4a5073;
-  --color-muted: #f0f0f6;
-  --color-muted-foreground: #5d6180;
-  --color-accent: #f5f5fa;
-  --color-accent-foreground: #0f1437;
-  --color-destructive: #FF5E48;
+  --color-secondary: #191b3a;
+  --color-secondary-foreground: #b9bdd6;
+  --color-muted: #191b3a;
+  --color-muted-foreground: #7a7fa0;
+  --color-accent: #ec6f5b;
+  --color-accent-foreground: #ffffff;
+  --color-destructive: #ec6f5b;
   --color-destructive-foreground: #ffffff;
-  --color-border: #d4d6e5;
-  --color-input: #d4d6e5;
-  --color-ring: #FF5E48;
+  --color-border: #2a2d52;
+  --color-input: #2a2d52;
+  --color-ring: #ec6f5b;
+
+  /* Direction B extras */
+  --b-bg: #0f1029;
+  --b-bg-ink: #0a0b1f;
+  --b-bg-panel: #191b3a;
+  --b-ink: #ffffff;
+  --b-ink-soft: #b9bdd6;
+  --b-mute: #7a7fa0;
+  --b-coral: #ec6f5b;
+  --b-coral-soft: #f8a594;
+  --b-cream: #f5f0ea;
+  --b-cream-ink: #0f1437;
+  --b-cream-soft: #4a5073;
+  --b-cream-mute: #7e8298;
+  --b-cream-border: #d9d3c5;
+  --b-border: #2a2d52;
 }
 
 * {
@@ -69,16 +86,45 @@
 body {
   background-color: var(--color-background);
   color: var(--color-foreground);
-  font-family: var(--font-sans);
+  font-family: var(--font-inter), -apple-system, system-ui, sans-serif;
 }
 
-/* Hero mesh gradient — lavender glow top-left, peach-coral glow bottom-right */
+@layer utilities {
+  .font-display {
+    font-family: var(--font-instrument-serif), "Cormorant Garamond", Georgia, serif;
+  }
+}
+
+/* Hero mesh gradient — Direction B coral glow + lavender glow on dark navy */
 .hero-landing-glow {
-  background:
-    radial-gradient(ellipse 70% 60% at 15% 10%, rgba(224, 220, 255, 0.35) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 50% at 80% 70%, rgba(255, 232, 224, 0.25) 0%, transparent 55%),
-    radial-gradient(ellipse 50% 40% at 50% 0%, rgba(224, 220, 255, 0.15) 0%, transparent 50%),
-    #ededf5;
+  background: #0f1029;
+  position: relative;
+}
+
+.hero-landing-glow::before,
+.hero-landing-glow::after {
+  content: "";
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(60px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hero-landing-glow::before {
+  top: 10%;
+  left: -10%;
+  width: 700px;
+  height: 700px;
+  background: radial-gradient(circle, rgba(236, 111, 91, 0.2) 0%, transparent 60%);
+}
+
+.hero-landing-glow::after {
+  bottom: -10%;
+  right: -10%;
+  width: 800px;
+  height: 800px;
+  background: radial-gradient(circle, rgba(180, 160, 255, 0.18) 0%, transparent 60%);
 }
 
 /* Subtle grain overlay for premium texture */
