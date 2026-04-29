@@ -6,7 +6,11 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { prisma } from "@/lib/db/prisma";
 import { createFromBrief } from "@/lib/services/createFromBrief";
 import { claimSuggestionsCooldown } from "@/lib/services/rateLimit";
-import { buildRewritePrompt, rewriteOutputSchema } from "@/lib/ai/rewrite";
+import {
+  buildEditPrompt,
+  buildRewritePrompt,
+  rewriteOutputSchema,
+} from "@/lib/ai/rewrite";
 import { parseInsights } from "@/lib/services/insightsHelpers";
 import {
   consume,
@@ -214,28 +218,38 @@ export function createChatTools({ userId, accountIds }: CreateChatToolsArgs) {
 
     update_post: tool({
       description:
-        "Overwrite the content of one specific draft. Use the id from the existing-drafts list. Pass the COMPLETE new post text — this is a full replacement, not a patch.",
+        "Apply a free-form edit to one specific draft. Pass the user's request in their own words — the tool runs an LLM that knows the user's voice and applies the instruction precisely, preserving untouched parts of the post verbatim. Use this for arbitrary tweaks that don't fit a regenerate_post preset (e.g. 'replace Whitfield with Hartford', 'add the price', 'cut the second paragraph', 'rewrite in first person'). Do NOT pass the rewritten post — pass the instruction.",
       inputSchema: z.object({
         id: z.string().min(1).describe("The draft id"),
-        content: z
+        instruction: z
           .string()
           .min(1)
-          .max(10000)
+          .max(2000)
           .describe(
-            "The complete new post content. No quotes around it, no 'Post:' prefix — write it ready to publish."
+            "The user's edit request, in their own words. Be specific — the LLM applies it literally. Examples: 'replace Whitfield with Hartford', 'add a CTA at the end', 'rewrite in first person'."
           ),
       }),
-      execute: async ({ id, content }) => {
+      execute: async ({ id, instruction }, { toolCallId }) => {
         console.log(
-          `[chat-tool:update_post] userId=${userId} id=${id} contentLen=${content.length}`
+          `[chat-tool:update_post] userId=${userId} id=${id} instructionLen=${instruction.length}`
         );
 
-        const existing = await prisma.postSuggestion.findFirst({
+        const suggestion = await prisma.postSuggestion.findFirst({
           where: { id, socialAccount: { lateProfile: { userId } } },
-          select: { id: true },
+          include: {
+            socialAccount: {
+              select: {
+                platform: true,
+                insights: true,
+                lateProfile: {
+                  select: { user: { select: { knowledgeBase: true } } },
+                },
+              },
+            },
+          },
         });
 
-        if (!existing) {
+        if (!suggestion) {
           console.warn(`[chat-tool:update_post] ⚠️  not_found id=${id}`);
           return {
             ok: false as const,
@@ -245,18 +259,128 @@ export function createChatTools({ userId, accountIds }: CreateChatToolsArgs) {
           };
         }
 
-        const updated = await prisma.postSuggestion.update({
-          where: { id },
-          data: { content },
-          select: { id: true, content: true },
-        });
+        // Same SKU as preset rewrites — both are single-LLM-call edits to one draft.
+        const balance = await getBalance({ userId });
+        const cost = pointsFor("rewrite", 1);
+        log.info(
+          `preflight update_post userId=${userId} balance=${balance}pts cost=${cost}pts`
+        );
+        if (balance < cost) {
+          const payload = await buildPaywallPayload(userId, "rewrite");
+          return {
+            ok: false as const,
+            error: "usage_limit_reached",
+            surface: "paywall_modal",
+            payload,
+            message: payload.isPaid
+              ? `The user has run out of monthly allowance. Offer the Boost pack or wait until ${payload.resetAt}.`
+              : "The user has used their free allowance. Tell them to upgrade to Pro.",
+          };
+        }
 
-        console.log(`[chat-tool:update_post] ✓ updated id=${id}`);
-        return {
-          ok: true as const,
-          id: updated.id,
-          contentPreview: preview(updated.content),
-        };
+        try {
+          await consume({
+            userId,
+            type: "rewrite",
+            count: 1,
+            dedupKey: `consume:${toolCallId}`,
+            metadata: { suggestionId: id, mode: "freeform" },
+          });
+        } catch (err) {
+          if (err instanceof UsageLimitError) {
+            return {
+              ok: false as const,
+              error: "usage_limit_reached",
+              surface: "paywall_modal",
+              payload: toWire(err.payload),
+              message: "Out of allowance.",
+            };
+          }
+          throw err;
+        }
+
+        const kb = suggestion.socialAccount.lateProfile.user
+          .knowledgeBase as Record<string, unknown> | null;
+        const insights = parseInsights(suggestion.socialAccount.insights);
+
+        try {
+          const { object } = await generateObject({
+            model: anthropic("claude-sonnet-4-6"),
+            schema: rewriteOutputSchema,
+            prompt: buildEditPrompt(
+              suggestion.content,
+              suggestion.socialAccount.platform,
+              instruction,
+              kb,
+              insights
+            ),
+          });
+
+          try {
+            await prisma.postSuggestion.update({
+              where: { id },
+              data: { content: object.content },
+            });
+          } catch (err) {
+            // Race: the user may have published or deleted the draft between
+            // the ownership check and this update. Refund and surface a
+            // clearer message than the generic edit_failed catch below.
+            if (
+              typeof err === "object" &&
+              err !== null &&
+              "code" in err &&
+              (err as { code?: string }).code === "P2025"
+            ) {
+              console.warn(`[chat-tool:update_post] ⚠️  vanished id=${id}`);
+              await refund({
+                userId,
+                type: "rewrite",
+                count: 1,
+                dedupKey: `refund:${toolCallId}`,
+                originalConsumeDedupKey: `consume:${toolCallId}`,
+                metadata: { suggestionId: id, reason: "vanished" },
+              }).catch((refundErr) => {
+                console.error(
+                  `[chat-tool:update_post] ✗ refund failed: ${refundErr instanceof Error ? refundErr.message : refundErr}`
+                );
+              });
+              return {
+                ok: false as const,
+                error: "not_found",
+                message:
+                  "That draft is gone — you may have already published it.",
+              };
+            }
+            throw err;
+          }
+
+          console.log(`[chat-tool:update_post] ✓ edited id=${id}`);
+          return {
+            ok: true as const,
+            id,
+            contentPreview: preview(object.content),
+          };
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          console.error(`[chat-tool:update_post] ✗ ${message}`);
+          await refund({
+            userId,
+            type: "rewrite",
+            count: 1,
+            dedupKey: `refund:${toolCallId}`,
+            originalConsumeDedupKey: `consume:${toolCallId}`,
+            metadata: { suggestionId: id, error: message },
+          }).catch((refundErr) => {
+            console.error(
+              `[chat-tool:update_post] ✗ refund failed: ${refundErr instanceof Error ? refundErr.message : refundErr}`
+            );
+          });
+          return {
+            ok: false as const,
+            error: "edit_failed",
+            message: "Couldn't apply that edit. Try again in a moment.",
+          };
+        }
       },
     }),
 
