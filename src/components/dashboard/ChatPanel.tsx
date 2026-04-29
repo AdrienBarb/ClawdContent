@@ -8,6 +8,10 @@ import {
   CheckCircleIcon,
   WarningCircleIcon,
   SparkleIcon,
+  NotePencilIcon,
+  CalendarBlankIcon,
+  SlidersHorizontalIcon,
+  CaretDownIcon,
 } from "@phosphor-icons/react";
 import {
   useState,
@@ -16,6 +20,7 @@ import {
   useEffect,
   type FormEvent,
   type KeyboardEvent,
+  type ComponentType,
 } from "react";
 import ReactMarkdown from "react-markdown";
 import { useQueryClient } from "@tanstack/react-query";
@@ -25,9 +30,99 @@ import {
   useUsageModalStore,
   type UsageLimitPayload,
 } from "@/lib/stores/usageModalStore";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 
-const STARTER_PROMPT = "Write me 1 posts about my business";
 const STICK_THRESHOLD_PX = 24;
+
+interface ChipItem {
+  label: string;
+  brief: string;
+}
+
+interface ChipGroup {
+  label: string;
+  icon: ComponentType<{
+    className?: string;
+    weight?: "regular" | "bold" | "fill";
+  }>;
+  items: ChipItem[];
+}
+
+const STARTER_CHIPS: ChipGroup[] = [
+  {
+    label: "Create",
+    icon: NotePencilIcon,
+    items: [
+      {
+        label: "A post about today",
+        brief: "Write 1 post about what's happening today in my business",
+      },
+      {
+        label: "Introduce my business",
+        brief: "Write 1 post that introduces what I do to a new audience",
+      },
+      {
+        label: "Highlight a service",
+        brief: "Write 1 post that highlights one of my services",
+      },
+      {
+        label: "Announce an event",
+        brief: "Write 1 post to announce an upcoming event",
+      },
+    ],
+  },
+  {
+    label: "Plan",
+    icon: CalendarBlankIcon,
+    items: [
+      {
+        label: "My week (5 posts)",
+        brief:
+          "Plan 5 posts for this week and schedule them at my best time slots",
+      },
+      {
+        label: "My month (15 posts)",
+        brief:
+          "Plan 15 posts for the upcoming month and schedule them at my best time slots",
+      },
+      {
+        label: "Around an event",
+        brief: "Help me plan a sequence of posts around an upcoming event",
+      },
+      {
+        label: "New service launch",
+        brief: "Plan a launch sequence: 5 posts to announce a new service",
+      },
+    ],
+  },
+  {
+    label: "Manage",
+    icon: SlidersHorizontalIcon,
+    items: [
+      {
+        label: "My best time slots",
+        brief: "What are my best time slots to publish this week?",
+      },
+      {
+        label: "Schedule my drafts",
+        brief: "Schedule all my pending drafts at my best time slots",
+      },
+      {
+        label: "Publish my drafts",
+        brief: "Publish all my pending drafts now",
+      },
+      {
+        label: "What worked recently",
+        brief: "What worked best these last 14 days?",
+      },
+    ],
+  },
+];
 
 interface AccountInfo {
   id: string;
@@ -64,7 +159,7 @@ export function ChatPanel({
     },
   });
 
-  const [input, setInput] = useState(STARTER_PROMPT);
+  const [input, setInput] = useState("");
   const isStreaming = status === "submitted" || status === "streaming";
   const trimmed = input.trim();
   const canSend =
@@ -78,6 +173,14 @@ export function ChatPanel({
       { body: { accountIds: selectedAccountIds } }
     );
     setInput("");
+  };
+
+  const chipsDisabled = isStreaming || selectedAccountIds.length === 0;
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const pickChip = (brief: string) => {
+    if (chipsDisabled) return;
+    setInput(brief);
+    textareaRef.current?.focus();
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -143,7 +246,7 @@ export function ChatPanel({
     <div
       className={
         isFresh
-          ? "flex flex-col items-center justify-center min-h-[60vh] py-8"
+          ? "flex flex-col items-center justify-center min-h-[56vh] py-4"
           : "flex flex-col py-6"
       }
     >
@@ -210,6 +313,7 @@ export function ChatPanel({
         </div>
         <div className="relative">
           <textarea
+            ref={textareaRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -241,6 +345,8 @@ export function ChatPanel({
           </div>
         </div>
       </form>
+
+      <StarterChipBar onPick={pickChip} disabled={chipsDisabled} />
     </div>
   );
 }
@@ -333,6 +439,48 @@ function ToolPill({ part }: { part: ToolPart }) {
         <WarningCircleIcon className="h-3.5 w-3.5" weight="fill" />
       )}
       {label}
+    </div>
+  );
+}
+
+function StarterChipBar({
+  onPick,
+  disabled,
+}: {
+  onPick: (brief: string) => void;
+  disabled: boolean;
+}) {
+  return (
+    <div className="w-full max-w-xl mx-auto mt-4 flex flex-wrap items-center justify-center gap-2">
+      {STARTER_CHIPS.map((group) => {
+        const Icon = group.icon;
+        return (
+          <DropdownMenu key={group.label}>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                disabled={disabled}
+                className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3.5 py-2 text-[13px] font-medium text-gray-700 cursor-pointer hover:border-[#e8614d] hover:text-[#c84a35] hover:shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Icon className="h-4 w-4" weight="regular" />
+                {group.label}
+                <CaretDownIcon className="h-3 w-3 ml-0.5" weight="bold" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" className="min-w-[240px]">
+              {group.items.map((item) => (
+                <DropdownMenuItem
+                  key={item.label}
+                  onClick={() => onPick(item.brief)}
+                  className="text-[13px] cursor-pointer"
+                >
+                  {item.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      })}
     </div>
   );
 }

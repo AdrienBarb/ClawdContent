@@ -6,7 +6,11 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { prisma } from "@/lib/db/prisma";
 import { createFromBrief } from "@/lib/services/createFromBrief";
 import { claimSuggestionsCooldown } from "@/lib/services/rateLimit";
-import { buildRewritePrompt, rewriteOutputSchema } from "@/lib/ai/rewrite";
+import {
+  buildEditPrompt,
+  buildRewritePrompt,
+  rewriteOutputSchema,
+} from "@/lib/ai/rewrite";
 import { parseInsights } from "@/lib/services/insightsHelpers";
 import {
   consume,
@@ -21,8 +25,44 @@ import {
   type UsageLimitPayloadWire,
 } from "@/lib/errors/UsageLimitError";
 import { createLogger } from "@/lib/logger";
+import {
+  publishOrScheduleSuggestion,
+  type PublishResult,
+} from "@/lib/services/publishSuggestion";
 
 const log = createLogger("usage");
+
+const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
+
+type ScheduleIsoValidation =
+  | { ok: true; date: Date }
+  | { ok: false; error: "invalid_iso" | "in_past" | "too_far"; message: string };
+
+function validateScheduleIso(iso: string): ScheduleIsoValidation {
+  const parsed = new Date(iso);
+  if (Number.isNaN(parsed.getTime())) {
+    return {
+      ok: false,
+      error: "invalid_iso",
+      message: "That's not a valid ISO datetime.",
+    };
+  }
+  if (parsed.getTime() <= Date.now()) {
+    return {
+      ok: false,
+      error: "in_past",
+      message: "That time has already passed. Pick a future slot.",
+    };
+  }
+  if (parsed.getTime() > Date.now() + ONE_YEAR_MS) {
+    return {
+      ok: false,
+      error: "too_far",
+      message: "Pick a time within the next year.",
+    };
+  }
+  return { ok: true, date: parsed };
+}
 
 // Wire-shaped paywall payload for the paywall modal. The UI never sees the
 // cost or the cap — it only renders the percentage and the resetAt label.
@@ -214,28 +254,38 @@ export function createChatTools({ userId, accountIds }: CreateChatToolsArgs) {
 
     update_post: tool({
       description:
-        "Overwrite the content of one specific draft. Use the id from the existing-drafts list. Pass the COMPLETE new post text — this is a full replacement, not a patch.",
+        "Apply a free-form edit to one specific draft. Pass the user's request in their own words — the tool runs an LLM that knows the user's voice and applies the instruction precisely, preserving untouched parts of the post verbatim. Use this for arbitrary tweaks that don't fit a regenerate_post preset (e.g. 'replace Whitfield with Hartford', 'add the price', 'cut the second paragraph', 'rewrite in first person'). Do NOT pass the rewritten post — pass the instruction.",
       inputSchema: z.object({
         id: z.string().min(1).describe("The draft id"),
-        content: z
+        instruction: z
           .string()
           .min(1)
-          .max(10000)
+          .max(2000)
           .describe(
-            "The complete new post content. No quotes around it, no 'Post:' prefix — write it ready to publish."
+            "The user's edit request, in their own words. Be specific — the LLM applies it literally. Examples: 'replace Whitfield with Hartford', 'add a CTA at the end', 'rewrite in first person'."
           ),
       }),
-      execute: async ({ id, content }) => {
+      execute: async ({ id, instruction }, { toolCallId }) => {
         console.log(
-          `[chat-tool:update_post] userId=${userId} id=${id} contentLen=${content.length}`
+          `[chat-tool:update_post] userId=${userId} id=${id} instructionLen=${instruction.length}`
         );
 
-        const existing = await prisma.postSuggestion.findFirst({
+        const suggestion = await prisma.postSuggestion.findFirst({
           where: { id, socialAccount: { lateProfile: { userId } } },
-          select: { id: true },
+          include: {
+            socialAccount: {
+              select: {
+                platform: true,
+                insights: true,
+                lateProfile: {
+                  select: { user: { select: { knowledgeBase: true } } },
+                },
+              },
+            },
+          },
         });
 
-        if (!existing) {
+        if (!suggestion) {
           console.warn(`[chat-tool:update_post] ⚠️  not_found id=${id}`);
           return {
             ok: false as const,
@@ -245,18 +295,128 @@ export function createChatTools({ userId, accountIds }: CreateChatToolsArgs) {
           };
         }
 
-        const updated = await prisma.postSuggestion.update({
-          where: { id },
-          data: { content },
-          select: { id: true, content: true },
-        });
+        // Same SKU as preset rewrites — both are single-LLM-call edits to one draft.
+        const balance = await getBalance({ userId });
+        const cost = pointsFor("rewrite", 1);
+        log.info(
+          `preflight update_post userId=${userId} balance=${balance}pts cost=${cost}pts`
+        );
+        if (balance < cost) {
+          const payload = await buildPaywallPayload(userId, "rewrite");
+          return {
+            ok: false as const,
+            error: "usage_limit_reached",
+            surface: "paywall_modal",
+            payload,
+            message: payload.isPaid
+              ? `The user has run out of monthly allowance. Offer the Boost pack or wait until ${payload.resetAt}.`
+              : "The user has used their free allowance. Tell them to upgrade to Pro.",
+          };
+        }
 
-        console.log(`[chat-tool:update_post] ✓ updated id=${id}`);
-        return {
-          ok: true as const,
-          id: updated.id,
-          contentPreview: preview(updated.content),
-        };
+        try {
+          await consume({
+            userId,
+            type: "rewrite",
+            count: 1,
+            dedupKey: `consume:${toolCallId}`,
+            metadata: { suggestionId: id, mode: "freeform" },
+          });
+        } catch (err) {
+          if (err instanceof UsageLimitError) {
+            return {
+              ok: false as const,
+              error: "usage_limit_reached",
+              surface: "paywall_modal",
+              payload: toWire(err.payload),
+              message: "Out of allowance.",
+            };
+          }
+          throw err;
+        }
+
+        const kb = suggestion.socialAccount.lateProfile.user
+          .knowledgeBase as Record<string, unknown> | null;
+        const insights = parseInsights(suggestion.socialAccount.insights);
+
+        try {
+          const { object } = await generateObject({
+            model: anthropic("claude-sonnet-4-6"),
+            schema: rewriteOutputSchema,
+            prompt: buildEditPrompt(
+              suggestion.content,
+              suggestion.socialAccount.platform,
+              instruction,
+              kb,
+              insights
+            ),
+          });
+
+          try {
+            await prisma.postSuggestion.update({
+              where: { id },
+              data: { content: object.content },
+            });
+          } catch (err) {
+            // Race: the user may have published or deleted the draft between
+            // the ownership check and this update. Refund and surface a
+            // clearer message than the generic edit_failed catch below.
+            if (
+              typeof err === "object" &&
+              err !== null &&
+              "code" in err &&
+              (err as { code?: string }).code === "P2025"
+            ) {
+              console.warn(`[chat-tool:update_post] ⚠️  vanished id=${id}`);
+              await refund({
+                userId,
+                type: "rewrite",
+                count: 1,
+                dedupKey: `refund:${toolCallId}`,
+                originalConsumeDedupKey: `consume:${toolCallId}`,
+                metadata: { suggestionId: id, reason: "vanished" },
+              }).catch((refundErr) => {
+                console.error(
+                  `[chat-tool:update_post] ✗ refund failed: ${refundErr instanceof Error ? refundErr.message : refundErr}`
+                );
+              });
+              return {
+                ok: false as const,
+                error: "not_found",
+                message:
+                  "That draft is gone — you may have already published it.",
+              };
+            }
+            throw err;
+          }
+
+          console.log(`[chat-tool:update_post] ✓ edited id=${id}`);
+          return {
+            ok: true as const,
+            id,
+            contentPreview: preview(object.content),
+          };
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          console.error(`[chat-tool:update_post] ✗ ${message}`);
+          await refund({
+            userId,
+            type: "rewrite",
+            count: 1,
+            dedupKey: `refund:${toolCallId}`,
+            originalConsumeDedupKey: `consume:${toolCallId}`,
+            metadata: { suggestionId: id, error: message },
+          }).catch((refundErr) => {
+            console.error(
+              `[chat-tool:update_post] ✗ refund failed: ${refundErr instanceof Error ? refundErr.message : refundErr}`
+            );
+          });
+          return {
+            ok: false as const,
+            error: "edit_failed",
+            message: "Couldn't apply that edit. Try again in a moment.",
+          };
+        }
       },
     }),
 
@@ -465,31 +625,15 @@ export function createChatTools({ userId, accountIds }: CreateChatToolsArgs) {
 
         let nextScheduledAt: Date | null = null;
         if (typeof scheduledAt === "string") {
-          const parsed = new Date(scheduledAt);
-          if (Number.isNaN(parsed.getTime())) {
+          const v = validateScheduleIso(scheduledAt);
+          if (!v.ok) {
             return {
               ok: false as const,
-              error: "invalid_iso",
-              message: "That's not a valid ISO datetime.",
+              error: v.error,
+              message: v.message,
             };
           }
-          if (parsed.getTime() <= Date.now()) {
-            return {
-              ok: false as const,
-              error: "in_past",
-              message:
-                "That time has already passed. Pick a future slot.",
-            };
-          }
-          const oneYearMs = 365 * 24 * 60 * 60 * 1000;
-          if (parsed.getTime() > Date.now() + oneYearMs) {
-            return {
-              ok: false as const,
-              error: "too_far",
-              message: "Pick a time within the next year.",
-            };
-          }
-          nextScheduledAt = parsed;
+          nextScheduledAt = v.date;
         }
 
         // Race: the user may have published or deleted the draft between the
@@ -529,5 +673,293 @@ export function createChatTools({ userId, accountIds }: CreateChatToolsArgs) {
         };
       },
     }),
+
+    publish_drafts: tool({
+      description:
+        "Publish one or more drafts NOW to their social accounts. ⚠️ Destructive and final — these go live immediately. NEVER call this without first (1) listing exactly what will be published (count, platforms, one-line content per draft), and (2) getting an explicit confirmation in the user's most recent message ('yes', 'go', 'ok', 'oui', 'vas-y'). Ambiguous replies = do NOT call. Bulk-safe: pass all the ids the user wants to publish in one call. Validation runs automatically per draft; partial failures are reported per-id.",
+      inputSchema: z.object({
+        ids: z
+          .array(z.string().min(1))
+          .min(1)
+          .max(20)
+          .describe(
+            "Draft ids to publish. Pass all the user just confirmed in one call — do NOT loop the tool."
+          ),
+      }),
+      execute: async ({ ids }) => {
+        console.log(
+          `[chat-tool:publish_drafts] userId=${userId} ids=${ids.length}`
+        );
+
+        const uniqueIds = Array.from(new Set(ids));
+        const items = await Promise.all(
+          uniqueIds.map((id) => safePublishOne(userId, id))
+        );
+
+        return summarizeBulkPublish(items, "publish");
+      },
+    }),
+
+    schedule_drafts: tool({
+      description:
+        "Schedule one or more drafts at the times you pick. ⚠️ This commits the schedule to the platforms — once done, the post WILL fire at that time. NEVER call this without first (1) listing exactly what will be scheduled (count, platforms, content one-liner, AND the human-readable time), and (2) getting an explicit confirmation in the user's most recent message ('yes', 'go', 'ok', 'oui', 'vas-y'). Ambiguous replies = do NOT call. Bulk-safe: pass all items in one call. Use this when the user says 'schedule them now' or 'plan them across the week' — pick the times yourself from 'Best posting times' or sensible midday slots if needed. Use set_schedule (not this) when the user only wants to STAGE a time without committing.",
+      inputSchema: z.object({
+        items: z
+          .array(
+            z.object({
+              id: z.string().min(1),
+              scheduledAt: z
+                .string()
+                .datetime({ offset: true })
+                .describe(
+                  "ISO 8601 datetime (e.g. 2026-04-29T17:00:00.000Z). Must be in the future."
+                ),
+            })
+          )
+          .min(1)
+          .max(20)
+          .describe(
+            "Draft ids with their scheduled times. Pass all items in one call — do NOT loop the tool."
+          ),
+      }),
+      execute: async ({ items }) => {
+        console.log(
+          `[chat-tool:schedule_drafts] userId=${userId} items=${items.length}`
+        );
+
+        // Dedupe by id (last write wins on time, mirroring publish_drafts).
+        const byId = new Map<string, string>();
+        for (const item of items) byId.set(item.id, item.scheduledAt);
+        const uniqueItems = Array.from(byId, ([id, scheduledAt]) => ({
+          id,
+          scheduledAt,
+        }));
+
+        const results = await Promise.all(
+          uniqueItems.map((it) => safeScheduleOne(userId, it.id, it.scheduledAt))
+        );
+
+        return summarizeBulkPublish(results, "schedule");
+      },
+    }),
   };
+}
+
+async function safePublishOne(
+  userId: string,
+  id: string
+): Promise<BulkItemResult> {
+  try {
+    const result = await publishOrScheduleSuggestion({
+      userId,
+      suggestionId: id,
+      action: "publish",
+    });
+    return { id, result };
+  } catch (err) {
+    return {
+      id,
+      result: {
+        ok: false,
+        error: "publish_failed",
+        message: err instanceof Error ? err.message : String(err),
+      },
+    };
+  }
+}
+
+async function safeScheduleOne(
+  userId: string,
+  id: string,
+  scheduledAt: string
+): Promise<BulkItemResult> {
+  const v = validateScheduleIso(scheduledAt);
+  if (!v.ok) {
+    return {
+      id,
+      result: {
+        ok: false,
+        error: v.error === "in_past" ? "schedule_in_past" : "publish_failed",
+        ...(v.error === "in_past" ? {} : { message: v.message }),
+      } as PublishResult,
+    };
+  }
+
+  // Scope the staging update by userId ownership — never let the LLM mutate
+  // a draft that doesn't belong to this user (count === 0 means the row
+  // doesn't exist OR doesn't belong to this user; both look like not_found
+  // to the caller).
+  const claim = await prisma.postSuggestion.updateMany({
+    where: { id, socialAccount: { lateProfile: { userId } } },
+    data: { scheduledAt: v.date },
+  });
+  if (claim.count === 0) {
+    return { id, result: { ok: false, error: "not_found" } };
+  }
+
+  try {
+    const result = await publishOrScheduleSuggestion({
+      userId,
+      suggestionId: id,
+      action: "schedule",
+    });
+    return { id, result };
+  } catch (err) {
+    return {
+      id,
+      result: {
+        ok: false,
+        error: "publish_failed",
+        message: err instanceof Error ? err.message : String(err),
+      },
+    };
+  }
+}
+
+interface BulkItemResult {
+  id: string;
+  result: PublishResult;
+}
+
+interface BulkSummary {
+  ok: boolean;
+  succeeded: {
+    id: string;
+    postId: string;
+    action: "published" | "scheduled";
+    partial: boolean;
+  }[];
+  failed: {
+    id: string;
+    reason: string;
+    message: string;
+    recoverable: boolean;
+    validationErrors?: { platform: string; error: string }[];
+  }[];
+  paywall?: { reason: "free_post_limit_reached"; suggestion: string };
+}
+
+function summarizeBulkPublish(
+  items: BulkItemResult[],
+  mode: "publish" | "schedule"
+): BulkSummary {
+  const succeeded: BulkSummary["succeeded"] = [];
+  const failed: BulkSummary["failed"] = [];
+  let paywallHit = false;
+
+  for (const { id, result } of items) {
+    if (result.ok) {
+      succeeded.push({
+        id,
+        postId: result.postId,
+        action: result.action,
+        partial: result.partial ?? false,
+      });
+      continue;
+    }
+
+    const entry = describeFailure(id, result, mode);
+    if (result.error === "free_post_limit_reached") paywallHit = true;
+    failed.push(entry);
+  }
+
+  const paywall: BulkSummary["paywall"] = paywallHit
+    ? {
+        reason: "free_post_limit_reached",
+        suggestion:
+          "Tell the user they've hit the free post cap and need to upgrade to Pro to publish more.",
+      }
+    : undefined;
+
+  return {
+    ok: failed.length === 0,
+    succeeded,
+    failed,
+    ...(paywall ? { paywall } : {}),
+  };
+}
+
+function describeFailure(
+  id: string,
+  result: Extract<PublishResult, { ok: false }>,
+  mode: "publish" | "schedule"
+): BulkSummary["failed"][number] {
+  switch (result.error) {
+    case "not_found":
+      return {
+        id,
+        reason: "not_found",
+        message: "Draft is gone — already published or deleted.",
+        recoverable: false,
+      };
+    case "already_publishing":
+      return {
+        id,
+        reason: "already_publishing",
+        message: "Already in flight — wait a few seconds before retrying.",
+        recoverable: true,
+      };
+    case "free_post_limit_reached":
+      return {
+        id,
+        reason: "free_post_limit_reached",
+        message:
+          "This account has hit the free post cap. Upgrade to Pro to keep going.",
+        recoverable: false,
+      };
+    case "no_schedule_staged":
+      return {
+        id,
+        reason: "no_schedule_staged",
+        message:
+          mode === "schedule"
+            ? "No schedule time staged on this draft."
+            : "Pick a schedule time first.",
+        recoverable: true,
+      };
+    case "schedule_in_past":
+      return {
+        id,
+        reason: "schedule_in_past",
+        message: "That schedule time has already passed.",
+        recoverable: true,
+      };
+    case "media_validation_failed":
+      return {
+        id,
+        reason: "media_validation_failed",
+        message: result.message,
+        recoverable: true,
+      };
+    case "validation_failed":
+      return {
+        id,
+        reason: "validation_failed",
+        message:
+          result.validationErrors
+            .map((e) => `${e.platform}: ${e.error}`)
+            .join("; ") || "Platform validation failed.",
+        validationErrors: result.validationErrors,
+        recoverable: true,
+      };
+    case "publish_failed":
+      return {
+        id,
+        reason: "publish_failed",
+        message: result.message,
+        recoverable: true,
+      };
+    default: {
+      // Exhaustiveness guard: any future PublishResult variant must be handled
+      // above or this assignment fails to compile.
+      const _exhaustive: never = result;
+      void _exhaustive;
+      return {
+        id,
+        reason: "unknown",
+        message: "Unknown failure.",
+        recoverable: true,
+      };
+    }
+  }
 }
