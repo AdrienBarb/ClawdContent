@@ -25,6 +25,7 @@ model User {
   knowledgeBase       Json?
   postsPublished      Int             @default(0)
   lastSuggestionsGeneratedAt DateTime?
+  usageLedger         UsageLedger[]
   @@unique([email])
   @@map("user")
 }
@@ -173,5 +174,35 @@ model StripeEvent {
   processedAt DateTime @default(now())
 
   @@map("stripe_event")
+}
+
+// Event-sourced ledger for AI usage allowance.
+// amount: negative = consume, positive = grant or refund.
+// bucket conventions:
+//   "free-lifetime"               → free user, never resets
+//   "period:{ISO-date}"           → Pro user, resets per Stripe billing period
+//   "topup:{stripeSessionId}"     → one-time pack, never expires
+// dedupKey enforces idempotency across retries / webhook redelivery /
+// AI SDK tool-call replays. Examples:
+//   "consume:{toolCallId}"
+//   "refund:{toolCallId}:partial"
+//   "period:{stripeSubscriptionId}:{ISO}:{type}"
+//   "topup:{stripeSessionId}"
+model UsageLedger {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // "draft_generation" | "rewrite"
+  amount    Int
+  bucket    String
+  reason    String   // "consume" | "refund" | "subscription_grant" | "topup_grant"
+  dedupKey  String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@unique([userId, dedupKey])
+  @@index([userId, type])
+  @@index([userId, bucket])
+  @@map("usage_ledger")
 }
 

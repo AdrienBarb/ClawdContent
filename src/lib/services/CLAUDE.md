@@ -17,12 +17,12 @@ Reconnect / backfill (Inngest refreshInsights):
     mark-analysis-completed (idempotent: pending → completed)
                              ← suggestions are NOT touched
 
-User clicks "Get ideas" (/api/suggestions/generate, maxDuration 120s):
-  if insights null or > 7 days old → computeInsights() inline (synchronous, source: all)
-  generateSuggestions()
+User chats in /d (chat tool `generate_posts`, calls createFromBrief synchronously):
+  reads cached insights as-is (no inline refresh)
+  createFromBrief() → wipe-and-replace drafts on the targeted accounts
 ```
 
-**Core principle:** `generateSuggestions()` runs only on user-visible actions (`/api/suggestions/generate`, `/api/suggestions/from-brief`) — never in Inngest. Suggestion IDs stay stable until the user themselves triggers a refresh.
+**Core principle:** `createFromBrief()` runs only on user-visible actions (the chat tool inside `/api/chat`) — never in Inngest. Suggestion IDs stay stable until the user themselves triggers a new generation.
 
 ## Service responsibilities
 
@@ -30,9 +30,9 @@ User clicks "Get ideas" (/api/suggestions/generate, maxDuration 120s):
 |---|---|
 | `zernioContext.ts` | Per-platform Zernio fetcher: account, posts, analytics, best-times, posting frequency, followers. Handles 402 / 403 gracefully. |
 | `accountInsights.ts` | `computeInsights` writes `insights` + `lastAnalyzedAt` only — does NOT touch `analysisStatus`. Cross-platform voice borrowing for cold-start. Returns `null` if account no longer exists. |
-| `postSuggestions.ts` | `generateSuggestions` reads cached insights as-is, asks Claude for 5 suggestions, saves rows. Never triggers refreshes — freshness is the caller's responsibility. |
+| `createFromBrief.ts` | `createFromBrief` reads cached insights as-is, asks Claude for posts shaped to the user's brief, wipes existing drafts and persists the new batch under a per-account advisory lock. |
 
-Both `computeInsights` and `generateSuggestions` exit cleanly on a missing SocialAccount (`findUnique` + null guard) — avoids retry loops on stale events.
+Both `computeInsights` and `createFromBrief` exit cleanly on a missing SocialAccount (null guard) — avoids retry loops on stale events.
 
 ## Insights v2 schema (three zones)
 

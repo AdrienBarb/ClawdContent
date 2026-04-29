@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/lib/better-auth/auth";
@@ -7,6 +8,8 @@ import Sidebar, {
 } from "@/components/dashboard/Sidebar";
 import TimezoneSync from "@/components/dashboard/TimezoneSync";
 import LegacyKBBanner from "@/components/dashboard/LegacyKBBanner";
+import UsageLimitModal from "@/components/dashboard/UsageLimitModal";
+import TopupSuccessHandler from "@/components/dashboard/TopupSuccessHandler";
 
 export default async function DashboardLayout({
   children,
@@ -33,6 +36,11 @@ export default async function DashboardLayout({
   return (
     <div className="flex min-h-screen bg-[#faf9f5]">
       <TimezoneSync />
+      {/* useSearchParams() requires a Suspense boundary in Next.js App Router. */}
+      <Suspense fallback={null}>
+        <TopupSuccessHandler />
+      </Suspense>
+      <UsageLimitModal />
       <Sidebar />
 
       <div className="flex-1 min-w-0 md:ml-64 flex flex-col min-h-screen">

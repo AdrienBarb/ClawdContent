@@ -6,6 +6,7 @@ import { headers } from "next/headers";
 import { generateObject } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { scrapeWebsite } from "@/lib/firecrawl/client";
+import { limitOnboardingAnalyze } from "@/lib/rateLimit/onboardingLimiter";
 import {
   analyzeInputSchema,
   knowledgeBaseSchema,
@@ -27,6 +28,23 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const data = analyzeInputSchema.parse(body);
+
+    const limit = await limitOnboardingAnalyze(session.user.id);
+    if (!limit.success) {
+      const retryAfterSec = limit.reset
+        ? Math.max(1, Math.ceil((limit.reset - Date.now()) / 1000))
+        : 60;
+      return NextResponse.json(
+        {
+          error: "Too many analysis attempts. Try again in a moment.",
+          retryAfterSeconds: retryAfterSec,
+        },
+        {
+          status: 429,
+          headers: { "Retry-After": String(retryAfterSec) },
+        }
+      );
+    }
 
     let contentToAnalyze = "";
 

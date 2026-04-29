@@ -40,5 +40,5 @@ export async function POST(req: NextRequest) {
   - `/api/webhooks/zernio` → HMAC-SHA256 with `ZERNIO_WEBHOOK_SECRET`. Handles `account.disconnected` (sends reconnect email), `account.connected`, `post.failed`, `post.partial`.
 - **Zod schemas** live in `src/lib/schemas/`. Parse at the route boundary, hand validated input to services.
 - **Errors** flow through `errorHandler` (`src/lib/errors/errorHandler.ts`) — maps Zod, Prisma, and known errors to HTTP responses + the global error store.
-- **Long-running routes** set `export const maxDuration = 120` (e.g. `/api/suggestions/generate`).
+- **Long-running routes** set `export const maxDuration` (e.g. `/api/chat` runs the `generate_posts` tool synchronously and uses 240s).
 - **Background work** goes in `src/inngest/functions/`. Routes fire events with `inngest.send(...)`, never block on long jobs.

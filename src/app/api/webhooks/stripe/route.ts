@@ -13,6 +13,9 @@ import {
   trackSubscriptionStarted,
   updateBrevoContact,
 } from "@/lib/services/email";
+import { grantTopup } from "@/lib/services/usage";
+import { TOPUP_PACK_POINTS } from "@/lib/constants/usage";
+import { getTopupPriceId } from "@/lib/constants/plans";
 
 export async function POST(req: NextRequest) {
   const sig = req.headers.get("stripe-signature");
@@ -96,6 +99,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true }, { status: 200 });
   } catch (err) {
     console.error("Webhook handler error:", err);
+    // The dedup row was inserted before the handler ran; if the handler
+    // threw, returning 500 alone wouldn't help — Stripe would redeliver but
+    // the dedup row would short-circuit the retry as "already processed".
+    // Delete the row so the next delivery genuinely re-runs the handler.
+    await prisma.stripeEvent
+      .delete({ where: { id: event.id } })
+      .catch((delErr) => {
+        console.error(
+          `Failed to delete StripeEvent dedup row after handler error: ${delErr instanceof Error ? delErr.message : delErr}`
+        );
+      });
     return NextResponse.json(
       { error: errorMessages.WEBHOOK_PROCESSING_FAILED },
       { status: 500 }
@@ -155,6 +169,60 @@ async function handleCheckoutCompleted(
   const userId = session.metadata?.userId;
   if (!userId) {
     console.error("Missing userId in checkout metadata");
+    return;
+  }
+
+  // Branch on metadata.type — top-up checkouts use mode:"payment" and never
+  // create a subscription, so the existing flow below would fail to find one.
+  if (session.metadata?.type === "topup") {
+    // SECURITY: never trust the grant amount from session.metadata. Verify
+    // the line items contain only the canonical Boost-pack price, then
+    // grant the constant amount.
+    const lineItems = await stripe.checkout.sessions.listLineItems(
+      session.id,
+      { limit: 5 }
+    );
+    const expectedPriceId = getTopupPriceId();
+    const priceMatches =
+      lineItems.data.length === 1 &&
+      lineItems.data[0]?.price?.id === expectedPriceId &&
+      (lineItems.data[0]?.quantity ?? 1) === 1;
+    if (!priceMatches) {
+      console.warn(
+        `[stripe webhook] ✗ topup price mismatch session=${session.id} got=${lineItems.data.map((li) => li.price?.id).join(",")} expected=${expectedPriceId}`
+      );
+      return;
+    }
+
+    // SECURITY: cross-check userId vs the existing customer mapping. If
+    // there's already a Subscription tied to this customerId, the userId
+    // metadata MUST match it — otherwise someone influenced the metadata to
+    // grant credit to a different account.
+    const customerId =
+      typeof session.customer === "string"
+        ? session.customer
+        : session.customer?.id;
+    if (customerId) {
+      const linked = await prisma.subscription.findFirst({
+        where: { stripeCustomerId: customerId },
+        select: { userId: true },
+      });
+      if (linked && linked.userId !== userId) {
+        console.warn(
+          `[stripe webhook] ✗ topup userId mismatch session=${session.id} metadata=${userId} subscription=${linked.userId}`
+        );
+        return;
+      }
+    }
+
+    await grantTopup({
+      userId,
+      stripeSessionId: session.id,
+      points: TOPUP_PACK_POINTS,
+    });
+    console.log(
+      `[stripe webhook] ✓ topup granted user=${userId} +${TOPUP_PACK_POINTS}pts session=${session.id}`
+    );
     return;
   }
 

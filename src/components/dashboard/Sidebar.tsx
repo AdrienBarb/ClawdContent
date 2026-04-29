@@ -18,6 +18,7 @@ import {
   UserCircleIcon,
   PencilSimpleIcon,
 } from "@phosphor-icons/react";
+import UsageMeter from "./UsageMeter";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -235,8 +236,10 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
         </div>
       </div>
 
-      {/* Footer: affiliates + user */}
+      {/* Footer: usage meter + affiliates + user */}
       <div className="flex flex-col gap-2 pt-3 border-t border-gray-200/80">
+        <UsageMeter />
+
         <NavItem
           href={appRouter.affiliates}
           icon={GiftIcon}

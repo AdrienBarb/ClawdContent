@@ -8,6 +8,7 @@ import { generateObject } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
 import { buildRewritePrompt, rewriteOutputSchema } from "@/lib/ai/rewrite";
+import { consume, refund } from "@/lib/services/usage";
 
 const rewriteInputSchema = z.object({
   instruction: z.enum(["rewrite", "shorter", "longer", "casual", "professional", "hashtags", "fix"]),
@@ -36,20 +37,47 @@ export async function POST(
       return NextResponse.json({ error: "Suggestion not found" }, { status: 404 });
     }
 
+    const userId = session.user.id;
+    const dedupKey = `consume:rewrite:suggestion:${id}:${crypto.randomUUID()}`;
+
+    // Pre-flight + atomic consume; UsageLimitError → 402 via errorHandler.
+    await consume({
+      userId,
+      type: "rewrite",
+      count: 1,
+      dedupKey,
+      metadata: { suggestionId: id, instruction },
+    });
+
     const kb = suggestion.socialAccount.lateProfile.user.knowledgeBase as Record<string, unknown> | null;
 
-    const { object } = await generateObject({
-      model: anthropic("claude-sonnet-4-6"),
-      schema: rewriteOutputSchema,
-      prompt: buildRewritePrompt(suggestion.content, suggestion.socialAccount.platform, instruction, kb),
-    });
+    try {
+      const { object } = await generateObject({
+        model: anthropic("claude-sonnet-4-6"),
+        schema: rewriteOutputSchema,
+        prompt: buildRewritePrompt(suggestion.content, suggestion.socialAccount.platform, instruction, kb),
+      });
 
-    await prisma.postSuggestion.update({
-      where: { id },
-      data: { content: object.content },
-    });
+      await prisma.postSuggestion.update({
+        where: { id },
+        data: { content: object.content },
+      });
 
-    return NextResponse.json({ content: object.content });
+      return NextResponse.json({ content: object.content });
+    } catch (err) {
+      await refund({
+        userId,
+        type: "rewrite",
+        count: 1,
+        dedupKey: `refund:${dedupKey}`,
+        originalConsumeDedupKey: dedupKey,
+      }).catch((refundErr) => {
+        console.error(
+          `[/api/suggestions/${id}/rewrite] refund failed: ${refundErr instanceof Error ? refundErr.message : refundErr}`
+        );
+      });
+      throw err;
+    }
   } catch (error) {
     return errorHandler(error);
   }

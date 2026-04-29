@@ -124,3 +124,11 @@ export function getPlanFromStripePriceId(
   }
   return null;
 }
+
+// One-time top-up pack: +50 draft generations, $9, never expires.
+// Stripe price must be configured as `mode: payment` (one-time), not recurring.
+export function getTopupPriceId(): string {
+  const id = process.env.STRIPE_PRICE_BOOST_50;
+  if (!id) throw new Error("Missing env var STRIPE_PRICE_BOOST_50");
+  return id;
+}

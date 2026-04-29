@@ -16,6 +16,7 @@ import { buildChatSystemPrompt } from "@/lib/ai/chat-system-prompt";
 import { createChatTools } from "@/lib/ai/chat-tools";
 import { preview } from "@/lib/ai/preview";
 import { getBestSlots } from "@/lib/services/bestTimes";
+import { limitChat } from "@/lib/rateLimit/chatLimiter";
 
 // /generate-objects calls under generate_posts can take 90–120s for the
 // slowest account chunk. 240 leaves comfortable headroom (Vercel Pro max 300).
@@ -42,6 +43,25 @@ export async function POST(req: NextRequest) {
       );
     }
     const userId = session.user.id;
+
+    // Sliding-window rate limit (20 msg/min). Conversational chat is free
+    // (it doesn't debit the usage ledger), so this is the abuse guard.
+    const limit = await limitChat(userId);
+    if (!limit.success) {
+      const retryAfterSec = limit.reset
+        ? Math.max(1, Math.ceil((limit.reset - Date.now()) / 1000))
+        : 60;
+      return NextResponse.json(
+        {
+          error: "Too many chat messages. Try again in a moment.",
+          retryAfterSeconds: retryAfterSec,
+        },
+        {
+          status: 429,
+          headers: { "Retry-After": String(retryAfterSec) },
+        }
+      );
+    }
 
     const raw = await req.json().catch(() => ({}));
     const { messages, accountIds } = bodySchema.parse(raw);

@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import Image from "next/image";
 import toast from "react-hot-toast";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   SpinnerGapIcon,
   ArrowsClockwiseIcon,
@@ -45,6 +46,7 @@ export default function EditSuggestionModal({
   const [rewriting, setRewriting] = useState(false);
   const editFileInputRef = useRef<HTMLInputElement>(null);
   const { upload, uploading, progress } = useCloudinaryUpload();
+  const queryClient = useQueryClient();
 
   const platform = getPlatform(suggestion.socialAccount.platform);
   const platformConfig = getPlatformConfig(suggestion.socialAccount.platform);
@@ -89,6 +91,8 @@ export default function EditSuggestionModal({
       }
       const data = await res.json().catch(() => null);
       if (data?.content) setContent(data.content);
+      // Refresh the sidebar usage meter — a rewrite consumed 1 point.
+      queryClient.invalidateQueries({ queryKey: ["dashboardStatus"] });
     } catch {
       toast.error("Couldn't rewrite the post. Try again.");
     } finally {

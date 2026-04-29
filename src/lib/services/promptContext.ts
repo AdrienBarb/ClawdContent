@@ -1,8 +1,8 @@
 /**
  * Shared formatters for blocks that go into LLM prompts.
  *
- * Consumed by `accountInsights.ts`, `postSuggestions.ts`, and `createFromBrief.ts`
- * — keeping them here avoids drift across the three call sites.
+ * Consumed by `accountInsights.ts` and `createFromBrief.ts` — keeping them
+ * here avoids drift across the call sites.
  */
 
 interface FormatBusinessContextOptions {

@@ -7,9 +7,13 @@ import {
 } from "@/lib/insights/platformConfig";
 import { briefOutputClaudeSchema } from "@/lib/schemas/createFromBrief";
 import type { Insights } from "@/lib/schemas/insights";
-import { type SuggestionWithAccount } from "@/lib/services/postSuggestions";
 import { parseInsights, pickTimeSlots } from "@/lib/services/insightsHelpers";
 import { formatBusinessContext } from "@/lib/services/promptContext";
+import type { PostSuggestion } from "@prisma/client";
+
+export type SuggestionWithAccount = PostSuggestion & {
+  socialAccount: { platform: string; username: string };
+};
 
 const MAX_POSTS_PER_ACCOUNT = 14;
 
@@ -130,8 +134,7 @@ async function generateForAccount(
 
   const contentType = defaultContentType(config.requiresMedia);
 
-  // Wipe-and-replace contract (matches generateSuggestions): each generation
-  // run is the user's full new batch.
+  // Wipe-and-replace contract: each generation run is the user's full new batch.
   //
   // Use the callback form so deleteMany + N creates run in a single
   // BEGIN/COMMIT block — guaranteed atomic on every Prisma adapter, including

@@ -8,6 +8,40 @@ import { createFromBrief } from "@/lib/services/createFromBrief";
 import { claimSuggestionsCooldown } from "@/lib/services/rateLimit";
 import { buildRewritePrompt, rewriteOutputSchema } from "@/lib/ai/rewrite";
 import { parseInsights } from "@/lib/services/insightsHelpers";
+import {
+  consume,
+  refund,
+  getBalance,
+  getBalanceSummary,
+} from "@/lib/services/usage";
+import { pointsFor, type UsageType } from "@/lib/constants/usage";
+import {
+  UsageLimitError,
+  type UsageLimitPayload,
+  type UsageLimitPayloadWire,
+} from "@/lib/errors/UsageLimitError";
+import { createLogger } from "@/lib/logger";
+
+const log = createLogger("usage");
+
+// Wire-shaped paywall payload for the paywall modal. The UI never sees the
+// cost or the cap — it only renders the percentage and the resetAt label.
+async function buildPaywallPayload(
+  userId: string,
+  attemptedType: UsageType
+): Promise<UsageLimitPayloadWire> {
+  const summary = await getBalanceSummary(userId);
+  return {
+    attemptedType,
+    percentageRemaining: summary.percentageRemaining,
+    resetAt: summary.resetAt,
+    isPaid: summary.isPaid,
+  };
+}
+
+function toWire(p: UsageLimitPayload): UsageLimitPayloadWire {
+  return { ...p, resetAt: p.resetAt ? p.resetAt.toISOString() : null };
+}
 
 interface CreateChatToolsArgs {
   userId: string;
@@ -30,9 +64,9 @@ export function createChatTools({ userId, accountIds }: CreateChatToolsArgs) {
             "The user's request in their own words. Examples: 'Generate me 5 posts about my Easter menu', 'Plan a week of content for our spring launch'. Faithfully relay what they wrote."
           ),
       }),
-      execute: async ({ brief }) => {
+      execute: async ({ brief }, { toolCallId }) => {
         console.log(
-          `[chat-tool:generate_posts] userId=${userId} accountIds=${accountIds.join(",")} briefLen=${brief.length}`
+          `[chat-tool:generate_posts] userId=${userId} accountIds=${accountIds.join(",")} briefLen=${brief.length} toolCallId=${toolCallId}`
         );
 
         if (accountIds.length === 0) {
@@ -41,6 +75,48 @@ export function createChatTools({ userId, accountIds }: CreateChatToolsArgs) {
             error: "no_accounts_selected",
             message:
               "No accounts are selected. Ask the user to pick at least one account in the chip selector at the top of the page.",
+          };
+        }
+
+        // Pre-flight on the unified points pool. Cost: 1 generation = 2
+        // points (per account). Three outcomes:
+        //   balance < cost-of-one  → hard wall (modal)
+        //   balance < cost-of-N    → partial-capacity (Claude degrades)
+        //   else                   → proceed
+        const balance = await getBalance({ userId });
+        const costOne = pointsFor("draft_generation", 1);
+        const costAll = pointsFor("draft_generation", accountIds.length);
+
+        log.info(
+          `preflight generate_posts userId=${userId} balance=${balance}pts costOne=${costOne}pts requested=${accountIds.length} costAll=${costAll}pts`
+        );
+
+        if (balance < costOne) {
+          const payload = await buildPaywallPayload(userId, "draft_generation");
+          log.warn(
+            `generate_posts wall hit userId=${userId} balance=${balance}pts < ${costOne}pts → paywall`
+          );
+          return {
+            ok: false as const,
+            error: "usage_limit_reached",
+            surface: "paywall_modal",
+            payload,
+            message: payload.isPaid
+              ? `The user has run out of monthly allowance. Offer the Boost pack ($9) or wait until ${payload.resetAt}.`
+              : `The user has used their free allowance. Tell them to upgrade to Pro to keep planning posts.`,
+          };
+        }
+        if (balance < costAll) {
+          const affordable = Math.floor(balance / costOne);
+          log.warn(
+            `generate_posts partial userId=${userId} affordable=${affordable}/${accountIds.length} (balance=${balance}pts)`
+          );
+          return {
+            ok: false as const,
+            error: "partial_capacity",
+            available: affordable,
+            requested: accountIds.length,
+            message: `The user has only enough allowance for ${affordable} of the ${accountIds.length} selected accounts. Ask them: should you generate for ${affordable} accounts (which ones?) or do they want to grab a Boost pack?`,
           };
         }
 
@@ -59,14 +135,46 @@ export function createChatTools({ userId, accountIds }: CreateChatToolsArgs) {
         }
 
         try {
+          await consume({
+            userId,
+            type: "draft_generation",
+            count: accountIds.length,
+            dedupKey: `consume:${toolCallId}`,
+            metadata: { accountIds, briefLength: brief.length },
+          });
+        } catch (err) {
+          if (err instanceof UsageLimitError) {
+            return {
+              ok: false as const,
+              error: "usage_limit_reached",
+              surface: "paywall_modal",
+              payload: toWire(err.payload),
+              message: "Out of allowance.",
+            };
+          }
+          throw err;
+        }
+
+        try {
           const { suggestions, failedAccountIds } = await createFromBrief({
             userId,
             accountIds,
             brief,
           });
 
+          if (failedAccountIds.length > 0) {
+            await refund({
+              userId,
+              type: "draft_generation",
+              count: failedAccountIds.length,
+              dedupKey: `refund:${toolCallId}:partial`,
+              originalConsumeDedupKey: `consume:${toolCallId}`,
+              metadata: { failedAccountIds },
+            });
+          }
+
           console.log(
-            `[chat-tool:generate_posts] ✓ ${suggestions.length} drafts, ${failedAccountIds.length} failed accounts`
+            `[chat-tool:generate_posts] ✓ ${suggestions.length} drafts, ${failedAccountIds.length} failed accounts (refunded)`
           );
 
           return {
@@ -83,6 +191,18 @@ export function createChatTools({ userId, accountIds }: CreateChatToolsArgs) {
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
           console.error(`[chat-tool:generate_posts] ✗ ${message}`);
+          await refund({
+            userId,
+            type: "draft_generation",
+            count: accountIds.length,
+            dedupKey: `refund:${toolCallId}:total`,
+            originalConsumeDedupKey: `consume:${toolCallId}`,
+            metadata: { error: message },
+          }).catch((refundErr) => {
+            console.error(
+              `[chat-tool:generate_posts] ✗ refund failed: ${refundErr instanceof Error ? refundErr.message : refundErr}`
+            );
+          });
           return {
             ok: false as const,
             error: "generation_failed",
@@ -159,9 +279,9 @@ export function createChatTools({ userId, accountIds }: CreateChatToolsArgs) {
             "rewrite=fresh angle same message; shorter=trim; longer=expand; casual=friendlier; professional=more formal; hashtags=add 3–5 hashtags; fix=grammar/spelling"
           ),
       }),
-      execute: async ({ id, instruction }) => {
+      execute: async ({ id, instruction }, { toolCallId }) => {
         console.log(
-          `[chat-tool:regenerate_post] userId=${userId} id=${id} instruction=${instruction}`
+          `[chat-tool:regenerate_post] userId=${userId} id=${id} instruction=${instruction} toolCallId=${toolCallId}`
         );
 
         const suggestion = await prisma.postSuggestion.findFirst({
@@ -187,6 +307,46 @@ export function createChatTools({ userId, accountIds }: CreateChatToolsArgs) {
             message:
               "I couldn't find that draft. It may have been deleted or scheduled.",
           };
+        }
+
+        // Pre-flight: rewrite costs 1 point.
+        const balance = await getBalance({ userId });
+        const cost = pointsFor("rewrite", 1);
+        log.info(
+          `preflight regenerate_post userId=${userId} balance=${balance}pts cost=${cost}pts`
+        );
+        if (balance < cost) {
+          const payload = await buildPaywallPayload(userId, "rewrite");
+          return {
+            ok: false as const,
+            error: "usage_limit_reached",
+            surface: "paywall_modal",
+            payload,
+            message: payload.isPaid
+              ? `The user has run out of monthly allowance. Offer the Boost pack or wait until ${payload.resetAt}.`
+              : "The user has used their free allowance. Tell them to upgrade to Pro.",
+          };
+        }
+
+        try {
+          await consume({
+            userId,
+            type: "rewrite",
+            count: 1,
+            dedupKey: `consume:${toolCallId}`,
+            metadata: { suggestionId: id, instruction },
+          });
+        } catch (err) {
+          if (err instanceof UsageLimitError) {
+            return {
+              ok: false as const,
+              error: "usage_limit_reached",
+              surface: "paywall_modal",
+              payload: toWire(err.payload),
+              message: "Out of allowance.",
+            };
+          }
+          throw err;
         }
 
         const kb = suggestion.socialAccount.lateProfile.user
@@ -224,6 +384,18 @@ export function createChatTools({ userId, accountIds }: CreateChatToolsArgs) {
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
           console.error(`[chat-tool:regenerate_post] ✗ ${message}`);
+          await refund({
+            userId,
+            type: "rewrite",
+            count: 1,
+            dedupKey: `refund:${toolCallId}`,
+            originalConsumeDedupKey: `consume:${toolCallId}`,
+            metadata: { suggestionId: id, error: message },
+          }).catch((refundErr) => {
+            console.error(
+              `[chat-tool:regenerate_post] ✗ refund failed: ${refundErr instanceof Error ? refundErr.message : refundErr}`
+            );
+          });
           return {
             ok: false as const,
             error: "rewrite_failed",
