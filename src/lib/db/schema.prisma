@@ -7,25 +7,27 @@ generator client {
 }
 
 model User {
-  id                  String          @id
-  name                String
-  email               String
-  emailVerified       Boolean         @default(false)
-  image               String?
-  createdAt           DateTime        @default(now())
-  updatedAt           DateTime        @default(now()) @updatedAt
-  sessions            Session[]
-  accounts            Account[]
-  subscription        Subscription?
-  lateProfile         LateProfile?
-  timezone            String?
-  media               Media[]
-  websiteUrl          String?
-  businessDescription String?
-  knowledgeBase       Json?
-  postsPublished      Int             @default(0)
+  id                         String           @id
+  name                       String
+  email                      String
+  emailVerified              Boolean          @default(false)
+  image                      String?
+  createdAt                  DateTime         @default(now())
+  updatedAt                  DateTime         @default(now()) @updatedAt
+  sessions                   Session[]
+  accounts                   Account[]
+  subscription               Subscription?
+  lateProfile                LateProfile?
+  timezone                   String?
+  media                      Media[]
+  websiteUrl                 String?
+  businessDescription        String?
+  knowledgeBase              Json?
+  postsPublished             Int              @default(0)
   lastSuggestionsGeneratedAt DateTime?
-  usageLedger         UsageLedger[]
+  usageLedger                UsageLedger[]
+  outcomeSnapshot            OutcomeSnapshot?
+
   @@unique([email])
   @@map("user")
 }
@@ -76,22 +78,21 @@ model Verification {
 }
 
 model Subscription {
-  id                   String   @id @default(cuid())
-  userId               String   @unique
-  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  stripeCustomerId     String   @unique
-  stripeSubscriptionId String   @unique
-  status               String   @default("incomplete") // active, past_due, canceled, incomplete, trialing
-  planId               String   @default("pro") // starter, pro, business
+  id                   String    @id @default(cuid())
+  userId               String    @unique
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stripeCustomerId     String    @unique
+  stripeSubscriptionId String    @unique
+  status               String    @default("incomplete") // active, past_due, canceled, incomplete, trialing
+  planId               String    @default("pro") // starter, pro, business
   currentPeriodStart   DateTime?
   currentPeriodEnd     DateTime?
-  cancelAtPeriodEnd    Boolean  @default(false)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  cancelAtPeriodEnd    Boolean   @default(false)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   @@map("subscription")
 }
-
 
 model LateProfile {
   id             String          @id @default(cuid())
@@ -108,18 +109,18 @@ model LateProfile {
 }
 
 model SocialAccount {
-  id            String      @id @default(cuid())
-  lateProfileId String
-  lateProfile   LateProfile @relation(fields: [lateProfileId], references: [id], onDelete: Cascade)
-  lateAccountId String      @unique
-  platform      String
-  username      String
-  status         String      @default("active") // active, disconnected
-  analysisStatus String      @default("pending") // pending, analyzing, completed
+  id             String           @id @default(cuid())
+  lateProfileId  String
+  lateProfile    LateProfile      @relation(fields: [lateProfileId], references: [id], onDelete: Cascade)
+  lateAccountId  String           @unique
+  platform       String
+  username       String
+  status         String           @default("active") // active, disconnected
+  analysisStatus String           @default("pending") // pending, analyzing, completed
   insights       Json?
   lastAnalyzedAt DateTime?
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
   suggestions    PostSuggestion[]
 
   @@index([lateProfileId])
@@ -131,11 +132,11 @@ model PostSuggestion {
   socialAccountId String
   socialAccount   SocialAccount @relation(fields: [socialAccountId], references: [id], onDelete: Cascade)
   content         String
-  contentType     String        // text, image, video, carousel
-  suggestedDay    Int           // 0=Monday, 6=Sunday
-  suggestedHour   Int           // 0-23 local time
+  contentType     String // text, image, video, carousel
+  suggestedDay    Int // 0=Monday, 6=Sunday
+  suggestedHour   Int // 0-23 local time
   reasoning       String?
-  mediaItems      Json?         // [{url, type: "image"|"video"}, ...]
+  mediaItems      Json? // [{url, type: "image"|"video"}, ...]
   scheduledAt     DateTime?
   createdAt       DateTime      @default(now())
 
@@ -154,17 +155,17 @@ model PostSuggestion {
 }
 
 model Media {
-  id            String   @id @default(cuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  cloudinaryId  String   @unique
-  url           String
-  resourceType  String
-  format        String
-  bytes         Int
-  width         Int?
-  height        Int?
-  createdAt     DateTime @default(now())
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cloudinaryId String   @unique
+  url          String
+  resourceType String
+  format       String
+  bytes        Int
+  width        Int?
+  height       Int?
+  createdAt    DateTime @default(now())
 
   @@map("media")
 }
@@ -174,6 +175,27 @@ model StripeEvent {
   processedAt DateTime @default(now())
 
   @@map("stripe_event")
+}
+
+// Posts-only outcome snapshot, recomputed nightly from Zernio analytics.
+// Read once at the top of each chat request and projected into the system
+// prompt as a compact bullet list — saves the model from fishing with a tool
+// call and saves N analytics round-trips per chat. One row per user; missing
+// row = no signal yet (user hasn't published enough).
+//   topPerformers/underperformers — { id, content, platform, metric, value, vsAverage }[]
+//   patterns                       — { bestPlatform, bestHour, bestContentType }
+//   failedPosts                    — { platform, count, lastError? }[]
+model OutcomeSnapshot {
+  userId          String   @id
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  computedAt      DateTime @default(now())
+  publishedCount  Int      @default(0)
+  topPerformers   Json // shaped above
+  underperformers Json
+  patterns        Json
+  failedPosts     Json
+
+  @@map("outcome_snapshot")
 }
 
 // Event-sourced ledger for AI usage allowance.
@@ -192,10 +214,10 @@ model UsageLedger {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type      String   // "draft_generation" | "rewrite"
+  type      String // "draft_generation" | "rewrite"
   amount    Int
   bucket    String
-  reason    String   // "consume" | "refund" | "subscription_grant" | "topup_grant"
+  reason    String // "consume" | "refund" | "subscription_grant" | "topup_grant"
   dedupKey  String
   metadata  Json?
   createdAt DateTime @default(now())
@@ -205,4 +227,3 @@ model UsageLedger {
   @@index([userId, bucket])
   @@map("usage_ledger")
 }
-

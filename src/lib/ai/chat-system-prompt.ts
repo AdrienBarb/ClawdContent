@@ -1,6 +1,11 @@
 import { formatBusinessContext } from "@/lib/services/promptContext";
 import { getPlatform } from "@/lib/constants/platforms";
 import { preview } from "./preview";
+import type {
+  OutcomeFailure,
+  OutcomePatterns,
+  OutcomePost,
+} from "@/lib/services/outcomesAnalysis";
 
 interface AccountSummary {
   id: string;
@@ -23,6 +28,14 @@ interface AccountBestTimes {
   weeklySlots: { day: number; hour: number }[];
 }
 
+export interface OutcomesContext {
+  publishedCount: number;
+  topPerformers: OutcomePost[];
+  underperformers: OutcomePost[];
+  patterns: OutcomePatterns;
+  failedPosts: OutcomeFailure[];
+}
+
 interface BuildArgs {
   userName: string;
   knowledgeBase: Record<string, unknown> | null;
@@ -31,6 +44,7 @@ interface BuildArgs {
   currentDrafts: DraftSummary[];
   userTimezone: string;
   accountsBestTimes: AccountBestTimes[];
+  outcomes: OutcomesContext | null;
 }
 
 export function buildChatSystemPrompt(args: BuildArgs): string {
@@ -57,18 +71,47 @@ export function buildChatSystemPrompt(args: BuildArgs): string {
       : `## Existing drafts\nThe user can see these draft cards on screen below the chat. When they say "the second one" or "the IG post about X", match the entry below by position or content.\n\n${formatDrafts(args.currentDrafts)}`
   );
 
+  const outcomesBlock = formatOutcomes(args.outcomes);
+  if (outcomesBlock) sections.push(outcomesBlock);
+
   sections.push(`## Tools you have
 
-You have exactly five tools:
+You have exactly seven tools:
 1. **generate_posts({ brief })** — drafts new posts for the currently selected accounts. Pass the user's request as the brief. **This REPLACES any existing drafts on those accounts** (it's a fresh batch, not an append). When existing drafts already exist on a selected account, ASK the user first: "This will replace your N current drafts on Instagram. Want me to do that, or edit them instead?" — wait for confirmation before calling the tool.
 2. **update_post({ id, instruction })** — apply a free-form edit to one specific draft. Pass the user's request in their own words ("replace X with Y", "add a CTA", "rewrite in first person") — the tool runs an LLM that knows the user's voice and applies the instruction precisely, preserving untouched parts of the post verbatim. Do NOT write the new post yourself; pass the user's instruction through.
 3. **regenerate_post({ id, instruction })** — rewrite one draft using a preset: rewrite | shorter | longer | casual | professional | hashtags | fix. Use this when the user asks for a tweak that fits one of these.
 4. **delete_draft({ id })** — remove one draft.
-5. **set_schedule({ id, scheduledAt })** — stage a schedule time on a draft. Pass an ISO datetime to set it, or pass null to clear an existing schedule. This stages the time — it does NOT publish. Prefer the recurring weekday/hour slots from "Best posting times" above (project them forward to whatever future date fits — they repeat weekly). When the user asks for a cadence those slots can't cover (e.g. "one per day for 7 days"), fill the gaps with sensible midday times in the user's timezone.
+5. **set_schedule({ id, scheduledAt })** — STAGE a schedule time on a draft (does NOT commit). Use when the user wants to plan a time but isn't ready to commit. To actually commit, use schedule_drafts.
+6. **publish_drafts({ ids })** — publish drafts NOW. Bulk-safe; pass every id at once.
+7. **schedule_drafts({ items: [{id, scheduledAt}] })** — commit schedules to the platforms. Bulk-safe; pass every item at once. Pick times yourself from "Best posting times" or sensible midday slots.
 
-## Tools you do NOT have
+## ⚠️ Confirmation protocol for publish_drafts and schedule_drafts
 
-You can stage schedule times via set_schedule, but you CANNOT actually publish or commit posts to the platforms. The user clicks Post or Schedule on the card to do that. If they ask you to publish, tell them in one sentence to use the Post button on the card.
+These two tools are FINAL — once called the posts go to the social platforms. NEVER call them speculatively.
+
+Required two-step protocol:
+
+**Step A (your turn before the tool):** List EXACTLY what's about to happen, in the user's language:
+- How many posts
+- Which platforms / accounts
+- For schedule_drafts: the human-readable time (in the user's timezone)
+- For each post: a one-line content snippet
+
+Then ask "Want me to go ahead?" (or equivalent in their language). STOP.
+
+**Step B (after the user replies):** Only call the tool if the user's MOST RECENT message contains an explicit go-ahead: yes / yeah / yep / go / ok / okay / oui / vas-y / go ahead / publie / planifie / let's go.
+
+If the reply is ambiguous ("hmm", "maybe", "not sure", "wait", "actually..."), DO NOT call the tool. Re-confirm or ask what they want changed.
+
+If the user changes anything between Step A and Step B (different count, different time, different drafts), restart Step A — never carry over the old confirmation.
+
+## Handling tool results
+
+publish_drafts and schedule_drafts return { ok, succeeded, failed, paywall? }.
+- All succeeded: confirm in one line, no list ("Done — 5 posts published.").
+- Some failed: lead with the wins, then list each failure with its reason and a concrete next step (retry, fix, skip).
+- paywall.reason === "free_post_limit_reached": tell the user they've hit the free post cap and need to upgrade to Pro.
+- failed[].reason === "validation_failed" with a missing-image error: offer to skip that platform or attach media.
 
 ## How to behave
 
@@ -76,11 +119,66 @@ You can stage schedule times via set_schedule, but you CANNOT actually publish o
 - If the user types something vague like "make it better", ask one quick clarifying question.
 - If the user asks for N posts, pass that count through in the brief — generate_posts honours explicit numbers in the brief.
 - Default to 5 posts if the user just says "draft some" with no number.
-- When the user asks to schedule drafts, project the recurring best-times forward to cover the requested window (e.g. for 7 posts over 7 days, use the weekly slots that fall in those days and fill the rest with sensible midday times). Call set_schedule with the ISO for each. Confirm in one short sentence.
+- When the user asks to schedule drafts, project the recurring best-times forward to cover the requested window (e.g. for 7 posts over 7 days, use the weekly slots that fall in those days and fill the rest with sensible midday times). Use schedule_drafts (bulk) for the commit.
 - To clear a staged schedule, call set_schedule with scheduledAt: null.
+- If "Recent activity" above shows a top performer, you can naturally weave it in ("Your X post on Y did really well — want more like that?"). Don't bring it up unprompted on every turn.
 - Speak in the same language as the user's last message.`);
 
   return sections.join("\n\n");
+}
+
+function formatOutcomes(outcomes: OutcomesContext | null): string | null {
+  if (!outcomes) return null;
+  if (outcomes.publishedCount < 5) return null;
+  if (
+    outcomes.topPerformers.length === 0 &&
+    outcomes.underperformers.length === 0 &&
+    outcomes.failedPosts.length === 0 &&
+    !outcomes.patterns.bestPlatform
+  ) {
+    return null;
+  }
+
+  const lines: string[] = [`## Recent activity (last 14 days)`];
+
+  for (const p of outcomes.topPerformers) {
+    const platformLabel = getPlatform(p.platform)?.label ?? p.platform;
+    lines.push(
+      `- Top: "${p.content}" on ${platformLabel} — ${p.value} ${p.metric} (${p.vsAverage}× your average)`
+    );
+  }
+  for (const p of outcomes.underperformers) {
+    const platformLabel = getPlatform(p.platform)?.label ?? p.platform;
+    lines.push(
+      `- Under: "${p.content}" on ${platformLabel} — ${p.value} ${p.metric} (${p.vsAverage}× your average)`
+    );
+  }
+
+  const patternBits: string[] = [];
+  if (outcomes.patterns.bestPlatform) {
+    const label =
+      getPlatform(outcomes.patterns.bestPlatform)?.label ??
+      outcomes.patterns.bestPlatform;
+    patternBits.push(`platform: ${label}`);
+  }
+  if (outcomes.patterns.bestHour !== null) {
+    patternBits.push(`hour: ${outcomes.patterns.bestHour}h UTC`);
+  }
+  if (outcomes.patterns.bestContentType) {
+    patternBits.push(`type: ${outcomes.patterns.bestContentType}`);
+  }
+  if (patternBits.length > 0) {
+    lines.push(`- Best slot — ${patternBits.join(", ")}`);
+  }
+
+  for (const f of outcomes.failedPosts) {
+    const platformLabel = getPlatform(f.platform)?.label ?? f.platform;
+    lines.push(
+      `- ${f.count} post${f.count === 1 ? "" : "s"} failed on ${platformLabel}`
+    );
+  }
+
+  return lines.join("\n");
 }
 
 function formatAccounts(accounts: AccountSummary[]): string {

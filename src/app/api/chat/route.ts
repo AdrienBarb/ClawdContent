@@ -12,7 +12,10 @@ import {
 import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
-import { buildChatSystemPrompt } from "@/lib/ai/chat-system-prompt";
+import {
+  buildChatSystemPrompt,
+  type OutcomesContext,
+} from "@/lib/ai/chat-system-prompt";
 import { createChatTools } from "@/lib/ai/chat-tools";
 import { preview } from "@/lib/ai/preview";
 import { getBestSlots } from "@/lib/services/bestTimes";
@@ -66,9 +69,9 @@ export async function POST(req: NextRequest) {
     const raw = await req.json().catch(() => ({}));
     const { messages, accountIds } = bodySchema.parse(raw);
 
-    // Run lateProfile + user in parallel — they only depend on userId.
+    // Run lateProfile + user + outcomes in parallel — all depend only on userId.
     // currentDrafts has to wait for accountIds validation.
-    const [lateProfile, user] = await Promise.all([
+    const [lateProfile, user, outcomeRow] = await Promise.all([
       prisma.lateProfile.findUnique({
         where: { userId },
         include: {
@@ -86,6 +89,16 @@ export async function POST(req: NextRequest) {
       prisma.user.findUnique({
         where: { id: userId },
         select: { name: true, knowledgeBase: true, timezone: true },
+      }),
+      prisma.outcomeSnapshot.findUnique({
+        where: { userId },
+        select: {
+          publishedCount: true,
+          topPerformers: true,
+          underperformers: true,
+          patterns: true,
+          failedPosts: true,
+        },
       }),
     ]);
 
@@ -147,6 +160,27 @@ export async function POST(req: NextRequest) {
         };
       });
 
+    const outcomes: OutcomesContext | null = outcomeRow
+      ? {
+          publishedCount: outcomeRow.publishedCount,
+          topPerformers:
+            (outcomeRow.topPerformers as unknown as OutcomesContext["topPerformers"]) ??
+            [],
+          underperformers:
+            (outcomeRow.underperformers as unknown as OutcomesContext["underperformers"]) ??
+            [],
+          patterns:
+            (outcomeRow.patterns as unknown as OutcomesContext["patterns"]) ?? {
+              bestPlatform: null,
+              bestHour: null,
+              bestContentType: null,
+            },
+          failedPosts:
+            (outcomeRow.failedPosts as unknown as OutcomesContext["failedPosts"]) ??
+            [],
+        }
+      : null;
+
     const systemPrompt = buildChatSystemPrompt({
       userName: user?.name ?? "there",
       knowledgeBase:
@@ -171,6 +205,7 @@ export async function POST(req: NextRequest) {
       })),
       userTimezone,
       accountsBestTimes,
+      outcomes,
     });
 
     const tools = createChatTools({ userId, accountIds: validSelectedIds });

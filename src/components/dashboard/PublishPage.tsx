@@ -108,7 +108,7 @@ function PublishShell({
         onSuggestionsChanged={invalidateSuggestions}
       />
 
-      <div className="my-8 border-t border-gray-100" />
+      <div className="mt-3 mb-8 border-t border-gray-100" />
 
       <SuggestionsBoard
         accounts={accounts}

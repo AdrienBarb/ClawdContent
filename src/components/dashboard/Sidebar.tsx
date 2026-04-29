@@ -236,10 +236,8 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
         </div>
       </div>
 
-      {/* Footer: usage meter + affiliates + user */}
+      {/* Footer: affiliates + usage meter + user */}
       <div className="flex flex-col gap-2 pt-3 border-t border-gray-200/80">
-        <UsageMeter />
-
         <NavItem
           href={appRouter.affiliates}
           icon={GiftIcon}
@@ -248,6 +246,8 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           ghost
           onNavigate={onNavigate}
         />
+
+        <UsageMeter />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
