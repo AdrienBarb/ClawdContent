@@ -11,6 +11,8 @@ import {
   buildRewritePrompt,
   rewriteOutputSchema,
 } from "@/lib/ai/rewrite";
+import { HUMAN_SAMPLING } from "@/lib/ai/humanRules";
+import { humanizeContent } from "@/lib/ai/humanize";
 import { parseInsights } from "@/lib/services/insightsHelpers";
 import {
   consume,
@@ -94,7 +96,7 @@ export function createChatTools({ userId, accountIds }: CreateChatToolsArgs) {
   return {
     generate_posts: tool({
       description:
-        "Draft a fresh batch of post ideas for the currently selected accounts. The brief is the user's request in their own words — pass it through verbatim. WARNING: this REPLACES every existing draft on each selected account. Confirm with the user before calling when drafts already exist.",
+        "Draft a new batch of post ideas for the currently selected accounts. The brief is the user's request in their own words — pass it through verbatim. This APPENDS to any existing drafts on the selected accounts; existing drafts are kept untouched.",
       inputSchema: z.object({
         brief: z
           .string()
@@ -350,12 +352,15 @@ export function createChatTools({ userId, accountIds }: CreateChatToolsArgs) {
               kb,
               insights
             ),
+            ...HUMAN_SAMPLING,
           });
+
+          const cleanedContent = humanizeContent(object.content);
 
           try {
             await prisma.postSuggestion.update({
               where: { id },
-              data: { content: object.content },
+              data: { content: cleanedContent },
             });
           } catch (err) {
             // Race: the user may have published or deleted the draft between
@@ -394,7 +399,7 @@ export function createChatTools({ userId, accountIds }: CreateChatToolsArgs) {
           return {
             ok: true as const,
             id,
-            contentPreview: preview(object.content),
+            contentPreview: preview(cleanedContent),
           };
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
@@ -524,11 +529,14 @@ export function createChatTools({ userId, accountIds }: CreateChatToolsArgs) {
               kb,
               insights
             ),
+            ...HUMAN_SAMPLING,
           });
+
+          const cleanedContent = humanizeContent(object.content);
 
           await prisma.postSuggestion.update({
             where: { id },
-            data: { content: object.content },
+            data: { content: cleanedContent },
           });
 
           console.log(
@@ -539,7 +547,7 @@ export function createChatTools({ userId, accountIds }: CreateChatToolsArgs) {
             ok: true as const,
             id,
             instruction,
-            contentPreview: preview(object.content),
+            contentPreview: preview(cleanedContent),
           };
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);

@@ -19,7 +19,7 @@ Reconnect / backfill (Inngest refreshInsights):
 
 User chats in /d (chat tool `generate_posts`, calls createFromBrief synchronously):
   reads cached insights as-is (no inline refresh)
-  createFromBrief() → wipe-and-replace drafts on the targeted accounts
+  createFromBrief() → append a new batch of drafts on the targeted accounts
 ```
 
 **Core principle:** `createFromBrief()` runs only on user-visible actions (the chat tool inside `/api/chat`) — never in Inngest. Suggestion IDs stay stable until the user themselves triggers a new generation.
@@ -30,7 +30,7 @@ User chats in /d (chat tool `generate_posts`, calls createFromBrief synchronousl
 |---|---|
 | `zernioContext.ts` | Per-platform Zernio fetcher: account, posts, analytics, best-times, posting frequency, followers. Handles 402 / 403 gracefully. |
 | `accountInsights.ts` | `computeInsights` writes `insights` + `lastAnalyzedAt` only — does NOT touch `analysisStatus`. Cross-platform voice borrowing for cold-start. Returns `null` if account no longer exists. |
-| `createFromBrief.ts` | `createFromBrief` reads cached insights as-is, asks Claude for posts shaped to the user's brief, wipes existing drafts and persists the new batch under a per-account advisory lock. |
+| `createFromBrief.ts` | `createFromBrief` reads cached insights as-is, asks Claude for posts shaped to the user's brief, and appends the new batch alongside any existing drafts on the targeted accounts. |
 
 Both `computeInsights` and `createFromBrief` exit cleanly on a missing SocialAccount (null guard) — avoids retry loops on stale events.
 

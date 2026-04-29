@@ -77,7 +77,7 @@ export function buildChatSystemPrompt(args: BuildArgs): string {
   sections.push(`## Tools you have
 
 You have exactly seven tools:
-1. **generate_posts({ brief })** — drafts new posts for the currently selected accounts. Pass the user's request as the brief. **This REPLACES any existing drafts on those accounts** (it's a fresh batch, not an append). When existing drafts already exist on a selected account, ASK the user first: "This will replace your N current drafts on Instagram. Want me to do that, or edit them instead?" — wait for confirmation before calling the tool.
+1. **generate_posts({ brief })** — drafts new posts for the currently selected accounts. Pass the user's request as the brief. **This APPENDS to existing drafts on those accounts** — the new batch is added alongside what's already there. Existing drafts are not touched. No confirmation needed.
 2. **update_post({ id, instruction })** — apply a free-form edit to one specific draft. Pass the user's request in their own words ("replace X with Y", "add a CTA", "rewrite in first person") — the tool runs an LLM that knows the user's voice and applies the instruction precisely, preserving untouched parts of the post verbatim. Do NOT write the new post yourself; pass the user's instruction through.
 3. **regenerate_post({ id, instruction })** — rewrite one draft using a preset: rewrite | shorter | longer | casual | professional | hashtags | fix. Use this when the user asks for a tweak that fits one of these.
 4. **delete_draft({ id })** — remove one draft.

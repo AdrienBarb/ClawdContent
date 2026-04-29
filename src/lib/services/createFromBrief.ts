@@ -12,6 +12,8 @@ import {
   formatBusinessContext,
   formatVoiceFingerprint,
 } from "@/lib/services/promptContext";
+import { buildHumanRulesBlock, HUMAN_SAMPLING } from "@/lib/ai/humanRules";
+import { humanizeContent } from "@/lib/ai/humanize";
 import type { PostSuggestion } from "@prisma/client";
 
 export type SuggestionWithAccount = PostSuggestion & {
@@ -19,19 +21,6 @@ export type SuggestionWithAccount = PostSuggestion & {
 };
 
 const MAX_POSTS_PER_ACCOUNT = 14;
-
-// Postgres advisory locks need a bigint key. Hash the string CUID into a
-// stable 63-bit integer (negative bit avoided so the lock surface is
-// predictable across drivers).
-function lockKeyFor(socialAccountId: string): bigint {
-  let hash = BigInt(0);
-  const prime = BigInt(1099511628211);
-  for (let i = 0; i < socialAccountId.length; i++) {
-    hash = (hash * prime + BigInt(socialAccountId.charCodeAt(i))) &
-      BigInt("0x7fffffffffffffff");
-  }
-  return hash;
-}
 
 interface CreateFromBriefArgs {
   userId: string;
@@ -119,6 +108,7 @@ async function generateForAccount(
     model: anthropic("claude-sonnet-4-6"),
     schema: briefOutputClaudeSchema,
     prompt,
+    ...HUMAN_SAMPLING,
   });
 
   console.log(
@@ -137,28 +127,16 @@ async function generateForAccount(
 
   const contentType = defaultContentType(config.requiresMedia);
 
-  // Wipe-and-replace contract: each generation run is the user's full new batch.
-  //
-  // Use the callback form so deleteMany + N creates run in a single
-  // BEGIN/COMMIT block — guaranteed atomic on every Prisma adapter, including
-  // pgBouncer transaction-mode poolers where the array form has caveats.
-  //
-  // Per-account advisory lock prevents two concurrent generations for the
-  // same socialAccount from racing (the 30s cooldown is per-user and shorter
-  // than worst-case generation time, so it can't serialize on its own).
-  const accountLockKey = lockKeyFor(socialAccountId);
+  // Append the new batch alongside any existing drafts. Single transaction so
+  // a mid-batch failure rolls back rather than leaving partial drafts behind.
   const created = await prisma.$transaction(async (tx) => {
-    // pg_advisory_xact_lock returns void → use $executeRaw (which doesn't
-    // try to deserialize a result set) rather than $queryRaw.
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(${accountLockKey})`;
-    await tx.postSuggestion.deleteMany({ where: { socialAccountId } });
     const rows: SuggestionWithAccount[] = [];
     for (let i = 0; i < finalPosts.length; i++) {
       const p = finalPosts[i];
       const row = await tx.postSuggestion.create({
         data: {
           socialAccountId,
-          content: p.content,
+          content: humanizeContent(p.content),
           contentType,
           suggestedDay: slots[i].dayOfWeek,
           suggestedHour: slots[i].hour,
@@ -237,6 +215,8 @@ Each post must be:
 ## Each post object
 - content: the post text. No surrounding quotes. No "Post 1:" prefix. Ready to publish.
 - reasoning: ONE short sentence on why this would land with their audience.`);
+
+  sections.push(buildHumanRulesBlock());
 
   return sections.join("\n\n");
 }
