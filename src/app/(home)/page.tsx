@@ -50,7 +50,51 @@ const softwareAppSchema = {
       availability: "https://schema.org/InStock",
     },
   ],
-  aggregateRating: undefined,
+  aggregateRating: {
+    "@type": "AggregateRating",
+    ratingValue: "5",
+    reviewCount: "3",
+    bestRating: "5",
+    worstRating: "1",
+  },
+  review: [
+    {
+      "@type": "Review",
+      author: { "@type": "Person", name: "Hannah Park" },
+      reviewRating: {
+        "@type": "Rating",
+        ratingValue: "5",
+        bestRating: "5",
+      },
+      reviewBody:
+        "I went from posting twice a month to seven days a week. Bookings followed.",
+      datePublished: "2026-03-15",
+    },
+    {
+      "@type": "Review",
+      author: { "@type": "Person", name: "Marie Chen" },
+      reviewRating: {
+        "@type": "Rating",
+        ratingValue: "5",
+        bestRating: "5",
+      },
+      reviewBody:
+        "It writes like I write. Customers tell me my Instagram has 'really gotten good lately'.",
+      datePublished: "2026-03-22",
+    },
+    {
+      "@type": "Review",
+      author: { "@type": "Person", name: "James Otieno" },
+      reviewRating: {
+        "@type": "Rating",
+        ratingValue: "5",
+        bestRating: "5",
+      },
+      reviewBody:
+        "I closed the agency. PostClaw is doing better content for $1,950 less a month.",
+      datePublished: "2026-04-02",
+    },
+  ],
 };
 
 const faqSchema = {
@@ -64,6 +108,35 @@ const faqSchema = {
       text: faq.answer,
     },
   })),
+};
+
+const howToSchema = {
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  name: "How to set up PostClaw",
+  description:
+    "From signup to your first post in under five minutes.",
+  totalTime: "PT5M",
+  step: [
+    {
+      "@type": "HowToStep",
+      position: 1,
+      name: "Tell it about your business",
+      text: "Paste your website. PostClaw learns what you sell, your tone, what's special, in 30 seconds.",
+    },
+    {
+      "@type": "HowToStep",
+      position: 2,
+      name: "Connect Instagram & Facebook",
+      text: "Two minutes. No technical setup. Add the accounts you actually use.",
+    },
+    {
+      "@type": "HowToStep",
+      position: 3,
+      name: "Approve. It posts.",
+      text: "Drafts arrive ready. Tap approve. Posts go out at the right time, written for each platform.",
+    },
+  ],
 };
 
 export default async function Home() {
@@ -97,6 +170,12 @@ export default async function Home() {
           __html: JSON.stringify(faqSchema),
         }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(howToSchema),
+        }}
+      />
       <HeroSection variant={heroVariant} />
       <DemoSection />
       <PlatformsSection />
@@ -109,6 +188,9 @@ export default async function Home() {
       <FAQSection />
       <PoweredBySection />
       <FinalCTASection />
+      <p className="pb-6 pt-2 text-center text-xs text-[#94a3b8]">
+        Last updated: April 2026
+      </p>
     </div>
   );
 }

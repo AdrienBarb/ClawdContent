@@ -23,7 +23,7 @@ const stats: [string, string][] = [
   ["48,200", "posts published"],
   ["1,472", "businesses on board"],
   ["2 min", "average setup"],
-  ["$49", "what you'd pay an agency × 40"],
+  ["40×", "cheaper than a $2,000 agency"],
 ];
 
 export default function HeroSection({ variant = "control" }: HeroSectionProps) {

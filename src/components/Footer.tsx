@@ -24,7 +24,7 @@ export default async function Footer() {
   return (
     <footer className="bg-[#0a0b1f]">
       <div className="container mx-auto px-6 py-12">
-        <div className="grid grid-cols-1 gap-10 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-10 md:grid-cols-4">
           {/* Brand */}
           <div className="space-y-2">
             <h3 className="text-lg font-semibold text-white">
@@ -39,6 +39,37 @@ export default async function Footer() {
             >
               {config.contact.supportEmail}
             </a>
+          </div>
+
+          {/* Solutions */}
+          <div>
+            <h4 className="mb-3 text-sm font-semibold text-white">Solutions</h4>
+            <ul className="space-y-2 text-sm text-[#94a3b8]">
+              <li>
+                <Link
+                  href="/for-small-businesses"
+                  className="hover:text-primary transition-colors"
+                >
+                  Small business owners
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/for-founders"
+                  className="hover:text-primary transition-colors"
+                >
+                  Solo founders & indie hackers
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/for-creators"
+                  className="hover:text-primary transition-colors"
+                >
+                  Creators
+                </Link>
+              </li>
+            </ul>
           </div>
 
           {/* Product */}

@@ -2,13 +2,18 @@
 
 ## What is PostClaw?
 
-PostClaw is an AI social media manager for small business owners — photographers, caterers, coaches, consultants, artists, local businesses. It learns your brand, plans content, and publishes to social accounts. No dashboard, no editor, no learning curve.
+PostClaw is an AI social media manager. It learns your brand, plans content, and publishes to social accounts. No dashboard, no editor, no learning curve.
 
-**ICP:** Non-tech small business owners who can't afford a marketing agency ($2K+/mo). NOT indie hackers or SaaS founders — they churn.
+**ICP (three segments — homepage "Who it's for" section names all three):**
+- **Small business owners** — photographers, caterers, coaches, consultants, local shops too busy serving customers
+- **Solo founders / indie hackers** — shipping product, can't justify in-house social
+- **Creators** — would rather make than post
+
+Earlier PMF data (Apr 22, 2026) showed segments 2-3 churn faster than segment 1; user reactivated the broader ICP on Apr 30, 2026 and accepts that risk. Watch conversion + retention if onboarding shifts toward founders/creators again.
 
 **Positioning:** A *manager*, not a tool. Core value prop: "Tell me what to post and post it for me." Lead with Instagram/Facebook (dominant among real users), not "9 platforms."
 
-**Voice:** Their language — no startup jargon, no "founders," no "autopilot." "Would a photographer or a caterer in Leeds understand this?"
+**Voice:** Match the audience. For SMB-facing copy: plain language, concrete examples — "Would a photographer or a caterer in Leeds understand this?" still applies. For founder/creator-facing copy: heavier startup jargon is fine. Avoid voice that talks past whichever segment you're addressing.
 
 **Pricing:** One plan — `pro` at $49/mo (or 30% off yearly). Legacy `starter`/`business` IDs still resolve to `pro` for old subscribers.
 

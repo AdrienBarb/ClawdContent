@@ -2,7 +2,7 @@ const steps = [
   {
     n: "01",
     t: "Tell it about your business",
-    d: "Paste your website. PostClaw learns what you sell, your tone, what's special — in 30 seconds.",
+    d: "Paste your website. PostClaw learns what you sell, your tone, what's special, in 30 seconds.",
   },
   {
     n: "02",

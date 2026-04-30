@@ -65,6 +65,50 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      {
+        source: "/blog/what-is-openclaw",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/blog/openclaw-security",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/blog/openclaw-vps-hosting-setup-guide",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/blog/best-openclaw-skills-marketing-social-media",
+        destination: "/blog",
+        permanent: true,
+      },
+      {
+        source: "/blog/how-to-use-openclaw",
+        destination: "/blog/how-to-post-to-all-social-media-at-once",
+        permanent: true,
+      },
+      {
+        source: "/blog/openclaw-for-social-media",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/blog/openclaw-dashboard",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/blog/openclaw-slack-integration",
+        destination: "/",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
