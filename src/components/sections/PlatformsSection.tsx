@@ -42,7 +42,7 @@ export default function PlatformsSection() {
             <em className="italic text-[#ec6f5b]">already are.</em>
           </h2>
           <p className="mx-auto mt-4 max-w-[560px] text-base leading-[1.55] text-[#b9bdd6] md:text-[17px]">
-            Pick the platforms you actually use. Each post is rewritten for the room — short and snappy on X, visual on Instagram, professional on LinkedIn.
+            Pick the platforms you actually use. Each post is rewritten for the room. Short and snappy on X, visual on Instagram, professional on LinkedIn.
           </p>
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

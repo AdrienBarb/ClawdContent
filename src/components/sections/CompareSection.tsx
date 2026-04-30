@@ -13,7 +13,7 @@ const rows: [string, Cell, Cell, Cell, Cell][] = [
 
 function renderCell(v: Cell) {
   if (v === true) return <span className="text-lg text-[#ec6f5b]">✓</span>;
-  if (v === false) return <span className="text-[#cbcbd6]">—</span>;
+  if (v === false) return <span className="text-[#cbcbd6]">✕</span>;
   return <span className="font-semibold">{v}</span>;
 }
 

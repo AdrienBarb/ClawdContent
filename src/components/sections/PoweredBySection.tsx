@@ -18,7 +18,7 @@ export default function PoweredBySection() {
           </h2>
           <p className="mx-auto mt-5 max-w-[560px] text-base leading-[1.55] text-[#b9bdd6] md:text-[17px]">
             Every post you approve goes out through Zernio&apos;s social media
-            API — proven infrastructure across every major platform.
+            API. Proven infrastructure across every major platform.
           </p>
         </div>
 

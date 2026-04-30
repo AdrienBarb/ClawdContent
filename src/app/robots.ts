@@ -10,7 +10,16 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/api/", "/d/", "/checkout/", "/subscribe/"],
       },
       {
-        userAgent: ["GPTBot", "ChatGPT-User", "ClaudeBot", "PerplexityBot"],
+        userAgent: [
+          "GPTBot",
+          "ChatGPT-User",
+          "OAI-SearchBot",
+          "ClaudeBot",
+          "anthropic-ai",
+          "PerplexityBot",
+          "Google-Extended",
+          "Applebot-Extended",
+        ],
         allow: ["/", "/llms.txt"],
         disallow: ["/api/", "/d/", "/checkout/", "/subscribe/"],
       },

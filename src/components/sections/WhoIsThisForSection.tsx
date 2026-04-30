@@ -1,19 +1,20 @@
+import Link from "next/link";
+
 const personas = [
   {
-    t: "Photographers",
-    q: "Turn your portfolio into a feed that actually books shoots.",
+    t: "Small Business Owners",
+    q: "Run the shop, serve the customers. Your feed stays alive without you.",
+    href: "/for-small-businesses",
   },
   {
-    t: "Restaurants & cafés",
-    q: "Daily specials, behind-the-scenes, the dish that flew today.",
+    t: "Solo Founders & Indie Hackers",
+    q: "Ship features, close deals, talk to users. Leave the 5-posts-a-day to PostClaw.",
+    href: "/for-founders",
   },
   {
-    t: "Coaches",
-    q: "Show up as the expert without being on Instagram all day.",
-  },
-  {
-    t: "Local shops",
-    q: "Florists, salons, studios — stay visible while serving customers.",
+    t: "Creators Who'd Rather Create",
+    q: "One idea becomes thirteen platform-ready posts. Back to the actual work.",
+    href: "/for-creators",
   },
 ];
 
@@ -30,19 +31,25 @@ export default function WhoIsThisForSection() {
             <em className="italic text-[#ec6f5b]">not a feed to manage.</em>
           </h2>
         </div>
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
           {personas.map((p) => (
-            <div
+            <Link
               key={p.t}
-              className="flex min-h-[200px] flex-col justify-between rounded-2xl border border-[#e2e0eb] bg-white p-7"
+              href={p.href}
+              className="group flex min-h-[200px] flex-col justify-between rounded-2xl border border-[#e2e0eb] bg-white p-7 transition-all hover:-translate-y-0.5 hover:border-[#ec6f5b] hover:shadow-[0_14px_40px_-20px_rgba(236,111,91,0.4)]"
             >
               <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#ec6f5b]">
                 {p.t}
               </div>
-              <p className="text-lg font-medium leading-[1.4] tracking-[-0.01em] text-[#0f1437]">
-                {p.q}
-              </p>
-            </div>
+              <div>
+                <p className="text-lg font-medium leading-[1.4] tracking-[-0.01em] text-[#0f1437]">
+                  {p.q}
+                </p>
+                <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-[#ec6f5b] opacity-0 transition-opacity group-hover:opacity-100">
+                  See the page →
+                </span>
+              </div>
+            </Link>
           ))}
         </div>
       </div>

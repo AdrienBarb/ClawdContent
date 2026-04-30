@@ -125,6 +125,54 @@ export default async function PostPage({ params }: PostPageProps) {
         }}
       />
 
+      {slug === "how-to-post-to-all-social-media-at-once" && (
+        <Script
+          id="howto-structured-data"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "HowTo",
+              name: "How to post to all social media at once",
+              image: coverImageUrl,
+              totalTime: "PT2M",
+              step: [
+                {
+                  "@type": "HowToStep",
+                  name: "Connect your accounts",
+                  text: "Connect Instagram, Facebook, LinkedIn, X, TikTok, YouTube, Pinterest, Threads, and Bluesky to a single dashboard.",
+                },
+                {
+                  "@type": "HowToStep",
+                  name: "Write the post once",
+                  text: "Compose your caption and attach images or video in one place.",
+                },
+                {
+                  "@type": "HowToStep",
+                  name: "Adapt per platform",
+                  text: "Adjust hashtags, character limits, and image dimensions for each network.",
+                },
+                {
+                  "@type": "HowToStep",
+                  name: "Choose timing",
+                  text: "Publish immediately or schedule for the best time per platform.",
+                },
+                {
+                  "@type": "HowToStep",
+                  name: "Publish to all",
+                  text: "Push the post to every selected platform from one click.",
+                },
+                {
+                  "@type": "HowToStep",
+                  name: "Track results",
+                  text: "Review reach, engagement, and clicks across platforms in one dashboard.",
+                },
+              ],
+            }),
+          }}
+        />
+      )}
+
       <article className="max-w-7xl mx-auto px-6 py-16">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-8">
@@ -204,11 +252,9 @@ export default async function PostPage({ params }: PostPageProps) {
             </p>
           )}
 
-          {post.updatedAt && (
-            <p className="mt-2 text-xs text-muted-foreground">
-              Updated: {format(new Date(post.updatedAt), "MMM d, yyyy")}
-            </p>
-          )}
+          <p className="mt-2 text-xs text-muted-foreground">
+            Updated: {format(new Date(post.updatedAt || post.publishedAt), "MMM d, yyyy")}
+          </p>
         </header>
 
         {/* Content Layout */}
@@ -251,8 +297,8 @@ export default async function PostPage({ params }: PostPageProps) {
                 Ready to automate your social media publishing?
               </h2>
               <p className="text-muted-foreground mb-6">
-                PostClaw is your AI social media manager.
-                It learns your brand, plans your content, and publishes to 13+ platforms.
+                PostClaw is your social media manager.
+                It learns your brand, plans your content, and publishes to 9 platforms.
               </p>
               <Button
                 asChild
