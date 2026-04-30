@@ -88,7 +88,7 @@ These bite — keep them in mind everywhere:
 - **Stripe SDK v20 (`2026-01-28.clover`)** — period dates live on subscription **items** (`sub.items.data[0].current_period_start`). Invoice→subscription via `invoice.parent?.subscription_details?.subscription`. Webhooks deduped via `StripeEvent.id` insert.
 - **Zernio `day_of_week` is 0=Monday** (matches `platformConfig.defaultBestTimes`). Media types are `image` / `video` / `gif` / `document` (not MIME). Immediate posts need `publishNow: true`.
 - **The proxy enforces NO auth.** Auth lives in route handlers + `(dashboard)/layout.tsx`. `src/proxy.ts` only sets `postclaw_distinct_id` (1y) + `postclaw_utm` first-touch (30d).
-- **Post generation runs on user-visible actions only** — the chat tool `generate_posts` calls `createFromBrief` synchronously inside `/api/chat`. Never in Inngest. Suggestion IDs stay stable until the user themselves triggers a new generation (which fully replaces drafts on the targeted accounts).
+- **Post generation runs on user-visible actions only** — the chat tool `generate_posts` calls `createFromBrief` synchronously inside `/api/chat`. Never in Inngest. Suggestion IDs are stable across runs — `generate_posts` appends a new batch onto the targeted accounts' existing drafts rather than replacing them.
 
 ## Coding standards
 

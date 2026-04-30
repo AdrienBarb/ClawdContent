@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { Insights } from "@/lib/schemas/insights";
 import { formatVoiceFingerprint } from "@/lib/services/promptContext";
+import { buildHumanRulesBlock } from "@/lib/ai/humanRules";
 
 export const rewriteOutputSchema = z.object({
   content: z.string(),
@@ -65,7 +66,9 @@ ${content}
 
 Instruction: ${instructionMap[instruction] ?? instruction}
 ${limit ? `\nCharacter limit: ${limit}. Make sure the output respects this limit.` : ""}
-Write the new version. Keep it natural and human-sounding. Match the business owner's voice. Do not add quotes around the content.`;
+Write the new version. Keep it natural and human-sounding. Match the business owner's voice. Do not add quotes around the content.
+
+${buildHumanRulesBlock()}`;
 }
 
 /**
@@ -108,5 +111,7 @@ Apply the instruction precisely:
 - Write in the same language as the original post.
 ${limit ? `- Respect the character limit: ${limit}.` : ""}
 
-Return the edited post. No surrounding quotes. No "Edited:" prefix. Ready to publish.`;
+Return the edited post. No surrounding quotes. No "Edited:" prefix. Ready to publish.
+
+${buildHumanRulesBlock()}`;
 }
