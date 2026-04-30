@@ -7,12 +7,12 @@ import config from "@/lib/config";
 
 const PAGE_PATH = "/for-creators";
 const PAGE_URL = `${config.project.url}${PAGE_PATH}`;
-const PAGE_TITLE = "PostClaw for Creators";
+const PAGE_TITLE = "Social Media Manager for Creators";
 const PAGE_DESCRIPTION =
   "A social media manager for video creators, newsletter writers, course makers, and indie artists. One idea becomes nine platform-ready posts. $49/mo, less than your editing software.";
 
 export const metadata: Metadata = {
-  title: `${PAGE_TITLE} | ${config.project.brandName}`,
+  title: PAGE_TITLE,
   description: PAGE_DESCRIPTION,
   alternates: { canonical: PAGE_URL },
   openGraph: {
@@ -63,7 +63,7 @@ const steps = [
   {
     n: "03",
     t: "Drop one idea, get nine posts",
-    d: "Tell PostClaw what you're working on. It drafts a week of platform-native posts in your voice. Approve, edit, or skip — your call.",
+    d: "Tell PostClaw what you're working on. It drafts a week of platform-native posts in your voice. Approve, edit, or skip. Your call.",
   },
 ];
 
@@ -243,21 +243,6 @@ export default function ForCreatorsPage() {
                 <p className="text-base leading-[1.6] text-[#4a5073]">{s.d}</p>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="bg-[#f5f0ea] px-6 py-24 md:px-14 md:py-32">
-        <div className="mx-auto max-w-[900px] text-center">
-          <div className="mb-5 text-[11px] uppercase tracking-[0.18em] text-[#7e8298]">
-            One of yours
-          </div>
-          <blockquote className="font-display text-3xl leading-[1.15] tracking-[-0.02em] text-[#0f1437] md:text-4xl lg:text-5xl">
-            &ldquo;I went from posting twice a month to seven days a week. Bookings followed.&rdquo;
-          </blockquote>
-          <div className="mt-8 text-sm text-[#7e8298]">
-            <strong className="font-semibold text-[#0f1437]">Hannah Park</strong>
-            {" · "}Coach, Austin
           </div>
         </div>
       </section>
