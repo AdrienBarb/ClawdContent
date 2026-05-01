@@ -34,8 +34,8 @@ const inputSchema = z
 type InputFormData = z.infer<typeof inputSchema>;
 
 const validateSchema = z.object({
-  businessName: z.string().min(1, "Business name is required"),
-  description: z.string().min(1, "Description is required"),
+  businessName: z.string().optional(),
+  description: z.string().optional(),
   services: z.string().optional(),
 });
 
@@ -107,8 +107,8 @@ export default function OnboardingPage() {
 
   const handleConfirm = (data: ValidateFormData) => {
     const kb: KnowledgeBase = {
-      businessName: data.businessName,
-      description: data.description,
+      businessName: data.businessName ?? "",
+      description: data.description ?? "",
       services: (data.services ?? "").split(",").map((s) => s.trim()).filter(Boolean),
       source: knowledgeBase?.source ?? "manual",
     };
