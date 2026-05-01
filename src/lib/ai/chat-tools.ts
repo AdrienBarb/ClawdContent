@@ -31,6 +31,7 @@ import {
   publishOrScheduleSuggestion,
   type PublishResult,
 } from "@/lib/services/publishSuggestion";
+import type { MediaItem } from "@/lib/schemas/mediaItems";
 
 const log = createLogger("usage");
 
@@ -88,15 +89,20 @@ function toWire(p: UsageLimitPayload): UsageLimitPayloadWire {
 interface CreateChatToolsArgs {
   userId: string;
   accountIds: string[];
+  attachedMediaItems?: MediaItem[];
 }
 
 import { preview } from "./preview";
 
-export function createChatTools({ userId, accountIds }: CreateChatToolsArgs) {
+export function createChatTools({
+  userId,
+  accountIds,
+  attachedMediaItems,
+}: CreateChatToolsArgs) {
   return {
     generate_posts: tool({
       description:
-        "Draft a new batch of post ideas for the currently selected accounts. The brief is the user's request in their own words — pass it through verbatim. This APPENDS to any existing drafts on the selected accounts; existing drafts are kept untouched.",
+        "Draft a new batch of post ideas for the currently selected accounts. The brief is the user's request in their own words — pass it through verbatim. This APPENDS to any existing drafts on the selected accounts; existing drafts are kept untouched.\n\n⚠️ Precondition — do NOT call this if the brief depends on facts only the user knows but hasn't stated. Examples of underspecified briefs that REQUIRE one clarifying question first:\n- 'a post about today' / 'what's happening today' (you don't know what's happening at their business)\n- 'announce an event' / 'around an event' (which event? when?)\n- 'highlight a service' when more than one service is plausible from their context (which one?)\n- 'launch a new service' (what service? when?)\n- 'recent news' / 'something that happened' (what news?)\n\nIn those cases, ask ONE short, specific question instead of calling this tool. When reasonable, suggest 3–5 short answer options inline so the user can reply with one tap. Only call generate_posts once the missing fact is in the conversation.\n\nA brief is concrete enough to call this tool when (a) it names a specific topic / product / event / angle, OR (b) it's a self-contained generic ('introduce my business', 'behind the scenes', 'plan my week') that you can fulfill from the business context above.",
       inputSchema: z.object({
         brief: z
           .string()
@@ -108,7 +114,7 @@ export function createChatTools({ userId, accountIds }: CreateChatToolsArgs) {
       }),
       execute: async ({ brief }, { toolCallId }) => {
         console.log(
-          `[chat-tool:generate_posts] userId=${userId} accountIds=${accountIds.join(",")} briefLen=${brief.length} toolCallId=${toolCallId}`
+          `[chat-tool:generate_posts] userId=${userId} accountIds=${accountIds.join(",")} briefLen=${brief.length} mediaCount=${attachedMediaItems?.length ?? 0} toolCallId=${toolCallId}`
         );
 
         if (accountIds.length === 0) {
@@ -202,6 +208,7 @@ export function createChatTools({ userId, accountIds }: CreateChatToolsArgs) {
             userId,
             accountIds,
             brief,
+            mediaItems: attachedMediaItems,
           });
 
           if (failedAccountIds.length > 0) {

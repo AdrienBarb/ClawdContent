@@ -35,6 +35,10 @@ export const mediaItemsSchema = z.array(mediaItemSchema).max(35);
 
 export type MediaItem = z.infer<typeof mediaItemSchema>;
 
+// Cap for images attached to a chat message. Bounds vision-token cost and
+// matches the smallest carousel limit across our supported platforms.
+export const MAX_CHAT_ATTACHMENTS = 4;
+
 export function coerceMediaItems(json: unknown): MediaItem[] {
   if (json === null || json === undefined) return [];
   const parsed = mediaItemsSchema.safeParse(json);

@@ -15,15 +15,17 @@ The tokens, components, and patterns the dashboard commits to. **Match these —
 
 The dashboard is **flat** — no floating white panel. Sidebar and main share the page; the only divider is the sidebar's right border.
 
-## Coral accent — the only accent
+## Coral accent — scarce, reserved for primary CTAs only
 
 | Token | Value | Used for |
 |---|---|---|
-| Coral | `#ec6f5b` | Primary CTA gradient top, selected card border, brand mark |
-| Coral deep | `#c84a35` | Primary CTA gradient bottom, hover ink |
+| Coral | `#ec6f5b` | Primary CTA gradient top, selected card border |
+| Coral deep | `#c84a35` | Primary CTA gradient bottom |
 | Coral soft | `#fef2f0` | Trash hover wash (only place coral touches destructive) |
 
-**Primary button:** `linear-gradient(180deg, #ec6f5b 0%, #c84a35 100%)` with `inset 0 1px 0 rgba(255,255,255,0.18), 0 1px 2px rgba(200,74,53,0.25)`. The brand mark in the sidebar uses the same gradient at 28×28 with `rounded-lg`.
+**Coral is rare.** Only the actions a user must not miss earn it: the chat **Send** button, **Publish** / **Schedule** in `BulkBar`, and the **selected-draft** outline. Everything else — sidebar chrome, badges, decorative icons, empty-state ornaments, entry-card glyphs, usage meter, user avatar — uses neutral grays (`#6b7280`, `#9ca3af`, `gray-400`). When in doubt: gray. Adding coral to one more place dilutes every existing coral on the screen.
+
+**Primary button:** `linear-gradient(180deg, #ec6f5b 0%, #c84a35 100%)` with `inset 0 1px 0 rgba(255,255,255,0.18), 0 1px 2px rgba(200,74,53,0.25)`.
 
 **Selection state:** `border-[#e8614d]` + `shadow-[0_0_0_1px_#e8614d,0_2px_6px_rgba(0,0,0,0.05)]`.
 
@@ -68,7 +70,7 @@ Numerics: always `tabular-nums` (e.g. `<span className="tabular-nums">{count}</s
 | Component | File | Notes |
 |---|---|---|
 | `PageHeader` | `PageHeader.tsx` | Standard page title + optional `right` slot. Used by posts, accounts, business, billing, media, settings. |
-| Sidebar nav item | `Sidebar.tsx :: NavItem` | `rounded-lg`, active = white bg + `shadow-sm`. Ghost variant for Affiliates. Coral pill badge for counts. |
+| Sidebar nav item | `Sidebar.tsx :: NavItem` | `rounded-lg`, active = white bg + `shadow-sm`. Ghost variant for Affiliates. Gray (`#9ca3af`) pill badge for counts — sidebar stays neutral. |
 | Account row (sidebar) | `Sidebar.tsx` | 3px left stripe + 24×24 colored avatar + handle/platform stack. Active = white + `shadow-sm`. |
 | Kanban reference | `publish/ResultsView.tsx` | The reference implementation — read first. |
 | Post card | `ResultsView :: PostCard` | `rounded-2xl`, white, 3px account-color stripe absolute-left. `pb-3` body, footer `border-gray-100` + `bg-black/[0.005]`. Selected → coral border + ring. |
@@ -88,7 +90,8 @@ Every place a post or account appears, use the platform's `color` from `src/lib/
 
 ## What to avoid
 
-- New accent hues (purple/blue/teal). Coral is the only accent.
+- New accent hues (purple/blue/teal). Coral is the only accent — and it's reserved for primary CTAs + selection.
+- Coral on chrome (badges, sidebar, decorative icons, ornaments). Use neutral grays.
 - The legacy "floating white panel on `#f3f3f1`" pattern. The dashboard is flat now.
 - Coral on destructive actions. Delete buttons stay gray; only the *hover wash* uses `coral-soft`.
 - New radii values. Stick to `rounded-lg`, `rounded-2xl`, `rounded-full`.

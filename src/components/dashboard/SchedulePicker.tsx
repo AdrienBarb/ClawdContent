@@ -125,6 +125,7 @@ export function SchedulePicker({
   scheduledAt,
   onCancelSchedule,
   joinRight = false,
+  compactLabel = "Schedule",
 }: {
   disabled: boolean;
   onSchedule: (date: Date) => void;
@@ -144,6 +145,8 @@ export function SchedulePicker({
   /** When true, the trigger has no right-side rounding/border so it can sit
    *  flush against an adjacent CTA in a split-button layout. */
   joinRight?: boolean;
+  /** Label for the compact variant trigger. Defaults to "Schedule". */
+  compactLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [timeOpen, setTimeOpen] = useState(false);
@@ -203,14 +206,21 @@ export function SchedulePicker({
     [bestTimesData, platform]
   );
 
-  // Default selection derives from the same `allSlots` as the pills, so they
-  // can never disagree. When API data arrives, the default updates with it
-  // (unless the user has already picked something — see `selectedDate/Time`
-  // below).
-  const defaultSelection = useMemo(
-    () => pickNextSlot(allSlots, now, today),
-    [allSlots, now, today]
-  );
+  // Default selection: when a scheduledAt exists (rescheduling an already-set
+  // post), seed from it so the user lands on the current time instead of a
+  // computed best-slot. Otherwise derive from `allSlots` like the pills do.
+  const defaultSelection = useMemo(() => {
+    if (scheduledAt) {
+      const d = new Date(scheduledAt);
+      if (!isNaN(d.getTime()) && d.getTime() > now.getTime()) {
+        return {
+          date: d,
+          time: `${pad2(d.getHours())}:${pad2(Math.floor(d.getMinutes() / 15) * 15)}`,
+        };
+      }
+    }
+    return pickNextSlot(allSlots, now, today);
+  }, [scheduledAt, allSlots, now, today]);
 
   // Effective values shown in the UI: user's pick wins, else derived default.
   const selectedDate = pickedDate ?? defaultSelection.date;
@@ -336,7 +346,7 @@ export function SchedulePicker({
             className="flex h-10 md:h-8 cursor-pointer items-center gap-1.5 rounded-lg border border-gray-200 px-3 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <CalendarIcon className="h-3.5 w-3.5" />
-            Schedule
+            {compactLabel}
           </button>
         )}
       </PopoverTrigger>

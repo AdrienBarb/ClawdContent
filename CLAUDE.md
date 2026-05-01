@@ -5,13 +5,12 @@
 PostClaw is an AI social media manager. It learns your brand, plans content, and publishes to social accounts. No dashboard, no editor, no learning curve.
 
 **ICP (three segments — homepage "Who it's for" section names all three):**
+
 - **Small business owners** — photographers, caterers, coaches, consultants, local shops too busy serving customers
 - **Solo founders / indie hackers** — shipping product, can't justify in-house social
 - **Creators** — would rather make than post
 
-Earlier PMF data (Apr 22, 2026) showed segments 2-3 churn faster than segment 1; user reactivated the broader ICP on Apr 30, 2026 and accepts that risk. Watch conversion + retention if onboarding shifts toward founders/creators again.
-
-**Positioning:** A *manager*, not a tool. Core value prop: "Tell me what to post and post it for me." Lead with Instagram/Facebook (dominant among real users), not "9 platforms."
+**Positioning:** A _manager_, not a tool. Core value prop: "Tell me what to post and post it for me." Lead with Instagram/Facebook (dominant among real users), not "9 platforms."
 
 **Voice:** Match the audience. For SMB-facing copy: plain language, concrete examples — "Would a photographer or a caterer in Leeds understand this?" still applies. For founder/creator-facing copy: heavier startup jargon is fine. Avoid voice that talks past whichever segment you're addressing.
 
@@ -42,7 +41,7 @@ Next.js 16 (App Router, RSC) on Vercel
 
 **Per-user isolation:** Each user gets a profile-scoped Zernio API key. One master Zernio account, many scoped keys (created in `ensureUserProfile`).
 
-**Chat surface scoped to drafts.** `/d` has a chat composer (`ChatPanel` → `/api/chat` via `streamText`). The model has exactly five tools — `generate_posts`, `update_post`, `regenerate_post`, `delete_draft`, `set_schedule` — all wrapping `PostSuggestion` CRUD. `set_schedule` only *stages* a time on the draft; **publishing and committing schedules still require the user to click Post / Schedule on the `PostCard` or `BulkBar`** in `SuggestionsBoard`. Chat is ephemeral (no `chat_message` persistence). Insights/onboarding extraction still use `generateObject`.
+**Chat surface scoped to drafts.** `/d` has a chat composer (`ChatPanel` → `/api/chat` via `streamText`). The model has exactly five tools — `generate_posts`, `update_post`, `regenerate_post`, `delete_draft`, `set_schedule` — all wrapping `PostSuggestion` CRUD. `set_schedule` only _stages_ a time on the draft; **publishing and committing schedules still require the user to click Post / Schedule on the `PostCard` or `BulkBar`** in `SuggestionsBoard`. Chat is ephemeral (no `chat_message` persistence). Insights/onboarding extraction still use `generateObject`.
 
 **Supported platforms (9):** Instagram, Facebook, Twitter/X, Threads, LinkedIn, TikTok, YouTube, Pinterest, Bluesky. Defined in `src/lib/insights/platformConfig.ts` + `src/lib/constants/platforms.tsx`.
 
@@ -67,6 +66,7 @@ src/proxy.ts              Next 16 proxy: distinct-id + UTM cookies (NO auth)
 ```
 
 Path-scoped `CLAUDE.md` files (load automatically when working in their subtree):
+
 - `src/components/dashboard/CLAUDE.md` — design system tokens + component patterns
 - `src/lib/services/CLAUDE.md` — insights schema + suggestion pipeline
 - `src/app/api/CLAUDE.md` — route handler pattern

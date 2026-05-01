@@ -14,6 +14,7 @@ import {
 } from "@/lib/services/promptContext";
 import { buildHumanRulesBlock, HUMAN_SAMPLING } from "@/lib/ai/humanRules";
 import { humanizeContent } from "@/lib/ai/humanize";
+import type { MediaItem } from "@/lib/schemas/mediaItems";
 import type { PostSuggestion } from "@prisma/client";
 
 export type SuggestionWithAccount = PostSuggestion & {
@@ -26,6 +27,7 @@ interface CreateFromBriefArgs {
   userId: string;
   accountIds: string[];
   brief: string;
+  mediaItems?: MediaItem[];
 }
 
 export interface CreateFromBriefResult {
@@ -37,13 +39,14 @@ export async function createFromBrief({
   userId,
   accountIds,
   brief,
+  mediaItems,
 }: CreateFromBriefArgs): Promise<CreateFromBriefResult> {
   console.log(
-    `[createFromBrief] ▶︎ start userId=${userId} accountIds=${accountIds.join(",")} briefLength=${brief.length}`
+    `[createFromBrief] ▶︎ start userId=${userId} accountIds=${accountIds.join(",")} briefLength=${brief.length} mediaCount=${mediaItems?.length ?? 0}`
   );
 
   const settled = await Promise.allSettled(
-    accountIds.map((id) => generateForAccount(id, userId, brief))
+    accountIds.map((id) => generateForAccount(id, userId, brief, mediaItems))
   );
 
   const aggregated: SuggestionWithAccount[] = [];
@@ -69,7 +72,8 @@ export async function createFromBrief({
 async function generateForAccount(
   socialAccountId: string,
   userId: string,
-  brief: string
+  brief: string,
+  mediaItems?: MediaItem[]
 ): Promise<SuggestionWithAccount[]> {
   const account = await prisma.socialAccount.findUnique({
     where: { id: socialAccountId },
@@ -125,7 +129,31 @@ async function generateForAccount(
   const finalPosts = object.posts.slice(0, MAX_POSTS_PER_ACCOUNT);
   const slots = pickTimeSlots(insights, config.defaultBestTimes, finalPosts.length);
 
-  const contentType = defaultContentType(config.requiresMedia);
+  // Skip media stamping if the platform requires video and the user only
+  // attached images (e.g. YouTube). Per-platform validation runs at publish
+  // time anyway; pre-stamping unsupported media just creates noisy failures.
+  const hasVideoAttachment =
+    mediaItems !== undefined && mediaItems.some((m) => m.type === "video");
+  const hasImageAttachment =
+    mediaItems !== undefined && mediaItems.some((m) => m.type === "image");
+  const platformRejectsImageOnly =
+    config.requiresMedia === "video" && !hasVideoAttachment;
+  const hasMedia =
+    mediaItems !== undefined &&
+    mediaItems.length > 0 &&
+    !platformRejectsImageOnly;
+
+  const contentType = hasMedia
+    ? hasVideoAttachment
+      ? "video"
+      : "image"
+    : defaultContentType(config.requiresMedia);
+
+  if (platformRejectsImageOnly && hasImageAttachment) {
+    console.log(
+      `[createFromBrief] ⚠️  ${account.platform} requires video — skipping image-only media stamp`
+    );
+  }
 
   // Append the new batch alongside any existing drafts. Single transaction so
   // a mid-batch failure rolls back rather than leaving partial drafts behind.
@@ -141,6 +169,7 @@ async function generateForAccount(
           suggestedDay: slots[i].dayOfWeek,
           suggestedHour: slots[i].hour,
           reasoning: p.reasoning,
+          ...(hasMedia ? { mediaItems: mediaItems } : {}),
         },
         include: {
           socialAccount: { select: { platform: true, username: true } },

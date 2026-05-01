@@ -20,6 +20,7 @@ import { createChatTools } from "@/lib/ai/chat-tools";
 import { preview } from "@/lib/ai/preview";
 import { getBestSlots } from "@/lib/services/bestTimes";
 import { limitChat } from "@/lib/rateLimit/chatLimiter";
+import { mediaItemsSchema, MAX_CHAT_ATTACHMENTS } from "@/lib/schemas/mediaItems";
 
 // /generate-objects calls under generate_posts can take 90–120s for the
 // slowest account chunk. 240 leaves comfortable headroom (Vercel Pro max 300).
@@ -34,6 +35,7 @@ const bodySchema = z.object({
     .refine((arr) => new Set(arr).size === arr.length, {
       message: "Duplicate accountIds are not allowed",
     }),
+  attachedMediaItems: mediaItemsSchema.max(MAX_CHAT_ATTACHMENTS).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -67,7 +69,7 @@ export async function POST(req: NextRequest) {
     }
 
     const raw = await req.json().catch(() => ({}));
-    const { messages, accountIds } = bodySchema.parse(raw);
+    const { messages, accountIds, attachedMediaItems } = bodySchema.parse(raw);
 
     // Run lateProfile + user + outcomes in parallel — all depend only on userId.
     // currentDrafts has to wait for accountIds validation.
@@ -206,15 +208,31 @@ export async function POST(req: NextRequest) {
       userTimezone,
       accountsBestTimes,
       outcomes,
+      hasAttachedMedia: Boolean(attachedMediaItems?.length),
     });
 
-    const tools = createChatTools({ userId, accountIds: validSelectedIds });
+    const tools = createChatTools({
+      userId,
+      accountIds: validSelectedIds,
+      attachedMediaItems,
+    });
 
     console.log(
-      `[chat] userId=${userId} accounts=${validSelectedIds.length} drafts=${currentDrafts.length} messages=${messages.length}`
+      `[chat] userId=${userId} accounts=${validSelectedIds.length} drafts=${currentDrafts.length} messages=${messages.length} media=${attachedMediaItems?.length ?? 0}`
     );
 
-    const modelMessages = await convertToModelMessages(messages as UIMessage[], {
+    // Strip any client-supplied file parts and rebuild them from the
+    // server-validated attachedMediaItems on the most recent user message.
+    // The body schema validates attachedMediaItems against the Cloudinary
+    // tenancy allow-list — file parts inside `messages` are not validated, so
+    // we never let those flow to the model directly. This closes off SSRF /
+    // open-redirect / IP-leak paths via attacker-supplied file URLs.
+    const sanitizedMessages = sanitizeMessagesWithAttachments(
+      messages as UIMessage[],
+      attachedMediaItems ?? []
+    );
+
+    const modelMessages = await convertToModelMessages(sanitizedMessages, {
       ignoreIncompleteToolCalls: true,
     });
 
@@ -238,4 +256,53 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     return errorHandler(error);
   }
+}
+
+function mediaTypeForUrl(url: string): string {
+  const lower = url.split("?")[0].toLowerCase();
+  if (lower.endsWith(".png")) return "image/png";
+  if (lower.endsWith(".webp")) return "image/webp";
+  if (lower.endsWith(".gif")) return "image/gif";
+  if (lower.endsWith(".heic") || lower.endsWith(".heif")) return "image/heic";
+  return "image/jpeg";
+}
+
+// Strip client-supplied `file` parts and rebuild them on the most recent user
+// message from the validated attachedMediaItems list. Anything else
+// (text parts, tool parts on assistant messages) passes through unchanged.
+function sanitizeMessagesWithAttachments(
+  messages: UIMessage[],
+  attachedMediaItems: { url: string; type: "image" | "video" }[]
+): UIMessage[] {
+  if (messages.length === 0) return messages;
+  let lastUserIdx = -1;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].role === "user") {
+      lastUserIdx = i;
+      break;
+    }
+  }
+
+  return messages.map((m, idx) => {
+    const filteredParts = (m.parts ?? []).filter(
+      (p) =>
+        typeof p === "object" &&
+        p !== null &&
+        (p as { type?: string }).type !== "file"
+    );
+    if (idx !== lastUserIdx || attachedMediaItems.length === 0) {
+      return { ...m, parts: filteredParts };
+    }
+    const trustedFileParts = attachedMediaItems
+      .filter((item) => item.type === "image")
+      .map((item) => ({
+        type: "file" as const,
+        url: item.url,
+        mediaType: mediaTypeForUrl(item.url),
+      }));
+    return {
+      ...m,
+      parts: [...filteredParts, ...trustedFileParts],
+    } as UIMessage;
+  });
 }

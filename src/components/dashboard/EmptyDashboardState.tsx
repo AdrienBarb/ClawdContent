@@ -17,8 +17,8 @@ export default function EmptyDashboardState({
       {/* Eyebrow ------------------------------------------------- */}
       <div className="flex items-center gap-2 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-gray-500">
         <span className="relative flex h-1.5 w-1.5">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#e8614d] opacity-60" />
-          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#e8614d]" />
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-gray-400 opacity-60" />
+          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-gray-400" />
         </span>
         Welcome to PostClaw — one last step
       </div>
