@@ -50,14 +50,13 @@ export default function HeroSection({ variant = "control" }: HeroSectionProps) {
           </div>
 
           <h1 className="font-display text-5xl leading-[0.96] tracking-[-0.03em] text-balance md:text-7xl lg:text-[112px]">
-            Tell me what to post
+            Plan a month of posts
             <br />
-            and{" "}
-            <em className="italic text-[#ec6f5b]">I&apos;ll post it</em> for you.
+            in <em className="italic text-[#ec6f5b]">5 minutes</em>.
           </h1>
 
           <p className="mt-9 max-w-[620px] text-base leading-[1.55] text-[#b9bdd6] md:text-xl">
-            PostClaw is the social media manager you can text. Type a sentence, get a week of posts. Approve the good ones. Done before your coffee&apos;s cold.
+            Text PostClaw what&apos;s happening. It writes, schedules, and posts for you, every week.
           </p>
 
           <div className="mt-11 flex flex-wrap items-center justify-center gap-3.5">
