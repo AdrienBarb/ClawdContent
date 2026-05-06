@@ -35,6 +35,20 @@ export type PublishResult =
     }
   | { ok: false; error: "publish_failed"; message: string };
 
+async function releaseLock(suggestionId: string): Promise<void> {
+  try {
+    await prisma.postSuggestion.update({
+      where: { id: suggestionId },
+      data: { publishingStartedAt: null },
+    });
+  } catch (err) {
+    console.error(
+      `[publish] failed to release lock for suggestion=${suggestionId}`,
+      err
+    );
+  }
+}
+
 async function finalizeAfterZernio(
   suggestionId: string,
   userId: string,
@@ -129,6 +143,7 @@ export async function publishOrScheduleSuggestion(args: {
   const hasSubscription =
     subscription?.status === "active" || subscription?.status === "trialing";
   if (!hasSubscription && user.postsPublished >= FREE_POST_LIMIT) {
+    await releaseLock(suggestionId);
     return { ok: false, error: "free_post_limit_reached" };
   }
 
@@ -140,6 +155,7 @@ export async function publishOrScheduleSuggestion(args: {
 
   const localValidation = validateMediaItems(mediaItems, socialAccount.platform);
   if (!localValidation.ok) {
+    await releaseLock(suggestionId);
     return {
       ok: false,
       error: "media_validation_failed",
@@ -147,18 +163,25 @@ export async function publishOrScheduleSuggestion(args: {
     };
   }
 
-  const validation = await validatePost(
-    suggestion.content,
-    socialAccount.platform,
-    mediaItems.length > 0 ? mediaItems : undefined,
-    lateProfile.lateApiKey
-  );
-  if (!validation.valid) {
-    return {
-      ok: false,
-      error: "validation_failed",
-      validationErrors: validation.errors,
-    };
+  // Skip pre-flight validation for Twitter: Zernio's /tools/validate/post is
+  // account-agnostic and enforces 280 chars, but X Premium accounts can post
+  // up to ~25k. Let createPost (which has account context) be the source of
+  // truth for Twitter.
+  if (socialAccount.platform !== "twitter") {
+    const validation = await validatePost(
+      suggestion.content,
+      socialAccount.platform,
+      mediaItems.length > 0 ? mediaItems : undefined,
+      lateProfile.lateApiKey
+    );
+    if (!validation.valid) {
+      await releaseLock(suggestionId);
+      return {
+        ok: false,
+        error: "validation_failed",
+        validationErrors: validation.errors,
+      };
+    }
   }
 
   const mediaForCreate = mediaItems.length > 0 ? mediaItems : undefined;
@@ -188,13 +211,18 @@ export async function publishOrScheduleSuggestion(args: {
       };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
+      await releaseLock(suggestionId);
       return { ok: false, error: "publish_failed", message };
     }
   }
 
   // schedule
-  if (!suggestion.scheduledAt) return { ok: false, error: "no_schedule_staged" };
+  if (!suggestion.scheduledAt) {
+    await releaseLock(suggestionId);
+    return { ok: false, error: "no_schedule_staged" };
+  }
   if (suggestion.scheduledAt.getTime() <= Date.now()) {
+    await releaseLock(suggestionId);
     return { ok: false, error: "schedule_in_past" };
   }
 
@@ -223,6 +251,7 @@ export async function publishOrScheduleSuggestion(args: {
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    await releaseLock(suggestionId);
     return { ok: false, error: "publish_failed", message };
   }
 }
