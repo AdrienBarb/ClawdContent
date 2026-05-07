@@ -1,7 +1,12 @@
 import { Schema } from "@sanity/schema";
 import { htmlToBlocks } from "@sanity/block-tools";
-import { JSDOM } from "jsdom";
+import { parseHTML } from "linkedom";
 import type { SanityBlock, SanityImage } from "./types";
+
+// Why linkedom over jsdom: jsdom's transitive deps (html-encoding-sniffer →
+// @exodus/bytes) are ESM-only and crash on Vercel's CJS function runtime
+// with ERR_REQUIRE_ESM. linkedom is a pure-CJS DOM with the same API surface
+// we use here, ~30× smaller, and works in serverless without configuration.
 
 // Use the exact type htmlToBlocks expects. @sanity/block-tools nests its own
 // copy of @sanity/types, so importing ArraySchemaType from `sanity` produces
@@ -100,11 +105,12 @@ function sanitizeDocument(doc: Document): void {
 export type PostBodyValue = SanityBlock | SanityImage;
 
 export function htmlToPortableText(html: string): PostBodyValue[] {
-  const dom = new JSDOM(html);
-  sanitizeDocument(dom.window.document);
-  const sanitized = dom.serialize();
+  const { document } = parseHTML(html);
+  sanitizeDocument(document as unknown as Document);
+  const sanitized = document.toString();
 
   return htmlToBlocks(sanitized, blockContentType, {
-    parseHtml: (s: string) => new JSDOM(s).window.document,
+    parseHtml: (s: string) =>
+      parseHTML(s).document as unknown as Document,
   }) as PostBodyValue[];
 }
