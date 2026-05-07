@@ -1,50 +1,44 @@
-import { Schema } from "@sanity/schema";
 import { htmlToBlocks } from "@portabletext/block-tools";
+import { compileSchema } from "@portabletext/schema";
 import { parseHTML } from "linkedom";
 import type { SanityBlock, SanityImage } from "./types";
 
-// Why @portabletext/block-tools over @sanity/block-tools: the legacy package
-// calls Document.evaluate() (XPath) for traversal, which linkedom doesn't
-// implement. The renamed package switched to standard DOM walking and works
-// with linkedom out of the box. linkedom itself replaces jsdom because
-// jsdom's ESM-only transitive deps crash on Vercel's CJS Function runtime.
+// Stack rationale:
+// - @portabletext/block-tools (vs legacy @sanity/block-tools): no XPath, so
+//   it works with non-jsdom DOMs.
+// - @portabletext/schema (vs @sanity/schema): the Sanity schema compiler
+//   pulls in Studio internals (sanity.imageHotspot, etc.) which fail to
+//   resolve in a serverless function. The portabletext compiler stays
+//   minimal — exactly what block-tools needs.
+// - linkedom (vs jsdom): jsdom's transitive ESM deps crash on Vercel's
+//   CJS Function runtime with ERR_REQUIRE_ESM.
 
-// Use the exact type htmlToBlocks expects. @sanity/block-tools nests its own
-// copy of @sanity/types, so importing ArraySchemaType from `sanity` produces
-// a structurally-similar but incompatible type instance. Pulling the param
-// type from the function signature itself sidesteps the duplicate-package
-// mismatch without disabling typechecks.
-type BlockContentType = Parameters<typeof htmlToBlocks>[1];
-
-// Minimal schema mirroring `post.body` shape so block-tools knows what to emit.
-// Inline <img> blocks survive the structure but inline image *upload* is not
-// implemented yet — Outrank's `image_url` is uploaded as the cover image.
-const defaultSchema = Schema.compile({
-  name: "default",
-  types: [
-    {
-      type: "object",
-      name: "post",
-      fields: [
-        {
-          title: "Body",
-          name: "body",
-          type: "array",
-          of: [{ type: "block" }, { type: "image" }],
-        },
-      ],
-    },
+// Standard PortableText surface for typical blog HTML. We deliberately leave
+// blockObjects/inlineObjects empty: inline images get sanitized away rather
+// than uploaded on first pass, and there are no custom block types.
+const schema = compileSchema({
+  decorators: [
+    { name: "strong" },
+    { name: "em" },
+    { name: "underline" },
+    { name: "code" },
+    { name: "strike-through" },
   ],
+  annotations: [{ name: "link" }],
+  styles: [
+    { name: "normal" },
+    { name: "h1" },
+    { name: "h2" },
+    { name: "h3" },
+    { name: "h4" },
+    { name: "h5" },
+    { name: "h6" },
+    { name: "blockquote" },
+  ],
+  lists: [{ name: "bullet" }, { name: "number" }],
+  inlineObjects: [],
+  blockObjects: [],
 });
-
-const postSchema = defaultSchema.get("post");
-const bodyField = postSchema?.fields.find(
-  (f: { name: string }) => f.name === "body"
-);
-if (!bodyField) {
-  throw new Error("htmlToBlocks: post.body schema field not found");
-}
-const blockContentType = (bodyField as { type: BlockContentType }).type;
 
 // Strip dangerous elements + attributes before structural conversion.
 // Defends against stored XSS via attacker-controlled HTML — the trust
@@ -79,19 +73,16 @@ function isSafeUrl(href: string): boolean {
 }
 
 function sanitizeDocument(doc: Document): void {
-  // Remove forbidden tags entirely.
   doc.querySelectorAll("*").forEach((el) => {
     if (FORBIDDEN_TAGS.has(el.tagName)) {
       el.remove();
       return;
     }
-    // Strip every event handler + style attribute.
     for (const attr of Array.from(el.attributes)) {
       if (attr.name.startsWith("on") || attr.name === "style") {
         el.removeAttribute(attr.name);
       }
     }
-    // Validate href / src schemes — block javascript:, data:, vbscript:, etc.
     const href = el.getAttribute("href");
     if (href !== null && !isSafeUrl(href)) {
       el.removeAttribute("href");
@@ -110,7 +101,7 @@ export function htmlToPortableText(html: string): PostBodyValue[] {
   sanitizeDocument(document as unknown as Document);
   const sanitized = document.toString();
 
-  return htmlToBlocks(sanitized, blockContentType, {
+  return htmlToBlocks(sanitized, schema, {
     parseHtml: (s: string) =>
       parseHTML(s).document as unknown as Document,
   }) as PostBodyValue[];
