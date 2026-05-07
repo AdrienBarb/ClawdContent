@@ -2,14 +2,12 @@ import { Metadata } from "next";
 import Link from "next/link";
 import { client } from "@/lib/sanity/client";
 import {
-  CATEGORIES_QUERY,
   FEATURED_POSTS_QUERY,
   LATEST_POSTS_QUERY,
 } from "@/lib/sanity/queries";
-import type { CategoryPreview, PostPreview } from "@/lib/sanity/types";
+import type { PostPreview } from "@/lib/sanity/types";
 import { genPageMetadata } from "@/lib/seo/genPageMetadata";
 import BlogPostCard from "@/components/blog/BlogPostCard";
-import BlogCategoryCard from "@/components/blog/BlogCategoryCard";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 
@@ -24,8 +22,7 @@ export const metadata: Metadata = genPageMetadata({
 const fetchOptions = { next: { revalidate: 60 } };
 
 export default async function BlogPage() {
-  const [categories, featuredPosts, latestPosts] = await Promise.all([
-    client.fetch<CategoryPreview[]>(CATEGORIES_QUERY, {}, fetchOptions),
+  const [featuredPosts, latestPosts] = await Promise.all([
     client.fetch<PostPreview[]>(FEATURED_POSTS_QUERY, {}, fetchOptions),
     client.fetch<PostPreview[]>(LATEST_POSTS_QUERY, {}, fetchOptions),
   ]);
@@ -53,20 +50,6 @@ export default async function BlogPage() {
           </p>
         </div>
       </header>
-
-      {/* Categories Section */}
-      {categories.length > 0 && (
-        <section className="mb-20">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl font-bold text-foreground">Explore Topics</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {categories.map((category) => (
-              <BlogCategoryCard key={category._id} category={category} />
-            ))}
-          </div>
-        </section>
-      )}
 
       {/* Featured Posts Section */}
       {featuredPosts.length > 0 && (

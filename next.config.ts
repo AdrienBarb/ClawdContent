@@ -107,6 +107,16 @@ const nextConfig: NextConfig = {
         destination: "/",
         permanent: true,
       },
+      {
+        source: "/blog/category/:slug",
+        destination: "/blog",
+        permanent: true,
+      },
+      {
+        source: "/blog/category",
+        destination: "/blog",
+        permanent: true,
+      },
     ];
   },
 };

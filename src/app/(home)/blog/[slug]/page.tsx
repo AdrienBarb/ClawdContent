@@ -183,13 +183,6 @@ export default async function PostPage({ params }: PostPageProps) {
             Blog
           </Link>
           <ChevronRight className="w-4 h-4" />
-          <Link
-            href={`/blog/category/${post.category.slug.current}`}
-            className="hover:text-foreground transition-colors"
-          >
-            {post.category.title}
-          </Link>
-          <ChevronRight className="w-4 h-4" />
           <span className="text-muted-foreground truncate max-w-[200px]">
             {post.title}
           </span>
@@ -209,14 +202,6 @@ export default async function PostPage({ params }: PostPageProps) {
               />
             </div>
           )}
-
-          {/* Category */}
-          <Link
-            href={`/blog/category/${post.category.slug.current}`}
-            className="inline-block text-xs font-medium text-primary hover:text-primary uppercase tracking-wide mb-4"
-          >
-            {post.category.title}
-          </Link>
 
           {/* Title */}
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-6 leading-tight">

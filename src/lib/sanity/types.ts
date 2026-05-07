@@ -53,20 +53,6 @@ export interface SEO {
   noindex?: boolean;
 }
 
-export interface Category {
-  _id: string;
-  _type: "category";
-  title: string;
-  slug: SanitySlug;
-  description?: string;
-  image?: SanityImage;
-  intro?: SanityBlock[];
-  featured?: boolean;
-  seo?: SEO;
-  faq?: FAQBlock;
-  order?: number;
-}
-
 export interface Post {
   _id: string;
   _type: "post";
@@ -74,7 +60,6 @@ export interface Post {
   slug: SanitySlug;
   excerpt?: string;
   coverImage?: SanityImage;
-  category: Category;
   authorName: string;
   authorBio?: string;
   publishedAt: string;
@@ -96,25 +81,11 @@ export interface PostPreview {
   slug: SanitySlug;
   excerpt?: string;
   coverImage?: SanityImage;
-  category: {
-    _id: string;
-    title: string;
-    slug: SanitySlug;
-  };
   authorName?: string;
   publishedAt: string;
   readingTime?: number;
   featured?: boolean;
   primaryKeyword?: string;
-}
-
-export interface CategoryPreview {
-  _id: string;
-  title: string;
-  slug: SanitySlug;
-  description?: string;
-  image?: SanityImage;
-  postCount?: number;
 }
 
 // ============================================
