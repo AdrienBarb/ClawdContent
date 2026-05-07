@@ -1,17 +1,19 @@
 import { htmlToBlocks } from "@portabletext/block-tools";
 import { compileSchema } from "@portabletext/schema";
-import { parseHTML } from "linkedom";
+import { JSDOM } from "jsdom";
 import type { SanityBlock, SanityImage } from "./types";
 
 // Stack rationale:
-// - @portabletext/block-tools (vs legacy @sanity/block-tools): no XPath, so
-//   it works with non-jsdom DOMs.
+// - @portabletext/block-tools wraps @portabletext/html, whose preprocessors
+//   call `document.evaluate` (XPath). linkedom doesn't implement XPath, so
+//   we need a DOM that does — jsdom.
 // - @portabletext/schema (vs @sanity/schema): the Sanity schema compiler
 //   pulls in Studio internals (sanity.imageHotspot, etc.) which fail to
 //   resolve in a serverless function. The portabletext compiler stays
 //   minimal — exactly what block-tools needs.
-// - linkedom (vs jsdom): jsdom's transitive ESM deps crash on Vercel's
-//   CJS Function runtime with ERR_REQUIRE_ESM.
+// - jsdom is marked as a `serverExternalPackages` entry in next.config.ts
+//   so Next leaves its ESM-only transitive deps to Node at runtime instead
+//   of bundling them through Turbopack's CJS server bundler.
 
 // Standard PortableText surface for typical blog HTML. We deliberately leave
 // blockObjects/inlineObjects empty: inline images get sanitized away rather
@@ -97,12 +99,11 @@ function sanitizeDocument(doc: Document): void {
 export type PostBodyValue = SanityBlock | SanityImage;
 
 export function htmlToPortableText(html: string): PostBodyValue[] {
-  const { document } = parseHTML(html);
-  sanitizeDocument(document as unknown as Document);
-  const sanitized = document.toString();
+  const dom = new JSDOM(html);
+  sanitizeDocument(dom.window.document);
+  const sanitized = dom.serialize();
 
   return htmlToBlocks(sanitized, schema, {
-    parseHtml: (s: string) =>
-      parseHTML(s).document as unknown as Document,
+    parseHtml: (s: string) => new JSDOM(s).window.document,
   }) as PostBodyValue[];
 }

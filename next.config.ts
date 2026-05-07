@@ -33,6 +33,10 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   trailingSlash: false,
+  // jsdom (used by /api/webhooks/outrank → htmlToBlocks) pulls in ESM-only
+  // transitive deps that the Turbopack server bundle can't `require()`. Mark
+  // it external so Node resolves it natively at runtime on the Function host.
+  serverExternalPackages: ["jsdom"],
   images: {
     remotePatterns: [
       {
