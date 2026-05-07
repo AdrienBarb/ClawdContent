@@ -1,10 +1,10 @@
 # PostClaw
 
-> PostClaw is an AI social media manager for small businesses. It learns your brand, suggests what to post, and publishes to Instagram, Facebook, and 7 more platforms.
+> PostClaw is an AI social media manager for small business owners, solo founders, and creators. It learns your brand, plans what to post, and publishes to nine platforms (Instagram, Facebook, LinkedIn, TikTok, X, YouTube, Pinterest, Threads, and Bluesky).
 
 ## What PostClaw Does
 
-PostClaw is your AI social media manager. It suggests post ideas based on your business, writes the content in your voice, adapts it for each platform, and publishes on schedule. It learns your brand voice over time, analyzes performance, and suggests improvements. Your data and social accounts are completely isolated and private.
+PostClaw is your AI social media manager. It suggests post ideas based on your business, writes the content in your voice, adapts it for each platform, and publishes on schedule. It learns your brand voice over time, analyzes performance, and suggests improvements. Your data and social accounts are isolated per user.
 
 ## Key Features
 
@@ -12,31 +12,31 @@ PostClaw is your AI social media manager. It suggests post ideas based on your b
 - Publish to 9 social platforms (Instagram, Facebook, LinkedIn, TikTok, X/Twitter, YouTube, Pinterest, Threads, Bluesky)
 - AI-adapted content per platform (tone, length, hashtags, format)
 - Content calendar planning and scheduling
-- Performance analytics and best time to post recommendations
-- Image generation for posts
-- Media support (images and videos via Cloudinary)
+- Performance analytics and best-time-to-post recommendations
+- Media support for images and videos (via Cloudinary)
 - Brand voice learning that gets better the more you use it
 - Unlimited posts, cancel anytime
 
 ## How It Works
 
 1. Sign up and connect your social media accounts (free)
-2. Try your first post for free
+2. Try PostClaw with 5 free posts, no credit card required
 3. Choose a plan ($49/month) for unlimited access
-4. Your AI social media manager suggests posts, you approve, and it publishes across all your platforms
+4. PostClaw suggests posts, you approve from your phone, and it publishes across all your platforms on schedule
 
 ## Target Audience
 
-- Photographers, creatives, and freelancers who need a consistent social media presence
-- Restaurants, cafes, and caterers who want to fill tables through social media
-- Coaches, consultants, and service providers building an audience
-- Local and small businesses too busy serving customers to manage social media
+PostClaw works for three kinds of people:
+
+- Small business owners (photographers, caterers, coaches, consultants, and local shops) too busy serving customers to plan social posts
+- Solo founders and indie hackers shipping product, building in public, who can't justify hiring an in-house social manager
+- Creators (video creators, newsletter writers, course makers, and indie artists) who'd rather make work than promote it
 
 ## Pricing
 
-- Single plan: $49/month — all 9 social accounts, unlimited posts
-- Annual billing available (30% off, ~$34/month equivalent)
-- 5 free posts before subscribing
+- Single plan: $49/month for all 9 social accounts, unlimited posts
+- Annual billing available (30% off, around $34/month equivalent)
+- 5 free posts before subscribing, no credit card required
 - 7-day money-back guarantee
 - Cancel anytime, no contracts
 
@@ -48,9 +48,17 @@ PostClaw is your AI social media manager. It suggests post ideas based on your b
 
 ## Important Pages
 
-- [Homepage](https://www.postclaw.io): Main landing page with product overview, demo, and pricing
-- [Privacy Policy](https://www.postclaw.io/privacy): Privacy policy
-- [Terms of Service](https://www.postclaw.io/terms): Terms of service
+- [Homepage](https://www.postclaw.io): Product overview, comparison vs Buffer / Hootsuite / agencies, demo, and pricing
+- [For Small Business Owners](https://www.postclaw.io/for-small-businesses): Dedicated landing page for photographers, caterers, coaches, consultants, and local shops, with persona-specific FAQ and use cases
+- [For Solo Founders & Indie Hackers](https://www.postclaw.io/for-founders): Dedicated landing page for founders shipping product, with use cases for launches, build-in-public, customer wins, and audience growth
+- [For Creators](https://www.postclaw.io/for-creators): Dedicated landing page for video creators, newsletter writers, course makers, and indie artists
+- [Pricing](https://www.postclaw.io/#pricing): Single $49/month plan, 30% off yearly, 5 free posts to try
+- [Compare Alternatives](https://www.postclaw.io/alternatives): PostClaw versus Buffer, Hootsuite, and other social media tools
+- [Blog](https://www.postclaw.io/blog): Articles on social media automation, posting strategy, and platform-specific tactics
+- [How to Post to All Social Media at Once](https://www.postclaw.io/blog/how-to-post-to-all-social-media-at-once): Step-by-step guide on cross-platform publishing
+- [Frequently Asked Questions](https://www.postclaw.io/#faq): Common questions about pricing, brand voice, supported platforms, and cancellation
+- [Privacy Policy](https://www.postclaw.io/privacy): Data handling and user privacy practices
+- [Terms of Service](https://www.postclaw.io/terms): Terms of service and acceptable use
 
 ## Contact
 

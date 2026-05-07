@@ -9,16 +9,13 @@ import { useDashboardStatus } from "@/lib/hooks/useDashboardStatus";
 import EmptyDashboardState from "./EmptyDashboardState";
 import SubscribeModal from "./SubscribeModal";
 import { ChatPanel } from "./ChatPanel";
-import {
-  SuggestionsBoard,
-  SUGGESTIONS_QUERY_KEY,
-} from "./SuggestionsBoard";
-import type { AccountInfo, Suggestion } from "./publish/types";
+import { SuggestionsBoard } from "./SuggestionsBoard";
+import { SUGGESTIONS_QUERY_KEY } from "./publish/queryKeys";
+import type { AccountInfo } from "./publish/types";
 
-const EditSuggestionModal = dynamic(
-  () => import("./publish/EditSuggestionModal"),
-  { ssr: false }
-);
+const CreatePostModal = dynamic(() => import("./publish/CreatePostModal"), {
+  ssr: false,
+});
 
 export default function PublishPage() {
   const { data: status, isLoading: statusLoading, refetch: refetchStatus } =
@@ -89,8 +86,12 @@ function PublishShell({
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>(() =>
     accounts.map((a) => a.id)
   );
-  const [editingItem, setEditingItem] = useState<Suggestion | null>(null);
   const [showSubscribeModal, setShowSubscribeModal] = useState(false);
+  const [creatingForAccount, setCreatingForAccount] = useState<{
+    id: string;
+    platform: string;
+    username: string;
+  } | null>(null);
 
   const isPostLimitReached =
     !hasSubscription && postsPublished >= freePostLimit;
@@ -98,6 +99,12 @@ function PublishShell({
   const invalidateSuggestions = () => {
     qc.invalidateQueries({ queryKey: SUGGESTIONS_QUERY_KEY });
   };
+
+  const activeCreatingAccount =
+    creatingForAccount &&
+    accounts.some((a) => a.id === creatingForAccount.id)
+      ? creatingForAccount
+      : null;
 
   return (
     <>
@@ -112,9 +119,9 @@ function PublishShell({
 
       <SuggestionsBoard
         accounts={accounts}
-        onEdit={setEditingItem}
         onLimitReached={() => setShowSubscribeModal(true)}
         onPublishedOrScheduled={onPublishedOrScheduled}
+        onAddPost={setCreatingForAccount}
         quotaRemaining={
           hasSubscription
             ? null
@@ -122,28 +129,37 @@ function PublishShell({
         }
       />
 
-      {editingItem && (
-        <EditSuggestionModal
-          suggestion={editingItem}
-          onClose={() => setEditingItem(null)}
-          onSave={async (updated) => {
+      {activeCreatingAccount && (
+        <CreatePostModal
+          account={{
+            id: activeCreatingAccount.id,
+            platform: activeCreatingAccount.platform,
+            username: activeCreatingAccount.username,
+          }}
+          onClose={() => setCreatingForAccount(null)}
+          onCreate={async ({ content, mediaItems }) => {
             try {
-              const res = await fetch(`/api/suggestions/${editingItem.id}`, {
-                method: "PATCH",
+              const res = await fetch("/api/suggestions", {
+                method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(updated),
+                body: JSON.stringify({
+                  socialAccountId: activeCreatingAccount.id,
+                  content,
+                  mediaItems,
+                }),
               });
               if (!res.ok) {
-                const data = await res.json().catch(() => null);
+                const body = await res.json().catch(() => null);
                 toast.error(
-                  data?.message ?? "Couldn't save your changes. Try again."
+                  body?.message ?? "Couldn't create the post. Try again."
                 );
                 return;
               }
               invalidateSuggestions();
-              setEditingItem(null);
+              setCreatingForAccount(null);
+              toast.success("Draft created");
             } catch {
-              toast.error("Couldn't save your changes. Try again.");
+              toast.error("Couldn't create the post. Try again.");
             }
           }}
         />

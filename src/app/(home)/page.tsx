@@ -4,7 +4,6 @@ import PlatformsSection from "@/components/sections/PlatformsSection";
 import HowItWorksSection from "@/components/sections/HowItWorksSection";
 import OutcomesSection from "@/components/sections/OutcomesSection";
 import WhoIsThisForSection from "@/components/sections/WhoIsThisForSection";
-import TestimonialsSection from "@/components/sections/TestimonialsSection";
 import CompareSection from "@/components/sections/CompareSection";
 import PricingSection from "@/components/sections/PricingSection";
 import FAQSection from "@/components/sections/FAQSection";
@@ -48,51 +47,6 @@ const softwareAppSchema = {
       price: "49",
       priceCurrency: "USD",
       availability: "https://schema.org/InStock",
-    },
-  ],
-  aggregateRating: {
-    "@type": "AggregateRating",
-    ratingValue: "5",
-    reviewCount: "3",
-    bestRating: "5",
-    worstRating: "1",
-  },
-  review: [
-    {
-      "@type": "Review",
-      author: { "@type": "Person", name: "Hannah Park" },
-      reviewRating: {
-        "@type": "Rating",
-        ratingValue: "5",
-        bestRating: "5",
-      },
-      reviewBody:
-        "I went from posting twice a month to seven days a week. Bookings followed.",
-      datePublished: "2026-03-15",
-    },
-    {
-      "@type": "Review",
-      author: { "@type": "Person", name: "Marie Chen" },
-      reviewRating: {
-        "@type": "Rating",
-        ratingValue: "5",
-        bestRating: "5",
-      },
-      reviewBody:
-        "It writes like I write. Customers tell me my Instagram has 'really gotten good lately'.",
-      datePublished: "2026-03-22",
-    },
-    {
-      "@type": "Review",
-      author: { "@type": "Person", name: "James Otieno" },
-      reviewRating: {
-        "@type": "Rating",
-        ratingValue: "5",
-        bestRating: "5",
-      },
-      reviewBody:
-        "I closed the agency. PostClaw is doing better content for $1,950 less a month.",
-      datePublished: "2026-04-02",
     },
   ],
 };
@@ -182,7 +136,6 @@ export default async function Home() {
       <HowItWorksSection />
       <OutcomesSection />
       <WhoIsThisForSection />
-      <TestimonialsSection />
       <CompareSection />
       <PricingSection />
       <FAQSection />

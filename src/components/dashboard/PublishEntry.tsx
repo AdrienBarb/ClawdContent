@@ -27,7 +27,7 @@ export default function PublishEntry({
             <LightbulbIcon
               className="h-6 w-6"
               weight="duotone"
-              style={{ color: "#e8614d" }}
+              style={{ color: "#6b7280" }}
             />
           }
           onClick={onGetIdeas}
@@ -39,7 +39,7 @@ export default function PublishEntry({
             <PencilLineIcon
               className="h-6 w-6"
               weight="duotone"
-              style={{ color: "#e8614d" }}
+              style={{ color: "#6b7280" }}
             />
           }
           onClick={onCreatePost}
@@ -64,11 +64,11 @@ function EntryCard({
     <button
       type="button"
       onClick={onClick}
-      className="group flex flex-col items-start text-left rounded-2xl border border-gray-200/80 bg-white p-7 cursor-pointer transition-all hover:border-[#e8614d]/40 hover:shadow-[0_10px_40px_-12px_rgba(232,97,77,0.25)] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8614d]/40"
+      className="group flex flex-col items-start text-left rounded-2xl border border-gray-200/80 bg-white p-7 cursor-pointer transition-all hover:border-gray-300 hover:shadow-[0_10px_40px_-12px_rgba(0,0,0,0.12)] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-300"
     >
       <span
         className="flex h-12 w-12 items-center justify-center rounded-2xl transition-transform group-hover:scale-105"
-        style={{ backgroundColor: "#fef2f0" }}
+        style={{ backgroundColor: "#f3f4f6" }}
       >
         {icon}
       </span>

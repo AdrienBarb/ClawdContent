@@ -4,6 +4,8 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import {
   PaperPlaneTiltIcon,
+  PaperclipIcon,
+  XIcon,
   CircleNotchIcon,
   CheckCircleIcon,
   WarningCircleIcon,
@@ -21,6 +23,7 @@ import {
   type FormEvent,
   type KeyboardEvent,
   type ComponentType,
+  type ChangeEvent,
 } from "react";
 import ReactMarkdown from "react-markdown";
 import { useQueryClient } from "@tanstack/react-query";
@@ -36,6 +39,11 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
+import { useCloudinaryUpload } from "@/lib/hooks/useCloudinaryUpload";
+import {
+  MAX_CHAT_ATTACHMENTS,
+  type MediaItem,
+} from "@/lib/schemas/mediaItems";
 
 const STICK_THRESHOLD_PX = 24;
 
@@ -55,29 +63,38 @@ interface ChipGroup {
 
 const STARTER_CHIPS: ChipGroup[] = [
   {
-    label: "Create",
+    label: "Quick post",
     icon: NotePencilIcon,
     items: [
       {
-        label: "A post about today",
-        brief: "Write 1 post about what's happening today in my business",
+        label: "Behind the scenes",
+        brief:
+          "Write 1 behind-the-scenes post about everyday life or work in my business",
       },
       {
-        label: "Introduce my business",
-        brief: "Write 1 post that introduces what I do to a new audience",
+        label: "Share a tip",
+        brief:
+          "Write 1 post sharing a useful tip or insight from my expertise that my audience would value",
       },
       {
-        label: "Highlight a service",
-        brief: "Write 1 post that highlights one of my services",
+        label: "Recent work…",
+        brief:
+          "I want to post about a recent project or client. Ask me which project and what to highlight before drafting.",
       },
       {
-        label: "Announce an event",
-        brief: "Write 1 post to announce an upcoming event",
+        label: "Promote an offer…",
+        brief:
+          "I want to post about a special offer or promotion. Ask me what the offer is and any deadline before drafting.",
+      },
+      {
+        label: "Good news / milestone…",
+        brief:
+          "I want to post celebrating a milestone or piece of good news. Ask me what to celebrate before drafting.",
       },
     ],
   },
   {
-    label: "Plan",
+    label: "Plan ahead",
     icon: CalendarBlankIcon,
     items: [
       {
@@ -91,12 +108,14 @@ const STARTER_CHIPS: ChipGroup[] = [
           "Plan 15 posts for the upcoming month and schedule them at my best time slots",
       },
       {
-        label: "Around an event",
-        brief: "Help me plan a sequence of posts around an upcoming event",
+        label: "Around an event…",
+        brief:
+          "I want to plan a sequence of posts around an upcoming event. Ask me what the event is and when it's happening before planning.",
       },
       {
-        label: "New service launch",
-        brief: "Plan a launch sequence: 5 posts to announce a new service",
+        label: "Service launch…",
+        brief:
+          "I want to plan a launch sequence for a new service. Ask me what the service is and when it's launching before planning.",
       },
     ],
   },
@@ -160,19 +179,83 @@ export function ChatPanel({
   });
 
   const [input, setInput] = useState("");
+  const [attachments, setAttachments] = useState<MediaItem[]>([]);
+  const [attachError, setAttachError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { upload, uploading } = useCloudinaryUpload();
+
   const isStreaming = status === "submitted" || status === "streaming";
   const trimmed = input.trim();
   const canSend =
-    !isStreaming && trimmed.length > 0 && selectedAccountIds.length > 0;
+    !isStreaming &&
+    !uploading &&
+    selectedAccountIds.length > 0 &&
+    (trimmed.length > 0 || attachments.length > 0);
 
   const submit = (e?: FormEvent) => {
     e?.preventDefault();
     if (!canSend) return;
+    const parts: Array<
+      | { type: "text"; text: string }
+      | { type: "file"; url: string; mediaType: string }
+    > = [];
+    // Anthropic rejects user messages with no content. When the user sends
+    // images only, drop in a minimal placeholder so the message has a text
+    // part. The system prompt tells the model to ask what to do in that case.
+    parts.push({
+      type: "text",
+      text: trimmed.length > 0 ? trimmed : "(photo attached)",
+    });
+    for (const m of attachments) {
+      parts.push({ type: "file", url: m.url, mediaType: mediaTypeForUrl(m.url) });
+    }
     void sendMessage(
-      { text: trimmed },
-      { body: { accountIds: selectedAccountIds } }
+      { parts },
+      {
+        body: {
+          accountIds: selectedAccountIds,
+          ...(attachments.length > 0
+            ? { attachedMediaItems: attachments }
+            : {}),
+        },
+      }
     );
     setInput("");
+    setAttachments([]);
+    setAttachError(null);
+  };
+
+  const handleAttachClick = () => {
+    if (attachments.length >= MAX_CHAT_ATTACHMENTS || isStreaming || uploading)
+      return;
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const room = MAX_CHAT_ATTACHMENTS - attachments.length;
+    const slice = Array.from(files)
+      .filter((f) => f.type.startsWith("image/"))
+      .slice(0, room);
+    e.target.value = "";
+    if (slice.length === 0) {
+      setAttachError("Only image files are supported here.");
+      return;
+    }
+    try {
+      setAttachError(null);
+      const items = await upload(slice);
+      setAttachments((prev) => [...prev, ...items].slice(0, MAX_CHAT_ATTACHMENTS));
+    } catch (err) {
+      setAttachError(
+        err instanceof Error ? err.message : "Couldn't upload that image."
+      );
+    }
+  };
+
+  const removeAttachment = (url: string) => {
+    setAttachments((prev) => prev.filter((m) => m.url !== url));
   };
 
   const chipsDisabled = isStreaming || selectedAccountIds.length === 0;
@@ -254,12 +337,12 @@ export function ChatPanel({
         <div className="text-center max-w-xl mb-8">
           <span
             className="inline-flex h-12 w-12 items-center justify-center rounded-2xl mb-5"
-            style={{ backgroundColor: "#fef2f0" }}
+            style={{ backgroundColor: "#f3f4f6" }}
           >
             <SparkleIcon
               className="h-6 w-6"
               weight="fill"
-              style={{ color: "#e8614d" }}
+              style={{ color: "#6b7280" }}
             />
           </span>
           <h1 className="text-3xl md:text-4xl font-semibold text-gray-900 tracking-tight">
@@ -311,7 +394,41 @@ export function ChatPanel({
             onChange={onSelectedAccountIdsChange}
           />
         </div>
+        {attachments.length > 0 && (
+          <div className="px-3 pt-3 flex flex-wrap gap-2">
+            {attachments.map((m) => (
+              <div key={m.url} className="relative">
+                <img
+                  src={m.url}
+                  alt=""
+                  className="h-16 w-16 rounded-lg object-cover border border-gray-200"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeAttachment(m.url)}
+                  aria-label="Remove image"
+                  className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-white border border-gray-200 text-gray-500 hover:text-gray-800 hover:bg-gray-50 shadow-sm flex items-center justify-center cursor-pointer"
+                >
+                  <XIcon className="h-3 w-3" weight="bold" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        {attachError && (
+          <div className="px-3 pt-2 text-[12px] text-amber-700">
+            {attachError}
+          </div>
+        )}
         <div className="relative">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={handleFileChange}
+          />
           <textarea
             ref={textareaRef}
             value={input}
@@ -327,6 +444,26 @@ export function ChatPanel({
             disabled={selectedAccountIds.length === 0}
             className="w-full resize-none bg-transparent px-4 pt-3 pb-12 text-base leading-relaxed text-gray-900 placeholder:text-gray-400 focus:outline-none min-h-[88px] max-h-60 disabled:cursor-not-allowed"
           />
+          <div className="absolute bottom-3 left-3">
+            <button
+              type="button"
+              onClick={handleAttachClick}
+              disabled={
+                attachments.length >= MAX_CHAT_ATTACHMENTS ||
+                isStreaming ||
+                uploading ||
+                selectedAccountIds.length === 0
+              }
+              aria-label="Attach photo"
+              className="inline-flex items-center justify-center h-9 w-9 rounded-lg text-gray-400 hover:bg-black/[0.05] hover:text-gray-700 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {uploading ? (
+                <CircleNotchIcon className="h-4 w-4 animate-spin" />
+              ) : (
+                <PaperclipIcon className="h-5 w-5" weight="regular" />
+              )}
+            </button>
+          </div>
           <div className="absolute bottom-3 right-3">
             <button
               type="submit"
@@ -354,12 +491,27 @@ export function ChatPanel({
 function MessageBubble({ message }: { message: UIMessage }) {
   if (message.role === "user") {
     const text = textFromParts(message.parts);
-    if (!text) return null;
+    const imageUrls = imageUrlsFromParts(message.parts);
+    if (!text && imageUrls.length === 0) return null;
     return (
-      <div className="flex justify-end">
-        <div className="max-w-[80%] rounded-2xl rounded-br-md bg-[#fef2f0] border border-[#f4d8d2] px-3.5 py-2 text-[13px] leading-relaxed text-gray-900 whitespace-pre-wrap">
-          {text}
-        </div>
+      <div className="flex flex-col items-end gap-1.5">
+        {imageUrls.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 justify-end max-w-[80%]">
+            {imageUrls.map((url) => (
+              <img
+                key={url}
+                src={url}
+                alt=""
+                className="h-20 w-20 rounded-lg object-cover border border-gray-200"
+              />
+            ))}
+          </div>
+        )}
+        {text && (
+          <div className="max-w-[80%] rounded-2xl rounded-br-md bg-[#fef2f0] border border-[#f4d8d2] px-3.5 py-2 text-[13px] leading-relaxed text-gray-900 whitespace-pre-wrap">
+            {text}
+          </div>
+        )}
       </div>
     );
   }
@@ -401,6 +553,39 @@ function textFromParts(parts: UIMessage["parts"]): string {
     )
     .map((p) => p.text)
     .join("");
+}
+
+// Cloudinary returns the original format; Anthropic vision needs the matching
+// IANA media type. Map common image extensions, fall back to JPEG.
+function mediaTypeForUrl(url: string): string {
+  const lower = url.split("?")[0].toLowerCase();
+  if (lower.endsWith(".png")) return "image/png";
+  if (lower.endsWith(".webp")) return "image/webp";
+  if (lower.endsWith(".gif")) return "image/gif";
+  if (lower.endsWith(".heic") || lower.endsWith(".heif"))
+    return "image/heic";
+  return "image/jpeg";
+}
+
+function imageUrlsFromParts(parts: UIMessage["parts"]): string[] {
+  const urls: string[] = [];
+  for (const p of parts) {
+    if (typeof p !== "object" || p === null) continue;
+    const part = p as {
+      type?: string;
+      url?: string;
+      mediaType?: string;
+    };
+    if (
+      part.type === "file" &&
+      typeof part.url === "string" &&
+      typeof part.mediaType === "string" &&
+      part.mediaType.startsWith("image/")
+    ) {
+      urls.push(part.url);
+    }
+  }
+  return urls;
 }
 
 interface ToolPart {
@@ -460,11 +645,11 @@ function StarterChipBar({
               <button
                 type="button"
                 disabled={disabled}
-                className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3.5 py-2 text-[13px] font-medium text-gray-700 cursor-pointer hover:border-[#e8614d] hover:text-[#c84a35] hover:shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1 text-[12px] font-medium text-gray-700 cursor-pointer hover:border-[#e8614d] hover:text-[#c84a35] hover:shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Icon className="h-4 w-4" weight="regular" />
+                <Icon className="h-3.5 w-3.5" weight="regular" />
                 {group.label}
-                <CaretDownIcon className="h-3 w-3 ml-0.5" weight="bold" />
+                <CaretDownIcon className="h-2.5 w-2.5 ml-0.5" weight="bold" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="center" className="min-w-[240px]">

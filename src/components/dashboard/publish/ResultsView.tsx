@@ -1,19 +1,36 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import Image from "next/image";
 import toast from "react-hot-toast";
+import { useQueryClient } from "@tanstack/react-query";
+import { Reorder, useDragControls } from "framer-motion";
 import {
   CalendarIcon,
-  PencilSimpleIcon,
   TrashIcon,
   SpinnerGapIcon,
   PaperPlaneTiltIcon,
+  PlusIcon,
   CheckIcon,
   ImageIcon,
   VideoCameraIcon,
   WarningIcon,
   XIcon,
+  LightningIcon,
+  ArrowsClockwiseIcon,
+  ArrowsInIcon,
+  ArrowsOutIcon,
+  HashIcon,
+  TextAaIcon,
+  SuitcaseIcon,
+  DotsSixVerticalIcon,
 } from "@phosphor-icons/react";
 import { getPlatform } from "@/lib/constants/platforms";
 import { getPlatformConfig } from "@/lib/insights/platformConfig";
@@ -26,15 +43,43 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { SchedulePicker } from "../SchedulePicker";
 import { useConfirm, type ConfirmFn } from "@/lib/hooks/useConfirm";
+import { SUGGESTIONS_QUERY_KEY } from "./queryKeys";
 import type { Suggestion } from "./types";
+import { MediaLightbox } from "./MediaLightbox";
+import { cloudinaryThumbnail } from "./cloudinary";
 
-// Inject a Cloudinary delivery transform so the kanban thumbnail isn't the
-// full-resolution upload. Falls through unchanged for non-Cloudinary URLs.
-function cloudinaryThumbnail(url: string): string {
-  return url.replace("/upload/", "/upload/c_fill,w_400,h_220,q_auto,f_auto/");
-}
+// Rewrite instructions accepted by the server (see rewriteInputSchema in
+// /api/suggestions/[id]/rewrite). Order here drives the dropdown order.
+type RewriteInstruction =
+  | "fix"
+  | "rewrite"
+  | "shorter"
+  | "longer"
+  | "hashtags"
+  | "casual"
+  | "professional";
+
+const REWRITE_ACTIONS: ReadonlyArray<{
+  key: RewriteInstruction;
+  label: string;
+  Icon: typeof CheckIcon;
+}> = [
+  { key: "fix", label: "Fix", Icon: CheckIcon },
+  { key: "rewrite", label: "Rewrite", Icon: ArrowsClockwiseIcon },
+  { key: "shorter", label: "Shorter", Icon: ArrowsInIcon },
+  { key: "longer", label: "Longer", Icon: ArrowsOutIcon },
+  { key: "hashtags", label: "Hashtags", Icon: HashIcon },
+  { key: "casual", label: "Casual", Icon: TextAaIcon },
+  { key: "professional", label: "Pro", Icon: SuitcaseIcon },
+];
 
 interface AccountLite {
   id: string;
@@ -58,13 +103,13 @@ function groupByAccount(
     existing.push(s);
     byKey.set(key, existing);
   }
+  // One column per connected account — even with zero drafts, so the
+  // per-column "Add post" button stays reachable from a clean state.
   const groups: PlatformGroup[] = [];
   for (const account of accounts) {
     const key = `${account.platform}|${account.username}`;
-    const posts = byKey.get(key);
-    if (posts && posts.length > 0) {
-      groups.push({ account, posts });
-    }
+    const posts = byKey.get(key) ?? [];
+    groups.push({ account, posts });
   }
   return groups;
 }
@@ -72,17 +117,17 @@ function groupByAccount(
 export function ResultsView({
   accounts,
   suggestions,
-  onEdit,
   onSchedule,
   onAction,
   onMediaChanged,
+  onContentChanged,
+  onAddPost,
   onBulkComplete,
   embedded = false,
   quotaRemaining,
 }: {
   accounts: AccountLite[];
   suggestions: Suggestion[];
-  onEdit: (s: Suggestion) => void;
   onSchedule: (
     id: string,
     scheduledAt: string | null,
@@ -93,7 +138,9 @@ export function ResultsView({
     s: Suggestion,
     opts?: { silent?: boolean }
   ) => Promise<boolean | void>;
-  onMediaChanged: (id: string, mediaItems: MediaItem[]) => Promise<void>;
+  onMediaChanged: (id: string, mediaItems: MediaItem[]) => Promise<boolean>;
+  onContentChanged: (id: string, content: string) => Promise<void>;
+  onAddPost?: (account: AccountLite) => void;
   onBulkComplete?: (publishedOrScheduledCount: number) => void;
   embedded?: boolean;
   /** Free posts remaining; null = unlimited (subscribed). */
@@ -113,27 +160,32 @@ export function ResultsView({
   const suggestionsRef = useRef(suggestions);
   suggestionsRef.current = suggestions;
 
+  // Registry of per-card flush functions. Each PostCard registers its own
+  // flush on mount so bulk actions can drain pending debounced saves before
+  // shipping content.
+  const flushRegistry = useRef<Map<string, () => Promise<void>>>(new Map());
+  const registerFlush = useCallback(
+    (id: string, fn: () => Promise<void>) => {
+      flushRegistry.current.set(id, fn);
+    },
+    []
+  );
+  const unregisterFlush = useCallback((id: string) => {
+    flushRegistry.current.delete(id);
+  }, []);
+  const flushAllPending = useCallback(async () => {
+    const fns = Array.from(flushRegistry.current.values());
+    await Promise.all(fns.map((fn) => fn().catch(() => undefined)));
+  }, []);
+
   const { confirm, dialog: confirmDialog } = useConfirm();
 
-  // Only show filter pills + columns for accounts that actually have
-  // suggestions in this batch — not every connected account.
-  const accountsWithPosts = useMemo(() => {
-    const keys = new Set(
-      suggestions.map(
-        (s) => `${s.socialAccount.platform}|${s.socialAccount.username}`
-      )
-    );
-    return accounts.filter((a) => keys.has(`${a.platform}|${a.username}`));
-  }, [accounts, suggestions]);
-
-  const visibleAccounts = accountsWithPosts;
-  const filteredSuggestions = suggestions;
-
+  // One column per connected account regardless of draft count — the
+  // per-column "Add post" button must stay reachable from a clean state.
   const grouped = useMemo(
-    () => groupByAccount(filteredSuggestions, visibleAccounts),
-    [filteredSuggestions, visibleAccounts]
+    () => groupByAccount(suggestions, accounts),
+    [suggestions, accounts]
   );
-  const total = filteredSuggestions.length;
 
   const toggleOne = (id: string) =>
     setSelected((prev) => {
@@ -205,64 +257,66 @@ export function ResultsView({
     const ids = Array.from(selected);
     if (ids.length === 0 || bulkBusyRef.current) return;
     bulkBusyRef.current = true;
-
-    const snapshot = ids
-      .map((id) => suggestions.find((s) => s.id === id))
-      .filter((s): s is Suggestion => Boolean(s));
-
-    const mediaSkipped: Suggestion[] = [];
-    const eligible: Suggestion[] = [];
-    for (const s of snapshot) {
-      const cfg = getPlatformConfig(s.socialAccount.platform);
-      if (cfg.requiresMedia !== null && s.mediaItems.length === 0) {
-        mediaSkipped.push(s);
-      } else {
-        eligible.push(s);
-      }
-    }
-
-    let ready = eligible;
-    let limitTrimmed: Suggestion[] = [];
-    if (quotaRemaining !== null && eligible.length > quotaRemaining) {
-      ready = eligible.slice(0, quotaRemaining);
-      limitTrimmed = eligible.slice(quotaRemaining);
-    }
-
-    const skipReason = (media: number, limit: number): string[] => {
-      const parts: string[] = [];
-      if (media > 0) parts.push(`${media} missing media`);
-      if (limit > 0) parts.push(`${limit} over free plan limit`);
-      return parts;
-    };
-
-    if (ready.length === 0) {
-      const reasons = skipReason(mediaSkipped.length, limitTrimmed.length);
-      toast.error(
-        reasons.length > 0
-          ? `Nothing to send — ${reasons.join(", ")}`
-          : "Nothing to send"
-      );
-      bulkBusyRef.current = false;
-      return;
-    }
-
-    const reasons = skipReason(mediaSkipped.length, limitTrimmed.length);
-    const ok = await confirm({
-      title: `Send ${ready.length} post${ready.length === 1 ? "" : "s"}?`,
-      description:
-        reasons.length > 0
-          ? `${reasons.join(", ")} will be skipped.`
-          : "This will publish or schedule each post immediately.",
-      confirmLabel: "Send all",
-    });
-    if (!ok) {
-      bulkBusyRef.current = false;
-      return;
-    }
-
-    setBulkBusy(true);
-    setBulkProgress({ current: 0, total: ready.length });
+    // Single try/finally guards every early-return and any sync throw between
+    // here and the loop — without this, a thrown getPlatformConfig or a
+    // rejected confirm() would leave bulkBusyRef pinned true until refresh.
     try {
+      // Drain any pending debounced caption saves so the bulk run ships the
+      // user's latest edits, not a stale snapshot.
+      await flushAllPending();
+
+      const snapshot = ids
+        .map((id) => suggestionsRef.current.find((s) => s.id === id))
+        .filter((s): s is Suggestion => Boolean(s));
+
+      const mediaSkipped: Suggestion[] = [];
+      const eligible: Suggestion[] = [];
+      for (const s of snapshot) {
+        const cfg = getPlatformConfig(s.socialAccount.platform);
+        if (cfg.requiresMedia !== null && s.mediaItems.length === 0) {
+          mediaSkipped.push(s);
+        } else {
+          eligible.push(s);
+        }
+      }
+
+      let ready = eligible;
+      let limitTrimmed: Suggestion[] = [];
+      if (quotaRemaining !== null && eligible.length > quotaRemaining) {
+        ready = eligible.slice(0, quotaRemaining);
+        limitTrimmed = eligible.slice(quotaRemaining);
+      }
+
+      const skipReason = (media: number, limit: number): string[] => {
+        const parts: string[] = [];
+        if (media > 0) parts.push(`${media} missing media`);
+        if (limit > 0) parts.push(`${limit} over free plan limit`);
+        return parts;
+      };
+
+      if (ready.length === 0) {
+        const reasons = skipReason(mediaSkipped.length, limitTrimmed.length);
+        toast.error(
+          reasons.length > 0
+            ? `Nothing to send — ${reasons.join(", ")}`
+            : "Nothing to send"
+        );
+        return;
+      }
+
+      const reasons = skipReason(mediaSkipped.length, limitTrimmed.length);
+      const ok = await confirm({
+        title: `Send ${ready.length} post${ready.length === 1 ? "" : "s"}?`,
+        description:
+          reasons.length > 0
+            ? `${reasons.join(", ")} will be skipped.`
+            : "This will publish or schedule each post immediately.",
+        confirmLabel: "Send all",
+      });
+      if (!ok) return;
+
+      setBulkBusy(true);
+      setBulkProgress({ current: 0, total: ready.length });
       const successIds: string[] = [];
       let sentCount = 0;
       for (let i = 0; i < ready.length; i++) {
@@ -318,11 +372,11 @@ export function ResultsView({
       }
     >
       {/* Board — standalone owns its own scroll container; embedded scrolls with the page. */}
-      {total === 0 ? (
+      {grouped.length === 0 ? (
         embedded ? null : (
           <div className="flex-1 flex items-center justify-center">
             <p className="text-sm text-gray-500">
-              All posts handled. Go back to generate more.
+              Connect a social account to get started.
             </p>
           </div>
         )
@@ -344,10 +398,13 @@ export function ResultsView({
                 stickyHeader={!embedded}
                 onToggleOne={toggleOne}
                 onToggleColumn={toggleColumn}
-                onEdit={onEdit}
                 onSchedule={onSchedule}
                 onAction={onAction}
                 onMediaChanged={onMediaChanged}
+                onContentChanged={onContentChanged}
+                onAddPost={onAddPost}
+                registerFlush={registerFlush}
+                unregisterFlush={unregisterFlush}
                 confirm={confirm}
               />
             ))}
@@ -385,10 +442,13 @@ function PlatformColumn({
   stickyHeader = true,
   onToggleOne,
   onToggleColumn,
-  onEdit,
   onSchedule,
   onAction,
   onMediaChanged,
+  onContentChanged,
+  onAddPost,
+  registerFlush,
+  unregisterFlush,
   confirm,
 }: {
   group: PlatformGroup;
@@ -397,13 +457,16 @@ function PlatformColumn({
   stickyHeader?: boolean;
   onToggleOne: (id: string) => void;
   onToggleColumn: (postIds: string[]) => void;
-  onEdit: (s: Suggestion) => void;
   onSchedule: (
     id: string,
     scheduledAt: string | null
   ) => Promise<boolean | void>;
   onAction: (action: string, s: Suggestion) => Promise<boolean | void>;
-  onMediaChanged: (id: string, mediaItems: MediaItem[]) => Promise<void>;
+  onMediaChanged: (id: string, mediaItems: MediaItem[]) => Promise<boolean>;
+  onContentChanged: (id: string, content: string) => Promise<void>;
+  onAddPost?: (account: AccountLite) => void;
+  registerFlush: (id: string, fn: () => Promise<void>) => void;
+  unregisterFlush: (id: string) => void;
   confirm: ConfirmFn;
 }) {
   const platform = getPlatform(group.account.platform);
@@ -474,7 +537,20 @@ function PlatformColumn({
         >
           {group.posts.length}
         </span>
+
       </header>
+
+      {onAddPost && (
+        <button
+          type="button"
+          onClick={() => onAddPost(group.account)}
+          aria-label="Add a post for this account"
+          className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-gray-300 bg-white/40 px-4 py-3 text-[13px] font-medium text-gray-500 hover:border-gray-400 hover:bg-white hover:text-gray-700 transition-colors cursor-pointer"
+        >
+          <PlusIcon className="h-4 w-4" weight="bold" />
+          Add a post
+        </button>
+      )}
 
       <div className="flex flex-col gap-3.5">
         {group.posts.map((post) => (
@@ -484,10 +560,12 @@ function PlatformColumn({
             color={color}
             selected={selected.has(post.id)}
             onToggleSelect={() => onToggleOne(post.id)}
-            onEdit={() => onEdit(post)}
             onSchedule={(scheduledAt) => onSchedule(post.id, scheduledAt)}
             onAction={(action) => onAction(action, post)}
             onMediaChanged={onMediaChanged}
+            onContentChanged={onContentChanged}
+            registerFlush={registerFlush}
+            unregisterFlush={unregisterFlush}
             confirm={confirm}
           />
         ))}
@@ -501,20 +579,24 @@ function PostCard({
   color,
   selected,
   onToggleSelect,
-  onEdit,
   onSchedule,
   onAction,
   onMediaChanged,
+  onContentChanged,
+  registerFlush,
+  unregisterFlush,
   confirm,
 }: {
   post: Suggestion;
   color: string;
   selected: boolean;
   onToggleSelect: () => void;
-  onEdit: () => void;
   onSchedule: (scheduledAt: string | null) => Promise<boolean | void>;
   onAction: (action: string) => Promise<boolean | void>;
-  onMediaChanged: (id: string, mediaItems: MediaItem[]) => Promise<void>;
+  onMediaChanged: (id: string, mediaItems: MediaItem[]) => Promise<boolean>;
+  onContentChanged: (id: string, content: string) => Promise<void>;
+  registerFlush: (id: string, fn: () => Promise<void>) => void;
+  unregisterFlush: (id: string) => void;
   confirm: ConfirmFn;
 }) {
   const isScheduled = post.scheduledAt !== null;
@@ -523,6 +605,7 @@ function PostCard({
   const platform = getPlatform(post.socialAccount.platform);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { upload } = useCloudinaryUpload();
+  const queryClient = useQueryClient();
 
   const platformConfig = getPlatformConfig(post.socialAccount.platform);
   const { requiresMedia, mediaRules } = platformConfig;
@@ -548,6 +631,119 @@ function PostCard({
   else if (mediaRules.maxVideos === 0) acceptAttr = "image/*";
   const swapMultiple = !hasVideo && mediaRules.maxImages > 1 && !imagesFull;
 
+  // Inline caption editor state. `draft` is what the textarea shows; it stays
+  // local while `dirty` so a refetch (chat panel rewrite, sibling save
+  // invalidation) can't clobber unsaved typing.
+  const [draft, setDraft] = useState(post.content);
+  const [dirty, setDirty] = useState(false);
+  const [rewriting, setRewriting] = useState(false);
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
+  const dirtyRef = useRef(dirty);
+  dirtyRef.current = dirty;
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Pull in fresh server content only when the user isn't actively editing.
+  useEffect(() => {
+    if (!dirtyRef.current) {
+      setDraft(post.content);
+    }
+  }, [post.content]);
+
+  // Auto-grow the textarea to fit its content.
+  useLayoutEffect(() => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    ta.style.height = "auto";
+    ta.style.height = `${ta.scrollHeight}px`;
+  }, [draft]);
+
+  // Stable flush — drains the debounce timer and PATCHes the latest draft if
+  // it diverged from the server. Held in a ref so the parent's flush registry
+  // can call it without re-registering on every render.
+  const flushRef = useRef<() => Promise<void>>(async () => undefined);
+  flushRef.current = async () => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+    if (!dirtyRef.current) return;
+    try {
+      await onContentChanged(post.id, draftRef.current);
+      // After a successful save, server content matches local — clear dirty
+      // so the next refetch can sync freely.
+      setDirty(false);
+    } catch {
+      // onContentChanged surfaces its own toast. Swallow here so a single
+      // per-card error never aborts a bulk flush of sibling cards.
+    }
+  };
+
+  useEffect(() => {
+    const stable = () => flushRef.current();
+    registerFlush(post.id, stable);
+    return () => {
+      unregisterFlush(post.id);
+    };
+  }, [post.id, registerFlush, unregisterFlush]);
+
+  // On unmount, fire any pending debounced save best-effort so a tab switch
+  // or re-key doesn't silently drop the user's last edit. The latest flush
+  // closure is held in flushRef and re-reads draftRef/dirtyRef internally.
+  useEffect(() => {
+    const flush = flushRef;
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
+      void flush.current();
+    };
+  }, []);
+
+  const handleDraftChange = (value: string) => {
+    setDraft(value);
+    setDirty(true);
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = setTimeout(() => {
+      void flushRef.current();
+    }, 800);
+  };
+
+  const handleRewrite = async (instruction: RewriteInstruction) => {
+    if (!draftRef.current.trim() || rewriting || isBusy) return;
+    // The rewrite endpoint reads the current content from the DB, so flush
+    // unsaved local edits first or the rewrite operates on stale text.
+    await flushRef.current();
+    setRewriting(true);
+    try {
+      const res = await fetch(`/api/suggestions/${post.id}/rewrite`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ instruction }),
+      });
+      if (!res.ok) {
+        toast.error("Couldn't rewrite the post. Try again.");
+        return;
+      }
+      const data = (await res.json().catch(() => null)) as
+        | { content?: unknown }
+        | null;
+      if (typeof data?.content === "string") {
+        setDraft(data.content);
+        setDirty(false);
+      }
+      queryClient.invalidateQueries({ queryKey: SUGGESTIONS_QUERY_KEY });
+      // Refresh the sidebar usage meter — a rewrite consumed 1 point.
+      queryClient.invalidateQueries({ queryKey: ["dashboardStatus"] });
+    } catch {
+      toast.error("Couldn't rewrite the post. Try again.");
+    } finally {
+      setRewriting(false);
+    }
+  };
+
   const run = async (
     action: string,
     fn: () => Promise<boolean | void>
@@ -558,6 +754,13 @@ function PostCard({
     } finally {
       setBusyAction(null);
     }
+  };
+
+  // Per-card publish/schedule must ship the latest caption — drain pending
+  // debounced saves before kicking off the action.
+  const commitAction = async (action: "publish" | "schedule") => {
+    await flushRef.current();
+    return run(action, () => onAction(action));
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -602,17 +805,56 @@ function PostCard({
     }
   };
 
+  // Local mirror of post.mediaItems so framer-motion's Reorder can drive the
+  // strip's order while a drag is in flight. Synced from server state via the
+  // effect below, except while the user is mid-drag (otherwise a query refetch
+  // would yank the items mid-drop). Includes `type` in the key so a
+  // type-only change (e.g. moderation reclassifies image → gif) still
+  // re-syncs the local mirror.
+  const [reorderItems, setReorderItems] = useState<MediaItem[]>(
+    post.mediaItems
+  );
+  const isDraggingRef = useRef(false);
+  const propMediaKey = post.mediaItems
+    .map((m) => `${m.type}:${m.url}`)
+    .join("|");
+  useEffect(() => {
+    if (isDraggingRef.current) return;
+    setReorderItems(post.mediaItems);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propMediaKey]);
+
+  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+
   const handleRemoveItem = async (idx: number) => {
+    const next = reorderItems.filter((_, i) => i !== idx);
     setBusyAction("media");
+    if (next.length === 0) setLightboxIdx(null);
     try {
-      await onMediaChanged(
-        post.id,
-        post.mediaItems.filter((_, i) => i !== idx)
-      );
+      await onMediaChanged(post.id, next);
     } finally {
       setBusyAction(null);
     }
   };
+
+  const commitReorder = async () => {
+    const before = post.mediaItems.map((m) => m.url).join("|");
+    const after = reorderItems.map((m) => m.url).join("|");
+    if (before === after) return;
+    setBusyAction("media");
+    try {
+      const ok = await onMediaChanged(post.id, reorderItems);
+      if (!ok) {
+        // Save failed (toast already shown by onMediaChanged). Snap back to
+        // the server's last-known order so the UI doesn't lie.
+        setReorderItems(post.mediaItems);
+      }
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
+  const rewriteDisabled = isBusy || rewriting || !draft.trim();
 
   return (
     <article
@@ -660,39 +902,41 @@ function PostCard({
 
       {mediaCount > 0 ? (
         <div className="mx-4 mt-1">
-          <div className="flex gap-2 overflow-x-auto pt-1.5 pb-1">
-            {post.mediaItems.map((item, idx) => (
-              <div key={`${item.url}-${idx}`} className="relative shrink-0">
-                {item.type === "video" ? (
-                  <video
-                    src={item.url}
-                    className="h-20 w-20 rounded-lg object-cover bg-gray-100"
-                    preload="metadata"
-                    playsInline
-                    muted
-                    aria-label={`Attached video ${idx + 1}`}
-                  />
-                ) : (
-                  <Image
-                    src={cloudinaryThumbnail(item.url)}
-                    alt={`Attached media ${idx + 1}`}
-                    className="h-20 w-20 rounded-lg object-cover"
-                    width={160}
-                    height={160}
-                  />
-                )}
-                <button
-                  type="button"
-                  onClick={() => handleRemoveItem(idx)}
-                  disabled={isBusy}
-                  className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-gray-900 text-white flex items-center justify-center cursor-pointer disabled:opacity-50"
-                  aria-label={`Remove media ${idx + 1}`}
-                >
-                  <XIcon className="h-3 w-3" weight="bold" />
-                </button>
-              </div>
+          <Reorder.Group
+            axis="x"
+            values={reorderItems}
+            onReorder={setReorderItems}
+            className="flex gap-2 overflow-x-auto pt-1.5 pb-1"
+          >
+            {reorderItems.map((item, idx) => (
+              <ReorderableMediaItem
+                key={item.url}
+                item={item}
+                idx={idx}
+                isBusy={isBusy}
+                onClick={() => setLightboxIdx(idx)}
+                onRemove={() => handleRemoveItem(idx)}
+                onDragStart={() => {
+                  isDraggingRef.current = true;
+                }}
+                onDragEnd={async () => {
+                  isDraggingRef.current = false;
+                  await commitReorder();
+                }}
+              />
             ))}
-          </div>
+          </Reorder.Group>
+          {lightboxIdx !== null && reorderItems.length > 0 && (
+            <MediaLightbox
+              items={reorderItems}
+              index={Math.min(lightboxIdx, reorderItems.length - 1)}
+              open
+              onOpenChange={(o) => {
+                if (!o) setLightboxIdx(null);
+              }}
+              onIndexChange={setLightboxIdx}
+            />
+          )}
         </div>
       ) : post.contentType === "image" ||
         post.contentType === "video" ||
@@ -745,9 +989,18 @@ function PostCard({
       ) : null}
 
       <div className="px-4 pt-2.5 pb-3">
-        <p className="text-[13px] leading-relaxed text-gray-900 whitespace-pre-wrap line-clamp-[8]">
-          {post.content}
-        </p>
+        <textarea
+          ref={textareaRef}
+          value={draft}
+          onChange={(e) => handleDraftChange(e.target.value)}
+          rows={1}
+          placeholder="Write your post..."
+          aria-label="Post caption"
+          // Disabled mid-rewrite so keystrokes can't be silently overwritten
+          // by the incoming setDraft(data.content) once the rewrite returns.
+          disabled={rewriting}
+          className="block w-full resize-none border-0 bg-transparent p-0 text-[13px] leading-relaxed text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-0 disabled:cursor-wait disabled:text-gray-500"
+        />
       </div>
 
       <footer className="flex items-center gap-1 border-t border-gray-100 px-3 py-2 bg-black/[0.005]">
@@ -774,16 +1027,38 @@ function PostCard({
               <TrashIcon className="h-3.5 w-3.5" />
             )}
           </button>
-          <button
-            type="button"
-            onClick={onEdit}
-            disabled={isBusy}
-            title="Edit"
-            aria-label="Edit"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-black/[0.05] hover:text-gray-700 transition-colors cursor-pointer disabled:opacity-50"
-          >
-            <PencilSimpleIcon className="h-3.5 w-3.5" />
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                disabled={rewriteDisabled}
+                title="Rewrite"
+                aria-label="Rewrite"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-black/[0.05] hover:text-gray-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {rewriting ? (
+                  <SpinnerGapIcon className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <LightningIcon className="h-3.5 w-3.5" />
+                )}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              {REWRITE_ACTIONS.map(({ key, label, Icon }) => (
+                <DropdownMenuItem
+                  key={key}
+                  onSelect={() => {
+                    void handleRewrite(key);
+                  }}
+                  disabled={rewriteDisabled}
+                  className="gap-2 text-[13px] text-gray-700"
+                >
+                  <Icon className="h-3.5 w-3.5 text-gray-400" />
+                  {label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <input
             ref={fileInputRef}
             type="file"
@@ -839,8 +1114,8 @@ function PostCard({
                     type="button"
                     onClick={() =>
                       isScheduled
-                        ? run("schedule", () => onAction("schedule"))
-                        : run("publish", () => onAction("publish"))
+                        ? commitAction("schedule")
+                        : commitAction("publish")
                     }
                     disabled={isBusy || mediaMissing}
                     className="inline-flex h-10 md:h-8 items-center gap-1.5 rounded-r-lg px-3 text-[12.5px] font-medium text-white transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
@@ -945,5 +1220,81 @@ function BulkBar({
         <XIcon className="h-3.5 w-3.5" weight="bold" />
       </button>
     </div>
+  );
+}
+
+function ReorderableMediaItem({
+  item,
+  idx,
+  isBusy,
+  onClick,
+  onRemove,
+  onDragStart,
+  onDragEnd,
+}: {
+  item: MediaItem;
+  idx: number;
+  isBusy: boolean;
+  onClick: () => void;
+  onRemove: () => void;
+  onDragStart: () => void;
+  onDragEnd: () => void;
+}) {
+  const dragControls = useDragControls();
+  return (
+    <Reorder.Item
+      value={item}
+      dragListener={false}
+      dragControls={dragControls}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      className="relative shrink-0"
+    >
+      <button
+        type="button"
+        onClick={onClick}
+        className="block cursor-zoom-in"
+        aria-label={`Open media ${idx + 1}`}
+      >
+        {item.type === "video" ? (
+          <video
+            src={item.url}
+            className="h-20 w-20 rounded-lg object-cover bg-gray-100 pointer-events-none"
+            preload="metadata"
+            playsInline
+            muted
+            aria-hidden
+          />
+        ) : (
+          <Image
+            src={cloudinaryThumbnail(item.url)}
+            alt={`Attached media ${idx + 1}`}
+            className="h-20 w-20 rounded-lg object-cover pointer-events-none"
+            width={160}
+            height={160}
+          />
+        )}
+      </button>
+      <button
+        type="button"
+        onPointerDown={(e) => dragControls.start(e)}
+        className="absolute bottom-1 left-1 h-5 w-5 rounded-full bg-[#2d2a25]/70 text-white flex items-center justify-center cursor-grab active:cursor-grabbing touch-none hover:bg-[#2d2a25]"
+        aria-label="Drag to reorder"
+      >
+        <DotsSixVerticalIcon className="h-3 w-3" weight="bold" />
+      </button>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onRemove();
+        }}
+        disabled={isBusy}
+        className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-gray-900 text-white flex items-center justify-center cursor-pointer disabled:opacity-50"
+        aria-label={`Remove media ${idx + 1}`}
+      >
+        <XIcon className="h-3 w-3" weight="bold" />
+      </button>
+    </Reorder.Item>
   );
 }

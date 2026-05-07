@@ -6,6 +6,7 @@ import { ResultsView } from "./publish/ResultsView";
 import type { Suggestion } from "./publish/types";
 import type { MediaItem } from "@/lib/schemas/mediaItems";
 import { fetchData } from "@/lib/hooks/useApi";
+import { SUGGESTIONS_QUERY_KEY } from "./publish/queryKeys";
 
 interface AccountInfo {
   id: string;
@@ -17,32 +18,24 @@ interface SuggestionsResponse {
   suggestions: Suggestion[];
 }
 
-export const SUGGESTIONS_QUERY_KEY = ["suggestions"] as const;
-
 interface Props {
   accounts: AccountInfo[];
-  onEdit: (s: Suggestion) => void;
   onLimitReached: () => void;
   onPublishedOrScheduled?: () => void;
+  onAddPost?: (account: {
+    id: string;
+    platform: string;
+    username: string;
+  }) => void;
   /** Free posts remaining; null = unlimited (subscribed). */
   quotaRemaining: number | null;
 }
 
-function formatScheduleLabel(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
-
 export function SuggestionsBoard({
   accounts,
-  onEdit,
   onLimitReached,
   onPublishedOrScheduled,
+  onAddPost,
   quotaRemaining,
 }: Props) {
   const qc = useQueryClient();
@@ -74,11 +67,6 @@ export function SuggestionsBoard({
     }
     if (!opts?.silent) {
       invalidate();
-      if (scheduledAt === null) {
-        toast.success("Schedule cleared");
-      } else {
-        toast.success(`Scheduled for ${formatScheduleLabel(scheduledAt)}`);
-      }
     }
     return true;
   };
@@ -187,7 +175,10 @@ export function SuggestionsBoard({
     }
   };
 
-  const handleMediaChanged = async (id: string, mediaItems: MediaItem[]) => {
+  const handleMediaChanged = async (
+    id: string,
+    mediaItems: MediaItem[]
+  ): Promise<boolean> => {
     const res = await fetch(`/api/suggestions/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -196,13 +187,28 @@ export function SuggestionsBoard({
     if (!res.ok) {
       const body = await res.json().catch(() => null);
       toast.error(body?.message ?? "Couldn't save the media. Try again.");
-      return;
+      return false;
     }
     invalidate();
     toast.success("Media updated");
+    return true;
   };
 
-  if (isLoading || suggestions.length === 0) return null;
+  const handleContentChanged = async (id: string, content: string) => {
+    const res = await fetch(`/api/suggestions/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      toast.error(body?.message ?? "Couldn't save your changes. Try again.");
+      return;
+    }
+    invalidate();
+  };
+
+  if (isLoading) return null;
 
   const accountLites = accounts.map((a) => ({
     id: a.id,
@@ -215,10 +221,11 @@ export function SuggestionsBoard({
       embedded
       accounts={accountLites}
       suggestions={suggestions}
-      onEdit={onEdit}
       onSchedule={handleSchedule}
       onAction={handleAction}
       onMediaChanged={handleMediaChanged}
+      onContentChanged={handleContentChanged}
+      onAddPost={onAddPost}
       onBulkComplete={handleBulkComplete}
       quotaRemaining={quotaRemaining}
     />

@@ -10,7 +10,6 @@ export const appRouter = {
   // Dashboard routes (protected)
   dashboard: "/d",
   accounts: "/d/accounts",
-  posts: "/d/posts",
   accountsCallback: "/d/accounts/callback",
   analytics: "/d/analytics",
   business: "/d/business",

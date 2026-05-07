@@ -107,7 +107,7 @@ function NavItem({
       {badge !== undefined && badge !== null && badge !== "" && (
         <em
           className="ml-auto rounded-full px-1.5 py-px text-[10.5px] font-semibold not-italic text-white"
-          style={{ backgroundColor: "#e8614d" }}
+          style={{ backgroundColor: "#9ca3af" }}
         >
           {badge}
         </em>
@@ -255,7 +255,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
               <span
                 className="flex h-7 w-7 items-center justify-center rounded-lg text-white text-[11px] font-semibold shrink-0"
                 style={{
-                  background: "linear-gradient(135deg, #ec6f5b, #c84a35)",
+                  background: "linear-gradient(135deg, #6b7280, #374151)",
                 }}
               >
                 {getInitials(session?.user?.name, session?.user?.email)}

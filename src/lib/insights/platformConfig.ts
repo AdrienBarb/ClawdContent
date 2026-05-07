@@ -28,8 +28,8 @@ export interface PlatformConfig {
   recommendedPostsPerDay: number;
   /**
    * Whether the platform refuses (or effectively refuses) text-only posts.
-   * - "video"          → only video posts are allowed (TikTok, YouTube)
-   * - "image_or_video" → image or video required (Instagram feed, Pinterest)
+   * - "video"          → only video posts are allowed (YouTube)
+   * - "image_or_video" → image or video required (Instagram feed, Pinterest, TikTok)
    * - null             → text posts are fine
    *
    * Used to (a) steer the suggestion prompt and (b) override Claude's
@@ -126,7 +126,7 @@ export const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
     ],
     charLimit: 2200,
     recommendedPostsPerDay: 2,
-    requiresMedia: "video",
+    requiresMedia: "image_or_video",
     mediaRules: { maxImages: 35, maxVideos: 1 },
   },
   youtube: {

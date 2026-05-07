@@ -51,7 +51,7 @@ export default function UsageMeter() {
           <LightningIcon
             className="h-3 w-3"
             weight="fill"
-            style={{ color: "#e8614d" }}
+            style={{ color: "#9ca3af" }}
           />
           <span className="tabular-nums">{pct}%</span>
           <span className="text-gray-500 font-normal">remaining</span>
@@ -90,8 +90,7 @@ export default function UsageMeter() {
         {!isEmpty && (
           <button
             onClick={openModal}
-            className="text-[10.5px] font-semibold tracking-[0.02em] uppercase cursor-pointer transition-colors"
-            style={{ color: "#c84a35" }}
+            className="text-[10.5px] font-semibold tracking-[0.02em] uppercase cursor-pointer transition-colors text-gray-600 hover:text-gray-900"
           >
             {ctaLabel}
           </button>
@@ -106,7 +105,7 @@ export default function UsageMeter() {
           className="h-full rounded-full transition-[width] duration-300"
           style={{
             width: `${pct}%`,
-            backgroundColor: isEmpty ? "#9ca3af" : "#e8614d",
+            backgroundColor: isEmpty ? "#9ca3af" : "#6b7280",
           }}
         />
       </div>

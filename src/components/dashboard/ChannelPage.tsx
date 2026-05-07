@@ -34,6 +34,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { SchedulePicker } from "./SchedulePicker";
 
 
 interface AccountInfo {
@@ -134,6 +135,26 @@ export default function ChannelPage({ channelId }: { channelId: string }) {
 
   const platform = getPlatform(channel.platform);
 
+  const handleReschedule = async (postId: string, date: Date) => {
+    setActionLoading(postId);
+    try {
+      const res = await fetch(appRouter.api.postsUpdate, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ postId, scheduledAt: date.toISOString() }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        toast.error(data?.error || "Failed to reschedule");
+        return;
+      }
+      toast.success("Rescheduled");
+      refetchPosts();
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const handleAction = async (action: string, postId: string) => {
     setActionLoading(postId);
     try {
@@ -219,6 +240,7 @@ export default function ChannelPage({ channelId }: { channelId: string }) {
               platform={platform}
               loading={actionLoading === post.id}
               onEdit={() => setEditingPost(post)}
+              onReschedule={handleReschedule}
               onAction={handleAction}
             />
           ))}
@@ -363,6 +385,7 @@ function PostCard({
   platform,
   loading,
   onEdit,
+  onReschedule,
   onAction,
 }: {
   post: PostItem;
@@ -370,6 +393,7 @@ function PostCard({
   platform: ReturnType<typeof getPlatform>;
   loading: boolean;
   onEdit: () => void;
+  onReschedule: (postId: string, date: Date) => void;
   onAction: (action: string, postId: string) => void;
 }) {
   const time = post.scheduledAt ?? post.publishedAt ?? post.createdAt;
@@ -446,6 +470,16 @@ function PostCard({
           {loading && <SpinnerGapIcon className="h-4 w-4 animate-spin text-gray-400" />}
           {!loading && (
             <>
+              {post.status === "scheduled" && (
+                <SchedulePicker
+                  variant="compact"
+                  platform={channel.platform}
+                  scheduledAt={post.scheduledAt}
+                  disabled={false}
+                  onSchedule={(d) => onReschedule(post.id, d)}
+                  compactLabel="Reschedule"
+                />
+              )}
               {(post.status === "scheduled" || post.status === "draft") && (
                 <button onClick={onEdit} className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors cursor-pointer">
                   <PencilSimpleIcon className="h-3.5 w-3.5" />

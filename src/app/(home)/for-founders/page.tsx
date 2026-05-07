@@ -7,12 +7,12 @@ import config from "@/lib/config";
 
 const PAGE_PATH = "/for-founders";
 const PAGE_URL = `${config.project.url}${PAGE_PATH}`;
-const PAGE_TITLE = "PostClaw for Solo Founders & Indie Hackers";
+const PAGE_TITLE = "Social Media Manager for Solo Founders & Indie Hackers";
 const PAGE_DESCRIPTION =
   "A social media manager for solo founders and indie hackers shipping product. Build-in-public posts, launch announcements, customer wins. $49/mo. Cheaper than your domain bill, faster than hiring.";
 
 export const metadata: Metadata = {
-  title: `${PAGE_TITLE} | ${config.project.brandName}`,
+  title: PAGE_TITLE,
   description: PAGE_DESCRIPTION,
   alternates: { canonical: PAGE_URL },
   openGraph: {
@@ -243,21 +243,6 @@ export default function ForFoundersPage() {
                 <p className="text-base leading-[1.6] text-[#4a5073]">{s.d}</p>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="bg-[#f5f0ea] px-6 py-24 md:px-14 md:py-32">
-        <div className="mx-auto max-w-[900px] text-center">
-          <div className="mb-5 text-[11px] uppercase tracking-[0.18em] text-[#7e8298]">
-            One of yours
-          </div>
-          <blockquote className="font-display text-3xl leading-[1.15] tracking-[-0.02em] text-[#0f1437] md:text-4xl lg:text-5xl">
-            &ldquo;I closed the agency. PostClaw is doing better content for $1,950 less a month.&rdquo;
-          </blockquote>
-          <div className="mt-8 text-sm text-[#7e8298]">
-            <strong className="font-semibold text-[#0f1437]">James Otieno</strong>
-            {" · "}Studio Roma, Chicago
           </div>
         </div>
       </section>

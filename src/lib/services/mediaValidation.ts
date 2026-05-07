@@ -20,16 +20,6 @@ export function validateMediaItems(
     else if (item.type === "video") videoCount += 1;
   }
 
-  // Platforms like TikTok declare maxImages > 0 because the API technically
-  // accepts photo carousels, but requiresMedia: "video" means the surface we
-  // publish to fails opaquely on images. Block here for a friendly error.
-  if (config.requiresMedia === "video" && imageCount > 0) {
-    return {
-      ok: false,
-      error: `${label} only accepts video — replace photos with a video.`,
-    };
-  }
-
   if (imageCount > 0 && videoCount > 0) {
     return {
       ok: false,

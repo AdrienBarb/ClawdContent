@@ -7,12 +7,12 @@ import config from "@/lib/config";
 
 const PAGE_PATH = "/for-small-businesses";
 const PAGE_URL = `${config.project.url}${PAGE_PATH}`;
-const PAGE_TITLE = "PostClaw for Small Business Owners";
+const PAGE_TITLE = "Social Media Manager for Small Business Owners";
 const PAGE_DESCRIPTION =
   "A social media manager built for photographers, caterers, coaches, consultants, and local shops. Plans your posts, writes them in your voice, and publishes on schedule for $49/mo.";
 
 export const metadata: Metadata = {
-  title: `${PAGE_TITLE} | ${config.project.brandName}`,
+  title: PAGE_TITLE,
   description: PAGE_DESCRIPTION,
   alternates: { canonical: PAGE_URL },
   openGraph: {
@@ -245,21 +245,6 @@ export default function ForSmallBusinessesPage() {
                 <p className="text-base leading-[1.6] text-[#4a5073]">{s.d}</p>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="bg-[#f5f0ea] px-6 py-24 md:px-14 md:py-32">
-        <div className="mx-auto max-w-[900px] text-center">
-          <div className="mb-5 text-[11px] uppercase tracking-[0.18em] text-[#7e8298]">
-            One of yours
-          </div>
-          <blockquote className="font-display text-3xl leading-[1.15] tracking-[-0.02em] text-[#0f1437] md:text-4xl lg:text-5xl">
-            &ldquo;It writes like I write. Customers tell me my Instagram has &lsquo;really gotten good lately&rsquo;.&rdquo;
-          </blockquote>
-          <div className="mt-8 text-sm text-[#7e8298]">
-            <strong className="font-semibold text-[#0f1437]">Marie Chen</strong>
-            {" · "}Owner, The Corner Bakery
           </div>
         </div>
       </section>

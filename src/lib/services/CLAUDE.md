@@ -51,7 +51,8 @@ Both `computeInsights` and `createFromBrief` exit cleanly on a missing SocialAcc
 | Platform | `primaryMetric` | `noExternalHistory` | `charLimit` | Notes |
 |---|---|---|---|---|
 | Instagram, Facebook, Twitter, Threads | `likes` | false | 2200 / null / 280 / 500 | Standard engagement |
-| TikTok, YouTube | **`views`** | false | 2200 / null | Video — rank by views |
+| TikTok | **`views`** | false | 2200 | Rank by views. Accepts video OR photo carousels (up to 35 images). |
+| YouTube | **`views`** | false | null | Video only — rank by views |
 | Pinterest | **`saves`** | false | 500 | Save = success |
 | LinkedIn | `likes` | **true** | 3000 | Personal accounts: only Zernio-published posts visible. Skip post fetch on `source: "external"`, fetch on `source: "all"`. |
 | Bluesky | `likes` | **true** (no analytics) | 300 | `supportsAnalytics: false` |
