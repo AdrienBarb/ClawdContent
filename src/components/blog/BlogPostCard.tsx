@@ -43,17 +43,9 @@ export default function BlogPostCard({
 
       {/* Content */}
       <div className={`p-6 ${featured ? "flex flex-col justify-center" : ""}`}>
-        {/* Category */}
-        <Link
-          href={`/blog/category/${post.category.slug.current}`}
-          className="text-xs font-medium text-primary hover:text-primary uppercase tracking-wide"
-        >
-          {post.category.title}
-        </Link>
-
         {/* Title */}
         <h3
-          className={`mt-2 font-bold text-foreground group-hover:text-primary transition-colors line-clamp-2 ${
+          className={`font-bold text-foreground group-hover:text-primary transition-colors line-clamp-2 ${
             featured ? "text-2xl" : "text-lg"
           }`}
         >

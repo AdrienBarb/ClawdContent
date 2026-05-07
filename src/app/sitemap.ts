@@ -3,7 +3,6 @@ import { siteMetadata } from "@/data/siteMetadata";
 import { client } from "@/lib/sanity/client";
 import {
   SITEMAP_POSTS_QUERY,
-  SITEMAP_CATEGORIES_QUERY,
   SITEMAP_COMPETITORS_QUERY,
 } from "@/lib/sanity/queries";
 
@@ -12,10 +11,6 @@ export const revalidate = 60;
 interface SitemapPost {
   slug: string;
   updatedAt: string;
-}
-
-interface SitemapCategory {
-  slug: string;
 }
 
 interface SitemapCompetitor {
@@ -28,17 +23,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // Fetch all dynamic content from Sanity
   let posts: SitemapPost[] = [];
-  let categories: SitemapCategory[] = [];
   let competitors: SitemapCompetitor[] = [];
 
   try {
-    [posts, categories, competitors] = await Promise.all([
+    [posts, competitors] = await Promise.all([
       client.fetch(SITEMAP_POSTS_QUERY),
-      client.fetch(SITEMAP_CATEGORIES_QUERY),
       client.fetch(SITEMAP_COMPETITORS_QUERY),
     ]);
-  } catch {
-    // Sanity unavailable — return static pages only
+  } catch (error) {
+    // Sanity unavailable — return static pages only. Log so silent
+    // delistings don't go unnoticed.
+    console.error("[sitemap] Sanity fetch failed", error);
   }
 
   const staticPages: MetadataRoute.Sitemap = [
@@ -99,13 +94,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  const categoryPages: MetadataRoute.Sitemap = categories.map((cat) => ({
-    url: `${baseUrl}/blog/category/${cat.slug}`,
-    lastModified: new Date(),
-    changeFrequency: "weekly",
-    priority: 0.6,
-  }));
-
   const competitorPages: MetadataRoute.Sitemap = competitors.map((comp) => ({
     url: `${baseUrl}/alternatives/${comp.slug}`,
     lastModified: comp.updatedAt ? new Date(comp.updatedAt) : new Date(),
@@ -116,7 +104,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     ...staticPages,
     ...blogPages,
-    ...categoryPages,
     ...competitorPages,
   ];
 }
