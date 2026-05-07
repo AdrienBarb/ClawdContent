@@ -1,8 +1,14 @@
 import { Schema } from "@sanity/schema";
 import { htmlToBlocks } from "@sanity/block-tools";
 import { JSDOM } from "jsdom";
-import type { ArraySchemaType } from "sanity";
 import type { SanityBlock, SanityImage } from "./types";
+
+// Use the exact type htmlToBlocks expects. @sanity/block-tools nests its own
+// copy of @sanity/types, so importing ArraySchemaType from `sanity` produces
+// a structurally-similar but incompatible type instance. Pulling the param
+// type from the function signature itself sidesteps the duplicate-package
+// mismatch without disabling typechecks.
+type BlockContentType = Parameters<typeof htmlToBlocks>[1];
 
 // Minimal schema mirroring `post.body` shape so block-tools knows what to emit.
 // Inline <img> blocks survive the structure but inline image *upload* is not
@@ -32,7 +38,7 @@ const bodyField = postSchema?.fields.find(
 if (!bodyField) {
   throw new Error("htmlToBlocks: post.body schema field not found");
 }
-const blockContentType = (bodyField as { type: ArraySchemaType }).type;
+const blockContentType = (bodyField as { type: BlockContentType }).type;
 
 // Strip dangerous elements + attributes before structural conversion.
 // Defends against stored XSS via attacker-controlled HTML — the trust
