@@ -1,12 +1,13 @@
 import { Schema } from "@sanity/schema";
-import { htmlToBlocks } from "@sanity/block-tools";
+import { htmlToBlocks } from "@portabletext/block-tools";
 import { parseHTML } from "linkedom";
 import type { SanityBlock, SanityImage } from "./types";
 
-// Why linkedom over jsdom: jsdom's transitive deps (html-encoding-sniffer →
-// @exodus/bytes) are ESM-only and crash on Vercel's CJS function runtime
-// with ERR_REQUIRE_ESM. linkedom is a pure-CJS DOM with the same API surface
-// we use here, ~30× smaller, and works in serverless without configuration.
+// Why @portabletext/block-tools over @sanity/block-tools: the legacy package
+// calls Document.evaluate() (XPath) for traversal, which linkedom doesn't
+// implement. The renamed package switched to standard DOM walking and works
+// with linkedom out of the box. linkedom itself replaces jsdom because
+// jsdom's ESM-only transitive deps crash on Vercel's CJS Function runtime.
 
 // Use the exact type htmlToBlocks expects. @sanity/block-tools nests its own
 // copy of @sanity/types, so importing ArraySchemaType from `sanity` produces
