@@ -10,18 +10,16 @@ const bestTimeSlotSchema = z.object({
  * Schema for Claude's structured output. NO array length / numeric range
  * constraints — Anthropic structured output rejects minItems/maxItems and
  * minimum/maximum. We trim and clamp in code after generation.
+ *
+ * `bestTimes` is intentionally NOT requested from Claude — it's computed
+ * deterministically from real Zernio analytics (or platform defaults) and
+ * merged into the final Strategy in the service layer. Asking Claude to
+ * invent it would waste tokens and produce inferior data.
  */
 export const strategyClaudeSchema = z.object({
   postsPerWeek: z.number(),
   contentPillars: z.array(z.string()),
   voiceRules: z.array(z.string()),
-  bestTimes: z.array(
-    z.object({
-      day: z.number(),
-      hour: z.number(),
-      score: z.number(),
-    })
-  ),
   imageStyle: z.string(),
 });
 
@@ -30,7 +28,7 @@ export const strategyClaudeSchema = z.object({
  * validation). Matches the SocialAccount.strategy comment in schema.prisma.
  */
 export const strategySchema = z.object({
-  postsPerWeek: z.number().int().min(1).max(35),
+  postsPerWeek: z.number().int().min(1).max(25),
   contentPillars: z.array(z.string()).min(3).max(5),
   voiceRules: z.array(z.string()).min(2).max(4),
   bestTimes: z.array(bestTimeSlotSchema).min(1).max(14),

@@ -29,9 +29,9 @@ const useApi = () => {
   const fetcher = async ({
     queryKey,
   }: {
-    queryKey: [string, FetchParams];
+    queryKey: readonly unknown[];
   }): Promise<any> => {
-    const [, { url, params }] = queryKey;
+    const [, { url, params }] = queryKey as readonly [string, FetchParams];
 
     const response: AxiosResponse = await axiosInstance.get(url, { params });
 
@@ -62,8 +62,12 @@ const useApi = () => {
     return response.data;
   };
 
-  const useGet = (url: string, params?: Record<string, any>, options = {}) =>
-    useQuery({
+  const useGet = <TData = any>(
+    url: string,
+    params?: Record<string, any>,
+    options = {}
+  ) =>
+    useQuery<TData>({
       queryKey: ["get", { url, params }],
       queryFn: fetcher,
       ...options,

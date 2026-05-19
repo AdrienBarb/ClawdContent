@@ -38,26 +38,23 @@ export const analyzeAccount = inngest.createFunction(
       if (refreshed !== null) insights = refreshed;
     }
 
-    // Always flip to "completed" — markAnalysisCompleted is a no-op when the
-    // row has been deleted, and unconditionally clearing the flag prevents the
-    // dashboard from sticking on "analyzing" if computeInsights ever returns
-    // null for a reason other than account-not-found.
-    await step.run("mark-analysis-completed", async () => {
-      await markAnalysisCompleted(socialAccountId);
+    // Generate the per-account strategy using the just-saved insights as the
+    // engagement signal. Runs BEFORE mark-analysis-completed so the dashboard
+    // never sees `analysisStatus: completed` with `strategy: null` — that
+    // would mislead any consumer that gates on completion (weekly cron,
+    // post generation). No try/catch here: Inngest retries the step on its
+    // own (function-level retries: 3), and we'd rather see a failure than
+    // silently ship a user with no strategy.
+    await step.run("define-strategy", async () => {
+      await defineStrategyForAccount(socialAccountId);
     });
 
-    // Generate the per-account strategy using the just-saved insights as the
-    // engagement signal. Isolated in its own step so a strategy failure
-    // doesn't roll back the completed analysis status above.
-    await step.run("define-strategy", async () => {
-      try {
-        await defineStrategyForAccount(socialAccountId);
-      } catch (error) {
-        console.error(
-          `[analyze-account] define-strategy failed for ${socialAccountId}:`,
-          error
-        );
-      }
+    // Flip to "completed" last. markAnalysisCompleted is a no-op when the
+    // row has been deleted; unconditionally clearing the flag prevents the
+    // dashboard from sticking on "analyzing" if computeInsights or strategy
+    // returned null without throwing.
+    await step.run("mark-analysis-completed", async () => {
+      await markAnalysisCompleted(socialAccountId);
     });
 
     return {

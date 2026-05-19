@@ -2,15 +2,14 @@ import { prisma } from "@/lib/db/prisma";
 import type { BrandingProfile } from "@mendable/firecrawl-js";
 import {
   brandIdentitySchema,
+  HEX_RE,
   type BrandIdentity,
 } from "@/lib/schemas/brandIdentity";
-
-const HEX = /^#[0-9a-fA-F]{6}$/;
 
 function normalizeHex(value: string | undefined | null): string | null {
   if (!value) return null;
   const trimmed = value.trim();
-  if (HEX.test(trimmed)) return trimmed.toLowerCase();
+  if (HEX_RE.test(trimmed)) return trimmed.toLowerCase();
   // Some scrapers return 3-digit hex; expand to 6 digits.
   const short = /^#([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])$/.exec(trimmed);
   if (short) {
@@ -18,6 +17,15 @@ function normalizeHex(value: string | undefined | null): string | null {
     return `#${r}${r}${g}${g}${b}${b}`.toLowerCase();
   }
   return null;
+}
+
+function isSafeHttpUrl(url: string): boolean {
+  try {
+    const protocol = new URL(url).protocol;
+    return protocol === "https:" || protocol === "http:";
+  } catch {
+    return false;
+  }
 }
 
 function describeStyleNotes(branding: BrandingProfile): string | null {
@@ -44,8 +52,13 @@ export function extractBrandIdentityFromScrape(scrape: {
   // Need at least primary + secondary to call this a usable extraction.
   if (!primary || !secondary) return null;
 
-  const logoUrl = branding.logo ?? null;
-  const photos = (scrape.images ?? []).slice(0, 5);
+  const logoUrl = branding.logo && isSafeHttpUrl(branding.logo) ? branding.logo : null;
+  const photos = (scrape.images ?? [])
+    .filter((u): u is string => typeof u === "string" && isSafeHttpUrl(u))
+    .slice(0, 5);
+
+  const styleNotesRaw = describeStyleNotes(branding);
+  const styleNotes = styleNotesRaw ? styleNotesRaw.slice(0, 500) : null;
 
   const candidate: BrandIdentity = {
     logoUrl,
@@ -53,7 +66,7 @@ export function extractBrandIdentityFromScrape(scrape: {
     secondaryColor: secondary,
     accentColor: accent,
     brandPhotos: photos,
-    styleNotes: describeStyleNotes(branding),
+    styleNotes,
   };
 
   const parsed = brandIdentitySchema.safeParse(candidate);

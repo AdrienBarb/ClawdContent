@@ -5,6 +5,7 @@ import { NextResponse, NextRequest } from "next/server";
 import { headers } from "next/headers";
 import { saveBrandIdentitySchema } from "@/lib/schemas/brandIdentity";
 import { saveBrandIdentity } from "@/lib/services/brandIdentity";
+import { limitOnboardingBrandIdentity } from "@/lib/rateLimit/onboardingLimiter";
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,6 +16,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: errorMessages.UNAUTHORIZED },
         { status: 401 }
+      );
+    }
+
+    const limit = await limitOnboardingBrandIdentity(session.user.id);
+    if (!limit.success) {
+      const retryAfterSec = limit.reset
+        ? Math.max(1, Math.ceil((limit.reset - Date.now()) / 1000))
+        : 60;
+      return NextResponse.json(
+        {
+          error: "Too many brand updates. Try again in a moment.",
+          retryAfterSeconds: retryAfterSec,
+        },
+        {
+          status: 429,
+          headers: { "Retry-After": String(retryAfterSec) },
+        }
       );
     }
 
