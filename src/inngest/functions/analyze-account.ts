@@ -1,6 +1,7 @@
 import { inngest } from "../client";
 import { prisma } from "@/lib/db/prisma";
 import { computeInsights } from "@/lib/services/accountInsights";
+import { defineStrategyForAccount } from "@/lib/services/strategy";
 
 async function markAnalysisCompleted(socialAccountId: string): Promise<void> {
   await prisma.socialAccount.updateMany({
@@ -43,6 +44,20 @@ export const analyzeAccount = inngest.createFunction(
     // null for a reason other than account-not-found.
     await step.run("mark-analysis-completed", async () => {
       await markAnalysisCompleted(socialAccountId);
+    });
+
+    // Generate the per-account strategy using the just-saved insights as the
+    // engagement signal. Isolated in its own step so a strategy failure
+    // doesn't roll back the completed analysis status above.
+    await step.run("define-strategy", async () => {
+      try {
+        await defineStrategyForAccount(socialAccountId);
+      } catch (error) {
+        console.error(
+          `[analyze-account] define-strategy failed for ${socialAccountId}:`,
+          error
+        );
+      }
     });
 
     return {
