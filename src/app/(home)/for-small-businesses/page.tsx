@@ -173,7 +173,7 @@ export default function ForSmallBusinessesPage() {
               <em className="italic text-[#ec6f5b]">We run the feed.</em>
             </h1>
             <p className="mt-9 max-w-[640px] text-base leading-[1.55] text-[#b9bdd6] md:text-xl">
-              PostClaw is a social media manager for photographers, caterers, coaches, consultants, and local shops. It learns your business, writes posts in your voice, and publishes to nine platforms on schedule. $49 a month, the agency you&apos;d hire costs forty times more.
+              PostClaw is a social media manager for photographers, caterers, coaches, consultants, and local shops. It learns your business, writes posts in your voice, and publishes for you on schedule. $49 a month, the agency you&apos;d hire costs forty times more.
             </p>
             <div className="mt-11 flex flex-wrap items-center justify-center gap-3.5">
               <Link

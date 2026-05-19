@@ -3,7 +3,6 @@ import DemoSection from "@/components/sections/DemoSection";
 import PlatformsSection from "@/components/sections/PlatformsSection";
 import HowItWorksSection from "@/components/sections/HowItWorksSection";
 import OutcomesSection from "@/components/sections/OutcomesSection";
-import WhoIsThisForSection from "@/components/sections/WhoIsThisForSection";
 import CompareSection from "@/components/sections/CompareSection";
 import PricingSection from "@/components/sections/PricingSection";
 import FAQSection from "@/components/sections/FAQSection";
@@ -135,7 +134,6 @@ export default async function Home() {
       <PlatformsSection />
       <HowItWorksSection />
       <OutcomesSection />
-      <WhoIsThisForSection />
       <CompareSection />
       <PricingSection />
       <FAQSection />

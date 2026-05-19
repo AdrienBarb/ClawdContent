@@ -27,6 +27,8 @@ model User {
   lastSuggestionsGeneratedAt DateTime?
   usageLedger                UsageLedger[]
   outcomeSnapshot            OutcomeSnapshot?
+  version                    String           @default("v1") // v1 = pre-pivot, v2 = autopublish MVP
+  firstBatchApproved         Boolean          @default(true) // false for new v2 signups, true after approval
 
   @@unique([email])
   @@map("user")

@@ -95,6 +95,15 @@ export const auth = betterAuth({
             console.error(`Failed to create profile for user ${user.id}:`, err)
           );
 
+          await prisma.user
+            .update({
+              where: { id: user.id },
+              data: { version: "v2", firstBatchApproved: false },
+            })
+            .catch((err) =>
+              console.error(`Failed to set v2 flags for user ${user.id}:`, err)
+            );
+
           // Brevo: create contact + trigger onboarding automation
           await createBrevoContact({
             email: user.email,

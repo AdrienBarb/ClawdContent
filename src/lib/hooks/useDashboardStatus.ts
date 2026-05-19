@@ -22,6 +22,8 @@ export interface DashboardStatus {
   subscription: { status: string } | null;
   postsPublished: number;
   freePostLimit: number;
+  version: string;
+  firstBatchApproved: boolean;
   usage: UsageBreakdown;
 }
 

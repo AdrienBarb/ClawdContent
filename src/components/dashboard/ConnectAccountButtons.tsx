@@ -13,6 +13,7 @@ interface ConnectAccountButtonsProps {
   disabled?: boolean;
   onDisabledClick?: () => void;
   returnTo?: string;
+  platformFilter?: string[];
 }
 
 export default function ConnectAccountButtons({
@@ -21,6 +22,7 @@ export default function ConnectAccountButtons({
   disabled = false,
   onDisabledClick,
   returnTo,
+  platformFilter,
 }: ConnectAccountButtonsProps) {
   const { usePost } = useApi();
   const [connectingPlatform, setConnectingPlatform] = useState<string | null>(
@@ -54,9 +56,13 @@ export default function ConnectAccountButtons({
     getConnectUrl({ platform, returnTo });
   };
 
+  const visiblePlatforms = platformFilter
+    ? PLATFORMS.filter((p) => platformFilter.includes(p.id))
+    : PLATFORMS;
+
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-      {PLATFORMS.map((platform) => {
+      {visiblePlatforms.map((platform) => {
         const isConnecting = connectingPlatform === platform.id;
         const isConnected = connectedPlatforms.includes(platform.id);
 

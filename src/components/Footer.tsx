@@ -53,22 +53,6 @@ export default async function Footer() {
                   Small business owners
                 </Link>
               </li>
-              <li>
-                <Link
-                  href="/for-founders"
-                  className="hover:text-primary transition-colors"
-                >
-                  Solo founders & indie hackers
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/for-creators"
-                  className="hover:text-primary transition-colors"
-                >
-                  Creators
-                </Link>
-              </li>
             </ul>
           </div>
 

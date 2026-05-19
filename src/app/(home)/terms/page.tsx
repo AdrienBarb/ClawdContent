@@ -35,12 +35,11 @@ export default function TermsPage() {
             2. Description of the Service
           </h2>
           <p className="text-muted-foreground">
-            PostClaw provides an AI social media manager accessible via a
+            PostClaw provides a social media manager accessible via a
             web-based chat interface. The Service allows you to create, adapt,
             and publish social media posts to supported platforms (including
             Twitter/X, LinkedIn, Bluesky, and Threads) through a conversational
-            interface with an AI-powered social media manager. Each subscriber
-            receives a dedicated, isolated instance.
+            interface. Each subscriber receives a dedicated, isolated instance.
           </p>
         </section>
 
@@ -110,7 +109,7 @@ export default function TermsPage() {
                 billing period
               </li>
               <li>
-                Your AI social media manager and connected accounts will be
+                Your PostClaw account and connected social accounts will be
                 deprovisioned after the billing period ends
               </li>
               <li>
@@ -148,7 +147,7 @@ export default function TermsPage() {
             <p className="text-muted-foreground">
               This guarantee applies only to your first billing cycle. Subsequent
               months are not eligible for the money-back guarantee. Upon refund,
-              your subscription will be canceled and your AI social media manager
+              your subscription will be canceled and your PostClaw account
               will be deprovisioned immediately.
             </p>
           </div>

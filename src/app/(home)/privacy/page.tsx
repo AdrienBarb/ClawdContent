@@ -99,7 +99,7 @@ export default function PrivacyPage() {
               </h3>
               <ul className="list-disc pl-6 text-muted-foreground space-y-1">
                 <li>
-                  Messages exchanged with your AI social media manager (processed
+                  Messages exchanged with your social media manager (processed
                   in your isolated instance and not stored by us beyond the
                   session)
                 </li>
@@ -283,8 +283,8 @@ export default function PrivacyPage() {
               </li>
             </ul>
             <p className="text-muted-foreground">
-              When you cancel your subscription, your AI social media manager
-              and associated data (social account connections) are deleted at
+              When you cancel your subscription, your PostClaw account and
+              associated data (social account connections) are deleted at
               the end of your billing period.
             </p>
           </div>

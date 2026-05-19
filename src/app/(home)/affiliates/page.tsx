@@ -6,7 +6,7 @@ import RevenueSimulator from "@/components/affiliates/RevenueSimulator";
 export const metadata = genPageMetadata({
   title: "Affiliate Program — Earn 40% Recurring Commission",
   description:
-    "Earn 40% recurring commission promoting PostClaw — the AI social media manager small business owners actually stick with. Real monthly income, no caps.",
+    "Earn 40% recurring commission promoting PostClaw — the social media manager small business owners actually stick with. Real monthly income, no caps.",
   url: "/affiliates",
 });
 

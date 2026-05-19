@@ -117,6 +117,16 @@ const nextConfig: NextConfig = {
         destination: "/blog",
         permanent: true,
       },
+      {
+        source: "/for-creators",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/for-founders",
+        destination: "/",
+        permanent: true,
+      },
     ];
   },
 };

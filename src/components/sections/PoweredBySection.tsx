@@ -43,7 +43,7 @@ export default function PoweredBySection() {
               <span className="rounded-full bg-[#ec6f5b]/15 px-3 py-1 text-xs font-medium text-[#f8a594]">
                 Social media API
               </span>
-              <span className="text-xs text-[#7a7fa0]">9 platforms</span>
+              <span className="text-xs text-[#7a7fa0]">your accounts</span>
             </div>
             <h3 className="mb-3 text-xl font-semibold tracking-[-0.015em] text-white md:text-2xl">
               Zernio

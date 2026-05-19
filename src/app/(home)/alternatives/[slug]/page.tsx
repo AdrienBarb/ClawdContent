@@ -148,9 +148,9 @@ export default async function CompetitorPageView({
   };
 
   const ctaFeatures = [
-    "AI social media manager — just chat and publish",
-    "Publish to 13+ social platforms from one chat",
-    "AI-adapted content per platform",
+    "A manager that plans and posts for you",
+    "Publish to your social accounts from one chat",
+    "Content adapted per platform",
     "Unlimited posts — no per-action fees",
   ];
 

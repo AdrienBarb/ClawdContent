@@ -35,6 +35,8 @@ export async function GET() {
           websiteUrl: true,
           knowledgeBase: true,
           postsPublished: true,
+          version: true,
+          firstBatchApproved: true,
         },
       }),
       prisma.subscription.findUnique({ where: { userId } }),
@@ -96,6 +98,8 @@ export async function GET() {
         })) ?? [],
       postsPublished: user?.postsPublished ?? 0,
       freePostLimit: 5,
+      version: user?.version ?? "v1",
+      firstBatchApproved: user?.firstBatchApproved ?? true,
       usage,
     });
   } catch (error) {

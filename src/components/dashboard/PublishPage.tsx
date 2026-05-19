@@ -10,6 +10,7 @@ import EmptyDashboardState from "./EmptyDashboardState";
 import SubscribeModal from "./SubscribeModal";
 import { ChatPanel } from "./ChatPanel";
 import { SuggestionsBoard } from "./SuggestionsBoard";
+import FirstBatchApproval from "./FirstBatchApproval";
 import { SUGGESTIONS_QUERY_KEY } from "./publish/queryKeys";
 import type { AccountInfo } from "./publish/types";
 
@@ -41,6 +42,13 @@ export default function PublishPage() {
         onAccountConnected={() => refetchStatus()}
       />
     );
+  }
+
+  const needsFirstBatchApproval =
+    status?.version === "v2" && status?.firstBatchApproved === false;
+
+  if (needsFirstBatchApproval) {
+    return <FirstBatchApproval />;
   }
 
   // Re-mount the inner shell whenever the active account set changes —

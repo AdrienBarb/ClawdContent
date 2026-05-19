@@ -283,7 +283,7 @@ export default async function PostPage({ params }: PostPageProps) {
               </h2>
               <p className="text-muted-foreground mb-6">
                 PostClaw is your social media manager.
-                It learns your brand, plans your content, and publishes to 9 platforms.
+                It learns your brand, plans your content, and publishes for you on schedule.
               </p>
               <Button
                 asChild
