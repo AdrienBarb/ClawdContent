@@ -8,9 +8,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useDashboardStatus } from "@/lib/hooks/useDashboardStatus";
 import EmptyDashboardState from "./EmptyDashboardState";
 import SubscribeModal from "./SubscribeModal";
-import { ChatPanel } from "./ChatPanel";
 import { SuggestionsBoard } from "./SuggestionsBoard";
-import FirstBatchApproval from "./FirstBatchApproval";
 import { SUGGESTIONS_QUERY_KEY } from "./publish/queryKeys";
 import type { AccountInfo } from "./publish/types";
 
@@ -42,13 +40,6 @@ export default function PublishPage() {
         onAccountConnected={() => refetchStatus()}
       />
     );
-  }
-
-  const needsFirstBatchApproval =
-    status?.version === "v2" && status?.firstBatchApproved === false;
-
-  if (needsFirstBatchApproval) {
-    return <FirstBatchApproval />;
   }
 
   // Re-mount the inner shell whenever the active account set changes —
@@ -91,9 +82,6 @@ function PublishShell({
   onPublishedOrScheduled,
 }: ShellProps) {
   const qc = useQueryClient();
-  const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>(() =>
-    accounts.map((a) => a.id)
-  );
   const [showSubscribeModal, setShowSubscribeModal] = useState(false);
   const [creatingForAccount, setCreatingForAccount] = useState<{
     id: string;
@@ -116,15 +104,6 @@ function PublishShell({
 
   return (
     <>
-      <ChatPanel
-        accounts={accounts}
-        selectedAccountIds={selectedAccountIds}
-        onSelectedAccountIdsChange={setSelectedAccountIds}
-        onSuggestionsChanged={invalidateSuggestions}
-      />
-
-      <div className="mt-3 mb-8 border-t border-gray-100" />
-
       <SuggestionsBoard
         accounts={accounts}
         onLimitReached={() => setShowSubscribeModal(true)}

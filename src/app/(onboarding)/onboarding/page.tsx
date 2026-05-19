@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/lib/better-auth/auth";
-import { prisma } from "@/lib/db/prisma";
 import OnboardingClient from "./OnboardingClient";
 
 export default async function OnboardingPage() {
@@ -12,10 +11,5 @@ export default async function OnboardingPage() {
     redirect("/");
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { version: true },
-  });
-
-  return <OnboardingClient userVersion={user?.version ?? "v1"} />;
+  return <OnboardingClient />;
 }

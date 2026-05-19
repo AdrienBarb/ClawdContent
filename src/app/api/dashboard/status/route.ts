@@ -7,7 +7,6 @@ import { after } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { getPlan, type PlanId } from "@/lib/constants/plans";
 import { syncAccountsFromLate } from "@/lib/services/accounts";
-import { getBalanceSummary } from "@/lib/services/usage";
 
 // Throttle account sync: once per user per 60 seconds
 const lastSyncMap = new Map<string, number>();
@@ -27,7 +26,7 @@ export async function GET() {
 
     const userId = session.user.id;
 
-    const [user, subscription, lateProfile, usage] = await Promise.all([
+    const [user, subscription, lateProfile] = await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
         select: {
@@ -35,8 +34,6 @@ export async function GET() {
           websiteUrl: true,
           knowledgeBase: true,
           postsPublished: true,
-          version: true,
-          firstBatchApproved: true,
         },
       }),
       prisma.subscription.findUnique({ where: { userId } }),
@@ -44,7 +41,6 @@ export async function GET() {
         where: { userId },
         include: { socialAccounts: true },
       }),
-      getBalanceSummary(userId),
     ]);
 
     const planId = (subscription?.planId as PlanId) || "pro";
@@ -98,9 +94,6 @@ export async function GET() {
         })) ?? [],
       postsPublished: user?.postsPublished ?? 0,
       freePostLimit: 5,
-      version: user?.version ?? "v1",
-      firstBatchApproved: user?.firstBatchApproved ?? true,
-      usage,
     });
   } catch (error) {
     return errorHandler(error);

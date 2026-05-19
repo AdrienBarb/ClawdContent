@@ -3,12 +3,12 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
 // Per-user sliding-window cap on /api/onboarding/analyze. Each call hits two
-// paid APIs (Firecrawl scrape + Anthropic generateObject) and is unmetered
-// against the usage ledger. Real onboarding triggers this 1–3 times, so 5/h
-// is generous for honest users and tight enough to block credit-burn loops.
+// paid APIs (Firecrawl scrape + Anthropic generateObject) and is otherwise
+// unmetered. Real onboarding triggers this 1–3 times, so 5/h is generous for
+// honest users and tight enough to block burn loops.
 //
 // Behaviour when Upstash env vars are missing: fail-CLOSED in production,
-// fail-open in dev — same policy as chatLimiter.
+// fail-open in dev.
 
 const url =
   process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;

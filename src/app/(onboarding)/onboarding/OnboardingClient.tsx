@@ -23,8 +23,10 @@ import ConnectAccountButtons from "@/components/dashboard/ConnectAccountButtons"
 
 type Step = "input" | "validate" | "connect";
 
-const STEPS_V1: Step[] = ["input", "validate"];
-const STEPS_V2: Step[] = ["input", "validate", "connect"];
+// Phase 2 will fully rewrite this into the 4-step flow with brand identity +
+// mandatory connect. For now we keep the existing 3 steps (input → validate →
+// connect) so the code compiles without v1/v2 branching.
+const STEPS: Step[] = ["input", "validate", "connect"];
 
 const inputSchema = z
   .object({
@@ -45,16 +47,11 @@ const validateSchema = z.object({
 
 type ValidateFormData = z.infer<typeof validateSchema>;
 
-interface Props {
-  userVersion: string;
-}
-
-export default function OnboardingClient({ userVersion }: Props) {
+export default function OnboardingClient() {
   const router = useRouter();
   const { usePost } = useApi();
 
-  const isV2 = userVersion === "v2";
-  const steps: Step[] = isV2 ? STEPS_V2 : STEPS_V1;
+  const steps: Step[] = STEPS;
 
   const [step, setStep] = useState<Step>("input");
   const [knowledgeBase, setKnowledgeBase] = useState<KnowledgeBase | null>(null);
@@ -90,11 +87,7 @@ export default function OnboardingClient({ userVersion }: Props) {
     appRouter.api.onboardingConfirm,
     {
       onSuccess: () => {
-        if (isV2) {
-          setStep("connect");
-        } else {
-          router.push(appRouter.dashboard);
-        }
+        setStep("connect");
       },
       onError: (error: Error) => {
         toast.error(error.message || "Failed to save. Please try again.");
