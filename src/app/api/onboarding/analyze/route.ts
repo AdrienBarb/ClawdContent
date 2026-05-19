@@ -5,12 +5,13 @@ import { NextResponse, NextRequest } from "next/server";
 import { headers } from "next/headers";
 import { generateObject } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
-import { scrapeWebsite } from "@/lib/firecrawl/client";
+import { scrapeWebsite, type ScrapeResult } from "@/lib/firecrawl/client";
 import { limitOnboardingAnalyze } from "@/lib/rateLimit/onboardingLimiter";
 import {
   analyzeInputSchema,
   knowledgeBaseSchema,
 } from "@/lib/schemas/knowledgeBase";
+import { extractBrandIdentityFromScrape } from "@/lib/services/brandIdentity";
 
 export const maxDuration = 60;
 
@@ -47,13 +48,14 @@ export async function POST(req: NextRequest) {
     }
 
     let contentToAnalyze = "";
+    let scrape: ScrapeResult | null = null;
 
     if (data.websiteUrl) {
       try {
-        const { markdown, title } = await scrapeWebsite(data.websiteUrl);
+        scrape = await scrapeWebsite(data.websiteUrl);
         contentToAnalyze += `Website content from ${data.websiteUrl}:\n`;
-        if (title) contentToAnalyze += `Page title: ${title}\n`;
-        contentToAnalyze += markdown;
+        if (scrape.title) contentToAnalyze += `Page title: ${scrape.title}\n`;
+        contentToAnalyze += scrape.markdown;
       } catch {
         return NextResponse.json(
           {
@@ -84,7 +86,11 @@ Content to analyze:
 ${contentToAnalyze}`,
     });
 
-    return NextResponse.json({ knowledgeBase });
+    const brandIdentity = scrape
+      ? extractBrandIdentityFromScrape(scrape)
+      : null;
+
+    return NextResponse.json({ knowledgeBase, brandIdentity });
   } catch (error) {
     return errorHandler(error);
   }
