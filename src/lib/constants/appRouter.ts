@@ -16,6 +16,7 @@ export const appRouter = {
   media: "/d/media",
   settings: "/d/settings",
   billing: "/d/billing",
+  platform: (platform: string) => `/d/${platform}`,
   onboarding: "/onboarding",
 
   // API routes
@@ -23,10 +24,14 @@ export const appRouter = {
     auth: "/api/auth",
     checkout: "/api/checkout",
     accounts: "/api/accounts",
+    account: (id: string) => `/api/accounts/${id}`,
     accountsConnect: "/api/accounts/connect",
     accountsDisconnect: "/api/accounts/disconnect",
     accountsRemove: "/api/accounts/remove",
     posts: "/api/posts",
+    post: (id: string) => `/api/posts/${id}`,
+    postApprove: (id: string) => `/api/posts/${id}/approve`,
+    postRegenerateImage: (id: string) => `/api/posts/${id}/regenerate-image`,
     postsCounts: "/api/posts/counts",
     postsDelete: "/api/posts/delete",
     postsDetail: "/api/posts/detail",

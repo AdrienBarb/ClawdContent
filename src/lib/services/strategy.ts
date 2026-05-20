@@ -1,3 +1,4 @@
+import "server-only";
 import { prisma } from "@/lib/db/prisma";
 import { generateObject } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
@@ -15,23 +16,12 @@ import {
   type StrategyBestTime,
 } from "@/lib/schemas/strategy";
 import { insightsV2Schema } from "@/lib/schemas/insights";
+import { DEFAULT_CADENCE } from "@/lib/constants/cadence";
 import type { Prisma } from "@prisma/client";
 
-/**
- * Per-platform posts-per-week defaults sourced from spec D-decisions and
- * 2025-2026 industry benchmarks. `null` means generation is disabled in v1.
- */
-export const DEFAULT_CADENCE: Record<string, number | null> = {
-  instagram: 4,
-  facebook: 2,
-  twitter: 21,
-  linkedin: 3,
-  pinterest: 7,
-  threads: 3,
-  bluesky: 3,
-  tiktok: null,
-  youtube: null,
-};
+// Re-export so existing callers that already pull DEFAULT_CADENCE from
+// services/strategy keep working without churn.
+export { DEFAULT_CADENCE };
 
 /** Full-prompt dev logs leak user PII (business description, brand notes,
  * top-performer post content) — gate them behind an explicit env flag so a
@@ -225,6 +215,149 @@ async function persistStrategy(
       strategyDefinedAt: new Date(),
     },
   });
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ *  PATCH /api/accounts/[id] — per-platform dashboard settings update.
+ *  Owns ownership check, override clamping, and merging into the stored
+ *  strategy JSON. Returns a structured result so the route stays thin.
+ * ───────────────────────────────────────────────────────────────────────── */
+
+export type StrategyOverride = {
+  postsPerWeek?: number;
+  contentPillars?: string[];
+  voiceRules?: string[];
+  bestTimes?: { day: number; hour: number; score?: number }[];
+  imageStyle?: string;
+};
+
+export type UpdateAccountSettingsResult =
+  | { ok: true; autopublish: boolean; strategy: Strategy | null }
+  | { ok: false; error: "not_found" }
+  | { ok: false; error: "invalid_strategy"; message: string };
+
+/** Per-spec D11: override band is ±2 of the platform default (vs ±1 for auto). */
+function clampOverrideCadence(value: number, base: number): number {
+  if (!Number.isFinite(value)) return base;
+  const lo = Math.max(1, base - 2);
+  const hi = Math.min(25, base + 2);
+  return Math.min(hi, Math.max(lo, Math.round(value)));
+}
+
+function mergeStrategyOverride(
+  current: Strategy | null,
+  override: StrategyOverride,
+  cadenceDefault: number,
+  fallbackBestTimes: StrategyBestTime[]
+): Strategy | null {
+  // When no strategy exists yet, leave required arrays empty — validation
+  // below will reject the merge unless the caller fills them in. We never
+  // ship garbage placeholders into stored strategy.
+  const base = current ?? {
+    postsPerWeek: cadenceDefault,
+    contentPillars: [] as string[],
+    voiceRules: [] as string[],
+    bestTimes: fallbackBestTimes,
+    imageStyle: "",
+  };
+
+  const next: Strategy = {
+    postsPerWeek:
+      override.postsPerWeek !== undefined
+        ? clampOverrideCadence(override.postsPerWeek, cadenceDefault)
+        : base.postsPerWeek,
+    contentPillars:
+      override.contentPillars !== undefined
+        ? override.contentPillars.map((p) => p.trim()).filter(Boolean).slice(0, 5)
+        : base.contentPillars,
+    voiceRules:
+      override.voiceRules !== undefined
+        ? override.voiceRules.map((r) => r.trim()).filter(Boolean).slice(0, 4)
+        : base.voiceRules,
+    bestTimes:
+      override.bestTimes !== undefined
+        ? override.bestTimes.slice(0, 14).map((s) => ({
+            day: Math.min(6, Math.max(0, Math.round(s.day))),
+            hour: Math.min(23, Math.max(0, Math.round(s.hour))),
+            score: typeof s.score === "number" ? s.score : 0,
+          }))
+        : base.bestTimes,
+    imageStyle:
+      override.imageStyle !== undefined
+        ? override.imageStyle.trim()
+        : base.imageStyle,
+  };
+
+  const validated = strategySchema.safeParse(next);
+  return validated.success ? validated.data : null;
+}
+
+export async function updateAccountSettings(
+  userId: string,
+  accountId: string,
+  input: { autopublish?: boolean; strategy?: StrategyOverride }
+): Promise<UpdateAccountSettingsResult> {
+  const account = await prisma.socialAccount.findFirst({
+    where: { id: accountId, lateProfile: { userId } },
+    include: {
+      lateProfile: {
+        include: {
+          user: { select: { id: true, knowledgeBase: true, brandIdentity: true } },
+        },
+      },
+    },
+  });
+  if (!account) return { ok: false, error: "not_found" };
+
+  const data: Prisma.SocialAccountUpdateInput = {};
+
+  if (input.autopublish !== undefined) {
+    data.autopublish = input.autopublish;
+  }
+
+  let nextStrategy: Strategy | null = null;
+  if (input.strategy !== undefined) {
+    const cadenceDefault = DEFAULT_CADENCE[account.platform];
+    if (cadenceDefault === null || cadenceDefault === undefined) {
+      return {
+        ok: false,
+        error: "invalid_strategy",
+        message: `Strategy overrides are not available for ${account.platform}.`,
+      };
+    }
+    const accountWithUser = account as unknown as AccountWithUser;
+    const fallbackBestTimes = resolveBestTimes(accountWithUser);
+    const currentParse = strategySchema.safeParse(account.strategy);
+    const current = currentParse.success ? currentParse.data : null;
+    nextStrategy = mergeStrategyOverride(
+      current,
+      input.strategy,
+      cadenceDefault,
+      fallbackBestTimes
+    );
+    if (!nextStrategy) {
+      return {
+        ok: false,
+        error: "invalid_strategy",
+        message:
+          "Strategy is incomplete. Make sure pillars (3-5), voice rules (2-4), and best times are filled in.",
+      };
+    }
+    data.strategy = nextStrategy as unknown as Prisma.InputJsonValue;
+    data.strategyDefinedAt = new Date();
+  }
+
+  const updated = await prisma.socialAccount.update({
+    where: { id: accountId },
+    data,
+  });
+
+  const finalStrategyParse = strategySchema.safeParse(updated.strategy);
+  return {
+    ok: true,
+    autopublish: updated.autopublish,
+    strategy: finalStrategyParse.success ? finalStrategyParse.data : null,
+  };
 }
 
 export async function defineStrategyForAccount(
