@@ -47,6 +47,16 @@ export async function PATCH(
         { status: 422 }
       );
     }
+    if (result.error === "already_published") {
+      return NextResponse.json(
+        { error: "ALREADY_PUBLISHED", message: result.message },
+        { status: 409 }
+      );
+    }
+
+    const _exhaustive: never = result;
+    void _exhaustive;
+    return NextResponse.json({ error: "UNHANDLED_RESULT" }, { status: 500 });
   } catch (error) {
     return errorHandler(error);
   }

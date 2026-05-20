@@ -297,6 +297,9 @@ export async function updateAccountSettings(
   accountId: string,
   input: { autopublish?: boolean; strategy?: StrategyOverride }
 ): Promise<UpdateAccountSettingsResult> {
+  // Selection mirrors the shape `AccountWithUser` declares so the
+  // `resolveBestTimes` call below is type-safe without an `as unknown as`
+  // cast.
   const account = await prisma.socialAccount.findFirst({
     where: { id: accountId, lateProfile: { userId } },
     include: {
@@ -318,15 +321,21 @@ export async function updateAccountSettings(
   let nextStrategy: Strategy | null = null;
   if (input.strategy !== undefined) {
     const cadenceDefault = DEFAULT_CADENCE[account.platform];
-    if (cadenceDefault === null || cadenceDefault === undefined) {
+    if (cadenceDefault == null) {
       return {
         ok: false,
         error: "invalid_strategy",
         message: `Strategy overrides are not available for ${account.platform}.`,
       };
     }
-    const accountWithUser = account as unknown as AccountWithUser;
-    const fallbackBestTimes = resolveBestTimes(accountWithUser);
+    const accountForBestTimes: AccountWithUser = {
+      id: account.id,
+      platform: account.platform,
+      insights: account.insights,
+      generationEnabled: account.generationEnabled,
+      lateProfile: account.lateProfile,
+    };
+    const fallbackBestTimes = resolveBestTimes(accountForBestTimes);
     const currentParse = strategySchema.safeParse(account.strategy);
     const current = currentParse.success ? currentParse.data : null;
     nextStrategy = mergeStrategyOverride(
@@ -344,7 +353,15 @@ export async function updateAccountSettings(
       };
     }
     data.strategy = nextStrategy as unknown as Prisma.InputJsonValue;
-    data.strategyDefinedAt = new Date();
+    // Only stamp `strategyDefinedAt` if the strategy actually changed.
+    // Otherwise a no-op PATCH (e.g. submit-without-edits) would inflate
+    // the "last regenerated" timestamp.
+    const changed =
+      !current ||
+      JSON.stringify(current) !== JSON.stringify(nextStrategy);
+    if (changed) {
+      data.strategyDefinedAt = new Date();
+    }
   }
 
   const updated = await prisma.socialAccount.update({
@@ -373,8 +390,12 @@ export async function defineStrategyForAccount(
     return null;
   }
 
-  const cadenceDefault = DEFAULT_CADENCE[account.platform] ?? null;
-  if (cadenceDefault === null) {
+  const cadenceDefault = DEFAULT_CADENCE[account.platform];
+  // `== null` catches both null (video platforms — TikTok/YouTube) and
+  // undefined (unknown platforms not in DEFAULT_CADENCE). Both should
+  // disable generation rather than fall through with `undefined` and
+  // produce NaN cadences.
+  if (cadenceDefault == null) {
     await disablePlatformGeneration(socialAccountId, account.generationEnabled);
     console.log(
       `[strategy] ⏭ ${account.platform} disabled in v1 — no strategy generated`

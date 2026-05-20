@@ -12,6 +12,7 @@ import {
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
@@ -150,6 +151,10 @@ export default function StrategyOverrideDrawer({
           <SheetTitle className="text-[15px] font-semibold tracking-tight">
             Customize strategy
           </SheetTitle>
+          <SheetDescription className="sr-only">
+            Override cadence, content pillars, voice rules, best times, and
+            image style for this account.
+          </SheetDescription>
         </SheetHeader>
 
         <div className="space-y-6 py-4">
@@ -279,7 +284,7 @@ export default function StrategyOverrideDrawer({
                     type="button"
                     onClick={() => removeVoiceRule(r)}
                     className="text-gray-400 hover:text-gray-700"
-                    aria-label={`Remove voice rule`}
+                    aria-label={`Remove voice rule: ${r.slice(0, 60)}`}
                   >
                     <XIcon size={12} weight="bold" />
                   </button>

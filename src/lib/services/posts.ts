@@ -132,7 +132,8 @@ export type UpdateSuggestionResult =
   | { ok: true }
   | { ok: false; error: "not_found" }
   | { ok: false; error: "invalid_schedule"; message: string }
-  | { ok: false; error: "media_validation_failed"; message: string };
+  | { ok: false; error: "media_validation_failed"; message: string }
+  | { ok: false; error: "already_published"; message: string };
 
 /**
  * Validates ownership via lateProfile.userId, validates schedule bounds and
@@ -152,6 +153,19 @@ export async function updatePostSuggestion(
     include: { socialAccount: { select: { platform: true } } },
   });
   if (!existing) return { ok: false, error: "not_found" };
+
+  // Once Zernio has the post, our DB no longer owns its scheduled time —
+  // letting the user edit the row here would silently drift the calendar
+  // away from what actually publishes. Zernio has no edit endpoint for
+  // scheduled posts (only delete + retry), so refuse the edit.
+  if (existing.publishedExternalId) {
+    return {
+      ok: false,
+      error: "already_published",
+      message:
+        "This post is already scheduled with the platform — edits are locked.",
+    };
+  }
 
   if (typeof input.scheduledAt === "string") {
     const parsed = new Date(input.scheduledAt);
@@ -217,47 +231,92 @@ export async function deletePostSuggestion(
   return { ok: true };
 }
 
+export type RegenerateImageResult =
+  | GenerateAndAttachResult
+  | { ok: false; reason: "already_regenerating" };
+
+const REGEN_LOCK_MS = 5 * 60 * 1000;
+
 /**
- * Regenerates the AI image attached to a draft. Force-clears any existing
- * `imageUrl`/`imagePrompt`/`imageGeneratedAt` so the underlying generator
- * (which is idempotent on `imageUrl`) re-runs. Honors the per-user weekly
- * image cap (50 by default).
+ * Regenerates the AI image attached to a draft. Atomic CAS claim on
+ * `publishingStartedAt` (reusing the publish soft-lock since regen runs
+ * are mutually exclusive with publishing). Two concurrent clicks: only
+ * the first claim wins; the second returns `already_regenerating` and
+ * burns no OpenAI credit. Lock is released in finally — stale locks
+ * (>5 min) are auto-reclaimed by the next attempt.
  */
 export async function regeneratePostSuggestionImage(
   userId: string,
   suggestionId: string
-): Promise<GenerateAndAttachResult> {
+): Promise<RegenerateImageResult> {
+  // 1. Ownership + existence check.
   const existing = await prisma.postSuggestion.findFirst({
     where: {
       id: suggestionId,
       socialAccount: { lateProfile: { userId } },
     },
-    select: { id: true, imageUrl: true, mediaItems: true },
+    select: {
+      id: true,
+      imageUrl: true,
+      mediaItems: true,
+      publishedExternalId: true,
+    },
   });
   if (!existing) return { ok: false, reason: "not_found" };
 
-  if (existing.imageUrl) {
-    // Strip the prior generated image from mediaItems so the new one doesn't
-    // pile on as a second attachment. Preserves anything the user added
-    // manually.
-    const filtered = coerceMediaItems(existing.mediaItems).filter(
-      (m) => m.url !== existing.imageUrl
-    );
-    await prisma.postSuggestion.update({
-      where: { id: suggestionId },
-      data: {
-        imageUrl: null,
-        imagePrompt: null,
-        imageGeneratedAt: null,
-        mediaItems: filtered as unknown as Prisma.InputJsonValue,
-      },
-    });
+  // 2. CAS claim: only proceed if no active regen / publish in-flight.
+  //    Stale locks (>5 min) are reclaimed.
+  const claim = await prisma.postSuggestion.updateMany({
+    where: {
+      id: suggestionId,
+      publishedExternalId: null,
+      OR: [
+        { publishingStartedAt: null },
+        { publishingStartedAt: { lt: new Date(Date.now() - REGEN_LOCK_MS) } },
+      ],
+    },
+    data: { publishingStartedAt: new Date() },
+  });
+  if (claim.count === 0) {
+    return { ok: false, reason: "already_regenerating" };
   }
 
-  return generateAndAttachImage({
-    suggestionId,
-    capWindowStart: new Date(Date.now() - SEVEN_DAYS_MS),
-  });
+  try {
+    // 3. Now safe to clear the old image — we hold the lock.
+    if (existing.imageUrl) {
+      const filtered = coerceMediaItems(existing.mediaItems).filter(
+        (m) => m.url !== existing.imageUrl
+      );
+      await prisma.postSuggestion.update({
+        where: { id: suggestionId },
+        data: {
+          imageUrl: null,
+          imagePrompt: null,
+          imageGeneratedAt: null,
+          mediaItems: filtered as unknown as Prisma.InputJsonValue,
+        },
+      });
+    }
+
+    return await generateAndAttachImage({
+      suggestionId,
+      capWindowStart: new Date(Date.now() - SEVEN_DAYS_MS),
+    });
+  } finally {
+    // Release the lock so the user can retry. If a row is gone the update
+    // silently no-ops.
+    await prisma.postSuggestion
+      .updateMany({
+        where: { id: suggestionId, publishedExternalId: null },
+        data: { publishingStartedAt: null },
+      })
+      .catch((err) =>
+        console.error(
+          `[regenerate] failed to release lock suggestion=${suggestionId}`,
+          err
+        )
+      );
+  }
 }
 
 export type ApproveSuggestionResult =
@@ -270,48 +329,92 @@ export type ApproveSuggestionResult =
   | { ok: false; error: "schedule_failed"; message: string };
 
 /**
- * Approval-mode commit: stamps `approvedAt` and pushes the draft to Zernio
- * via `scheduleSuggestionToZernio` (which retains the row so the calendar
- * keeps showing it post-schedule). Approve is a no-op unless the draft was
- * created under `approvalRequired = true`.
+ * Approval-mode commit. The atomic CAS on `approvedAt` is what protects
+ * against the classic double-publish race: two concurrent approve clicks
+ * would otherwise both see `approvedAt === null`, both stamp it, and both
+ * call Zernio. `updateMany` returns count=1 for exactly one racer; the
+ * other gets `already_approved`. After Zernio acknowledges, the row is
+ * left in place (we want it on the calendar with its externalId).
+ *
+ * `already_scheduled` from Zernio is *not* a failure — it means a prior
+ * partial run pushed the post but our DB stamp was lost. Roll the
+ * externalId back into our row and treat as success.
  */
 export async function approvePostSuggestion(
   userId: string,
   suggestionId: string
 ): Promise<ApproveSuggestionResult> {
-  const existing = await prisma.postSuggestion.findFirst({
+  // Initial peek for early-return error variants (no row mutation yet).
+  const peek = await prisma.postSuggestion.findFirst({
     where: {
       id: suggestionId,
       socialAccount: { lateProfile: { userId } },
     },
     select: {
-      id: true,
       approvalRequired: true,
       approvedAt: true,
       scheduledAt: true,
       publishedExternalId: true,
     },
   });
-  if (!existing) return { ok: false, error: "not_found" };
-  if (!existing.approvalRequired) return { ok: false, error: "not_in_approval_mode" };
-  if (existing.approvedAt) return { ok: false, error: "already_approved" };
-  if (!existing.scheduledAt) return { ok: false, error: "no_schedule_staged" };
-  if (existing.scheduledAt.getTime() <= Date.now()) {
+  if (!peek) return { ok: false, error: "not_found" };
+  if (!peek.approvalRequired) return { ok: false, error: "not_in_approval_mode" };
+  if (peek.approvedAt) return { ok: false, error: "already_approved" };
+  if (!peek.scheduledAt) return { ok: false, error: "no_schedule_staged" };
+  if (peek.scheduledAt.getTime() <= Date.now()) {
     return { ok: false, error: "schedule_in_past" };
   }
 
-  await prisma.postSuggestion.update({
-    where: { id: suggestionId },
-    data: { approvedAt: new Date() },
+  // Atomic claim. The same WHERE clause as the peek means this is a CAS:
+  // only the racer who finds `approvedAt: null` wins. We record the
+  // timestamp we wrote so a later rollback can guard against clobbering
+  // a concurrent approval.
+  const approvedAtClaim = new Date();
+  const claim = await prisma.postSuggestion.updateMany({
+    where: {
+      id: suggestionId,
+      approvalRequired: true,
+      approvedAt: null,
+      socialAccount: { lateProfile: { userId } },
+    },
+    data: { approvedAt: approvedAtClaim },
   });
+  if (claim.count === 0) return { ok: false, error: "already_approved" };
 
   const result: ScheduleSuggestionResult = await scheduleSuggestionToZernio(suggestionId);
+
   if (result.ok) return { ok: true, externalId: result.externalId };
 
-  // Roll back the approvedAt stamp so the user can fix the issue (e.g.,
-  // pick a new schedule time after their first one went stale) and retry.
-  await prisma.postSuggestion.update({
-    where: { id: suggestionId },
+  // Zernio said it already has this post — stamp the externalId and call
+  // it a success rather than retrying or rolling back. This handles a
+  // partial prior run where Zernio ack'd but our DB stamp was lost.
+  if (result.error === "already_scheduled") {
+    await prisma.postSuggestion
+      .updateMany({
+        where: {
+          id: suggestionId,
+          publishedExternalId: null,
+        },
+        data: { publishedExternalId: result.externalId },
+      })
+      .catch((err) =>
+        console.error(
+          `[approve] couldn't backfill externalId for suggestion=${suggestionId}`,
+          err
+        )
+      );
+    return { ok: true, externalId: result.externalId };
+  }
+
+  // Rollback only if our timestamp is still the winner. Guards against a
+  // concurrent successful approval (which can happen if the scheduler
+  // released its CAS lock before our function returned).
+  await prisma.postSuggestion.updateMany({
+    where: {
+      id: suggestionId,
+      approvedAt: approvedAtClaim,
+      publishedExternalId: null,
+    },
     data: { approvedAt: null },
   });
 

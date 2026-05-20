@@ -66,6 +66,14 @@ export async function POST(
           { error: "SCHEDULE_FAILED", message: result.message },
           { status: 500 }
         );
+      default: {
+        const _exhaustive: never = result;
+        void _exhaustive;
+        return NextResponse.json(
+          { error: "UNHANDLED_RESULT" },
+          { status: 500 }
+        );
+      }
     }
   } catch (error) {
     return errorHandler(error);

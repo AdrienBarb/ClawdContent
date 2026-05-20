@@ -52,35 +52,43 @@ export default function AutopublishToggle({
     }
   }
 
+  // Whole-pill button so the touch target is the full label area — meets
+  // the 44×44 mobile guidance and matches user expectation that tapping
+  // the label toggles the switch.
   return (
-    <div className="flex items-center gap-3 self-start rounded-xl border border-gray-200 bg-white px-3 py-2 shadow-sm">
-      <div className="min-w-0">
-        <p className="text-[12.5px] font-medium text-gray-900">
+    <button
+      type="button"
+      role="switch"
+      aria-checked={autopublish}
+      aria-label="Toggle autopublish"
+      disabled={pending}
+      onClick={flip}
+      className={`flex w-full items-center gap-3 self-start rounded-xl border border-gray-200 bg-white px-3 py-2 text-left shadow-sm transition hover:bg-black/[0.02] disabled:opacity-60 sm:w-auto ${
+        pending ? "cursor-wait" : "cursor-pointer"
+      }`}
+    >
+      <span className="min-w-0">
+        <span className="block text-[12.5px] font-medium text-gray-900">
           {autopublish ? "Autopublish" : "Approval required"}
-        </p>
-        <p className="text-[11px] text-gray-500">
+        </span>
+        <span className="block text-[11px] text-gray-500">
           {autopublish
             ? "Posts go live without you."
             : "We wait for your tap."}
-        </p>
-      </div>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={autopublish}
-        aria-label="Toggle autopublish"
-        disabled={pending}
-        onClick={flip}
+        </span>
+      </span>
+      <span
+        aria-hidden
         className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
           autopublish ? "bg-[#ec6f5b]" : "bg-gray-300"
-        } ${pending ? "opacity-60" : ""}`}
+        }`}
       >
         <span
           className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
             autopublish ? "translate-x-[22px]" : "translate-x-0.5"
           }`}
         />
-      </button>
-    </div>
+      </span>
+    </button>
   );
 }

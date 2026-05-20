@@ -1,7 +1,12 @@
 "use client";
 
 import { useMemo } from "react";
-import { CheckCircleIcon, ClockIcon, ImageIcon } from "@phosphor-icons/react";
+import {
+  CheckCircleIcon,
+  ClockIcon,
+  HourglassIcon,
+  ImageIcon,
+} from "@phosphor-icons/react";
 import type { PlatformSuggestion } from "@/components/dashboard/platform/types";
 
 const DAY_LABELS_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -93,7 +98,7 @@ export default function UpcomingPostsCalendar({ suggestions, onEdit }: Props) {
       </div>
 
       {/* Desktop: 7-column grid */}
-      <div className="mt-4 hidden grid-cols-7 gap-3 md:grid">
+      <div className="mt-4 hidden grid-cols-7 gap-3 lg:grid">
         {days.map((day) => (
           <DayColumn
             key={day.index}
@@ -105,7 +110,7 @@ export default function UpcomingPostsCalendar({ suggestions, onEdit }: Props) {
       </div>
 
       {/* Mobile: vertical stack */}
-      <ul className="mt-4 space-y-3 md:hidden">
+      <ul className="mt-4 space-y-3 lg:hidden">
         {days.map((day) => (
           <li key={day.index}>
             <DayRow
@@ -129,16 +134,18 @@ function DayColumn({
   isToday: boolean;
   onEdit: (id: string) => void;
 }) {
+  // Today marker stays neutral — coral is reserved for primary CTAs per
+  // the design system. A heavier border + darker label is enough signal.
   return (
     <div
       className={`flex flex-col rounded-2xl border bg-white p-3 ${
-        isToday ? "border-[#ec6f5b]/40" : "border-gray-200"
+        isToday ? "border-gray-400" : "border-gray-200"
       }`}
     >
       <div className="flex items-baseline justify-between">
         <p
           className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${
-            isToday ? "text-[#c84a35]" : "text-gray-500"
+            isToday ? "text-gray-900" : "text-gray-500"
           }`}
         >
           {DAY_LABELS_SHORT[day.index]}
@@ -175,14 +182,10 @@ function DayRow({
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-4">
       <div className="flex items-baseline justify-between">
-        <p
-          className={`text-[13px] font-semibold ${
-            isToday ? "text-[#c84a35]" : "text-gray-900"
-          }`}
-        >
+        <p className="text-[13px] font-semibold text-gray-900">
           {DAY_LABELS_LONG[day.index]}
           {isToday && (
-            <span className="ml-2 text-[10.5px] font-medium uppercase tracking-[0.12em] text-[#c84a35]">
+            <span className="ml-2 text-[10.5px] font-medium uppercase tracking-[0.12em] text-gray-500">
               Today
             </span>
           )}
@@ -242,7 +245,10 @@ function PostCardMini({
           </span>
         )}
         {isApprovalPending && (
-          <span className="text-amber-700">Awaiting approval</span>
+          <span className="flex items-center gap-1 text-amber-700">
+            <HourglassIcon size={11} weight="bold" />
+            Awaiting approval
+          </span>
         )}
       </div>
 
@@ -251,7 +257,7 @@ function PostCardMini({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={post.imageUrl}
-            alt=""
+            alt={`Image for post: ${post.content.slice(0, 80)}`}
             className="h-full w-full object-cover"
             loading="lazy"
           />

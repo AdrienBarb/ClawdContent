@@ -42,6 +42,13 @@ export async function PATCH(
         { status: 422 }
       );
     }
+
+    // Compile-time exhaustiveness: if a new error variant is added to
+    // UpdateAccountSettingsResult the line below stops compiling and we
+    // can't silently return undefined (Next would turn that into 200).
+    const _exhaustive: never = result;
+    void _exhaustive;
+    return NextResponse.json({ error: "UNHANDLED_RESULT" }, { status: 500 });
   } catch (error) {
     return errorHandler(error);
   }

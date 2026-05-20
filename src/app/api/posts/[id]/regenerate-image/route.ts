@@ -68,6 +68,22 @@ export async function POST(
           { error: "ALREADY_HAS_IMAGE" },
           { status: 409 }
         );
+      case "already_regenerating":
+        return NextResponse.json(
+          {
+            error: "ALREADY_REGENERATING",
+            message: "We're already regenerating this image — give it a sec.",
+          },
+          { status: 409 }
+        );
+      default: {
+        const _exhaustive: never = result;
+        void _exhaustive;
+        return NextResponse.json(
+          { error: "UNHANDLED_RESULT" },
+          { status: 500 }
+        );
+      }
     }
   } catch (error) {
     return errorHandler(error);

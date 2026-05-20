@@ -55,11 +55,21 @@ export default async function PerPlatformDashboardPage({
     );
   }
 
+  // If `?accountId=` is provided but doesn't match any of the user's
+  // accounts on this platform (deleted? cross-tenant guess?), 404 rather
+  // than silently swapping to a different account — sharing a deep-link
+  // should be all-or-nothing.
+  if (accountId && !accountsForPlatform.some((a) => a.id === accountId)) {
+    notFound();
+  }
   const account =
     accountsForPlatform.find((a) => a.id === accountId) ?? accountsForPlatform[0];
 
   const now = new Date();
   const windowEnd = new Date(now.getTime() + SEVEN_DAYS_MS);
+  // Bound the unscheduled-drafts branch so a user with months of
+  // approval-mode backlog doesn't ship the whole pile in the page payload.
+  const UNSCHEDULED_DRAFTS_CAP = 30;
 
   const rawSuggestions = await prisma.postSuggestion.findMany({
     where: {
@@ -72,6 +82,7 @@ export default async function PerPlatformDashboardPage({
       ],
     },
     orderBy: [{ scheduledAt: "asc" }, { createdAt: "asc" }],
+    take: UNSCHEDULED_DRAFTS_CAP + 14, // worst case 14 days × 2 posts + cap
   });
 
   const strategyParse = strategySchema.safeParse(account.strategy);

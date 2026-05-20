@@ -12,6 +12,7 @@ import {
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
@@ -151,6 +152,10 @@ export default function PostEditDrawer({
           <SheetTitle className="text-[15px] font-semibold tracking-tight">
             Edit post
           </SheetTitle>
+          <SheetDescription className="sr-only">
+            Edit caption, regenerate the image, change schedule, approve, or
+            delete this post.
+          </SheetDescription>
         </SheetHeader>
 
         <div className="space-y-5 py-4">
@@ -188,7 +193,7 @@ export default function PostEditDrawer({
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={suggestion.imageUrl}
-                    alt=""
+                    alt={`Image for post: ${suggestion.content.slice(0, 80)}`}
                     className="block w-full"
                   />
                 ) : (
