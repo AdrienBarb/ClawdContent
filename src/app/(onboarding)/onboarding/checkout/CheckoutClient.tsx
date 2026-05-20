@@ -1,53 +1,30 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import toast from "react-hot-toast";
-import useApi from "@/lib/hooks/useApi";
-import { appRouter } from "@/lib/constants/appRouter";
+import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { SpinnerGapIcon } from "@phosphor-icons/react";
+import { useStartCheckout } from "@/lib/hooks/useStartCheckout";
 
 export function CheckoutClient({ cancelled }: { cancelled: boolean }) {
-  const { usePost } = useApi();
-  const [started, setStarted] = useState(false);
+  const { start, isOpening, hasErrored } = useStartCheckout();
+  // Ref-based guard prevents React 18 strict-mode double-mount from creating
+  // two parallel Stripe sessions (and therefore two Stripe customers).
+  const launched = useRef(false);
 
-  const { mutate: startCheckout, isPending } = usePost(
-    appRouter.api.checkout,
-    {
-      onSuccess: (data: { url: string }) => {
-        if (data?.url) {
-          window.location.href = data.url;
-        } else {
-          toast.error("Couldn't start checkout. Please try again.");
-          setStarted(false);
-        }
-      },
-      onError: () => {
-        toast.error("Couldn't start checkout. Please try again.");
-        setStarted(false);
-      },
-    }
-  );
-
-  const launch = () => {
-    setStarted(true);
-    startCheckout({ planId: "pro", interval: "monthly", intent: "onboarding" });
-  };
-
-  // Auto-launch when the user lands here for the first time (not after cancel)
   useEffect(() => {
-    if (!cancelled && !started) {
-      launch();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (cancelled || launched.current) return;
+    launched.current = true;
+    start();
+  }, [cancelled, start]);
+
+  const showResumeUI = cancelled || hasErrored;
 
   return (
     <div className="min-h-dvh flex flex-col items-center justify-center px-4 py-8">
       <div className="w-full max-w-md text-center space-y-6">
         <div className="space-y-2">
           <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-            {cancelled ? "Resume your trial setup" : "Almost there"}
+            {showResumeUI ? "Resume your trial setup" : "Almost there"}
           </h1>
           <p className="text-[14px] text-gray-600 leading-relaxed">
             Your business profile and connected accounts are saved. Add a card
@@ -55,14 +32,14 @@ export function CheckoutClient({ cancelled }: { cancelled: boolean }) {
           </p>
         </div>
 
-        {cancelled ? (
+        {showResumeUI ? (
           <div className="flex flex-col items-center gap-3">
             <Button
-              onClick={launch}
-              disabled={isPending || started}
+              onClick={start}
+              disabled={isOpening}
               className="w-full bg-gradient-to-b from-[#ec6f5b] to-[#c84a35] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.18),_0_1px_2px_rgba(200,74,53,0.25)] hover:opacity-95"
             >
-              {isPending || started ? (
+              {isOpening ? (
                 <>
                   <SpinnerGapIcon className="h-4 w-4 animate-spin" />
                   Opening checkout…
@@ -76,9 +53,16 @@ export function CheckoutClient({ cancelled }: { cancelled: boolean }) {
             </p>
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-3 text-gray-600">
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex flex-col items-center gap-3 text-gray-600"
+          >
             <SpinnerGapIcon className="h-5 w-5 animate-spin" />
             <p className="text-[13px]">Opening secure checkout…</p>
+            <span className="sr-only">
+              Redirecting to checkout. This may take a moment.
+            </span>
           </div>
         )}
       </div>

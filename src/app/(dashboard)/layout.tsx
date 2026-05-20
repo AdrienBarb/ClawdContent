@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/lib/better-auth/auth";
-import { prisma } from "@/lib/db/prisma";
+import { computeOnboardingStatus } from "@/lib/services/onboarding";
 import Sidebar, {
   MobileSidebarTrigger,
 } from "@/components/dashboard/Sidebar";
@@ -22,33 +22,19 @@ export default async function DashboardLayout({
     redirect("/");
   }
 
-  const [user, subscription, lateProfile] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { knowledgeBase: true, brandIdentity: true },
-    }),
-    prisma.subscription.findUnique({ where: { userId: session.user.id } }),
-    prisma.lateProfile.findUnique({
-      where: { userId: session.user.id },
-      include: {
-        socialAccounts: { where: { status: "active" }, select: { id: true } },
-      },
-    }),
-  ]);
+  const status = await computeOnboardingStatus(session.user.id);
 
-  // Onboarding incomplete — bounce back to /onboarding (steps 1-4).
-  const hasSocial = (lateProfile?.socialAccounts?.length ?? 0) >= 1;
-  if (!user?.knowledgeBase || !user?.brandIdentity || !hasSocial) {
-    redirect("/onboarding");
-  }
-
-  // Onboarding done but no active/trialing subscription — bounce to step 5.
-  const subStatus = subscription?.status ?? null;
-  if (subStatus !== "active" && subStatus !== "trialing") {
-    if (subStatus === "past_due" || subStatus === "canceled") {
-      return <FrozenAccountGate status={subStatus} />;
-    }
-    redirect("/onboarding/checkout");
+  switch (status.stage) {
+    case "needs_kb":
+    case "needs_brand":
+    case "needs_social":
+      redirect("/onboarding");
+    case "needs_checkout":
+      redirect("/onboarding/checkout");
+    case "frozen":
+      return <FrozenAccountGate status={status.frozenStatus!} />;
+    case "complete":
+      break;
   }
 
   return (
@@ -63,8 +49,7 @@ export default async function DashboardLayout({
           <span className="text-sm font-semibold">PostClaw</span>
         </div>
 
-        {/* Main content — flat, flush with sidebar.
-            min-w-0 + overflow-x-clip prevents wide content from causing horizontal page scroll. */}
+        {/* min-w-0 + overflow-x-clip prevents wide content from causing horizontal page scroll. */}
         <main className="flex-1 min-w-0 bg-[#faf9f5] overflow-x-clip">
           <div className="px-8 py-6">
             <LegacyKBBanner />

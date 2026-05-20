@@ -6,10 +6,9 @@ import {
   getStripePriceId,
 } from "@/lib/constants/plans";
 import { DEFAULT_CADENCE } from "@/lib/constants/cadence";
+import { computeOnboardingStatus } from "@/lib/services/onboarding";
 
 const TRIAL_PERIOD_DAYS = 3;
-
-export type CheckoutIntent = "billing" | "onboarding";
 
 async function resolveOnboardingSuccessPath(userId: string): Promise<string> {
   const lateProfile = await prisma.lateProfile.findUnique({
@@ -30,8 +29,7 @@ export async function createCheckoutSession(
   email: string,
   planId: PlanId,
   interval: BillingInterval,
-  affonsoReferral?: string,
-  intent: CheckoutIntent = "billing"
+  affonsoReferral?: string
 ): Promise<string> {
   const existing = await prisma.subscription.findUnique({
     where: { userId },
@@ -44,9 +42,21 @@ export async function createCheckoutSession(
     throw new Error("ALREADY_SUBSCRIBED");
   }
 
-  // Reuse Stripe customer if one exists
-  let customerId = existing?.stripeCustomerId;
+  // Cancel any prior incomplete Stripe sub so we don't orphan it. Stripe
+  // would expire it after ~23h anyway, but the explicit cancel keeps our
+  // accounting clean and prevents handleSubscriptionUpdated from logging
+  // "not found" when the late update arrives.
+  if (existing && existing.status === "incomplete") {
+    await stripe.subscriptions
+      .cancel(existing.stripeSubscriptionId)
+      .catch((err) => {
+        console.warn(
+          `Failed to cancel prior incomplete subscription ${existing.stripeSubscriptionId}: ${err instanceof Error ? err.message : err}`
+        );
+      });
+  }
 
+  let customerId = existing?.stripeCustomerId;
   if (!customerId) {
     const customer = await stripe.customers.create({
       email,
@@ -56,14 +66,16 @@ export async function createCheckoutSession(
   }
 
   const priceId = getStripePriceId(planId, interval);
-
   const baseUrl =
     process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
+  // Intent is derived from the user's onboarding stage — the client doesn't
+  // get to choose. needs_checkout → onboarding URLs; everyone else (frozen,
+  // or already-onboarded user upgrading from billing) → billing URLs.
+  const status = await computeOnboardingStatus(userId);
   let successUrl: string;
   let cancelUrl: string;
-
-  if (intent === "onboarding") {
+  if (status.stage === "needs_checkout") {
     const path = await resolveOnboardingSuccessPath(userId);
     successUrl = `${baseUrl}${path}`;
     cancelUrl = `${baseUrl}/onboarding/checkout?cancelled=1`;
@@ -152,7 +164,6 @@ export async function changePlan(
     throw new Error("No subscription item found");
   }
 
-  // Check if this is the same price (no change needed)
   if (item.price.id === newPriceId) {
     throw new Error("SAME_PLAN");
   }

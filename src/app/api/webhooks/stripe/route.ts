@@ -100,18 +100,12 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ received: true }, { status: 200 });
   } catch (err) {
+    // Keep the StripeEvent dedup row so individual handlers (Brevo updates,
+    // trialNotifiedAt) stay idempotent across retries. Stripe will redeliver
+    // any 5xx with exponential backoff; a row that's already there short-
+    // circuits to "already processed". To force a re-run after a real bug,
+    // delete the row manually.
     console.error("Webhook handler error:", err);
-    // The dedup row was inserted before the handler ran; if the handler
-    // threw, returning 500 alone wouldn't help — Stripe would redeliver but
-    // the dedup row would short-circuit the retry as "already processed".
-    // Delete the row so the next delivery genuinely re-runs the handler.
-    await prisma.stripeEvent
-      .delete({ where: { id: event.id } })
-      .catch((delErr) => {
-        console.error(
-          `Failed to delete StripeEvent dedup row after handler error: ${delErr instanceof Error ? delErr.message : delErr}`
-        );
-      });
     return NextResponse.json(
       { error: errorMessages.WEBHOOK_PROCESSING_FAILED },
       { status: 500 }
@@ -143,19 +137,14 @@ function getSubscriptionIdFromInvoice(
 }
 
 function resolvePlanId(subscription: Stripe.Subscription): string {
-  // Try metadata first (set during checkout or plan change)
   if (subscription.metadata?.planId) {
     return subscription.metadata.planId;
   }
-
-  // Fall back to reverse-mapping from Stripe price ID
   const priceId = subscription.items?.data?.[0]?.price?.id;
   if (priceId) {
     const mapped = getPlanFromStripePriceId(priceId);
     if (mapped) return mapped.planId;
   }
-
-  // Default for legacy subscriptions
   return "pro";
 }
 
@@ -165,11 +154,24 @@ async function resolveUserIdFromSubscription(
   if (subscription.metadata?.userId) {
     return subscription.metadata.userId;
   }
+  // Legacy / Stripe-dashboard-created subs may lack metadata. Look up by ID.
+  console.warn(
+    `Stripe subscription ${subscription.id} missing metadata.userId; falling back to DB lookup`
+  );
   const existing = await prisma.subscription.findUnique({
     where: { stripeSubscriptionId: subscription.id },
     select: { userId: true },
   });
   return existing?.userId ?? null;
+}
+
+/** updateMany is a no-op on missing rows — keeps webhook idempotent even if
+ * the User was deleted out-of-band. */
+async function setTrialEndsAt(userId: string, trialEnd: Date | null) {
+  await prisma.user.updateMany({
+    where: { id: userId },
+    data: { trialEndsAt: trialEnd },
+  });
 }
 
 // ─── Event Handlers ───────────────────────────────────────────────
@@ -213,12 +215,11 @@ async function handleCheckoutCompleted(
     return;
   }
 
-  // Retrieve full subscription for period dates
   const sub = await stripe.subscriptions.retrieve(subscriptionId);
   const period = getSubscriptionPeriod(sub);
   const trialEnd = getTrialEnd(sub);
 
-  // Upsert subscription (idempotent with subscription.created)
+  // Idempotent with subscription.created
   await prisma.subscription.upsert({
     where: { userId },
     create: {
@@ -240,10 +241,7 @@ async function handleCheckoutCompleted(
     },
   });
 
-  await prisma.user.update({
-    where: { id: userId },
-    data: { trialEndsAt: trialEnd },
-  });
+  await setTrialEndsAt(userId, trialEnd);
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -270,6 +268,9 @@ async function handleCheckoutCompleted(
 async function handleSubscriptionCreated(
   subscription: Stripe.Subscription
 ): Promise<void> {
+  // All app-initiated subs carry metadata.userId (set in createCheckoutSession).
+  // Stripe-dashboard-created subs without it are reconciled later via
+  // handleSubscriptionUpdated, which resolves via DB lookup.
   const userId = subscription.metadata?.userId;
   if (!userId) {
     console.log("No userId in subscription metadata, skipping");
@@ -285,7 +286,6 @@ async function handleSubscriptionCreated(
   const planId = resolvePlanId(subscription);
   const trialEnd = getTrialEnd(subscription);
 
-  // Idempotent upsert — checkout.session.completed may have already handled this
   await prisma.subscription.upsert({
     where: { userId },
     create: {
@@ -305,10 +305,7 @@ async function handleSubscriptionCreated(
     },
   });
 
-  await prisma.user.update({
-    where: { id: userId },
-    data: { trialEndsAt: trialEnd },
-  });
+  await setTrialEndsAt(userId, trialEnd);
 }
 
 async function handleSubscriptionUpdated(
@@ -325,7 +322,6 @@ async function handleSubscriptionUpdated(
 
   const period = getSubscriptionPeriod(subscription);
   const planId = resolvePlanId(subscription);
-  const trialEnd = getTrialEnd(subscription);
   const newStatus = subscription.status;
   const statusChanged = existing.status !== newStatus;
 
@@ -340,12 +336,14 @@ async function handleSubscriptionUpdated(
     },
   });
 
-  await prisma.user.update({
-    where: { id: existing.userId },
-    data: { trialEndsAt: trialEnd },
-  });
+  // Only mirror trial_end while the sub is actually trialing. After a paid
+  // conversion (or cancel-at-period-end toggle) Stripe can update with
+  // trial_end either set or null; we don't want to wipe a paying user's
+  // trialEndsAt on an unrelated update.
+  if (newStatus === "trialing") {
+    await setTrialEndsAt(existing.userId, getTrialEnd(subscription));
+  }
 
-  // Frozen-account signals — sync to Brevo so lifecycle emails can react.
   if (
     statusChanged &&
     (newStatus === "past_due" || newStatus === "canceled")
@@ -381,7 +379,6 @@ async function handleSubscriptionDeleted(
     data: { status: "canceled" },
   });
 
-  // Brevo: mark contact as canceled
   const canceledUser = await prisma.user.findUnique({
     where: { id: existing.userId },
     select: { email: true },
@@ -395,7 +392,6 @@ async function handleSubscriptionDeleted(
     });
   }
 
-  // Clean up user profile in background
   after(async () => {
     try {
       await cleanupUserProfile(existing.userId);
@@ -426,20 +422,23 @@ async function handleTrialWillEnd(
   });
   if (!user?.email) return;
 
-  // Dedupe — Stripe can re-deliver; only send the welcome-to-trial email once.
-  if (user.trialNotifiedAt) {
+  // Atomic compare-and-set — only one concurrent caller wins. Without this,
+  // a fast Stripe redelivery could race past the trialNotifiedAt check and
+  // produce a duplicate trial-start email.
+  const claimed = await prisma.user.updateMany({
+    where: { id: userId, trialNotifiedAt: null },
+    data: { trialNotifiedAt: new Date() },
+  });
+  if (claimed.count === 0) {
     console.log(`Trial notification already sent for user ${userId}`);
     return;
   }
 
-  await prisma.user.update({
-    where: { id: userId },
-    data: { trialNotifiedAt: new Date() },
-  });
-
-  after(async () => {
-    await trackTrialStarted(user.email);
-  });
+  // trackTrialStarted swallows its own Brevo errors (see email.ts), so awaiting
+  // here can't poison the webhook retry loop — we just want to ensure the
+  // email is attempted in-band rather than via after(), so the side-effect
+  // ordering follows the CAS write.
+  await trackTrialStarted(user.email);
 }
 
 async function handleInvoiceSucceeded(

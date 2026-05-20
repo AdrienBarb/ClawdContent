@@ -3,7 +3,6 @@ import { z } from "zod";
 export const checkoutSchema = z.object({
   planId: z.literal("pro"),
   interval: z.enum(["monthly", "yearly"]),
-  intent: z.enum(["billing", "onboarding"]).optional(),
 });
 
 export const changePlanSchema = z.object({

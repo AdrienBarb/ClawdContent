@@ -184,9 +184,6 @@ export default function OnboardingClient() {
       toast.error("Connect at least one account to continue.");
       return;
     }
-    // Steps 1-4 done — kick the user into the Stripe trial checkout. The
-    // success URL is computed server-side from the user's connected accounts
-    // (skipping v1-disabled platforms like TikTok / YouTube).
     router.push(appRouter.onboardingCheckout);
   };
 

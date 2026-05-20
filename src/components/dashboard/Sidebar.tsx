@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { appRouter } from "@/lib/constants/appRouter";
 import { useSession, signOut } from "@/lib/better-auth/auth-client";
@@ -16,6 +16,7 @@ import {
   CaretUpDownIcon,
   PlusIcon,
   UserCircleIcon,
+  WarningCircleIcon,
 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import {
@@ -73,11 +74,15 @@ function StatusDot({
   status: string;
   analysisStatus?: string | null;
 }) {
+  // Disconnected uses an icon, not a colored dot, so color-blind users get a
+  // shape cue too. Connected / analyzing are differentiated by motion
+  // (analyzing pulses).
   if (status !== "active") {
     return (
-      <span
+      <WarningCircleIcon
+        weight="fill"
         aria-label="disconnected"
-        className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-500"
+        className="h-3 w-3 shrink-0 text-red-500"
       />
     );
   }
@@ -85,6 +90,7 @@ function StatusDot({
     return (
       <span
         aria-label="analyzing"
+        title="Analyzing this account…"
         className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400 animate-pulse"
       />
     );
@@ -92,6 +98,7 @@ function StatusDot({
   return (
     <span
       aria-label="connected"
+      title="Connected"
       className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500"
     />
   );
@@ -99,6 +106,7 @@ function StatusDot({
 
 function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const { data: session } = useSession();
   const { data: status, refetch } = useDashboardStatus();
@@ -120,6 +128,8 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
     new Set(activeAccounts.map((a) => a.platform))
   );
 
+  const activeAccountId = searchParams.get("accountId");
+
   const handleSignOut = async () => {
     await signOut();
     router.push("/");
@@ -140,9 +150,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const isAccountActive = (account: AccountInfo) => {
     if (!pathname.startsWith(`/d/${account.platform}`)) return false;
     if (platformCount[account.platform] === 1) return true;
-    if (typeof window === "undefined") return false;
-    const sp = new URLSearchParams(window.location.search);
-    return sp.get("accountId") === account.id;
+    return activeAccountId === account.id;
   };
 
   return (
@@ -175,7 +183,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                 key={account.id}
                 href={buildAccountHref(account)}
                 onClick={onNavigate}
-                className={`group relative flex items-center gap-2.5 rounded-lg pl-1.5 pr-2 py-1.5 text-left transition-colors ${
+                className={`group relative flex items-center gap-2.5 rounded-lg pl-1.5 pr-2 py-2.5 md:py-1.5 text-left transition-colors ${
                   isActive ? "bg-white shadow-sm" : "hover:bg-black/[0.035]"
                 }`}
               >
@@ -211,7 +219,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           <button
             type="button"
             onClick={() => setAddOpen(true)}
-            className="group flex items-center gap-2.5 rounded-lg pl-1.5 pr-2 py-1.5 text-left transition-colors hover:bg-black/[0.035] cursor-pointer"
+            className="group flex items-center gap-2.5 rounded-lg pl-1.5 pr-2 py-2.5 md:py-1.5 text-left transition-colors hover:bg-black/[0.035] cursor-pointer"
           >
             <span className="self-stretch w-[3px] rounded-sm bg-black/[0.08] shrink-0" />
             <span className="flex h-6 w-6 items-center justify-center rounded-[7px] border border-dashed border-gray-300 text-gray-400 shrink-0">

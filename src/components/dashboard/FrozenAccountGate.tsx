@@ -1,41 +1,17 @@
 "use client";
 
-import { useState } from "react";
 import Image from "next/image";
-import toast from "react-hot-toast";
-import useApi from "@/lib/hooks/useApi";
-import { appRouter } from "@/lib/constants/appRouter";
 import { signOut } from "@/lib/better-auth/auth-client";
 import { Button } from "@/components/ui/button";
 import { SpinnerGapIcon } from "@phosphor-icons/react";
+import { useStartCheckout } from "@/lib/hooks/useStartCheckout";
 
 export default function FrozenAccountGate({
   status,
 }: {
   status: "past_due" | "canceled";
 }) {
-  const { usePost } = useApi();
-  const [opening, setOpening] = useState(false);
-
-  const { mutate: startCheckout } = usePost(appRouter.api.checkout, {
-    onSuccess: (data: { url: string }) => {
-      if (data?.url) {
-        window.location.href = data.url;
-      } else {
-        toast.error("Couldn't open checkout. Please try again.");
-        setOpening(false);
-      }
-    },
-    onError: () => {
-      toast.error("Couldn't open checkout. Please try again.");
-      setOpening(false);
-    },
-  });
-
-  const handleReactivate = () => {
-    setOpening(true);
-    startCheckout({ planId: "pro", interval: "monthly", intent: "billing" });
-  };
+  const { start, isOpening } = useStartCheckout();
 
   const headline =
     status === "past_due"
@@ -67,11 +43,11 @@ export default function FrozenAccountGate({
         </div>
         <div className="flex flex-col items-center gap-3">
           <Button
-            onClick={handleReactivate}
-            disabled={opening}
+            onClick={start}
+            disabled={isOpening}
             className="w-full bg-gradient-to-b from-[#ec6f5b] to-[#c84a35] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.18),_0_1px_2px_rgba(200,74,53,0.25)] hover:opacity-95"
           >
-            {opening ? (
+            {isOpening ? (
               <>
                 <SpinnerGapIcon className="h-4 w-4 animate-spin" />
                 Opening checkout…
