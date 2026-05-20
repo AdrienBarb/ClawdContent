@@ -16,13 +16,33 @@ export default async function OnboardingLayout({
     redirect("/");
   }
 
-  // If onboarding already completed, go to dashboard
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { knowledgeBase: true },
-  });
+  // Only kick the user to /d if EVERY onboarding step is complete:
+  // knowledge base + brand identity + ≥1 active social account + active
+  // (or trialing) Stripe subscription. Anything less and we keep the user
+  // inside (onboarding) so they can finish — including the new
+  // /onboarding/checkout step.
+  const [user, subscription, lateProfile] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { knowledgeBase: true, brandIdentity: true },
+    }),
+    prisma.subscription.findUnique({ where: { userId: session.user.id } }),
+    prisma.lateProfile.findUnique({
+      where: { userId: session.user.id },
+      include: {
+        socialAccounts: { where: { status: "active" }, select: { id: true } },
+      },
+    }),
+  ]);
 
-  if (user?.knowledgeBase !== null) {
+  const onboardingCompleted =
+    !!user?.knowledgeBase &&
+    !!user?.brandIdentity &&
+    (lateProfile?.socialAccounts?.length ?? 0) >= 1 &&
+    !!subscription &&
+    (subscription.status === "active" || subscription.status === "trialing");
+
+  if (onboardingCompleted) {
     redirect("/d");
   }
 

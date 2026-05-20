@@ -75,6 +75,30 @@ export async function trackSubscriptionStarted(
 }
 
 /**
+ * Fire trial_started event — sent when Stripe's
+ * customer.subscription.trial_will_end webhook delivers (for a 3-day trial
+ * this fires at trial start). Use User.trialNotifiedAt to dedupe.
+ */
+export async function trackTrialStarted(email: string) {
+  try {
+    await brevo.contacts.updateContact({
+      identifier: email,
+      attributes: {
+        TRIAL_STATUS: "active",
+      },
+    });
+
+    await brevo.event.createEvent({
+      event_name: "trial_started",
+      identifiers: { email_id: email },
+      event_properties: { source: "stripe" },
+    });
+  } catch (error) {
+    console.error("Failed to track trial_started event:", error);
+  }
+}
+
+/**
  * Update contact attributes in Brevo (e.g. on cancellation or plan change).
  */
 export async function updateBrevoContact(

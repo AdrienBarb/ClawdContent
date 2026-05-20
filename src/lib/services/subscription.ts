@@ -3,16 +3,35 @@ import { stripe } from "@/lib/stripe/client";
 import {
   type PlanId,
   type BillingInterval,
-  getPlan,
   getStripePriceId,
 } from "@/lib/constants/plans";
+import { DEFAULT_CADENCE } from "@/lib/constants/cadence";
+
+const TRIAL_PERIOD_DAYS = 3;
+
+export type CheckoutIntent = "billing" | "onboarding";
+
+async function resolveOnboardingSuccessPath(userId: string): Promise<string> {
+  const lateProfile = await prisma.lateProfile.findUnique({
+    where: { userId },
+    include: { socialAccounts: true },
+  });
+
+  const accounts = lateProfile?.socialAccounts ?? [];
+  const enabled = accounts.find(
+    (a) => a.status === "active" && DEFAULT_CADENCE[a.platform] !== null
+  );
+
+  return enabled ? `/d/${enabled.platform}` : "/d";
+}
 
 export async function createCheckoutSession(
   userId: string,
   email: string,
   planId: PlanId,
   interval: BillingInterval,
-  affonsoReferral?: string
+  affonsoReferral?: string,
+  intent: CheckoutIntent = "billing"
 ): Promise<string> {
   const existing = await prisma.subscription.findUnique({
     where: { userId },
@@ -37,18 +56,29 @@ export async function createCheckoutSession(
   }
 
   const priceId = getStripePriceId(planId, interval);
-  const plan = getPlan(planId);
 
   const baseUrl =
     process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+
+  let successUrl: string;
+  let cancelUrl: string;
+
+  if (intent === "onboarding") {
+    const path = await resolveOnboardingSuccessPath(userId);
+    successUrl = `${baseUrl}${path}`;
+    cancelUrl = `${baseUrl}/onboarding/checkout?cancelled=1`;
+  } else {
+    successUrl = `${baseUrl}/d?payment=success`;
+    cancelUrl = `${baseUrl}/d`;
+  }
 
   const session = await stripe.checkout.sessions.create({
     customer: customerId,
     mode: "subscription",
     allow_promotion_codes: true,
     line_items: [{ price: priceId, quantity: 1 }],
-    success_url: `${baseUrl}/d?payment=success`,
-    cancel_url: `${baseUrl}/d`,
+    success_url: successUrl,
+    cancel_url: cancelUrl,
     metadata: {
       userId,
       planId,
@@ -56,7 +86,7 @@ export async function createCheckoutSession(
     },
     subscription_data: {
       metadata: { userId, planId },
-      ...(plan.hasTrial && { trial_period_days: plan.trialDays }),
+      trial_period_days: TRIAL_PERIOD_DAYS,
     },
   });
 

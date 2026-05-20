@@ -7,6 +7,7 @@ import Sidebar, {
 } from "@/components/dashboard/Sidebar";
 import TimezoneSync from "@/components/dashboard/TimezoneSync";
 import LegacyKBBanner from "@/components/dashboard/LegacyKBBanner";
+import FrozenAccountGate from "@/components/dashboard/FrozenAccountGate";
 
 export default async function DashboardLayout({
   children,
@@ -21,13 +22,33 @@ export default async function DashboardLayout({
     redirect("/");
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { knowledgeBase: true },
-  });
+  const [user, subscription, lateProfile] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { knowledgeBase: true, brandIdentity: true },
+    }),
+    prisma.subscription.findUnique({ where: { userId: session.user.id } }),
+    prisma.lateProfile.findUnique({
+      where: { userId: session.user.id },
+      include: {
+        socialAccounts: { where: { status: "active" }, select: { id: true } },
+      },
+    }),
+  ]);
 
-  if (user?.knowledgeBase === null) {
+  // Onboarding incomplete — bounce back to /onboarding (steps 1-4).
+  const hasSocial = (lateProfile?.socialAccounts?.length ?? 0) >= 1;
+  if (!user?.knowledgeBase || !user?.brandIdentity || !hasSocial) {
     redirect("/onboarding");
+  }
+
+  // Onboarding done but no active/trialing subscription — bounce to step 5.
+  const subStatus = subscription?.status ?? null;
+  if (subStatus !== "active" && subStatus !== "trialing") {
+    if (subStatus === "past_due" || subStatus === "canceled") {
+      return <FrozenAccountGate status={subStatus} />;
+    }
+    redirect("/onboarding/checkout");
   }
 
   return (

@@ -9,7 +9,6 @@ import { appRouter } from "@/lib/constants/appRouter";
 import useApi from "@/lib/hooks/useApi";
 import type { KnowledgeBase } from "@/lib/schemas/knowledgeBase";
 import type { BrandIdentity } from "@/lib/schemas/brandIdentity";
-import { DEFAULT_CADENCE } from "@/lib/services/strategy";
 
 import { StepIndicator } from "./_components/StepIndicator";
 import type { Step } from "./_components/types";
@@ -30,16 +29,6 @@ interface ConnectedAccount {
   id: string;
   platform: string;
 }
-
-/** Platforms that have generation disabled in v1 (per spec D15: TikTok and
- * YouTube can be connected but video drafts aren't generated yet). Filter
- * these out when choosing the post-onboarding landing platform — otherwise a
- * user who connects ONLY TikTok hits /d/tiktok and 404s. */
-const POST_ONBOARDING_DISABLED_PLATFORMS = new Set(
-  Object.entries(DEFAULT_CADENCE)
-    .filter(([, cadence]) => cadence === null)
-    .map(([platform]) => platform)
-);
 
 export default function OnboardingClient() {
   const router = useRouter();
@@ -195,17 +184,10 @@ export default function OnboardingClient() {
       toast.error("Connect at least one account to continue.");
       return;
     }
-    // Land on the first connected platform with v1 generation enabled. If
-    // the user only connected TikTok/YouTube (disabled in v1), fall back to
-    // the bare dashboard so we don't 404.
-    const enabledPlatform = connectedPlatformIds.find(
-      (p) => !POST_ONBOARDING_DISABLED_PLATFORMS.has(p)
-    );
-    if (enabledPlatform) {
-      router.push(`${appRouter.dashboard}/${enabledPlatform}`);
-    } else {
-      router.push(appRouter.dashboard);
-    }
+    // Steps 1-4 done — kick the user into the Stripe trial checkout. The
+    // success URL is computed server-side from the user's connected accounts
+    // (skipping v1-disabled platforms like TikTok / YouTube).
+    router.push(appRouter.onboardingCheckout);
   };
 
   return (

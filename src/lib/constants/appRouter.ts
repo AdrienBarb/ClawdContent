@@ -18,6 +18,7 @@ export const appRouter = {
   billing: "/d/billing",
   platform: (platform: string) => `/d/${platform}`,
   onboarding: "/onboarding",
+  onboardingCheckout: "/onboarding/checkout",
 
   // API routes
   api: {

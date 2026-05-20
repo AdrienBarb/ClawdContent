@@ -11,6 +11,7 @@ import {
 import { getPlanFromStripePriceId } from "@/lib/constants/plans";
 import {
   trackSubscriptionStarted,
+  trackTrialStarted,
   updateBrevoContact,
 } from "@/lib/services/email";
 
@@ -81,6 +82,10 @@ export async function POST(req: NextRequest) {
         );
         break;
 
+      case "customer.subscription.trial_will_end":
+        await handleTrialWillEnd(event.data.object as Stripe.Subscription);
+        break;
+
       case "invoice.payment_succeeded":
         await handleInvoiceSucceeded(event.data.object as Stripe.Invoice);
         break;
@@ -125,6 +130,10 @@ function getSubscriptionPeriod(sub: Stripe.Subscription) {
   };
 }
 
+function getTrialEnd(sub: Stripe.Subscription): Date | null {
+  return sub.trial_end ? new Date(sub.trial_end * 1000) : null;
+}
+
 function getSubscriptionIdFromInvoice(
   invoice: Stripe.Invoice
 ): string | null {
@@ -148,6 +157,19 @@ function resolvePlanId(subscription: Stripe.Subscription): string {
 
   // Default for legacy subscriptions
   return "pro";
+}
+
+async function resolveUserIdFromSubscription(
+  subscription: Stripe.Subscription
+): Promise<string | null> {
+  if (subscription.metadata?.userId) {
+    return subscription.metadata.userId;
+  }
+  const existing = await prisma.subscription.findUnique({
+    where: { stripeSubscriptionId: subscription.id },
+    select: { userId: true },
+  });
+  return existing?.userId ?? null;
 }
 
 // ─── Event Handlers ───────────────────────────────────────────────
@@ -194,6 +216,7 @@ async function handleCheckoutCompleted(
   // Retrieve full subscription for period dates
   const sub = await stripe.subscriptions.retrieve(subscriptionId);
   const period = getSubscriptionPeriod(sub);
+  const trialEnd = getTrialEnd(sub);
 
   // Upsert subscription (idempotent with subscription.created)
   await prisma.subscription.upsert({
@@ -215,6 +238,11 @@ async function handleCheckoutCompleted(
       currentPeriodStart: period.start,
       currentPeriodEnd: period.end,
     },
+  });
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { trialEndsAt: trialEnd },
   });
 
   const user = await prisma.user.findUnique({
@@ -255,6 +283,7 @@ async function handleSubscriptionCreated(
 
   const period = getSubscriptionPeriod(subscription);
   const planId = resolvePlanId(subscription);
+  const trialEnd = getTrialEnd(subscription);
 
   // Idempotent upsert — checkout.session.completed may have already handled this
   await prisma.subscription.upsert({
@@ -275,6 +304,11 @@ async function handleSubscriptionCreated(
       currentPeriodEnd: period.end,
     },
   });
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { trialEndsAt: trialEnd },
+  });
 }
 
 async function handleSubscriptionUpdated(
@@ -291,17 +325,43 @@ async function handleSubscriptionUpdated(
 
   const period = getSubscriptionPeriod(subscription);
   const planId = resolvePlanId(subscription);
+  const trialEnd = getTrialEnd(subscription);
+  const newStatus = subscription.status;
+  const statusChanged = existing.status !== newStatus;
 
   await prisma.subscription.update({
     where: { stripeSubscriptionId: subscription.id },
     data: {
-      status: subscription.status,
+      status: newStatus,
       planId,
       currentPeriodStart: period.start,
       currentPeriodEnd: period.end,
       cancelAtPeriodEnd: subscription.cancel_at_period_end,
     },
   });
+
+  await prisma.user.update({
+    where: { id: existing.userId },
+    data: { trialEndsAt: trialEnd },
+  });
+
+  // Frozen-account signals — sync to Brevo so lifecycle emails can react.
+  if (
+    statusChanged &&
+    (newStatus === "past_due" || newStatus === "canceled")
+  ) {
+    const user = await prisma.user.findUnique({
+      where: { id: existing.userId },
+      select: { email: true },
+    });
+    if (user?.email) {
+      after(async () => {
+        await updateBrevoContact(user.email, {
+          SUBSCRIPTION_STATUS: newStatus,
+        });
+      });
+    }
+  }
 }
 
 async function handleSubscriptionDeleted(
@@ -346,6 +406,39 @@ async function handleSubscriptionDeleted(
         err
       );
     }
+  });
+}
+
+async function handleTrialWillEnd(
+  subscription: Stripe.Subscription
+): Promise<void> {
+  const userId = await resolveUserIdFromSubscription(subscription);
+  if (!userId) {
+    console.log(
+      `trial_will_end: no userId for subscription ${subscription.id}, skipping`
+    );
+    return;
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true, trialNotifiedAt: true },
+  });
+  if (!user?.email) return;
+
+  // Dedupe — Stripe can re-deliver; only send the welcome-to-trial email once.
+  if (user.trialNotifiedAt) {
+    console.log(`Trial notification already sent for user ${userId}`);
+    return;
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { trialNotifiedAt: new Date() },
+  });
+
+  after(async () => {
+    await trackTrialStarted(user.email);
   });
 }
 
