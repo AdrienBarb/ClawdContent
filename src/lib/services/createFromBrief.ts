@@ -21,7 +21,12 @@ export type SuggestionWithAccount = PostSuggestion & {
   socialAccount: { platform: string; username: string };
 };
 
-const MAX_POSTS_PER_ACCOUNT = 14;
+// Hard ceiling on the number of posts Claude produces per account in one
+// call. Set to match the strategy schema's upper bound (25) so the weekly
+// cron — which can ask for up to Twitter's 21-posts/wk cadence — never gets
+// silently truncated. The chat brief path is still naturally bounded by
+// the user's request ("plan 5 posts" → 5).
+const MAX_POSTS_PER_ACCOUNT = 25;
 
 interface CreateFromBriefArgs {
   userId: string;
@@ -169,6 +174,10 @@ async function generateForAccount(
   // a mid-batch failure rolls back rather than leaving partial drafts behind.
   const useScheduledAt =
     !!scheduledAtList && scheduledAtList.length === finalPosts.length;
+  // Approval mode is an account-level invariant: if the user has flipped
+  // autopublish off, every suggestion (cron-generated OR chat-generated)
+  // must require explicit approval before scheduling.
+  const approvalRequired = account.autopublish === false;
   const created = await prisma.$transaction(async (tx) => {
     const rows: SuggestionWithAccount[] = [];
     for (let i = 0; i < finalPosts.length; i++) {
@@ -181,6 +190,7 @@ async function generateForAccount(
           suggestedDay: slots[i].dayOfWeek,
           suggestedHour: slots[i].hour,
           reasoning: p.reasoning,
+          approvalRequired,
           ...(hasMedia ? { mediaItems: mediaItems } : {}),
           ...(useScheduledAt ? { scheduledAt: scheduledAtList![i] } : {}),
         },

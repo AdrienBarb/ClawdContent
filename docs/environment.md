@@ -35,6 +35,9 @@ BREVO_LIST_ID=
 # AI (Anthropic)
 ANTHROPIC_API_KEY=               # Read by @ai-sdk/anthropic provider
 
+# AI (OpenAI — gpt-image-1 brand-styled post images, weekly cron)
+OPENAI_API_KEY=                  # Required for Phase 5 image generation
+
 # Website Scraping (Firecrawl, onboarding only)
 FIRECRAWL_API_KEY=
 

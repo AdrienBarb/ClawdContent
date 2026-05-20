@@ -45,8 +45,9 @@ export const analyzeAccount = inngest.createFunction(
     // post generation). No try/catch here: Inngest retries the step on its
     // own (function-level retries: 3), and we'd rather see a failure than
     // silently ship a user with no strategy.
-    await step.run("define-strategy", async () => {
-      await defineStrategyForAccount(socialAccountId);
+    const strategyDefined = await step.run("define-strategy", async () => {
+      const strategy = await defineStrategyForAccount(socialAccountId);
+      return strategy !== null;
     });
 
     // Flip to "completed" last. markAnalysisCompleted is a no-op when the
@@ -56,6 +57,26 @@ export const analyzeAccount = inngest.createFunction(
     await step.run("mark-analysis-completed", async () => {
       await markAnalysisCompleted(socialAccountId);
     });
+
+    // Kick off the first week of posts immediately so a user who connects
+    // mid-week doesn't have to wait until Sunday 18:00 UTC for the cron.
+    // Skipped when no strategy was produced (e.g. video-only platforms in v1
+    // where DEFAULT_CADENCE returns null and generationEnabled flips off).
+    if (strategyDefined) {
+      const ownerUserId = await step.run("resolve-owner", async () => {
+        const row = await prisma.socialAccount.findUnique({
+          where: { id: socialAccountId },
+          select: { lateProfile: { select: { userId: true } } },
+        });
+        return row?.lateProfile.userId ?? null;
+      });
+      if (ownerUserId !== null) {
+        await step.sendEvent("trigger-first-week", {
+          name: "account/generate-week",
+          data: { socialAccountId, userId: ownerUserId },
+        });
+      }
+    }
 
     return {
       success: true,

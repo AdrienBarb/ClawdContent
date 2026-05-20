@@ -8,6 +8,22 @@ function getMasterApiKey(): string {
   return key;
 }
 
+export class ZernioError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+    public readonly method: string,
+    public readonly path: string
+  ) {
+    super(message);
+    this.name = "ZernioError";
+  }
+}
+
+export function isZernioRateLimited(err: unknown): err is ZernioError {
+  return err instanceof ZernioError && err.status === 429;
+}
+
 export async function lateRequest<T>(
   path: string,
   options: {
@@ -37,8 +53,11 @@ export async function lateRequest<T>(
       console.error(
         `[Zernio] ❌ ${method} ${path} → ${res.status} (${duration}ms): ${text.slice(0, 200)}`
       );
-      throw new Error(
-        `Zernio API ${method} ${path} failed (${res.status}): ${text}`
+      throw new ZernioError(
+        `Zernio API ${method} ${path} failed (${res.status}): ${text}`,
+        res.status,
+        method,
+        path
       );
     }
 
@@ -49,10 +68,7 @@ export async function lateRequest<T>(
     return res.json() as Promise<T>;
   } catch (error) {
     const duration = Date.now() - start;
-    if (
-      error instanceof Error &&
-      error.message.startsWith("Zernio API")
-    ) {
+    if (error instanceof ZernioError) {
       throw error; // Already logged above
     }
     console.error(
