@@ -1,310 +1,145 @@
 # PostClaw
 
-A modern Next.js SaaS application with authentication, database, email, payments, analytics, rate limiting, and SEO optimization.
+> Your AI social media manager. Tell it what to post and it posts it for you.
 
-## Tech Stack
+PostClaw learns your brand from your website, plans content across 9 social platforms, and publishes on schedule. No editor, no dashboard to learn, no prompt engineering. Built for small business owners, solo founders, and creators who would rather make than post.
 
-### Core
-- **Next.js 16** - React framework with App Router
-- **TypeScript** - Type-safe development
-- **React 19** - Latest React features
+**Live:** [postclaw.io](https://www.postclaw.io)
 
-### Styling
-- **Tailwind CSS v4** - Utility-first CSS framework
-- **shadcn/ui** - Beautiful, accessible component library
-- **Lucide React** - Icon library
+---
 
-### Database & ORM
-- **Prisma** - Next-generation ORM
-- **PostgreSQL** - Database (via Supabase)
-- **Supabase** - Local development database
+## What it does
 
-### Authentication
-- **Better-auth** - Modern authentication library
-- Magic link authentication (passwordless)
-- Email & password authentication
-- Session management
+1. **Sign up.** A scoped Zernio publishing profile is provisioned automatically (Better Auth `user.create.after` hook).
+2. **Onboard.** Paste your website URL — Firecrawl scrapes it, the AI engine extracts your brand voice, audience, products, and goals into a structured knowledge base. You confirm or edit.
+3. **Connect.** OAuth into Instagram, Facebook, Twitter/X, Threads, LinkedIn, TikTok, YouTube, Pinterest, or Bluesky.
+4. **Chat to draft.** A chat composer on `/d` calls five tools (`generate_posts`, `update_post`, `regenerate_post`, `delete_draft`, `set_schedule`) that wrap a Postgres-backed drafts board.
+5. **Review and ship.** Drafts appear as cards. Click Post or Schedule. That's it.
 
-### Payments
-- **Stripe** - Payment processing
-- Webhook handling for subscription events
-- One-time and recurring payments
+---
 
-### State Management
-- **Zustand** - Lightweight client state management
-- **TanStack Query (React Query)** - Server state management
+## Tech stack
 
-### Email
-- **Resend** - Email delivery service
-- **React Email** - Build emails with React
-- Pre-built email templates
+| Layer | Choice |
+|---|---|
+| Framework | Next.js 16 (App Router, React 19, Server Components by default) |
+| Language | TypeScript (strict) |
+| Styling | Tailwind CSS v4 + shadcn/ui |
+| Database | PostgreSQL (Supabase) via Prisma 7 + `@prisma/adapter-pg` |
+| Auth | Better Auth (magic link + Google OAuth) |
+| Payments | Stripe SDK v20 (`2026-01-28.clover`), webhook idempotency via `StripeEvent` table |
+| AI | AI SDK + Anthropic Sonnet 4.6 (insights, suggestions, rewrites, onboarding extraction) |
+| Background jobs | Inngest (account analysis, insight refresh) |
+| Social publishing | Zernio API (one master account, per-user scoped API keys) |
+| Email | Resend (transactional) + Brevo (lifecycle) + React Email |
+| CMS | Sanity (blog + alternatives pages) |
+| Media | Cloudinary |
+| Scraping | Firecrawl (onboarding only) |
+| Analytics | PostHog |
+| Hosting | Vercel (Fluid Compute) |
 
-### Analytics
-- **PostHog** - Product analytics (client & server-side)
+---
 
-### Rate Limiting
-- **Upstash Redis** - Rate limiting for API protection
+## Architecture at a glance
 
-### SEO
-- Dynamic robots.txt and sitemap.xml
-- llms.txt for AI discoverability
-- Open Graph and Twitter card metadata
-- Centralized SEO configuration
+```
+Next.js 16 (App Router, RSC)
+  ├── (home)/         Public marketing pages
+  ├── (dashboard)/    Auth-guarded app shell + /d routes
+  ├── (onboarding)/   Two-step onboarding (knowledgeBase === null gate)
+  └── api/            Thin route handlers — validate → service → return
 
-## Features
+src/lib/
+  ├── services/       All business logic lives here
+  ├── ai/             Anthropic provider + chat tools + prompt builders
+  ├── late/           Zernio API client (legacy name preserved in code)
+  ├── stripe/         Stripe client + plan resolution
+  ├── db/             Prisma schema + adapter-pg client
+  ├── schemas/        Zod schemas (parsed at API boundary)
+  └── {brevo,firecrawl,cloudinary,sanity,better-auth}/  vendor adapters
+```
 
-- Authentication with Better-auth (Magic Link + Email/Password)
-- Database with Prisma + PostgreSQL (Supabase)
-- Email sending with Resend + React Email
-- Waitlist functionality with rate limiting
-- Payment processing with Stripe
-- Centralized error handling
-- API client with React Query hooks
-- State management with Zustand
-- Analytics with PostHog
-- Rate limiting with Upstash Redis
-- SEO optimization (robots.txt, sitemap, llms.txt)
-- UI components with shadcn/ui
-- TypeScript throughout
-- Tailwind CSS v4 styling
+**Design principles (enforced in code review):**
 
-## Quick Start
+- Thin route handlers — they validate, call a service, and return. No business logic.
+- Service layer owns vendor calls. Routes never import vendor SDKs directly.
+- Server Components by default. Client components only when interactivity demands it.
+- No barrel imports — import from source, never `index.ts`.
+- Strict TypeScript everywhere. `any` is reserved for one generic API hook.
+- Zod at every API boundary. No untyped JSON crossing the trust boundary.
+
+See [`CLAUDE.md`](./CLAUDE.md) for the full architecture, data model, and the list of gotchas (Anthropic schema constraints, Prisma 7 adapter quirks, Stripe v20 period dates, Zernio's "Late" legacy naming, etc.).
+
+---
+
+## Local setup
 
 ### Prerequisites
 
-- **Node.js 18+**
-- **Docker Desktop** (for local Supabase)
+- Node.js 24+
+- Supabase CLI (for local Postgres) or any Postgres 15+
+- API keys for: Anthropic, Stripe (test mode), Resend, Firecrawl, Zernio, Inngest, Sanity, Cloudinary, PostHog
 
-### Setup
+### Steps
 
-1. **Clone and install:**
 ```bash
-git clone <your-repo-url>
-cd PostClaw
+# 1. Install
 npm install
-```
 
-2. **Configure environment:**
-```bash
+# 2. Configure env
 cp .env.example .env
-# Edit .env with your values
-```
+# Fill in the values — see docs/environment.md for what each variable does.
 
-3. **Start local database:**
-```bash
+# 3. Start local Postgres (Supabase)
 supabase start
-```
 
-4. **Setup database schema:**
-```bash
+# 4. Run migrations
 npm run db:migrate
-# Or for quick setup: npm run db:push
-```
 
-5. **Start development:**
-```bash
+# 5. Dev server
 npm run dev
 ```
 
-Visit http://localhost:3000
+Open [localhost:3000](http://localhost:3000).
 
-## Environment Variables
+---
 
-### Required
-
-```env
-# Database
-DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:54325/postgres"
-DIRECT_URL="postgresql://postgres:postgres@127.0.0.1:54325/postgres"
-
-# Authentication
-BETTER_AUTH_SECRET="your-secret-min-32-chars"
-BETTER_AUTH_URL="http://localhost:3000"
-NEXT_PUBLIC_BASE_URL="http://localhost:3000"
-
-# Email
-RESEND_API_KEY="re_your_api_key"
-
-# Payments
-STRIPE_SECRET_KEY="sk_test_..."
-STRIPE_WEBHOOK_SECRET="whsec_..."
-
-# Rate Limiting
-UPSTASH_REDIS_REST_URL="https://..."
-UPSTASH_REDIS_REST_TOKEN="..."
-```
-
-### Optional
-
-```env
-# Analytics
-NEXT_PUBLIC_POSTHOG_KEY="phc_..."
-NEXT_PUBLIC_POSTHOG_HOST="https://app.posthog.com"
-
-# Environment
-NEXT_PUBLIC_APP_ENV="development"
-```
-
-## Project Structure
-
-```
-src/
-├── app/                    # Next.js App Router
-│   ├── api/               # API routes
-│   │   ├── auth/          # Better-auth endpoints
-│   │   ├── waitlist/      # Waitlist endpoint
-│   │   └── webhooks/      # Stripe webhooks
-│   ├── robots.ts          # SEO robots.txt
-│   ├── sitemap.ts         # SEO sitemap.xml
-│   └── layout.tsx         # Root layout
-├── components/            # React components
-│   ├── ui/               # shadcn/ui components
-│   ├── sections/         # Landing page sections
-│   └── providers/        # Context providers
-├── lib/                  # Library code
-│   ├── api/             # Axios instance
-│   ├── better-auth/     # Auth configuration
-│   ├── constants/       # App constants & error messages
-│   ├── db/              # Prisma client & schema
-│   ├── emails/          # Email templates
-│   ├── errors/          # Error handler
-│   ├── hooks/           # Custom React hooks
-│   ├── ratelimit/       # Rate limiting utilities
-│   ├── resend/          # Email client
-│   ├── schemas/         # Zod validation schemas
-│   ├── services/        # Business logic services
-│   ├── seo/             # SEO utilities
-│   ├── stores/          # Zustand stores
-│   ├── stripe/          # Stripe client
-│   └── tracking/        # PostHog client
-├── data/                # Static data
-└── public/              # Static assets
-    └── llms.txt         # LLM discovery file
-```
-
-## Configuration
-
-All project configuration is in `config.json`:
-
-```json
-{
-  "project": {
-    "name": "YourProject",
-    "brandName": "YourProject",
-    "description": "Your description",
-    "url": "https://yourproject.com"
-  },
-  "seo": {
-    "title": "YourProject - Main Value",
-    "keywords": ["keyword1", "keyword2"]
-  },
-  "contact": {
-    "email": "hello@yourproject.com"
-  },
-  "pricing": {
-    "plans": [...]
-  }
-}
-```
-
-## Available Scripts
+## Available scripts
 
 ```bash
-npm run dev          # Start development server
-npm run build        # Build for production
-npm run start        # Start production server
-npm run lint         # Run ESLint
-npm run db:generate  # Generate Prisma Client
-npm run db:migrate   # Run database migrations
-npm run db:push      # Push schema to database
-npm run db:studio    # Open Prisma Studio
-npm run email:dev    # Preview email templates
+npm run dev                # Next.js dev server
+npm run build              # Production build
+npm run vercel-build       # prisma generate + (prod) migrate deploy + next build
+npm run lint               # ESLint
+npm run db:migrate         # prisma migrate dev
+npm run db:push            # prisma db push (no migration files)
+npm run db:studio          # Prisma Studio
+npm run email:dev          # React Email template preview
+npm run backfill:insights  # tsx scripts/backfill-insights.ts
 ```
 
-## API Patterns
-
-### Authenticated Route
-
-```typescript
-import { auth } from "@/lib/better-auth/auth";
-import { errorHandler } from "@/lib/errors/errorHandler";
-import { errorMessages } from "@/lib/constants/errorMessage";
-import { headers } from "next/headers";
-
-export async function GET() {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: errorMessages.UNAUTHORIZED },
-        { status: 401 }
-      );
-    }
-
-    // Your logic here
-  } catch (error) {
-    return errorHandler(error);
-  }
-}
-```
-
-### Rate-Limited Public Route
-
-```typescript
-import { checkRateLimit } from "@/lib/ratelimit/checkRateLimit";
-import { publicLimiter } from "@/lib/ratelimit/client";
-
-export async function POST(req: NextRequest) {
-  try {
-    const rateLimit = await checkRateLimit(req, publicLimiter);
-    if (!rateLimit.success) return rateLimit.response;
-
-    // Your logic here
-  } catch (error) {
-    return errorHandler(error);
-  }
-}
-```
-
-## Client-Side Data Fetching
-
-```typescript
-import useApi from "@/lib/hooks/useApi";
-
-function MyComponent() {
-  const { useGet, usePost } = useApi();
-
-  const { data, isLoading } = useGet("/endpoint");
-  const { mutate } = usePost("/endpoint", {
-    onSuccess: () => console.log("Success!"),
-  });
-
-  return <button onClick={() => mutate({ data })}>Submit</button>;
-}
-```
-
-## Adding shadcn/ui Components
-
-```bash
-npx shadcn@latest add button
-npx shadcn@latest add card
-npx shadcn@latest add dialog
-npx shadcn@latest add form
-```
+---
 
 ## Documentation
 
-- [CLAUDE.md](./CLAUDE.md) - Comprehensive project documentation
-- [Next.js](https://nextjs.org/docs)
-- [Prisma](https://www.prisma.io/docs)
-- [Better-auth](https://www.better-auth.com/docs)
-- [Stripe](https://stripe.com/docs)
-- [Upstash](https://upstash.com/docs)
-- [shadcn/ui](https://ui.shadcn.com)
+| File | What's in it |
+|---|---|
+| [`CLAUDE.md`](./CLAUDE.md) | Architecture, data model, coding standards, gotchas — the canonical engineering doc |
+| [`docs/PRD.md`](./docs/PRD.md) | Product requirements, positioning, ICP |
+| [`docs/environment.md`](./docs/environment.md) | Every environment variable, what reads it, and what breaks if it's missing |
+| `src/components/dashboard/CLAUDE.md` | Dashboard design system tokens + component patterns |
+| `src/lib/services/CLAUDE.md` | Insights schema + suggestion pipeline |
+| `src/app/api/CLAUDE.md` | Route handler pattern |
+| `src/lib/stripe/CLAUDE.md` | Stripe SDK v20 quirks + webhook events |
+
+---
+
+## Project history
+
+The repository was bootstrapped from a personal Next.js SaaS starter in February 2026 and rewritten into PostClaw between March and May. Early commits (`"Initial commit: ClawdContent app from saas-boilerplate"` through `"redesign"`) reflect that rewrite — the dashboard, AI engine, Zernio integration, onboarding flow, and entire `src/lib/services/` layer were built after the rewrite branched off. Some legacy names survive in the codebase (most notably `lib/late/`, `LateProfile`, `lateApiKey` — Zernio's previous name was "Late") and are documented in `CLAUDE.md` rather than renamed to avoid churn-only migrations.
+
+---
 
 ## License
 
-MIT
+[MIT](./LICENSE)

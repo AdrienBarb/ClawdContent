@@ -63,7 +63,7 @@ function getInitials(name?: string | null, email?: string | null) {
 function BrandMark() {
   return (
     <Image
-      src="/logo.svg"
+      src="/logo-icon.png"
       alt="PostClaw"
       width={28}
       height={28}

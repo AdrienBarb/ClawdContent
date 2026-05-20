@@ -50,3 +50,10 @@ skills-lock.json
 
 # archived planning docs
 PLAN.archive.md
+
+# supabase CLI scratch
+supabase/.temp/
+supabase/.branches/
+
+# vendor API specs (kept locally for reference, not shipped)
+zernio-api-openapi.yaml
