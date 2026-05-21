@@ -50,9 +50,9 @@ export default function HeroSection({ variant = "control" }: HeroSectionProps) {
           </div>
 
           <h1 className="font-display text-5xl leading-[0.96] tracking-[-0.03em] text-balance md:text-7xl lg:text-[112px]">
-            Plan a month of posts
+            Your <em className="italic text-[#ec6f5b]">AI</em> social
             <br />
-            in <em className="italic text-[#ec6f5b]">5 minutes</em>.
+            media manager.
           </h1>
 
           <p className="mt-9 max-w-[620px] text-base leading-[1.55] text-[#b9bdd6] md:text-xl">
