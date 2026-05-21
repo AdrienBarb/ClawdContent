@@ -60,8 +60,17 @@ export function isFeatureIncluded(
   return feature.includedIn.includes(planId);
 }
 
-export function getPlan(planId: PlanId): Plan {
-  const plan = PLANS.find((p) => p.id === planId);
+// Legacy plan IDs (`starter`, `business`) still appear on old Subscription rows.
+// They all map to the current `pro` plan.
+export function resolvePlanId(planId: string | null | undefined): PlanId {
+  if (planId === "starter" || planId === "business") return "pro";
+  if (planId === "pro") return "pro";
+  return DEFAULT_PLAN_ID;
+}
+
+export function getPlan(planId: PlanId | string): Plan {
+  const resolved = resolvePlanId(planId);
+  const plan = PLANS.find((p) => p.id === resolved);
   if (!plan) throw new Error(`Unknown plan: ${planId}`);
   return plan;
 }

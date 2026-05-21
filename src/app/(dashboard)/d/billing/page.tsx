@@ -8,7 +8,7 @@ import { ManageSubscriptionButton } from "./ManageSubscriptionButton";
 import BillingUnsubscribed from "@/components/dashboard/BillingUnsubscribed";
 import ChangePlanSection from "@/components/dashboard/ChangePlanSection";
 import PageHeader from "@/components/dashboard/PageHeader";
-import { getPlan, type PlanId } from "@/lib/constants/plans";
+import { getPlan, resolvePlanId } from "@/lib/constants/plans";
 
 async function BillingContent() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -31,7 +31,7 @@ async function BillingContent() {
   const isActive =
     subscription.status === "active" || subscription.status === "trialing";
 
-  const planId = (subscription.planId as PlanId) || "pro";
+  const planId = resolvePlanId(subscription.planId);
   const plan = getPlan(planId);
 
   const activeAccountCount = lateProfile?.socialAccounts?.length ?? 0;

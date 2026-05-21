@@ -7,7 +7,7 @@ import { getConnectUrl } from "@/lib/services/accounts";
 import { connectAccountSchema } from "@/lib/schemas/accounts";
 import { appRouter } from "@/lib/constants/appRouter";
 import { prisma } from "@/lib/db/prisma";
-import { getPlan, type PlanId } from "@/lib/constants/plans";
+import { getPlan, resolvePlanId } from "@/lib/constants/plans";
 
 export async function POST(req: NextRequest) {
   try {
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       }),
     ]);
 
-    const planId = (subscription?.planId as PlanId) || "pro";
+    const planId = resolvePlanId(subscription?.planId);
     const plan = getPlan(planId);
     const activeAccountCount = lateProfile?.socialAccounts?.length ?? 0;
 

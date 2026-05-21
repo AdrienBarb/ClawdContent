@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { after } from "next/server";
 import { prisma } from "@/lib/db/prisma";
-import { getPlan, type PlanId } from "@/lib/constants/plans";
+import { getPlan, resolvePlanId } from "@/lib/constants/plans";
 import { syncAccountsFromLate } from "@/lib/services/accounts";
 import { getBalanceSummary } from "@/lib/services/usage";
 
@@ -45,7 +45,7 @@ export async function GET() {
       getBalanceSummary(userId),
     ]);
 
-    const planId = (subscription?.planId as PlanId) || "pro";
+    const planId = resolvePlanId(subscription?.planId);
     const plan = getPlan(planId);
 
     // Background sync: check Zernio account statuses periodically
