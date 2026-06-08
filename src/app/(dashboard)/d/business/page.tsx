@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db/prisma";
 import PageHeader from "@/components/dashboard/PageHeader";
 import BusinessForm from "./BusinessForm";
-import type { KnowledgeBase } from "@/lib/schemas/knowledgeBase";
+import { brandingSchema, type KnowledgeBase } from "@/lib/schemas/knowledgeBase";
 
 export default async function BusinessPage() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -16,12 +16,18 @@ export default async function BusinessPage() {
   });
 
   const rawKb = (user?.knowledgeBase ?? null) as Partial<KnowledgeBase> | null;
+  // Normalise branding through the schema so legacy object-shaped colours/fonts
+  // (`{primary,…}` / `{heading,body}`) become the arrays the editor expects.
+  const parsedBranding = brandingSchema
+    .nullable()
+    .safeParse(rawKb?.branding ?? null);
   const knowledgeBase: KnowledgeBase | null = rawKb
     ? {
         businessName: rawKb.businessName ?? "",
         description: rawKb.description ?? "",
         services: rawKb.services ?? [],
         source: rawKb.source ?? "legacy",
+        branding: parsedBranding.success ? parsedBranding.data : null,
       }
     : null;
 

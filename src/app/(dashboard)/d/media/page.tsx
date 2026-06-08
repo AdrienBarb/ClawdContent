@@ -34,7 +34,7 @@ const SubscribeModal = dynamic(
 interface Media {
   id: string;
   url: string;
-  cloudinaryId: string;
+  storagePath: string;
   resourceType: string;
   format: string;
   bytes: number;
@@ -103,7 +103,7 @@ export default function MediaPage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        cloudinaryId: result.cloudinaryId,
+        storagePath: result.storagePath,
         url: result.url,
         resourceType: result.resourceType,
         format: result.format,

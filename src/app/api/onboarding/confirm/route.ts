@@ -21,11 +21,17 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const data = confirmInputSchema.parse(body);
 
+    // Patch-style: only overwrite websiteUrl / businessDescription when the
+    // caller actually sent them. The Business settings form saves the
+    // knowledgeBase without these fields, and writing `?? null` there would
+    // wipe a description-only user's stored source content.
     await prisma.user.update({
       where: { id: session.user.id },
       data: {
-        websiteUrl: data.websiteUrl ?? null,
-        businessDescription: data.businessDescription ?? null,
+        ...(data.websiteUrl !== undefined ? { websiteUrl: data.websiteUrl } : {}),
+        ...(data.businessDescription !== undefined
+          ? { businessDescription: data.businessDescription }
+          : {}),
         knowledgeBase: data.knowledgeBase,
       },
     });

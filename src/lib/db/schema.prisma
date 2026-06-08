@@ -158,7 +158,7 @@ model Media {
   id           String   @id @default(cuid())
   userId       String
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  cloudinaryId String   @unique
+  storagePath  String   @unique
   url          String
   resourceType String
   format       String

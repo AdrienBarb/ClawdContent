@@ -34,7 +34,7 @@ import {
 } from "@phosphor-icons/react";
 import { getPlatform } from "@/lib/constants/platforms";
 import { getPlatformConfig } from "@/lib/insights/platformConfig";
-import { useCloudinaryUpload } from "@/lib/hooks/useCloudinaryUpload";
+import { useSupabaseUpload } from "@/lib/hooks/useSupabaseUpload";
 import { validateMediaItems } from "@/lib/services/mediaValidation";
 import type { MediaItem } from "@/lib/schemas/mediaItems";
 import {
@@ -54,7 +54,7 @@ import { useConfirm, type ConfirmFn } from "@/lib/hooks/useConfirm";
 import { SUGGESTIONS_QUERY_KEY } from "./queryKeys";
 import type { Suggestion } from "./types";
 import { MediaLightbox } from "./MediaLightbox";
-import { cloudinaryThumbnail } from "./cloudinary";
+import { mediaThumbnail } from "./mediaTransforms";
 
 // Rewrite instructions accepted by the server (see rewriteInputSchema in
 // /api/suggestions/[id]/rewrite). Order here drives the dropdown order.
@@ -604,7 +604,7 @@ function PostCard({
   const isBusy = busyAction !== null;
   const platform = getPlatform(post.socialAccount.platform);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { upload } = useCloudinaryUpload();
+  const { upload } = useSupabaseUpload();
   const queryClient = useQueryClient();
 
   const platformConfig = getPlatformConfig(post.socialAccount.platform);
@@ -769,7 +769,7 @@ function PostCard({
     setBusyAction("media");
     try {
       const tentative = Array.from(files).map((f) => ({
-        url: "https://res.cloudinary.com/_/preflight",
+        url: "https://upload.pending/preflight",
         type: f.type.startsWith("video/")
           ? ("video" as const)
           : ("image" as const),
@@ -1267,7 +1267,7 @@ function ReorderableMediaItem({
           />
         ) : (
           <Image
-            src={cloudinaryThumbnail(item.url)}
+            src={mediaThumbnail(item.url)}
             alt={`Attached media ${idx + 1}`}
             className="h-20 w-20 rounded-lg object-cover pointer-events-none"
             width={160}

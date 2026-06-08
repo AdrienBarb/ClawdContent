@@ -39,7 +39,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { useCloudinaryUpload } from "@/lib/hooks/useCloudinaryUpload";
+import { useSupabaseUpload } from "@/lib/hooks/useSupabaseUpload";
 import {
   MAX_CHAT_ATTACHMENTS,
   type MediaItem,
@@ -182,7 +182,7 @@ export function ChatPanel({
   const [attachments, setAttachments] = useState<MediaItem[]>([]);
   const [attachError, setAttachError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { upload, uploading } = useCloudinaryUpload();
+  const { upload, uploading } = useSupabaseUpload();
 
   const isStreaming = status === "submitted" || status === "streaming";
   const trimmed = input.trim();
@@ -555,7 +555,7 @@ function textFromParts(parts: UIMessage["parts"]): string {
     .join("");
 }
 
-// Cloudinary returns the original format; Anthropic vision needs the matching
+// Storage URLs keep the original extension; Anthropic vision needs the matching
 // IANA media type. Map common image extensions, fall back to JPEG.
 function mediaTypeForUrl(url: string): string {
   const lower = url.split("?")[0].toLowerCase();

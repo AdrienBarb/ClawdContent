@@ -223,8 +223,8 @@ export async function POST(req: NextRequest) {
 
     // Strip any client-supplied file parts and rebuild them from the
     // server-validated attachedMediaItems on the most recent user message.
-    // The body schema validates attachedMediaItems against the Cloudinary
-    // tenancy allow-list — file parts inside `messages` are not validated, so
+    // The body schema validates attachedMediaItems against the Supabase
+    // Storage host allow-list — file parts inside `messages` are not validated, so
     // we never let those flow to the model directly. This closes off SSRF /
     // open-redirect / IP-leak paths via attacker-supplied file URLs.
     const sanitizedMessages = sanitizeMessagesWithAttachments(

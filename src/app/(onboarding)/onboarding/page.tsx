@@ -18,9 +18,11 @@ import {
   PencilSimpleIcon,
   CheckCircleIcon,
 } from "@phosphor-icons/react";
-import type { KnowledgeBase } from "@/lib/schemas/knowledgeBase";
+import type { Branding, KnowledgeBase } from "@/lib/schemas/knowledgeBase";
+import BrandingEditor from "@/components/onboarding/BrandingEditor";
 
-type Step = "input" | "validate";
+const STEPS = ["input", "validate", "branding"] as const;
+type Step = (typeof STEPS)[number];
 
 const inputSchema = z
   .object({
@@ -41,12 +43,63 @@ const validateSchema = z.object({
 
 type ValidateFormData = z.infer<typeof validateSchema>;
 
+const brandingFormSchema = z.object({
+  voiceTone: z.string().optional(),
+  voiceAudience: z.string().optional(),
+  styleAdjectives: z.string().optional(),
+  tagline: z.string().optional(),
+});
+
+type BrandingFormData = z.infer<typeof brandingFormSchema>;
+
+/** Fuse the user's edited visual branding (logo, colours, fonts) with the
+ *  verbal fields from the form. Returns null when nothing is set. */
+function composeBranding(
+  visual: Branding,
+  values: BrandingFormData
+): Branding | null {
+  const styleAdjectives = (values.styleAdjectives ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const voice = {
+    tone: values.voiceTone?.trim() || undefined,
+    energy: visual.voice?.energy,
+    audience: values.voiceAudience?.trim() || undefined,
+  };
+  const hasVoice = !!(voice.tone || voice.energy || voice.audience);
+
+  const branding: Branding = {
+    colors: visual.colors,
+    fonts: visual.fonts,
+    logoUrl: visual.logoUrl ?? null,
+    faviconUrl: visual.faviconUrl ?? null,
+    voice: hasVoice ? voice : undefined,
+    styleAdjectives: styleAdjectives.length > 0 ? styleAdjectives : undefined,
+    tagline: values.tagline?.trim() || undefined,
+  };
+
+  const hasAnything =
+    branding.colors?.length ||
+    branding.fonts?.length ||
+    branding.logoUrl ||
+    branding.faviconUrl ||
+    branding.voice ||
+    branding.styleAdjectives ||
+    branding.tagline;
+
+  return hasAnything ? branding : null;
+}
+
 export default function OnboardingPage() {
   const router = useRouter();
   const { usePost } = useApi();
 
   const [step, setStep] = useState<Step>("input");
   const [knowledgeBase, setKnowledgeBase] = useState<KnowledgeBase | null>(null);
+  // Editable visual branding (logo, colours, fonts) for the branding step.
+  const [branding, setBranding] = useState<Branding>({});
 
   // Step 1 form
   const inputForm = useForm<InputFormData>({
@@ -59,15 +112,28 @@ export default function OnboardingPage() {
     resolver: zodResolver(validateSchema),
   });
 
+  // Step 3 form (editable verbal branding)
+  const brandingForm = useForm<BrandingFormData>({
+    resolver: zodResolver(brandingFormSchema),
+  });
+
   const { mutate: analyze, isPending: isAnalyzing } = usePost(
     appRouter.api.onboardingAnalyze,
     {
       onSuccess: (data: { knowledgeBase: KnowledgeBase }) => {
-        setKnowledgeBase(data.knowledgeBase);
+        const kb = data.knowledgeBase;
+        setKnowledgeBase(kb);
+        setBranding(kb.branding ?? {});
         validateForm.reset({
-          businessName: data.knowledgeBase.businessName,
-          description: data.knowledgeBase.description,
-          services: data.knowledgeBase.services.join(", "),
+          businessName: kb.businessName,
+          description: kb.description,
+          services: kb.services.join(", "),
+        });
+        brandingForm.reset({
+          voiceTone: kb.branding?.voice?.tone ?? "",
+          voiceAudience: kb.branding?.voice?.audience ?? "",
+          styleAdjectives: (kb.branding?.styleAdjectives ?? []).join(", "),
+          tagline: kb.branding?.tagline ?? "",
         });
         setStep("validate");
       },
@@ -105,12 +171,17 @@ export default function OnboardingPage() {
     if (firstError) toast.error(firstError);
   };
 
-  const handleConfirm = (data: ValidateFormData) => {
+  const handleConfirm = (brandingValues: BrandingFormData) => {
+    const businessValues = validateForm.getValues();
     const kb: KnowledgeBase = {
-      businessName: data.businessName ?? "",
-      description: data.description ?? "",
-      services: (data.services ?? "").split(",").map((s) => s.trim()).filter(Boolean),
+      businessName: businessValues.businessName ?? "",
+      description: businessValues.description ?? "",
+      services: (businessValues.services ?? "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
       source: knowledgeBase?.source ?? "manual",
+      branding: composeBranding(branding, brandingValues),
     };
     confirm({
       websiteUrl: inputForm.getValues("websiteUrl") || undefined,
@@ -119,31 +190,22 @@ export default function OnboardingPage() {
     });
   };
 
-  const onValidateError = () => {
-    const errors = validateForm.formState.errors;
-    const firstError = Object.values(errors).find((e) => e?.message)?.message;
-    if (firstError) toast.error(firstError);
-  };
-
   return (
     <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center px-4">
       <div className="w-full max-w-lg">
         {/* Step indicator */}
         <div className="flex items-center justify-center gap-2 mb-8">
-          {(["input", "validate"] as Step[]).map((s, i) => (
-            <div key={s} className="flex items-center gap-2">
-              <div
-                className={`h-2 w-8 rounded-full transition-colors ${
-                  s === step
-                    ? "bg-primary"
-                    : (["input", "validate"].indexOf(s) <
-                        ["input", "validate"].indexOf(step))
-                      ? "bg-primary/40"
-                      : "bg-gray-200"
-                }`}
-              />
-              {i < 1 && <div className="w-1" />}
-            </div>
+          {STEPS.map((s) => (
+            <div
+              key={s}
+              className={`h-2 w-8 rounded-full transition-colors ${
+                s === step
+                  ? "bg-primary"
+                  : STEPS.indexOf(s) < STEPS.indexOf(step)
+                    ? "bg-primary/40"
+                    : "bg-gray-200"
+              }`}
+            />
           ))}
         </div>
 
@@ -233,9 +295,9 @@ export default function OnboardingPage() {
           </form>
         )}
 
-        {/* Step 2: Validate */}
+        {/* Step 2: Validate business */}
         {step === "validate" && (
-          <form onSubmit={validateForm.handleSubmit(handleConfirm, onValidateError)}>
+          <form onSubmit={validateForm.handleSubmit(() => setStep("branding"))}>
             <div className="text-center mb-8">
               <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
                 Here&apos;s what we understood
@@ -263,6 +325,69 @@ export default function OnboardingPage() {
               <Button
                 type="submit"
                 className="bg-primary hover:bg-[#E84A36] text-white"
+              >
+                Next
+                <ArrowRightIcon className="h-4 w-4 ml-1.5" />
+              </Button>
+            </div>
+          </form>
+        )}
+
+        {/* Step 3: Branding */}
+        {step === "branding" && (
+          <form onSubmit={brandingForm.handleSubmit(handleConfirm)}>
+            <div className="text-center mb-8">
+              <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
+                Your brand
+              </h1>
+              <p className="text-gray-500 mt-2">
+                We picked up your look and voice. Tweak anything that&apos;s off
+                so your posts feel on-brand.
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              <BrandingEditor value={branding} onChange={setBranding} />
+
+              <FormField
+                label="Tone of voice"
+                placeholder="e.g. Warm and conversational, speaks directly to busy parents"
+                multiline
+                {...brandingForm.register("voiceTone")}
+              />
+              <FormField
+                label="Who you speak to"
+                placeholder="e.g. Couples planning their wedding in Yorkshire"
+                multiline={false}
+                {...brandingForm.register("voiceAudience")}
+              />
+              <FormField
+                label="Brand style"
+                placeholder="e.g. playful, premium, down-to-earth"
+                hint="Separate with commas"
+                multiline={false}
+                {...brandingForm.register("styleAdjectives")}
+              />
+              <FormField
+                label="Tagline"
+                placeholder="e.g. Real food, made with love"
+                multiline={false}
+                {...brandingForm.register("tagline")}
+              />
+            </div>
+
+            <div className="mt-8 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setStep("validate")}
+                className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
+              >
+                <ArrowLeftIcon className="h-4 w-4" />
+                Back
+              </button>
+              <Button
+                type="submit"
+                className="bg-primary hover:bg-[#E84A36] text-white"
                 disabled={isConfirming}
               >
                 {isConfirming ? (
@@ -280,7 +405,6 @@ export default function OnboardingPage() {
             </div>
           </form>
         )}
-
       </div>
     </div>
   );

@@ -28,16 +28,52 @@ export function formatBusinessContext(
     ? (kb.services as string[]).join(", ")
     : "Not specified";
 
+  const brandLines = formatBrandVoice(kb.branding);
+
   if (withHeader) {
     return `## Business
 Name: ${kb.businessName ?? "Unknown"}
 Description: ${kb.description ?? "No description"}
-Services: ${services}`;
+Services: ${services}${brandLines}`;
   }
 
   return `Business: ${kb.businessName ?? "Unknown"}
 Description: ${kb.description ?? "No description"}
-Services: ${services}`;
+Services: ${services}${brandLines}`;
+}
+
+/**
+ * Render the verbal brand identity (tone of voice, style, tagline) for a
+ * prompt. Visual tokens (colours, fonts, logo) are intentionally omitted —
+ * they don't help write a caption. Returns "" when there's nothing to add.
+ */
+function formatBrandVoice(branding: unknown): string {
+  if (!branding || typeof branding !== "object") return "";
+  const b = branding as Record<string, unknown>;
+  const voice = (b.voice ?? null) as Record<string, unknown> | null;
+  const styleAdjectives = Array.isArray(b.styleAdjectives)
+    ? (b.styleAdjectives as string[]).filter(Boolean)
+    : [];
+  const tagline = typeof b.tagline === "string" ? b.tagline.trim() : "";
+
+  const lines: string[] = [];
+  if (voice && typeof voice.tone === "string" && voice.tone.trim()) {
+    lines.push(`Tone of voice: ${voice.tone.trim()}`);
+  }
+  if (voice && typeof voice.energy === "string" && voice.energy.trim()) {
+    lines.push(`Energy: ${voice.energy.trim()}`);
+  }
+  if (voice && typeof voice.audience === "string" && voice.audience.trim()) {
+    lines.push(`Speaks to: ${voice.audience.trim()}`);
+  }
+  if (styleAdjectives.length > 0) {
+    lines.push(`Brand style: ${styleAdjectives.join(", ")}`);
+  }
+  if (tagline) {
+    lines.push(`Tagline: ${tagline}`);
+  }
+
+  return lines.length > 0 ? `\n${lines.join("\n")}` : "";
 }
 
 interface FormatVoiceFingerprintOptions {

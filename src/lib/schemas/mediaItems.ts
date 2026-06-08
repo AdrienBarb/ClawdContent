@@ -1,31 +1,49 @@
 import { z } from "zod";
 
-const CLOUDINARY_HOSTNAME = "res.cloudinary.com";
-const CLOUDINARY_CLOUD = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+// Allow only URLs served from OUR Supabase Storage project, public `media`
+// bucket. This is a security boundary (chat attachments + post media flow
+// through it) — it blocks SSRF / pointing the publisher at arbitrary URLs.
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const PUBLIC_PREFIX = "/storage/v1/object/public/media/";
 
-const cloudinaryUrlSchema = z
+function supabaseHost(): string | null {
+  if (!SUPABASE_URL) return null;
+  try {
+    return new URL(SUPABASE_URL).host;
+  } catch {
+    return null;
+  }
+}
+
+const storageUrlSchema = z
   .string()
   .url()
   .refine(
     (raw) => {
       try {
+        const host = supabaseHost();
+        // Fail-closed: with no configured host, reject every URL rather than
+        // silently accepting media from other origins.
+        if (!host) return false;
         const u = new URL(raw);
-        if (u.protocol !== "https:") return false;
-        if (u.hostname !== CLOUDINARY_HOSTNAME) return false;
-        // Fail-closed: if the cloud name env var is missing, reject every URL
-        // rather than silently accepting URLs from other tenants.
-        if (!CLOUDINARY_CLOUD) return false;
-        if (!u.pathname.startsWith(`/${CLOUDINARY_CLOUD}/`)) return false;
+        const isLocal =
+          u.hostname === "127.0.0.1" || u.hostname === "localhost";
+        // HTTPS everywhere, except http on the local dev stack.
+        if (u.protocol !== "https:" && !(isLocal && u.protocol === "http:")) {
+          return false;
+        }
+        if (u.host !== host) return false;
+        if (!u.pathname.startsWith(PUBLIC_PREFIX)) return false;
         return true;
       } catch {
         return false;
       }
     },
-    { message: "Media URL must point to Cloudinary over HTTPS" }
+    { message: "Media URL must point to our media storage" }
   );
 
 export const mediaItemSchema = z.object({
-  url: cloudinaryUrlSchema,
+  url: storageUrlSchema,
   type: z.enum(["image", "video"]),
 });
 

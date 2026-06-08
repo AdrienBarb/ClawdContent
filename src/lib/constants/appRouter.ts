@@ -48,6 +48,7 @@ export const appRouter = {
     userTimezone: "/api/user/timezone",
     onboardingAnalyze: "/api/onboarding/analyze",
     onboardingConfirm: "/api/onboarding/confirm",
+    brandingLogo: "/api/branding/logo",
     analytics: "/api/analytics",
     analyticsPosts: "/api/analytics/posts",
     analyticsBestTimes: "/api/analytics/best-times",

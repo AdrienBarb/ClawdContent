@@ -11,7 +11,8 @@ import {
   GlobeIcon,
   FloppyDiskIcon,
 } from "@phosphor-icons/react";
-import type { KnowledgeBase } from "@/lib/schemas/knowledgeBase";
+import type { Branding, KnowledgeBase } from "@/lib/schemas/knowledgeBase";
+import BrandingEditor from "@/components/onboarding/BrandingEditor";
 
 interface Props {
   initialKnowledgeBase: KnowledgeBase;
@@ -66,6 +67,15 @@ export default function BusinessForm({
     value: string | string[]
   ) => {
     setKnowledgeBase({ ...knowledgeBase, [field]: value });
+  };
+
+  const branding: Branding = knowledgeBase.branding ?? {};
+
+  const updateBranding = (patch: Branding) => {
+    setKnowledgeBase({
+      ...knowledgeBase,
+      branding: { ...branding, ...patch },
+    });
   };
 
   return (
@@ -127,6 +137,62 @@ export default function BusinessForm({
           }
           hint="Separate with commas"
           placeholder="e.g. Event catering, Private dining, Cooking classes"
+        />
+      </div>
+
+      {/* Brand identity */}
+      <div className="space-y-4 rounded-2xl border border-gray-200 bg-white p-5">
+        <div>
+          <h3 className="text-sm font-medium text-gray-900">Brand</h3>
+          <p className="mt-0.5 text-xs text-gray-500">
+            How your posts look and sound. Edit anything below — re-analyzing
+            your website above replaces these with fresh details.
+          </p>
+        </div>
+
+        <BrandingEditor
+          value={branding}
+          onChange={(next) =>
+            setKnowledgeBase({ ...knowledgeBase, branding: next })
+          }
+        />
+
+        <Field
+          label="Tone of voice"
+          value={branding.voice?.tone ?? ""}
+          onChange={(v) =>
+            updateBranding({ voice: { ...branding.voice, tone: v } })
+          }
+          multiline
+          placeholder="e.g. Warm and conversational, speaks directly to busy parents"
+        />
+        <Field
+          label="Who you speak to"
+          value={branding.voice?.audience ?? ""}
+          onChange={(v) =>
+            updateBranding({ voice: { ...branding.voice, audience: v } })
+          }
+          placeholder="e.g. Couples planning their wedding in Yorkshire"
+        />
+        <Field
+          label="Brand style"
+          value={(branding.styleAdjectives ?? []).join(", ")}
+          onChange={(v) =>
+            updateBranding({
+              styleAdjectives: v
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean),
+            })
+          }
+          hint="Separate with commas"
+          placeholder="e.g. playful, premium, down-to-earth"
+        />
+        <Field
+          label="Tagline"
+          value={branding.tagline ?? ""}
+          onChange={(v) => updateBranding({ tagline: v })}
+          placeholder="e.g. Real food, made with love"
         />
       </div>
 

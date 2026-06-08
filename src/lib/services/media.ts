@@ -1,12 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import type { MediaUploadInput } from "@/lib/schemas/media";
-import { v2 as cloudinary } from "cloudinary";
-
-cloudinary.config({
-  cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+import { getPublicUrl, removeObjects } from "@/lib/supabase/storage";
 
 export async function saveMediaUpload({
   userId,
@@ -15,11 +9,17 @@ export async function saveMediaUpload({
   userId: string;
   data: MediaUploadInput;
 }) {
+  // Trust only the storage path, and only within the caller's own folder.
+  // Derive the URL server-side so a client can't persist an arbitrary `url`
+  // (or point a row at another user's object).
+  if (!data.storagePath.startsWith(`users/${userId}/`)) {
+    throw new Error("Invalid storage path");
+  }
   return prisma.media.create({
     data: {
       userId,
-      cloudinaryId: data.cloudinaryId,
-      url: data.url,
+      storagePath: data.storagePath,
+      url: getPublicUrl(data.storagePath),
       resourceType: data.resourceType,
       format: data.format,
       bytes: data.bytes,
@@ -50,6 +50,6 @@ export async function deleteMedia({
     throw new Error("Media not found");
   }
 
-  await cloudinary.uploader.destroy(media.cloudinaryId);
+  await removeObjects([media.storagePath]);
   await prisma.media.delete({ where: { id: mediaId } });
 }

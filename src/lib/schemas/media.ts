@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const mediaUploadSchema = z.object({
-  cloudinaryId: z.string().min(1),
+  storagePath: z.string().min(1),
   url: z.string().url(),
   resourceType: z.enum(["image", "video"]),
   format: z.string().min(1),

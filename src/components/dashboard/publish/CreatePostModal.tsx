@@ -18,11 +18,11 @@ import {
 } from "@/components/ui/dialog";
 import { getPlatform } from "@/lib/constants/platforms";
 import { getPlatformConfig } from "@/lib/insights/platformConfig";
-import { useCloudinaryUpload } from "@/lib/hooks/useCloudinaryUpload";
+import { useSupabaseUpload } from "@/lib/hooks/useSupabaseUpload";
 import { validateMediaItems } from "@/lib/services/mediaValidation";
 import type { MediaItem } from "@/lib/schemas/mediaItems";
 import { MediaLightbox } from "./MediaLightbox";
-import { cloudinaryThumbnail } from "./cloudinary";
+import { mediaThumbnail } from "./mediaTransforms";
 
 interface CreatePostModalProps {
   account: { id: string; platform: string; username: string };
@@ -40,7 +40,7 @@ export default function CreatePostModal({
   const [submitting, setSubmitting] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { upload, uploading, progress } = useCloudinaryUpload();
+  const { upload, uploading, progress } = useSupabaseUpload();
 
   const platform = getPlatform(account.platform);
   const platformConfig = getPlatformConfig(account.platform);
@@ -79,7 +79,7 @@ export default function CreatePostModal({
     if (!files || files.length === 0) return;
     try {
       const tentative = Array.from(files).map((f) => ({
-        url: "https://res.cloudinary.com/_/preflight",
+        url: "https://upload.pending/preflight",
         type: f.type.startsWith("video/")
           ? ("video" as const)
           : ("image" as const),
@@ -315,7 +315,7 @@ function ReorderableThumb({
           />
         ) : (
           <Image
-            src={cloudinaryThumbnail(item.url)}
+            src={mediaThumbnail(item.url)}
             alt={`Attached image ${idx + 1}`}
             className="h-24 w-24 rounded-lg object-cover pointer-events-none"
             width={96}

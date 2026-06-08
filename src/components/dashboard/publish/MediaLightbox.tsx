@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { CaretLeftIcon, CaretRightIcon } from "@phosphor-icons/react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import type { MediaItem } from "@/lib/schemas/mediaItems";
-import { cloudinaryFull } from "./cloudinary";
+import { mediaFull } from "./mediaTransforms";
 
 export interface MediaLightboxProps {
   items: MediaItem[];
@@ -56,12 +56,11 @@ export function MediaLightbox({
               className="max-h-[90vh] max-w-full rounded-2xl"
             />
           ) : (
-            // The Cloudinary URL is already size/quality-optimized via the
-            // c_limit,w_1600 transform; next/image would force fixed
-            // width/height that fights `object-contain` for unknown ratios.
+            // Served straight from storage at full size; next/image would force
+            // fixed width/height that fights `object-contain` for unknown ratios.
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={cloudinaryFull(item.url)}
+              src={mediaFull(item.url)}
               alt={`Media ${index + 1} of ${count}`}
               className="max-h-[90vh] max-w-full object-contain rounded-2xl"
             />
