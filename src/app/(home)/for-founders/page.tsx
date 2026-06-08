@@ -33,19 +33,19 @@ export const metadata: Metadata = {
 const useCases = [
   {
     t: "Launch days",
-    q: "Tell PostClaw what you shipped. Get a thread for X, a LinkedIn post, a Bluesky version, an Instagram visual. All on brand, all in your voice.",
+    q: "Tell PostClaw what you shipped. Get an Instagram post, a Reel caption, a Story, and a Facebook announcement. All on brand, all in your voice.",
   },
   {
     t: "Build-in-public",
-    q: "Weekly progress posts that don't sound like every other founder. Drop your changelog, get nine posts written for you.",
+    q: "Weekly progress posts that don't sound like every other founder. Drop your changelog, get a week of Instagram and Facebook posts written for you.",
   },
   {
     t: "Customer wins",
-    q: "Got a testimonial or a churn-saved story? PostClaw turns it into a quote tweet, a case study post, a LinkedIn carousel.",
+    q: "Got a testimonial or a customer win? PostClaw turns it into an Instagram carousel, a Story, and a Facebook post.",
   },
   {
     t: "Audience growth",
-    q: "Posts that actually engage instead of disappearing. PostClaw adapts the hook for each platform and posts at the time your audience is online.",
+    q: "Posts that actually engage instead of disappearing. PostClaw adapts the hook for Instagram and Facebook and posts when your audience is online.",
   },
 ];
 
@@ -57,13 +57,13 @@ const steps = [
   },
   {
     n: "02",
-    t: "Connect the platforms you actually post on",
-    d: "X, LinkedIn, Bluesky, whatever you ship to. Two-minute setup. Same OAuth flow you've done a hundred times.",
+    t: "Connect Instagram & Facebook",
+    d: "Your Instagram and Facebook. Two-minute setup. Same OAuth flow you've done a hundred times.",
   },
   {
     n: "03",
     t: "Drop a sentence, get a week",
-    d: "Tell PostClaw what shipped, what's next, who you talked to. It drafts a week of posts for every platform. You approve in five minutes.",
+    d: "Tell PostClaw what shipped, what's next, who you talked to. It drafts a week of posts for Instagram and Facebook. You approve in five minutes.",
   },
 ];
 
@@ -78,7 +78,7 @@ const faqs = [
   },
   {
     q: "Can it handle build-in-public + customer wins + launch announcements without losing the thread?",
-    a: "Yes. You tell it what's happening, it categorizes the moment (launch, build-in-public, customer story, milestone) and writes platform-native posts for each. Coordinated across X, LinkedIn, Bluesky, and Instagram in one go.",
+    a: "Yes. You tell it what's happening, it categorizes the moment (launch, build-in-public, customer story, milestone) and writes native posts for each. Coordinated across your Instagram and Facebook in one go.",
   },
   {
     q: "Why $49/mo and not free?",
@@ -173,7 +173,7 @@ export default function ForFoundersPage() {
               <em className="italic text-[#ec6f5b]">We&apos;ll ship the posts.</em>
             </h1>
             <p className="mt-9 max-w-[640px] text-base leading-[1.55] text-[#b9bdd6] md:text-xl">
-              Building, shipping, talking to users, that&apos;s the job. Posting nine platform-native pieces a day shouldn&apos;t be. PostClaw drafts a week of posts from a sentence and publishes them for $49 a month.
+              Building, shipping, talking to users, that&apos;s the job. Posting to Instagram and Facebook every day shouldn&apos;t be. PostClaw drafts a week of posts from a sentence and publishes them for $49 a month.
             </p>
             <div className="mt-11 flex flex-wrap items-center justify-center gap-3.5">
               <Link

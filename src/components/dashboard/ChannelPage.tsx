@@ -211,7 +211,6 @@ export default function ChannelPage({ channelId }: { channelId: string }) {
             <ChannelHeaderStats
               stats={headerStats ?? null}
               loading={headerLoading}
-              platform={channel.platform}
             />
           </div>
         </div>
@@ -293,19 +292,15 @@ function formatStat(value: number | null, suffix?: string): string {
   return value.toLocaleString();
 }
 
-// Bluesky has no analytics — show 2 cells instead of 3.
-const PLATFORMS_WITH_TWO_CELLS = new Set(["bluesky"]);
-
 function ChannelHeaderStats({
   stats,
   loading,
-  platform,
 }: {
   stats: ChannelHeaderStatsData | null;
   loading: boolean;
-  platform: string;
 }) {
-  const expectedCellCount = PLATFORMS_WITH_TWO_CELLS.has(platform) ? 2 : 3;
+  // Instagram and Facebook both expose followers + primary + secondary metric.
+  const expectedCellCount = 3;
   const cells = useMemo<StatCell[]>(() => {
     if (!stats) return [];
     const out: StatCell[] = [

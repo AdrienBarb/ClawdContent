@@ -163,25 +163,19 @@ export async function publishOrScheduleSuggestion(args: {
     };
   }
 
-  // Skip pre-flight validation for Twitter: Zernio's /tools/validate/post is
-  // account-agnostic and enforces 280 chars, but X Premium accounts can post
-  // up to ~25k. Let createPost (which has account context) be the source of
-  // truth for Twitter.
-  if (socialAccount.platform !== "twitter") {
-    const validation = await validatePost(
-      suggestion.content,
-      socialAccount.platform,
-      mediaItems.length > 0 ? mediaItems : undefined,
-      lateProfile.lateApiKey
-    );
-    if (!validation.valid) {
-      await releaseLock(suggestionId);
-      return {
-        ok: false,
-        error: "validation_failed",
-        validationErrors: validation.errors,
-      };
-    }
+  const validation = await validatePost(
+    suggestion.content,
+    socialAccount.platform,
+    mediaItems.length > 0 ? mediaItems : undefined,
+    lateProfile.lateApiKey
+  );
+  if (!validation.valid) {
+    await releaseLock(suggestionId);
+    return {
+      ok: false,
+      error: "validation_failed",
+      validationErrors: validation.errors,
+    };
   }
 
   const mediaForCreate = mediaItems.length > 0 ? mediaItems : undefined;

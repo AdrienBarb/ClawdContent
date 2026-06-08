@@ -35,6 +35,20 @@ export async function POST() {
       });
     }
 
+    // Connecting an account during onboarding completes the "connect" step, so
+    // advance the saved step → a resumed wizard lands on step 3. Guarded so it
+    // never regresses and never touches users who've finished onboarding.
+    if (newAccounts.length > 0) {
+      await prisma.user.updateMany({
+        where: {
+          id: session.user.id,
+          onboardingCompletedAt: null,
+          onboardingStep: { lt: 3 },
+        },
+        data: { onboardingStep: 3 },
+      });
+    }
+
     return NextResponse.json(
       { success: true, newAccounts },
       { status: 200 }

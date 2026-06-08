@@ -1,6 +1,6 @@
 import "server-only";
 import type { AnalyticsPost } from "@/lib/late/mutations";
-import { getPlatformConfig } from "@/lib/insights/platformConfig";
+import { getPlatformConfig, isSupportedPlatform } from "@/lib/insights/platformConfig";
 import { preview } from "@/lib/ai/preview";
 
 const PREVIEW_LEN = 60;
@@ -40,8 +40,9 @@ export interface OutcomeSnapshotPayload {
  * when the platform config is unknown.
  */
 function metricForPost(p: AnalyticsPost): { metric: string; value: number } {
-  const config = getPlatformConfig(p.platform);
-  const primary = config?.primaryMetric ?? "likes";
+  const primary = isSupportedPlatform(p.platform)
+    ? getPlatformConfig(p.platform).primaryMetric
+    : "likes";
   const value =
     primary === "likes"
       ? p.analytics.likes

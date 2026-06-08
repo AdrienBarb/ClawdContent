@@ -23,6 +23,10 @@ model User {
   websiteUrl                 String?
   businessDescription        String?
   knowledgeBase              Json?
+  onboardingStep             Int              @default(1)
+  onboardingCompletedAt      DateTime?
+  websiteAnalysis            Json?
+  onboardingGoal             String?
   postsPublished             Int              @default(0)
   lastSuggestionsGeneratedAt DateTime?
   usageLedger                UsageLedger[]

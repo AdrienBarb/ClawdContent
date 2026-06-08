@@ -30,7 +30,7 @@ export default function HeroSection({ variant = "control" }: HeroSectionProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
-  void variant;
+  const isTest = variant === "test";
 
   const handleGetStarted = () => {
     if (session?.user) {
@@ -49,14 +49,22 @@ export default function HeroSection({ variant = "control" }: HeroSectionProps) {
             Tell it. It posts it. That&apos;s it.
           </div>
 
-          <h1 className="font-display text-5xl leading-[0.96] tracking-[-0.03em] text-balance md:text-7xl lg:text-[112px]">
-            Your <em className="italic text-[#ec6f5b]">AI</em> social
-            <br />
-            media manager.
-          </h1>
+          {isTest ? (
+            <h1 className="font-display text-5xl leading-[0.96] tracking-[-0.03em] text-balance md:text-7xl lg:text-[96px]">
+              Grow your Facebook &amp; Instagram
+              <br />
+              <em className="italic text-[#ec6f5b]">on autopilot.</em>
+            </h1>
+          ) : (
+            <h1 className="font-display text-5xl leading-[0.96] tracking-[-0.03em] text-balance md:text-7xl lg:text-[112px]">
+              Your <em className="italic text-[#ec6f5b]">AI</em> social
+              <br />
+              media manager.
+            </h1>
+          )}
 
           <p className="mt-9 max-w-[620px] text-base leading-[1.55] text-[#b9bdd6] md:text-xl">
-            Text PostClaw what&apos;s happening. It writes, schedules, and posts for you, every week.
+            Text PostClaw what&apos;s happening — a new offer, a sale, a quiet week. It writes, schedules, and posts to your Instagram and Facebook for you, every week.
           </p>
 
           <div className="mt-11 flex flex-wrap items-center justify-center gap-3.5">

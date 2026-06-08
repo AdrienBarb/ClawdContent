@@ -37,8 +37,8 @@ export default function TermsPage() {
           <p className="text-muted-foreground">
             PostClaw provides an AI social media manager accessible via a
             web-based chat interface. The Service allows you to create, adapt,
-            and publish social media posts to supported platforms (including
-            Twitter/X, LinkedIn, Bluesky, and Threads) through a conversational
+            and publish social media posts to supported platforms (Instagram and
+            Facebook) through a conversational
             interface with an AI-powered social media manager. Each subscriber
             receives a dedicated, isolated instance.
           </p>
@@ -194,7 +194,7 @@ export default function TermsPage() {
           <div className="space-y-3">
             <p className="text-muted-foreground">
               The Service integrates with third-party platforms including
-              Twitter/X, LinkedIn, Bluesky, and Threads. You
+              Instagram and Facebook. You
               acknowledge that:
             </p>
             <ul className="list-disc pl-6 text-muted-foreground space-y-1">

@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { planId, interval } = checkoutSchema.parse(body);
+    const { planId, interval, successUrl } = checkoutSchema.parse(body);
 
     const cookieStore = await cookies();
     const affonsoReferral = cookieStore.get("affonso_referral")?.value || "";
@@ -30,7 +30,8 @@ export async function POST(req: NextRequest) {
       session.user.email,
       planId,
       interval,
-      affonsoReferral
+      affonsoReferral,
+      successUrl
     );
 
     return NextResponse.json({ url }, { status: 200 });

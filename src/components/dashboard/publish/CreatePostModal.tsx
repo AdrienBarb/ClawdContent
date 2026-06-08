@@ -17,7 +17,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { getPlatform } from "@/lib/constants/platforms";
-import { getPlatformConfig } from "@/lib/insights/platformConfig";
+import { getPlatformConfig, isSupportedPlatform } from "@/lib/insights/platformConfig";
 import { useSupabaseUpload } from "@/lib/hooks/useSupabaseUpload";
 import { validateMediaItems } from "@/lib/services/mediaValidation";
 import type { MediaItem } from "@/lib/schemas/mediaItems";
@@ -43,7 +43,11 @@ export default function CreatePostModal({
   const { upload, uploading, progress } = useSupabaseUpload();
 
   const platform = getPlatform(account.platform);
-  const platformConfig = getPlatformConfig(account.platform);
+  // Defensive: accounts are filtered to supported platforms upstream, but never
+  // let a stale legacy-platform account throw during render.
+  const platformConfig = getPlatformConfig(
+    isSupportedPlatform(account.platform) ? account.platform : "instagram"
+  );
   const { charLimit, mediaRules } = platformConfig;
   const { maxImages, maxVideos } = mediaRules;
 

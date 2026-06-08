@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/lib/better-auth/auth";
 import { prisma } from "@/lib/db/prisma";
+import { appRouter } from "@/lib/constants/appRouter";
 import Sidebar, {
   MobileSidebarTrigger,
 } from "@/components/dashboard/Sidebar";
@@ -16,8 +17,9 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const headerList = await headers();
   const session = await auth.api.getSession({
-    headers: await headers(),
+    headers: headerList,
   });
 
   if (!session?.user) {
@@ -26,10 +28,16 @@ export default async function DashboardLayout({
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { knowledgeBase: true },
+    select: { onboardingCompletedAt: true },
   });
 
-  if (user?.knowledgeBase === null) {
+  // The OAuth connect bridge (/d/accounts/callback) must stay reachable during
+  // onboarding — it's where a freshly-connected account gets synced. Exempt it
+  // from the onboarding redirect; everything else under /d requires completion.
+  const pathname = headerList.get("x-pathname") ?? "";
+  const isConnectCallback = pathname === appRouter.accountsCallback;
+
+  if (!user?.onboardingCompletedAt && !isConnectCallback) {
     redirect("/onboarding");
   }
 

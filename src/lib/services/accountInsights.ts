@@ -10,7 +10,7 @@ import {
   pickPrimaryMetric,
   rankByPrimaryMetric,
 } from "@/lib/insights/extract";
-import { getPlatformConfig } from "@/lib/insights/platformConfig";
+import { getPlatformConfig, isSupportedPlatform } from "@/lib/insights/platformConfig";
 import {
   inferredZoneClaudeSchema,
   insightsV2Schema,
@@ -51,6 +51,16 @@ export async function computeInsights(
   if (!account) {
     console.warn(
       `[accountInsights] ⚠️  socialAccount ${socialAccountId} no longer exists — skipping (likely deleted between event firing and processing)`
+    );
+    return null;
+  }
+
+  // Legacy account on a platform we no longer support — skip silently so
+  // Inngest jobs no-op instead of throwing in getPlatformConfig. The row is
+  // hidden everywhere else, never deleted.
+  if (!isSupportedPlatform(account.platform)) {
+    console.warn(
+      `[accountInsights] ⏭️  socialAccount ${socialAccountId} is on unsupported platform "${account.platform}" — skipping`
     );
     return null;
   }

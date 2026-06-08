@@ -2,6 +2,7 @@ import { inngest } from "../client";
 import { prisma } from "@/lib/db/prisma";
 import { getAnalytics } from "@/lib/late/mutations";
 import { computeOutcomeSnapshot } from "@/lib/services/outcomesAnalysis";
+import { isSupportedPlatform } from "@/lib/insights/platformConfig";
 
 const ANALYTICS_WINDOW_DAYS = 14;
 const ANALYTICS_PAGE_LIMIT = 100;
@@ -60,7 +61,10 @@ export const computeOutcomes = inngest.createFunction(
             source: "all",
           });
 
-          const snapshot = computeOutcomeSnapshot(analytics.posts);
+          const supportedPosts = analytics.posts.filter((p) =>
+            isSupportedPlatform(p.platform)
+          );
+          const snapshot = computeOutcomeSnapshot(supportedPosts);
           if (!snapshot) return "skipped" as const;
 
           // JSON columns require InputJsonValue. Our typed shapes are

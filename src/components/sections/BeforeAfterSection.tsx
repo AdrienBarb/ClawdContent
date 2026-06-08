@@ -13,7 +13,7 @@ const comparisons = [
   },
   {
     without: "Same caption copy-pasted to every platform",
-    with: "Each post rewritten for Instagram, Facebook, LinkedIn",
+    with: "Each post rewritten for Instagram and Facebook",
   },
   {
     without: "Hiring a social media person: $1,000–2,000/mo",

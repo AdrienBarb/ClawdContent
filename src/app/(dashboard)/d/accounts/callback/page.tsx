@@ -38,10 +38,15 @@ export default function AccountsCallbackPage() {
         }
         window.close();
       } else {
-        // Redirect to channel page if new account, otherwise returnTo
-        const redirectTo = data.newAccounts?.length
-          ? `/d?channel=${data.newAccounts[0].id}`
-          : returnTo || appRouter.accounts;
+        // An explicit returnTo (e.g. onboarding) wins over the default channel
+        // landing — otherwise an onboarding connect bounces through /d and the
+        // dashboard gate kicks it back to the onboarding step. Fall back to the
+        // new account's channel, then the accounts page.
+        const redirectTo = returnTo
+          ? returnTo
+          : data.newAccounts?.length
+            ? `/d?channel=${data.newAccounts[0].id}`
+            : appRouter.accounts;
         router.push(redirectTo);
       }
     },

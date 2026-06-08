@@ -140,7 +140,7 @@ export default async function PostPage({ params }: PostPageProps) {
                 {
                   "@type": "HowToStep",
                   name: "Connect your accounts",
-                  text: "Connect Instagram, Facebook, LinkedIn, X, TikTok, YouTube, Pinterest, Threads, and Bluesky to a single dashboard.",
+                  text: "Connect your Instagram and Facebook accounts in two minutes — no technical setup.",
                 },
                 {
                   "@type": "HowToStep",
@@ -283,7 +283,7 @@ export default async function PostPage({ params }: PostPageProps) {
               </h2>
               <p className="text-muted-foreground mb-6">
                 PostClaw is your social media manager.
-                It learns your brand, plans your content, and publishes to 9 platforms.
+                It learns your brand, plans your content, and publishes to Instagram and Facebook.
               </p>
               <Button
                 asChild

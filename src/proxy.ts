@@ -4,7 +4,12 @@ import { DISTINCT_ID_COOKIE } from "@/lib/tracking/distinctId";
 import { UTM_COOKIE, extractUtmFromUrl } from "@/lib/tracking/utm";
 
 export function proxy(request: NextRequest) {
-  const response = NextResponse.next();
+  // Expose the pathname to server components (layouts can't read it otherwise).
+  // Metadata only — auth still lives in route handlers + (dashboard)/layout.tsx.
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-pathname", request.nextUrl.pathname);
+
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
 
   // Set anonymous distinct ID on first visit
   if (!request.cookies.get(DISTINCT_ID_COOKIE)) {

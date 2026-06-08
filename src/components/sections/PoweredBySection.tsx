@@ -18,7 +18,7 @@ export default function PoweredBySection() {
           </h2>
           <p className="mx-auto mt-5 max-w-[560px] text-base leading-[1.55] text-[#b9bdd6] md:text-[17px]">
             Every post you approve goes out through Zernio&apos;s social media
-            API. Proven infrastructure across every major platform.
+            API. Proven infrastructure for reliable publishing to Instagram and Facebook.
           </p>
         </div>
 
@@ -43,14 +43,14 @@ export default function PoweredBySection() {
               <span className="rounded-full bg-[#ec6f5b]/15 px-3 py-1 text-xs font-medium text-[#f8a594]">
                 Social media API
               </span>
-              <span className="text-xs text-[#7a7fa0]">9 platforms</span>
+              <span className="text-xs text-[#7a7fa0]">Instagram &amp; Facebook</span>
             </div>
             <h3 className="mb-3 text-xl font-semibold tracking-[-0.015em] text-white md:text-2xl">
               Zernio
             </h3>
             <p className="text-[15px] leading-[1.6] text-[#b9bdd6]">
-              Unified API for publishing, scheduling, and analytics across every
-              major social platform.
+              Reliable publishing, scheduling, and analytics for Instagram and
+              Facebook.
             </p>
           </a>
         </div>

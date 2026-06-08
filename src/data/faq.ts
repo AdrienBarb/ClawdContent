@@ -18,7 +18,7 @@ export const faqs = [
   {
     question: "What platforms are supported?",
     answer:
-      "Instagram, Facebook, LinkedIn, TikTok, X (Twitter), YouTube, Pinterest, Threads, and Bluesky. You can post to all of them at once, or pick specific ones. Most of our users start with Instagram and Facebook.",
+      "Instagram and Facebook — the two platforms where most small businesses actually reach customers. Connect one or both, and PostClaw writes each post natively for the platform it's going to, schedules it, and publishes once you approve.",
   },
   {
     question: "Can I review posts before they go live?",

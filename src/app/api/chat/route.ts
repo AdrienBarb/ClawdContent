@@ -19,6 +19,7 @@ import {
 import { createChatTools } from "@/lib/ai/chat-tools";
 import { preview } from "@/lib/ai/preview";
 import { getBestSlots } from "@/lib/services/bestTimes";
+import { isSupportedPlatform } from "@/lib/insights/platformConfig";
 import { limitChat } from "@/lib/rateLimit/chatLimiter";
 import { mediaItemsSchema, MAX_CHAT_ATTACHMENTS } from "@/lib/schemas/mediaItems";
 
@@ -111,7 +112,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const ownedIds = new Set(lateProfile.socialAccounts.map((a) => a.id));
+    // Legacy accounts on removed platforms must never enter selection or the
+    // model context, even though their rows still exist.
+    const supportedAccounts = lateProfile.socialAccounts.filter((a) =>
+      isSupportedPlatform(a.platform)
+    );
+
+    const ownedIds = new Set(supportedAccounts.map((a) => a.id));
     const validSelectedIds = accountIds.filter((id) => ownedIds.has(id));
     if (validSelectedIds.length !== accountIds.length) {
       return NextResponse.json(
@@ -131,7 +138,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const allAccounts = lateProfile.socialAccounts.map((a) => ({
+    const allAccounts = supportedAccounts.map((a) => ({
       id: a.id,
       platform: a.platform,
       username: a.username,
@@ -142,7 +149,7 @@ export async function POST(req: NextRequest) {
 
     const userTimezone = user?.timezone ?? "UTC";
 
-    const accountsBestTimes = lateProfile.socialAccounts
+    const accountsBestTimes = supportedAccounts
       .filter((a) => validSelectedIds.includes(a.id))
       .map((a) => {
         const insightsBestTimes =

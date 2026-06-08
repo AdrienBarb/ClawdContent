@@ -582,9 +582,9 @@ export default function AnalyticsDashboard() {
               <p className="text-sm font-semibold text-gray-700 mb-4">Top Performing Posts</p>
               <div className="space-y-3">
                 {[
-                  { platform: "twitter", text: "Just launched our new feature — here's what changed...", views: "3.2K", eng: "284" },
-                  { platform: "linkedin", text: "3 lessons from scaling a SaaS to $10K MRR...", views: "1.8K", eng: "156" },
-                  { platform: "instagram", text: "Behind the scenes of building in public...", views: "1.2K", eng: "98" },
+                  { platform: "instagram", text: "Behind the scenes of this morning's bake — fresh sourdough...", views: "3.2K", eng: "284" },
+                  { platform: "facebook", text: "This weekend only: 20% off every booking. Tag a friend...", views: "1.8K", eng: "156" },
+                  { platform: "instagram", text: "New arrivals just dropped — swipe to find your favourite...", views: "1.2K", eng: "98" },
                 ].map((post, i) => {
                   const pl = getPlatform(post.platform);
                   return (

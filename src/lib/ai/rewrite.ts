@@ -18,21 +18,13 @@ const instructionMap: Record<string, string> = {
 };
 
 const platformLimits: Record<string, string> = {
-  twitter: "280 characters max",
-  threads: "500 characters max",
-  linkedin: "3000 characters max",
   instagram: "2200 characters max for captions",
   facebook: "63206 characters max",
-  tiktok: "4000 characters max for captions",
-  youtube: "5000 characters max for descriptions",
-  pinterest: "500 characters max for descriptions",
-  bluesky: "300 characters max",
 };
 
 const platformNames: Record<string, string> = {
-  instagram: "Instagram", facebook: "Facebook", twitter: "X (Twitter)",
-  threads: "Threads", linkedin: "LinkedIn", tiktok: "TikTok",
-  youtube: "YouTube", pinterest: "Pinterest", bluesky: "Bluesky",
+  instagram: "Instagram",
+  facebook: "Facebook",
 };
 
 function buildBusinessSlice(kb: Record<string, unknown> | null): string {

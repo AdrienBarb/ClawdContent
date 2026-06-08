@@ -9,6 +9,7 @@ import { coerceMediaItems, mediaItemsSchema } from "@/lib/schemas/mediaItems";
 import {
   defaultContentType,
   getPlatformConfig,
+  isSupportedPlatform,
 } from "@/lib/insights/platformConfig";
 import { validateMediaItems } from "@/lib/services/mediaValidation";
 
@@ -30,14 +31,16 @@ export async function GET(req: NextRequest) {
     // Get user's social account IDs
     const lateProfile = await prisma.lateProfile.findUnique({
       where: { userId: session.user.id },
-      include: { socialAccounts: { select: { id: true } } },
+      include: { socialAccounts: { select: { id: true, platform: true } } },
     });
 
     if (!lateProfile) {
       return NextResponse.json({ suggestions: [] });
     }
 
-    const userAccountIds = lateProfile.socialAccounts.map((a) => a.id);
+    const userAccountIds = lateProfile.socialAccounts
+      .filter((a) => isSupportedPlatform(a.platform))
+      .map((a) => a.id);
 
     // Validate accountId belongs to user
     if (accountId && !userAccountIds.includes(accountId)) {

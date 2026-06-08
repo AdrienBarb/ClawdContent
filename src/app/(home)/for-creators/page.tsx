@@ -9,7 +9,7 @@ const PAGE_PATH = "/for-creators";
 const PAGE_URL = `${config.project.url}${PAGE_PATH}`;
 const PAGE_TITLE = "Social Media Manager for Creators";
 const PAGE_DESCRIPTION =
-  "A social media manager for video creators, newsletter writers, course makers, and indie artists. One idea becomes nine platform-ready posts. $49/mo, less than your editing software.";
+  "A social media manager for video creators, newsletter writers, course makers, and indie artists. One idea becomes a week of Instagram and Facebook posts. $49/mo, less than your editing software.";
 
 export const metadata: Metadata = {
   title: PAGE_TITLE,
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
 const useCases = [
   {
     t: "Video drops",
-    q: "New video, new podcast, new short. PostClaw writes the TikTok hook, the Instagram carousel, the X thread, the LinkedIn version. Each one tuned to the platform.",
+    q: "New video, new podcast, new short. PostClaw turns it into an Instagram caption, a Reel hook, a Story, and a Facebook post. Each one tuned to where it's going.",
   },
   {
     t: "Newsletter promo",
@@ -53,16 +53,16 @@ const steps = [
   {
     n: "01",
     t: "Tell PostClaw what you make",
-    d: "Paste your YouTube channel, your Substack, your portfolio. PostClaw learns your voice, your audience, your usual themes.",
+    d: "Paste your website, your newsletter, your portfolio. PostClaw learns your voice, your audience, your usual themes.",
   },
   {
     n: "02",
-    t: "Connect the platforms you grow on",
-    d: "Instagram, TikTok, X, YouTube, LinkedIn, Threads, whatever your audience uses. Two-minute connect.",
+    t: "Connect Instagram & Facebook",
+    d: "Connect your Instagram and Facebook. Two-minute connect, no technical setup.",
   },
   {
     n: "03",
-    t: "Drop one idea, get nine posts",
+    t: "Drop one idea, get a week",
     d: "Tell PostClaw what you're working on. It drafts a week of platform-native posts in your voice. Approve, edit, or skip. Your call.",
   },
 ];
@@ -70,19 +70,19 @@ const steps = [
 const faqs = [
   {
     q: "I have ideas, not time. Will PostClaw actually save my schedule?",
-    a: "That's the whole point. You drop one idea (a video, a newsletter, a thought) and get nine platform-native posts back. Approve in five minutes, get back to making things. Most creators batch a week of posts in one sitting.",
+    a: "That's the whole point. You drop one idea (a video, a newsletter, a thought) and get a week of Instagram and Facebook posts back. Approve in five minutes, get back to making things. Most creators batch a week of posts in one sitting.",
   },
   {
     q: "Will it sound like a marketing bot?",
     a: "PostClaw learns your voice from your existing work and from posts you approve. The first week tunes it. After that, posts sound like you on a good day. If a draft sounds off, edit once and PostClaw remembers.",
   },
   {
-    q: "I post across platforms with very different vibes. Can it handle that?",
-    a: "That's the design. The same idea becomes punchy on X, visual on Instagram, conversational on Threads, professional on LinkedIn, and a hook on TikTok. You don't write five versions, PostClaw does.",
+    q: "Instagram and Facebook are different beasts. Can it handle both?",
+    a: "That's the design. The same idea becomes a scroll-stopping Instagram caption, a Reel hook, and a Story — and a warmer, shareable Facebook post. You don't write each version, PostClaw does.",
   },
   {
     q: "Can I batch a whole week's content in one session?",
-    a: "Yes. Tell PostClaw your themes for the week (a video drop, a newsletter promo, a build-update). You get a calendar of drafts across every platform. Approve in 5 to 10 minutes, done for the week.",
+    a: "Yes. Tell PostClaw your themes for the week (a video drop, a newsletter promo, a build-update). You get a calendar of drafts for Instagram and Facebook. Approve in 5 to 10 minutes, done for the week.",
   },
   {
     q: "What if my style is very specific and I don't want it changed?",
@@ -173,7 +173,7 @@ export default function ForCreatorsPage() {
               <em className="italic text-[#ec6f5b]">We&apos;ll post about it.</em>
             </h1>
             <p className="mt-9 max-w-[640px] text-base leading-[1.55] text-[#b9bdd6] md:text-xl">
-              You make videos, newsletters, courses, art. PostClaw turns one idea into nine platform-ready posts and handles publishing. Get your hours back. $49 a month, less than your editing software.
+              You make videos, newsletters, courses, art. PostClaw turns one idea into a week of Instagram and Facebook posts and handles publishing. Get your hours back. $49 a month, less than your editing software.
             </p>
             <div className="mt-11 flex flex-wrap items-center justify-center gap-3.5">
               <Link

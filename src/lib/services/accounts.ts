@@ -5,6 +5,7 @@ import {
   getAccountsHealth,
 } from "@/lib/late/mutations";
 import { inngest } from "@/inngest/client";
+import { isSupportedPlatform } from "@/lib/insights/platformConfig";
 
 export async function getConnectedAccounts(userId: string) {
   const lateProfile = await prisma.lateProfile.findUnique({
@@ -12,7 +13,9 @@ export async function getConnectedAccounts(userId: string) {
     include: { socialAccounts: true },
   });
 
-  return lateProfile?.socialAccounts ?? [];
+  return (lateProfile?.socialAccounts ?? []).filter((a) =>
+    isSupportedPlatform(a.platform)
+  );
 }
 
 export async function getConnectUrl(
@@ -74,6 +77,11 @@ export async function syncAccountsFromLate(userId: string): Promise<SyncResult> 
   const reconnectedAccountIds: string[] = [];
 
   for (const account of accountStatuses) {
+    // Legacy platforms we no longer support: never (re)create or analyze them.
+    // Existing rows stay in lateAccountIds below, so the disconnect-sweep
+    // leaves them untouched — hidden at read time, never deleted.
+    if (!isSupportedPlatform(account.platform)) continue;
+
     const status = account.isActive ? "active" : "disconnected";
     const previousStatus = previousStatusByLateId.get(account.id);
     const isNew = previousStatus === undefined;

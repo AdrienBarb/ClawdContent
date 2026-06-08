@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import { isSupportedPlatform } from "@/lib/insights/platformConfig";
 import {
   getAnalytics,
   getFollowerStats as lateFollowerStats,
@@ -62,11 +63,12 @@ async function getUserProfile(userId: string) {
     include: { socialAccounts: { where: { status: "active" } } },
   });
   if (!lateProfile) return null;
+  const supportedAccounts = lateProfile.socialAccounts.filter((a) =>
+    isSupportedPlatform(a.platform)
+  );
   return {
     apiKey: lateProfile.lateApiKey,
-    connectedPlatforms: new Set(
-      lateProfile.socialAccounts.map((a) => a.platform)
-    ),
+    connectedPlatforms: new Set(supportedAccounts.map((a) => a.platform)),
   };
 }
 

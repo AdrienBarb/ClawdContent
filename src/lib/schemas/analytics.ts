@@ -5,23 +5,7 @@ const dateFormat = z
   .regex(/^\d{4}-\d{2}-\d{2}$/)
   .optional();
 
-const platformEnum = z
-  .enum([
-    "twitter",
-    "linkedin",
-    "bluesky",
-    "threads",
-    "facebook",
-    "instagram",
-    "pinterest",
-    "tiktok",
-    "youtube",
-    "reddit",
-    "telegram",
-    "snapchat",
-    "googlebusiness",
-  ])
-  .optional();
+const platformEnum = z.enum(["instagram", "facebook"]).optional();
 
 export const analyticsQuerySchema = z.object({
   period: z.enum(["7d", "30d", "90d"]).default("30d"),

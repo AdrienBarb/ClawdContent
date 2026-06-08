@@ -12,7 +12,8 @@ export async function createCheckoutSession(
   email: string,
   planId: PlanId,
   interval: BillingInterval,
-  affonsoReferral?: string
+  affonsoReferral?: string,
+  successUrl?: string
 ): Promise<string> {
   const existing = await prisma.subscription.findUnique({
     where: { userId },
@@ -47,7 +48,12 @@ export async function createCheckoutSession(
     mode: "subscription",
     allow_promotion_codes: true,
     line_items: [{ price: priceId, quantity: 1 }],
-    success_url: `${baseUrl}/d?payment=success`,
+    // Defense-in-depth against open redirect: only honour a same-origin
+    // relative path (the schema already enforces this at the boundary).
+    success_url:
+      successUrl && successUrl.startsWith("/") && !/^\/[/\\]/.test(successUrl)
+        ? `${baseUrl}${successUrl}`
+        : `${baseUrl}/d?payment=success`,
     cancel_url: `${baseUrl}/d`,
     metadata: {
       userId,

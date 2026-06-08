@@ -8,6 +8,7 @@ import { prisma } from "@/lib/db/prisma";
 import { getPlan, resolvePlanId } from "@/lib/constants/plans";
 import { syncAccountsFromLate } from "@/lib/services/accounts";
 import { getBalanceSummary } from "@/lib/services/usage";
+import { isSupportedPlatform } from "@/lib/insights/platformConfig";
 
 // Throttle account sync: once per user per 60 seconds
 const lastSyncMap = new Map<string, number>();
@@ -48,6 +49,12 @@ export async function GET() {
     const planId = resolvePlanId(subscription?.planId);
     const plan = getPlan(planId);
 
+    // Legacy accounts on removed platforms stay in the DB but must never
+    // surface in the dashboard — filter them out of the status payload.
+    const supportedAccounts = (lateProfile?.socialAccounts ?? []).filter((a) =>
+      isSupportedPlatform(a.platform)
+    );
+
     // Background sync: check Zernio account statuses periodically
     if (lateProfile) {
       const now = Date.now();
@@ -82,18 +89,16 @@ export async function GET() {
         name: plan.name,
         socialAccountLimit: plan.socialAccountLimit,
       },
-      accountCount:
-        lateProfile?.socialAccounts?.filter((a) => a.status === "active")
-          .length ?? 0,
-      accounts:
-        lateProfile?.socialAccounts?.map((a) => ({
-          id: a.id,
-          platform: a.platform,
-          username: a.username,
-          status: a.status,
-          analysisStatus: a.analysisStatus,
-          lastAnalyzedAt: a.lastAnalyzedAt?.toISOString() ?? null,
-        })) ?? [],
+      accountCount: supportedAccounts.filter((a) => a.status === "active")
+        .length,
+      accounts: supportedAccounts.map((a) => ({
+        id: a.id,
+        platform: a.platform,
+        username: a.username,
+        status: a.status,
+        analysisStatus: a.analysisStatus,
+        lastAnalyzedAt: a.lastAnalyzedAt?.toISOString() ?? null,
+      })),
       postsPublished: user?.postsPublished ?? 0,
       freePostLimit: 5,
       usage,

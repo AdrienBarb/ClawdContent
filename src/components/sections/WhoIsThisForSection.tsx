@@ -13,7 +13,7 @@ const personas = [
   },
   {
     t: "Creators Who'd Rather Create",
-    q: "One idea becomes thirteen platform-ready posts. Back to the actual work.",
+    q: "One idea becomes a week of Instagram and Facebook posts. Back to the actual work.",
     href: "/for-creators",
   },
 ];

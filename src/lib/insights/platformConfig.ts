@@ -81,119 +81,14 @@ export const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
     requiresMedia: null,
     mediaRules: { maxImages: 10, maxVideos: 1 },
   },
-  twitter: {
-    platform: "twitter",
-    displayName: "X (Twitter)",
-    primaryMetric: "likes",
-    supportsAnalytics: true,
-    noExternalHistory: false,
-    defaultBestTimes: [
-      { dayOfWeek: 0, hour: 9 },
-      { dayOfWeek: 2, hour: 12 },
-      { dayOfWeek: 4, hour: 17 },
-    ],
-    charLimit: 280,
-    recommendedPostsPerDay: 4,
-    requiresMedia: null,
-    mediaRules: { maxImages: 4, maxVideos: 1 },
-  },
-  threads: {
-    platform: "threads",
-    displayName: "Threads",
-    primaryMetric: "likes",
-    supportsAnalytics: true,
-    noExternalHistory: false,
-    defaultBestTimes: [
-      { dayOfWeek: 0, hour: 9 },
-      { dayOfWeek: 2, hour: 18 },
-      { dayOfWeek: 4, hour: 12 },
-    ],
-    charLimit: 500,
-    recommendedPostsPerDay: 3,
-    requiresMedia: null,
-    mediaRules: { maxImages: 10, maxVideos: 1 },
-  },
-  tiktok: {
-    platform: "tiktok",
-    displayName: "TikTok",
-    primaryMetric: "views",
-    supportsAnalytics: true,
-    noExternalHistory: false,
-    defaultBestTimes: [
-      { dayOfWeek: 1, hour: 19 },
-      { dayOfWeek: 3, hour: 21 },
-      { dayOfWeek: 6, hour: 16 },
-    ],
-    charLimit: 2200,
-    recommendedPostsPerDay: 2,
-    requiresMedia: "image_or_video",
-    mediaRules: { maxImages: 35, maxVideos: 1 },
-  },
-  youtube: {
-    platform: "youtube",
-    displayName: "YouTube",
-    primaryMetric: "views",
-    supportsAnalytics: true,
-    noExternalHistory: false,
-    defaultBestTimes: [
-      { dayOfWeek: 4, hour: 15 },
-      { dayOfWeek: 5, hour: 10 },
-      { dayOfWeek: 6, hour: 14 },
-    ],
-    charLimit: null,
-    recommendedPostsPerDay: 1,
-    requiresMedia: "video",
-    mediaRules: { maxImages: 0, maxVideos: 1 },
-  },
-  pinterest: {
-    platform: "pinterest",
-    displayName: "Pinterest",
-    primaryMetric: "saves",
-    supportsAnalytics: true,
-    noExternalHistory: false,
-    defaultBestTimes: [
-      { dayOfWeek: 5, hour: 20 },
-      { dayOfWeek: 6, hour: 21 },
-      { dayOfWeek: 4, hour: 14 },
-    ],
-    charLimit: 500,
-    recommendedPostsPerDay: 4,
-    requiresMedia: "image_or_video",
-    mediaRules: { maxImages: 1, maxVideos: 1 },
-  },
-  linkedin: {
-    platform: "linkedin",
-    displayName: "LinkedIn",
-    primaryMetric: "likes",
-    supportsAnalytics: true,
-    noExternalHistory: true, // personal accounts: pre-Zernio posts invisible. Posts via PostClaw still returned with source=all
-    defaultBestTimes: [
-      { dayOfWeek: 1, hour: 8 },
-      { dayOfWeek: 2, hour: 10 },
-      { dayOfWeek: 3, hour: 9 },
-    ],
-    charLimit: 3000,
-    recommendedPostsPerDay: 1,
-    requiresMedia: null,
-    mediaRules: { maxImages: 20, maxVideos: 1 },
-  },
-  bluesky: {
-    platform: "bluesky",
-    displayName: "Bluesky",
-    primaryMetric: "likes",
-    supportsAnalytics: false,
-    noExternalHistory: true,
-    defaultBestTimes: [
-      { dayOfWeek: 0, hour: 12 },
-      { dayOfWeek: 2, hour: 18 },
-      { dayOfWeek: 4, hour: 9 },
-    ],
-    charLimit: 300,
-    recommendedPostsPerDay: 3,
-    requiresMedia: null,
-    mediaRules: { maxImages: 4, maxVideos: 1 },
-  },
 };
+
+/**
+ * The only platforms PostClaw supports. Single source of truth — every UI/job
+ * boundary filters connected accounts through `isSupportedPlatform` so legacy
+ * accounts on now-removed platforms are hidden (never deleted).
+ */
+export const SUPPORTED_PLATFORMS = Object.keys(PLATFORM_CONFIG);
 
 export function getPlatformConfig(platform: string): PlatformConfig {
   const config = PLATFORM_CONFIG[platform];

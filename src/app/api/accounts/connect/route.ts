@@ -8,6 +8,7 @@ import { connectAccountSchema } from "@/lib/schemas/accounts";
 import { appRouter } from "@/lib/constants/appRouter";
 import { prisma } from "@/lib/db/prisma";
 import { getPlan, resolvePlanId } from "@/lib/constants/plans";
+import { isSupportedPlatform } from "@/lib/insights/platformConfig";
 
 export async function POST(req: NextRequest) {
   try {
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { platform, returnTo } = connectAccountSchema.parse(body);
+    const { platform, returnTo, onboarding } = connectAccountSchema.parse(body);
 
     // Check account limit for user's plan
     const [subscription, lateProfile] = await Promise.all([
@@ -38,7 +39,9 @@ export async function POST(req: NextRequest) {
 
     const planId = resolvePlanId(subscription?.planId);
     const plan = getPlan(planId);
-    const activeAccountCount = lateProfile?.socialAccounts?.length ?? 0;
+    const activeAccountCount = (lateProfile?.socialAccounts ?? []).filter((a) =>
+      isSupportedPlatform(a.platform)
+    ).length;
 
     if (activeAccountCount >= plan.socialAccountLimit) {
       return NextResponse.json(
@@ -54,7 +57,12 @@ export async function POST(req: NextRequest) {
 
     const baseUrl =
       process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    const callbackUrl = new URL(`${baseUrl}${appRouter.accountsCallback}`);
+    // Onboarding connects stay inside the onboarding shell — bounce OAuth back
+    // through /onboarding/connected, never the dashboard callback under /d.
+    const callbackPath = onboarding
+      ? appRouter.onboardingCallback
+      : appRouter.accountsCallback;
+    const callbackUrl = new URL(`${baseUrl}${callbackPath}`);
     if (returnTo) callbackUrl.searchParams.set("returnTo", returnTo);
     const redirectUrl = callbackUrl.toString();
 

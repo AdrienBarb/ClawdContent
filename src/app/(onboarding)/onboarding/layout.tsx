@@ -16,13 +16,13 @@ export default async function OnboardingLayout({
     redirect("/");
   }
 
-  // If onboarding already completed, go to dashboard
+  // Onboarding is complete once the trial has started (onboardingCompletedAt).
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { knowledgeBase: true },
+    select: { onboardingCompletedAt: true },
   });
 
-  if (user?.knowledgeBase !== null) {
+  if (user?.onboardingCompletedAt) {
     redirect("/d");
   }
 

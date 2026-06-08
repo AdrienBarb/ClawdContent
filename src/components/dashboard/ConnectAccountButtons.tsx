@@ -13,6 +13,20 @@ interface ConnectAccountButtonsProps {
   disabled?: boolean;
   onDisabledClick?: () => void;
   returnTo?: string;
+  /**
+   * Onboarding mode. Connects full-page (single window) and routes OAuth back
+   * through the onboarding callback bridge so the user never sees the dashboard
+   * shell. The dashboard uses the default popup + `/d` callback. A popup is
+   * avoided here because its `window.opener` is unreliable across the
+   * cross-origin OAuth round-trip (it gets severed).
+   */
+  onboarding?: boolean;
+  /**
+   * Restrict the picker to these platform ids (order preserved from PLATFORMS).
+   * Onboarding uses it to focus on Instagram + Facebook; the dashboard shows
+   * the full list when omitted.
+   */
+  allowedPlatforms?: string[];
 }
 
 export default function ConnectAccountButtons({
@@ -21,14 +35,24 @@ export default function ConnectAccountButtons({
   disabled = false,
   onDisabledClick,
   returnTo,
+  onboarding = false,
+  allowedPlatforms,
 }: ConnectAccountButtonsProps) {
   const { usePost } = useApi();
+  const platforms = allowedPlatforms
+    ? PLATFORMS.filter((p) => allowedPlatforms.includes(p.id))
+    : PLATFORMS;
   const [connectingPlatform, setConnectingPlatform] = useState<string | null>(
     null
   );
 
   const { mutate: getConnectUrl } = usePost(appRouter.api.accountsConnect, {
     onSuccess: (data: { url: string }) => {
+      if (onboarding) {
+        window.location.assign(data.url);
+        return;
+      }
+
       const popup = window.open(
         data.url,
         "connect-account",
@@ -51,12 +75,12 @@ export default function ConnectAccountButtons({
 
   const handleConnect = (platform: string) => {
     setConnectingPlatform(platform);
-    getConnectUrl({ platform, returnTo });
+    getConnectUrl({ platform, returnTo, onboarding });
   };
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-      {PLATFORMS.map((platform) => {
+      {platforms.map((platform) => {
         const isConnecting = connectingPlatform === platform.id;
         const isConnected = connectedPlatforms.includes(platform.id);
 

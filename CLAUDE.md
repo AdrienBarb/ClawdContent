@@ -10,7 +10,7 @@ PostClaw is an AI social media manager. It learns your brand, plans content, and
 - **Solo founders / indie hackers** — shipping product, can't justify in-house social
 - **Creators** — would rather make than post
 
-**Positioning:** A _manager_, not a tool. Core value prop: "Tell me what to post and post it for me." Lead with Instagram/Facebook (dominant among real users), not "9 platforms."
+**Positioning:** A _manager_, not a tool. Core value prop: "Tell me what to post and post it for me." PostClaw publishes to **Instagram and Facebook only** — all other networks were removed on 2026-06-08. Headline: "Grow your Facebook & Instagram on autopilot."
 
 **Voice:** Match the audience. For SMB-facing copy: plain language, concrete examples — "Would a photographer or a caterer in Leeds understand this?" still applies. For founder/creator-facing copy: heavier startup jargon is fine. Avoid voice that talks past whichever segment you're addressing.
 
@@ -32,7 +32,7 @@ PostClaw is an AI social media manager. It learns your brand, plans content, and
 Next.js 16 (App Router, RSC) on Vercel
   ├── Better Auth (magic link + Google OAuth)
   ├── Stripe (single $49 plan + webhook)
-  ├── Zernio API (account connect + compose + analytics — 9 platforms)
+  ├── Zernio API (account connect + compose + analytics — Instagram + Facebook)
   ├── Inngest (account/connected, account/refresh-insights)
   ├── Anthropic Sonnet 4.6 — insights, suggestions, rewrites, onboarding extraction
   ├── PostgreSQL (Supabase) via Prisma 7 + adapter-pg
@@ -43,7 +43,7 @@ Next.js 16 (App Router, RSC) on Vercel
 
 **Chat surface scoped to drafts.** `/d` has a chat composer (`ChatPanel` → `/api/chat` via `streamText`). The model has exactly five tools — `generate_posts`, `update_post`, `regenerate_post`, `delete_draft`, `set_schedule` — all wrapping `PostSuggestion` CRUD. `set_schedule` only _stages_ a time on the draft; **publishing and committing schedules still require the user to click Post / Schedule on the `PostCard` or `BulkBar`** in `SuggestionsBoard`. Chat is ephemeral (no `chat_message` persistence). Insights/onboarding extraction still use `generateObject`.
 
-**Supported platforms (9):** Instagram, Facebook, Twitter/X, Threads, LinkedIn, TikTok, YouTube, Pinterest, Bluesky. Defined in `src/lib/insights/platformConfig.ts` + `src/lib/constants/platforms.tsx`.
+**Supported platforms (2):** Instagram and Facebook only. Single source of truth: `SUPPORTED_PLATFORMS` / `isSupportedPlatform` in `src/lib/insights/platformConfig.ts` (+ UI list in `src/lib/constants/platforms.tsx`). All 7 other networks were removed 2026-06-08. Legacy accounts on removed platforms are **hidden** at every read boundary (`getConnectedAccounts`, analytics, suggestions route, `computeInsights`) via `isSupportedPlatform` — never deleted.
 
 ## Where things live
 

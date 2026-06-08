@@ -85,7 +85,7 @@ export default function PrivacyPage() {
               <ul className="list-disc pl-6 text-muted-foreground space-y-1">
                 <li>
                   Platform account identifiers and usernames for connected
-                  accounts (Twitter/X, LinkedIn, Bluesky, Threads)
+                  accounts (Instagram and Facebook)
                 </li>
                 <li>
                   OAuth tokens used to post on your behalf (stored securely by

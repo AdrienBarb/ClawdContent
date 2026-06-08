@@ -17,6 +17,7 @@ export const appRouter = {
   settings: "/d/settings",
   billing: "/d/billing",
   onboarding: "/onboarding",
+  onboardingCallback: "/onboarding/connected",
 
   // API routes
   api: {
@@ -47,6 +48,10 @@ export const appRouter = {
     uploadsSign: "/api/uploads/sign",
     userTimezone: "/api/user/timezone",
     onboardingAnalyze: "/api/onboarding/analyze",
+    onboardingStart: "/api/onboarding/start",
+    onboardingStatus: "/api/onboarding/status",
+    onboardingSave: "/api/onboarding/save",
+    onboardingSamples: "/api/onboarding/samples",
     onboardingConfirm: "/api/onboarding/confirm",
     brandingLogo: "/api/branding/logo",
     analytics: "/api/analytics",
