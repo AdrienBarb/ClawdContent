@@ -1,12 +1,27 @@
 import { inngest } from "../client";
 import { prisma } from "@/lib/db/prisma";
 import { computeInsights } from "@/lib/services/accountInsights";
+import { computeStrategy } from "@/lib/services/socialStrategy";
 
 async function markAnalysisCompleted(socialAccountId: string): Promise<void> {
   await prisma.socialAccount.updateMany({
     where: { id: socialAccountId },
     data: { analysisStatus: "completed" },
   });
+}
+
+// Best-effort strategy generation. Swallows its own errors so a model hiccup
+// never fails the analysis run or blocks `analysisStatus`. Runs AFTER the
+// completion flip — the strategy fills in shortly after the dashboard unblocks.
+async function computeStrategyBestEffort(socialAccountId: string): Promise<void> {
+  try {
+    await computeStrategy(socialAccountId);
+  } catch (err) {
+    console.error(
+      `[analyze-account] strategy generation failed (non-fatal) for ${socialAccountId}:`,
+      err instanceof Error ? err.message : err
+    );
+  }
 }
 
 export const analyzeAccount = inngest.createFunction(
@@ -45,6 +60,15 @@ export const analyzeAccount = inngest.createFunction(
       await markAnalysisCompleted(socialAccountId);
     });
 
+    // Strategy is derived from the just-saved insights. Skip when the first
+    // pass returned null (account deleted) — there's nothing to build from.
+    if (insights !== null) {
+      await step.run("compute-strategy", async () => {
+        await computeStrategyBestEffort(socialAccountId);
+        return null;
+      });
+    }
+
     return {
       success: true,
       socialAccountId,
@@ -61,7 +85,7 @@ export const refreshInsights = inngest.createFunction(
   async ({ event, step }) => {
     const { socialAccountId } = event.data as { socialAccountId: string };
 
-    await step.run("compute-insights", async () => {
+    const insights = await step.run("compute-insights", async () => {
       return computeInsights(socialAccountId, { source: "all" });
     });
 
@@ -70,6 +94,14 @@ export const refreshInsights = inngest.createFunction(
     await step.run("mark-analysis-completed", async () => {
       await markAnalysisCompleted(socialAccountId);
     });
+
+    // Refresh the strategy off the new insights (best-effort, same as connect).
+    if (insights !== null) {
+      await step.run("compute-strategy", async () => {
+        await computeStrategyBestEffort(socialAccountId);
+        return null;
+      });
+    }
 
     return { success: true, socialAccountId };
   }

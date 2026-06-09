@@ -10,8 +10,11 @@ import type { Insights } from "@/lib/schemas/insights";
 import { parseInsights, pickTimeSlots } from "@/lib/services/insightsHelpers";
 import {
   formatBusinessContext,
+  formatGoalContext,
+  formatStrategyContext,
   formatVoiceFingerprint,
 } from "@/lib/services/promptContext";
+import { parseStrategy, type SocialStrategy } from "@/lib/schemas/strategy";
 import { buildHumanRulesBlock, HUMAN_SAMPLING } from "@/lib/ai/humanRules";
 import { humanizeContent } from "@/lib/ai/humanize";
 import type { MediaItem } from "@/lib/schemas/mediaItems";
@@ -95,12 +98,16 @@ async function generateForAccount(
   const knowledgeBase =
     (account.lateProfile.user.knowledgeBase as Record<string, unknown> | null) ?? null;
   const insights = parseInsights(account.insights);
+  const goal = account.lateProfile.user.onboardingGoal ?? null;
+  const strategy = parseStrategy(account.strategy);
 
   const prompt = buildBriefPrompt({
     platformDisplayName: config.displayName,
     charLimit: config.charLimit,
     insights,
     knowledgeBase,
+    goal,
+    strategy,
     brief,
   });
 
@@ -192,6 +199,8 @@ interface PromptInput {
   charLimit: number | null;
   insights: Insights | null;
   knowledgeBase: Record<string, unknown> | null;
+  goal: string | null;
+  strategy: SocialStrategy | null;
   brief: string;
 }
 
@@ -203,6 +212,12 @@ function buildBriefPrompt(input: PromptInput): string {
   );
 
   sections.push(formatBusinessContext(input.knowledgeBase));
+
+  // Steer toward the user's primary goal + their growth strategy (when set).
+  const goalBlock = formatGoalContext(input.goal);
+  if (goalBlock) sections.push(goalBlock);
+  const strategyBlock = formatStrategyContext(input.strategy);
+  if (strategyBlock) sections.push(strategyBlock);
 
   const voiceBlock = formatVoiceFingerprint(input.insights, {
     topPostsCount: 3,

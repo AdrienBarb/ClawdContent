@@ -1,0 +1,231 @@
+import type { Insights, StoredPost } from "@/lib/schemas/insights";
+import type { PlatformBestPractices } from "@/lib/insights/bestPractices";
+import {
+  resolveCadence,
+  resolveBestTimes,
+  type ResolvedCadence,
+  type ResolvedBestTimes,
+} from "@/lib/insights/resolve";
+import {
+  formatBusinessContext,
+  formatGoalContext,
+} from "@/lib/services/promptContext";
+import {
+  STRATEGY_VERSION,
+  type StrategyLLMOutput,
+  type SocialStrategy,
+} from "@/lib/schemas/strategy";
+
+/**
+ * Deterministic strategy plumbing — kept pure (no DB / no AI) so it's fully
+ * unit-testable and so the LLM is grounded in facts, not vibes:
+ *  - `buildStrategyInputs` assembles the factual inputs from insights + KB + goal
+ *  - `buildStrategyPrompt` renders those inputs into the prompt
+ *  - `assembleStrategy` merges the LLM output with the deterministic facts (caps
+ *    arrays, stamps the real cadence/source) into the stored shape
+ *
+ * The impure orchestrator (`src/lib/services/socialStrategy.ts`) wires these to
+ * the DB and the model.
+ */
+
+const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+export interface StrategyInputs {
+  platform: string;
+  displayName: string;
+  goal: string | null;
+  dataQuality: string;
+  postsAnalyzed: number;
+  followersCount: number | null;
+  growth30d: number | null;
+  /** True mean engagementRate across all fetched posts, or null when none. */
+  avgEngagementRate: number | null;
+  cadence: ResolvedCadence;
+  bestTimes: ResolvedBestTimes;
+  contentMixActual: { type: string; percentage: number }[];
+  topPosts: StoredPost[];
+  bottomPosts: StoredPost[];
+  voice: { tone: string; topics: string[]; patterns: string[] } | null;
+  kb: PlatformBestPractices;
+}
+
+export function buildStrategyInputs(args: {
+  platform: string;
+  insights: Insights | null;
+  goal: string | null;
+  kb: PlatformBestPractices;
+}): StrategyInputs {
+  const { platform, insights, goal, kb } = args;
+  const top = insights?.zernio.topPosts ?? [];
+  const bottom = insights?.zernio.bottomPosts ?? [];
+  const inferred = insights?.inferred ?? null;
+
+  return {
+    platform,
+    displayName: kb.displayName,
+    goal,
+    dataQuality: insights?.meta.dataQuality ?? "cold_start",
+    postsAnalyzed: insights?.meta.postsAnalyzed ?? 0,
+    followersCount: insights?.zernio.account.followersCount ?? null,
+    growth30d: insights?.zernio.account.growth30d ?? null,
+    avgEngagementRate: insights?.computed.avgEngagementRate ?? null,
+    cadence: resolveCadence(insights, kb),
+    bestTimes: resolveBestTimes(insights, kb),
+    contentMixActual: insights?.computed.contentMix ?? [],
+    topPosts: top,
+    bottomPosts: bottom,
+    voice: inferred
+      ? {
+          tone: inferred.toneSummary,
+          topics: inferred.topics,
+          patterns: inferred.performingPatterns,
+        }
+      : null,
+    kb,
+  };
+}
+
+function formatPostLine(p: StoredPost): string {
+  const excerpt = p.content.replace(/\s+/g, " ").trim().slice(0, 180);
+  const m = p.metrics;
+  const watch = m.igReelsAvgWatchTime > 0 ? ` watch:${m.igReelsAvgWatchTime}s` : "";
+  return `- [${p.mediaType ?? "post"} · ER ${m.engagementRate}% · ${m.likes}❤ ${m.comments}💬 ${m.shares}↗ ${m.saves}🔖${watch}] ${excerpt}`;
+}
+
+function formatTimes(times: { dayOfWeek: number; hour: number }[]): string {
+  return times
+    .map((t) => `${DAY_NAMES[t.dayOfWeek] ?? `D${t.dayOfWeek}`} ${t.hour}:00`)
+    .join(", ");
+}
+
+export function buildStrategyPrompt(
+  inputs: StrategyInputs,
+  knowledgeBase: Record<string, unknown> | null
+): string {
+  const { kb } = inputs;
+  const sections: string[] = [];
+
+  sections.push(
+    `You are an expert social media manager building a concrete growth strategy for a small business's ${inputs.displayName} account. Ground every recommendation in THEIR real numbers below — cite them. Be specific to this business, never generic. Never mention that any of this is automated or AI-generated.`
+  );
+
+  sections.push(formatBusinessContext(knowledgeBase));
+
+  const goalBlock = formatGoalContext(inputs.goal);
+  if (goalBlock) sections.push(goalBlock);
+
+  // --- Where they are now (facts) ---
+  const nowLines: string[] = [`## Where they are now (${inputs.displayName})`];
+  nowLines.push(
+    `- Followers: ${inputs.followersCount ?? "unknown"}${
+      inputs.growth30d !== null ? ` (30-day change: ${inputs.growth30d >= 0 ? "+" : ""}${inputs.growth30d})` : ""
+    }`
+  );
+  nowLines.push(
+    inputs.cadence.actualPostsPerWeek !== null
+      ? `- They currently post ~${inputs.cadence.actualPostsPerWeek}×/week${
+          inputs.cadence.source === "benchmark" ? " (limited history — treat as rough)" : ""
+        }`
+      : `- Posting cadence: not enough history yet`
+  );
+  nowLines.push(
+    `- Recommended cadence for ${inputs.displayName}: ${kb.recommendedPostsPerWeek.min}-${kb.recommendedPostsPerWeek.max}×/week`
+  );
+  nowLines.push(
+    inputs.avgEngagementRate !== null
+      ? `- Their average engagement rate across recent posts: ${inputs.avgEngagementRate}% (healthy here is ${kb.benchmarkEngagementRate.good}%+, strong is ${kb.benchmarkEngagementRate.strong}%+)`
+      : `- Engagement rate: no data yet (healthy here is ${kb.benchmarkEngagementRate.good}%+)`
+  );
+  if (inputs.contentMixActual.length > 0) {
+    nowLines.push(
+      `- Their current format mix: ${inputs.contentMixActual
+        .map((c) => `${c.type} ${c.percentage}%`)
+        .join(", ")}`
+    );
+  }
+  nowLines.push(
+    `- Recommended format mix: ${kb.formatMix.map((f) => `${f.format} = ${f.role}`).join("; ")}`
+  );
+  nowLines.push(
+    `- Suggested posting times (UTC, ${inputs.bestTimes.source === "account" ? "from their data" : "best-practice"}): ${formatTimes(inputs.bestTimes.times)}`
+  );
+  sections.push(nowLines.join("\n"));
+
+  // --- What's working / not ---
+  if (inputs.topPosts.length > 0) {
+    sections.push(
+      `## What's working (top posts by engagement)\n${inputs.topPosts.map(formatPostLine).join("\n")}`
+    );
+  }
+  if (inputs.bottomPosts.length > 0) {
+    sections.push(
+      `## What's underperforming (weakest posts)\n${inputs.bottomPosts.map(formatPostLine).join("\n")}`
+    );
+  } else {
+    sections.push(
+      `## What's underperforming\nNot enough published posts yet to identify weak performers — base "stop" advice on ${inputs.displayName} best practices.`
+    );
+  }
+
+  // --- Voice ---
+  if (inputs.voice) {
+    const v = inputs.voice;
+    sections.push(
+      `## Their voice\nTone: ${v.tone}${v.topics.length ? `\nTopics: ${v.topics.join(", ")}` : ""}${
+        v.patterns.length ? `\nWhat performs: ${v.patterns.join("; ")}` : ""
+      }`
+    );
+  }
+
+  sections.push(`## ${inputs.displayName} principles\n${kb.principles.map((p) => `- ${p}`).join("\n")}`);
+
+  // --- Task ---
+  sections.push(`## Your task
+Produce a growth strategy as a JSON object, aligned to their PRIMARY GOAL and grounded in the numbers above:
+- positioning: 2-3 sentences on how this business should show up on ${inputs.displayName} to hit their goal.
+- contentPillars: 3-5 recurring themes (name + one-line description) rooted in their services and goal.
+- postIdeas: 5-8 concrete, ready-to-act ideas. Each names a SPECIFIC topic ("a post about …"), a format, the pillar it belongs to, and WHY it fits their goal/audience.
+- formatPlan: for each format that matters on ${inputs.displayName}, an action (start | increase | maintain | reduce) + a one-line rationale tied to the mix gap or what's working.
+- doubleDown: 2-4 things their data shows are working — do more of these. If there's no data yet, base on best practices.
+- stop: 1-3 things to stop or fix (from weak posts or format gaps). If no data, base on best practices.
+- targetPostsPerWeek: a single realistic number, moving them toward the recommended band (don't overshoot for a busy owner).
+- cadenceRationale: one sentence explaining the cadence move.
+- summary: a 1-2 sentence TL;DR the owner reads first.
+
+Write in the same language as the business context. Be concrete and specific to THIS business.`);
+
+  return sections.join("\n\n");
+}
+
+/**
+ * Merge the LLM output with the deterministic facts into the stored shape.
+ * Caps arrays (Anthropic can't enforce maxItems) and stamps the REAL cadence
+ * (currentPerWeek + source) rather than trusting the model to restate it.
+ */
+export function assembleStrategy(
+  llm: StrategyLLMOutput,
+  inputs: StrategyInputs,
+  generatedAt: string,
+  model: string
+): SocialStrategy {
+  return {
+    version: STRATEGY_VERSION,
+    generatedAt,
+    model,
+    goal: inputs.goal,
+    dataQuality: inputs.dataQuality,
+    positioning: llm.positioning,
+    summary: llm.summary,
+    contentPillars: llm.contentPillars.slice(0, 6),
+    postIdeas: llm.postIdeas.slice(0, 12),
+    formatPlan: llm.formatPlan.slice(0, 8),
+    cadence: {
+      currentPerWeek: inputs.cadence.actualPostsPerWeek,
+      targetPerWeek: llm.targetPostsPerWeek,
+      rationale: llm.cadenceRationale,
+      source: inputs.cadence.source,
+    },
+    doubleDown: llm.doubleDown.slice(0, 8),
+    stop: llm.stop.slice(0, 8),
+  };
+}

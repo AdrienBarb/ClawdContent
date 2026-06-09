@@ -122,6 +122,10 @@ model SocialAccount {
   status         String           @default("active") // active, disconnected
   analysisStatus String           @default("pending") // pending, analyzing, completed
   insights       Json?
+  // LLM-authored growth strategy (positioning, pillars, post ideas, cadence/
+  // format plan, double-down/stop). Shape: src/lib/schemas/strategy.ts. Built
+  // after insights in analyze-account / refresh-insights. Null until generated.
+  strategy       Json?
   lastAnalyzedAt DateTime?
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt

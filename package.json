@@ -13,7 +13,9 @@
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
     "email:dev": "email dev",
-    "backfill:insights": "tsx scripts/backfill-insights.ts"
+    "backfill:insights": "tsx scripts/backfill-insights.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "prisma": {
     "schema": "src/lib/db/schema.prisma",
@@ -96,6 +98,7 @@
     "react-email": "^5.0.1",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.8"
   }
 }

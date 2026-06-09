@@ -9,8 +9,11 @@ import { briefOutputClaudeSchema } from "@/lib/schemas/createFromBrief";
 import { parseInsights, pickTimeSlots } from "@/lib/services/insightsHelpers";
 import {
   formatBusinessContext,
+  formatGoalContext,
+  formatStrategyContext,
   formatVoiceFingerprint,
 } from "@/lib/services/promptContext";
+import { parseStrategy, type SocialStrategy } from "@/lib/schemas/strategy";
 import { buildHumanRulesBlock, HUMAN_SAMPLING } from "@/lib/ai/humanRules";
 import { humanizeContent } from "@/lib/ai/humanize";
 import type { PostSuggestion } from "@prisma/client";
@@ -73,6 +76,8 @@ export async function generateOnboardingSamples({
     platformDisplayName: config.displayName,
     charLimit: config.charLimit,
     knowledgeBase,
+    goal: account.lateProfile.user.onboardingGoal ?? null,
+    strategy: parseStrategy(account.strategy),
     voiceBlock: formatVoiceFingerprint(insights, { topPostsCount: 3 }),
   });
 
@@ -132,6 +137,8 @@ function buildSamplePrompt(input: {
   platformDisplayName: string;
   charLimit: number | null;
   knowledgeBase: Record<string, unknown> | null;
+  goal: string | null;
+  strategy: SocialStrategy | null;
   voiceBlock: string | null;
 }): string {
   const sections: string[] = [];
@@ -141,6 +148,11 @@ function buildSamplePrompt(input: {
   );
 
   sections.push(formatBusinessContext(input.knowledgeBase));
+
+  const goalBlock = formatGoalContext(input.goal);
+  if (goalBlock) sections.push(goalBlock);
+  const strategyBlock = formatStrategyContext(input.strategy);
+  if (strategyBlock) sections.push(strategyBlock);
 
   if (input.voiceBlock) {
     sections.push(input.voiceBlock);

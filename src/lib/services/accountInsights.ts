@@ -3,12 +3,14 @@ import { generateObject } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { gatherAccountContext } from "@/lib/services/zernioContext";
 import {
+  computeAvgEngagementRate,
   computeAvgPrimaryMetric,
   computeContentMix,
   computeVoiceStats,
   extractHashtags,
   pickPrimaryMetric,
-  rankByPrimaryMetric,
+  selectTopAndBottomPosts,
+  toStoredPost,
 } from "@/lib/insights/extract";
 import { getPlatformConfig, isSupportedPlatform } from "@/lib/insights/platformConfig";
 import {
@@ -31,7 +33,6 @@ interface ComputeOptions {
 }
 
 const REFRESH_INTERVAL_DAYS = 7;
-const POST_EXCERPT_CAP = 200;
 
 export async function computeInsights(
   socialAccountId: string,
@@ -79,11 +80,15 @@ export async function computeInsights(
 
   const config = getPlatformConfig(account.platform);
   const primaryMetric = pickPrimaryMetric(account.platform);
-  const topPosts = rankByPrimaryMetric(ctx.posts, primaryMetric, 5);
+  // Rank top AND bottom by engagementRate (success metric) — the strategy needs
+  // both "what's working" and "what to stop". `bottom` is disjoint from `top`
+  // and empty when there are too few posts to have a meaningful worst set.
+  const { top: topPosts, bottom: bottomPosts } = selectTopAndBottomPosts(ctx.posts, 5);
 
   const zernio: ZernioZone = {
     account: ctx.accountMeta,
-    topPosts: topPosts.map(toTopPost),
+    topPosts: topPosts.map(toStoredPost),
+    bottomPosts: bottomPosts.map(toStoredPost),
     bestTimes: ctx.bestTimes
       ? ctx.bestTimes.map((s) => ({
           dayOfWeek: s.day_of_week,
@@ -98,6 +103,7 @@ export async function computeInsights(
   const computed: ComputedZone = {
     primaryMetric,
     avgPrimaryMetric: computeAvgPrimaryMetric(ctx.posts, primaryMetric),
+    avgEngagementRate: computeAvgEngagementRate(ctx.posts),
     contentMix: computeContentMix(ctx.posts),
     extractedHashtags: extractHashtags(ctx.posts, 15),
     voiceStats: computeVoiceStats(ctx.posts),
@@ -177,24 +183,6 @@ export async function computeInsights(
   return insights;
 }
 
-function toTopPost(post: AnalyticsPost): ZernioZone["topPosts"][number] {
-  return {
-    content: truncate(post.content, POST_EXCERPT_CAP),
-    mediaType: post.mediaType ?? null,
-    publishedAt: post.publishedAt,
-    metrics: {
-      impressions: post.analytics.impressions,
-      reach: post.analytics.reach,
-      likes: post.analytics.likes,
-      comments: post.analytics.comments,
-      shares: post.analytics.shares,
-      saves: post.analytics.saves,
-      views: post.analytics.views,
-      engagementRate: post.analytics.engagementRate,
-    },
-  };
-}
-
 interface InferOptions {
   platformDisplayName: string;
   posts: AnalyticsPost[];
@@ -208,7 +196,7 @@ async function inferZoneFromPosts(opts: InferOptions): Promise<InferredZone> {
     .map((p, i) => {
       const e = p.analytics;
       return `Post ${i + 1} (likes:${e.likes} comments:${e.comments} views:${e.views} saves:${e.saves} engagement:${e.engagementRate}%):
-${truncate(p.content, POST_EXCERPT_CAP)}`;
+${p.content}`;
     })
     .join("\n\n");
 
@@ -283,9 +271,4 @@ async function borrowInferredFromOtherPlatform(
   }
 
   return null;
-}
-
-function truncate(s: string | null | undefined, max: number): string {
-  if (!s) return "";
-  return s.length <= max ? s : s.slice(0, max - 1) + "…";
 }

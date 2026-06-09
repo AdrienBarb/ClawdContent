@@ -34,7 +34,16 @@ const postMetricsSchema = z.object({
   comments: z.number(),
   shares: z.number(),
   saves: z.number(),
+  // `clicks` and the two Reels watch-time fields are real Zernio fields we used
+  // to discard (ground-truthed 2026-06-08, see ~/.claude/output/zernio-real-shapes.md).
+  // `.default(0)` keeps legacy stored insights (which lack them) parseable — these
+  // schemas are never sent to the LLM, so defaults/bounds are safe here.
+  clicks: z.number().default(0),
   views: z.number(),
+  /** Avg seconds a Reel was watched. 0 for non-Reels and on FB. IG's #1 ranking signal. */
+  igReelsAvgWatchTime: z.number().default(0),
+  /** Total seconds watched across all Reel views. 0 for non-Reels and on FB. */
+  igReelsVideoViewTotalTime: z.number().default(0),
   engagementRate: z.number(),
 });
 
@@ -66,6 +75,13 @@ export const zernioZoneSchema = z.object({
     displayName: z.string().nullable(),
   }),
   topPosts: z.array(topPostSchema).max(5),
+  /**
+   * The worst-performing posts in the fetched window (by engagementRate),
+   * distinct from `topPosts`. Empty when there aren't enough posts to have a
+   * meaningful "bottom" (≤ topPosts cap). Feeds the strategy's "what to stop"
+   * signal. `.default([])` keeps pre-bottomPosts insights parseable.
+   */
+  bottomPosts: z.array(topPostSchema).max(5).default([]),
   bestTimes: z.array(bestTimeSlotSchema).nullable(),
   postingFrequency: postingFrequencySchema.nullable(),
 });
@@ -73,6 +89,13 @@ export const zernioZoneSchema = z.object({
 export const computedZoneSchema = z.object({
   primaryMetric: primaryMetricSchema,
   avgPrimaryMetric: z.number(),
+  /**
+   * Mean engagementRate across ALL fetched posts (before top/bottom trimming),
+   * or null when there were none. The honest account-wide average — distinct
+   * from `avgPrimaryMetric` (likes). `.default(null)` keeps legacy insights
+   * (which lack it) parseable.
+   */
+  avgEngagementRate: z.number().nullable().default(null),
   contentMix: z.array(z.object({ type: z.string(), percentage: z.number() })),
   extractedHashtags: z
     .array(z.object({ tag: z.string(), uses: z.number() }))
@@ -114,6 +137,8 @@ export const insightsV2Schema = z.object({
 });
 
 export type Insights = z.infer<typeof insightsV2Schema>;
+/** A post as persisted inside `zernio.topPosts` / `zernio.bottomPosts`. */
+export type StoredPost = z.infer<typeof topPostSchema>;
 export type InferredZone = z.infer<typeof inferredZoneSchema>;
 export type ZernioZone = z.infer<typeof zernioZoneSchema>;
 export type ComputedZone = z.infer<typeof computedZoneSchema>;

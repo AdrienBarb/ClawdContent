@@ -1,4 +1,5 @@
 import type { AnalyticsPost } from "@/lib/late/mutations";
+import type { StoredPost } from "@/lib/schemas/insights";
 import { getPlatformConfig } from "@/lib/insights/platformConfig";
 
 export interface VoiceStats {
@@ -126,6 +127,47 @@ export function computeAvgPrimaryMetric(
   return round2(total / posts.length);
 }
 
+/**
+ * Mean engagementRate across all posts (the honest account-wide average),
+ * computed BEFORE top/bottom trimming. Returns null when there are no posts so
+ * downstream can say "no data" rather than a misleading 0%.
+ */
+export function computeAvgEngagementRate(posts: AnalyticsPost[]): number | null {
+  if (posts.length === 0) return null;
+  let total = 0;
+  for (const post of posts) {
+    total += post.analytics.engagementRate ?? 0;
+  }
+  return round2(total / posts.length);
+}
+
+/** Resolve a post's platform-level account id (string or populated object). */
+function resolvePlatformAccountId(
+  accountId: string | { _id: string } | undefined
+): string | undefined {
+  if (!accountId) return undefined;
+  return typeof accountId === "string" ? accountId : accountId._id;
+}
+
+/**
+ * True when the post was published to `lateAccountId` (matched via any of its
+ * `platforms[].accountId`). Returns false when the post carries no resolvable
+ * platform account id — so it can't be misattributed. Used to scope a
+ * platform-wide analytics response down to a single account when a profile has
+ * two same-platform accounts (prevents one account's captions/metrics bleeding
+ * into a sibling's insights/strategy).
+ */
+export function postBelongsToAccount(
+  post: AnalyticsPost,
+  lateAccountId: string
+): boolean {
+  const platforms = post.platforms;
+  if (!platforms || platforms.length === 0) return false;
+  return platforms.some(
+    (p) => resolvePlatformAccountId(p.accountId) === lateAccountId
+  );
+}
+
 export function rankByPrimaryMetric(
   posts: AnalyticsPost[],
   primary: PrimaryMetric,
@@ -134,6 +176,68 @@ export function rankByPrimaryMetric(
   return [...posts]
     .sort((a, b) => (b.analytics[primary] ?? 0) - (a.analytics[primary] ?? 0))
     .slice(0, limit);
+}
+
+/**
+ * The metric we rank top/bottom posts by. `engagementRate` (engagement ÷
+ * impressions, per Zernio) normalises across reach so a small post that
+ * resonated isn't buried under a high-impression dud — the right lens for
+ * "what's working vs what isn't". Separate from `primaryMetric` (which still
+ * drives `avgPrimaryMetric`). Ground-truthed 2026-06-08.
+ */
+export const SUCCESS_METRIC: PrimaryMetric = "engagementRate";
+
+/** Deterministic order: engagementRate desc, then impressions desc, then _id asc. */
+function compareBySuccessDesc(a: AnalyticsPost, b: AnalyticsPost): number {
+  const er = (b.analytics.engagementRate ?? 0) - (a.analytics.engagementRate ?? 0);
+  if (er !== 0) return er;
+  const imp = (b.analytics.impressions ?? 0) - (a.analytics.impressions ?? 0);
+  if (imp !== 0) return imp;
+  return (a._id ?? "").localeCompare(b._id ?? "");
+}
+
+/**
+ * Split posts into the best and worst performers by SUCCESS_METRIC. `bottom`
+ * is always DISJOINT from `top` (drawn from the posts ranked below the top
+ * `limit`) and ordered worst-first. When there are ≤ `limit` posts there's no
+ * meaningful "bottom" → `bottom` is empty.
+ */
+export function selectTopAndBottomPosts(
+  posts: AnalyticsPost[],
+  limit = 5
+): { top: AnalyticsPost[]; bottom: AnalyticsPost[] } {
+  const ranked = [...posts].sort(compareBySuccessDesc);
+  const top = ranked.slice(0, limit);
+  const remainder = ranked.slice(limit); // strictly worse than every `top` entry
+  const bottom = remainder.slice(-limit).reverse(); // worst-first, disjoint from top
+  return { top, bottom };
+}
+
+/**
+ * Map a raw Zernio analytics post to the persisted shape. Captions are stored
+ * IN FULL (no truncation — the model needs the real voice). Defensive `?? 0` on
+ * metric fields guards against older synced rows that predate watch-time/clicks.
+ */
+export function toStoredPost(post: AnalyticsPost): StoredPost {
+  const a = post.analytics;
+  return {
+    content: post.content ?? "",
+    mediaType: post.mediaType ?? null,
+    publishedAt: post.publishedAt,
+    metrics: {
+      impressions: a.impressions ?? 0,
+      reach: a.reach ?? 0,
+      likes: a.likes ?? 0,
+      comments: a.comments ?? 0,
+      shares: a.shares ?? 0,
+      saves: a.saves ?? 0,
+      clicks: a.clicks ?? 0,
+      views: a.views ?? 0,
+      igReelsAvgWatchTime: a.igReelsAvgWatchTime ?? 0,
+      igReelsVideoViewTotalTime: a.igReelsVideoViewTotalTime ?? 0,
+      engagementRate: a.engagementRate ?? 0,
+    },
+  };
 }
 
 function round1(n: number): number {

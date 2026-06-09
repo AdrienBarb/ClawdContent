@@ -8,6 +8,7 @@ import {
   type PostingFrequencyRow,
 } from "@/lib/late/mutations";
 import { getPlatformConfig } from "@/lib/insights/platformConfig";
+import { postBelongsToAccount } from "@/lib/insights/extract";
 import type { DataQuality } from "@/lib/schemas/insights";
 import { isDevelopment } from "@/utils/environments";
 
@@ -195,7 +196,15 @@ export async function gatherAccountContext(
     `[zernioContext] 📦 analytics summary — posts=${analytics.posts.length}, accounts=${analytics.accounts?.length ?? 0}, syncTriggered=${analytics.overview.dataStaleness?.syncTriggered ?? false}`
   );
 
-  const rawAccount = analytics.accounts?.find((a) => a._id === lateAccountId) ?? analytics.accounts?.[0];
+  // Attribute account meta ONLY to the matching account. Never fall back to
+  // `accounts[0]` — on a multi-account profile that would silently surface a
+  // DIFFERENT account's followers/displayName under this one. No match → nulls.
+  const rawAccount = analytics.accounts?.find((a) => a._id === lateAccountId) ?? null;
+  if (rawAccount === null && (analytics.accounts?.length ?? 0) > 0) {
+    console.warn(
+      `[zernioContext] ⚠️  no analytics account matched lateAccountId=${lateAccountId} among ${analytics.accounts?.length} returned — using null account meta (never another account's data)`
+    );
+  }
   const accountMeta: AccountMeta = {
     followersCount: rawAccount?.followersCount ?? null,
     displayName: rawAccount?.displayName ?? rawAccount?.username ?? null,
@@ -217,7 +226,25 @@ export async function gatherAccountContext(
     };
   }
 
-  const posts = analytics.posts;
+  let posts = analytics.posts;
+
+  // Isolation: `getAnalytics` is platform-scoped, not account-scoped. When a
+  // profile has TWO same-platform accounts the response carries both accounts'
+  // posts (analytics.accounts.length > 1). Keep only THIS account's posts so a
+  // sibling account's full captions/metrics can't bleed into these insights /
+  // strategy. We match on platforms[].accountId (same id we trust for meta). If
+  // the shape ever surprises us and nothing matches, posts→[] (treated as
+  // cold-start, benchmark strategy) — never a leak.
+  // NB: best-times / posting-frequency are separate platform-only Zernio
+  // endpoints with no account filter, so for the rare two-account profile those
+  // remain platform-aggregated (low-sensitivity timing numbers, no captions).
+  if ((analytics.accounts?.length ?? 0) > 1) {
+    const before = posts.length;
+    posts = posts.filter((p) => postBelongsToAccount(p, lateAccountId));
+    console.log(
+      `[zernioContext] 🔒 multi-account profile (${analytics.accounts?.length} accounts) — scoped posts ${before}→${posts.length} to account ${lateAccountId}`
+    );
+  }
 
   // Parallel fetch follower stats + best times + posting frequency (best effort, all degrade gracefully).
   const [followerGrowth, bestTimes, postingFrequency] = await Promise.all([

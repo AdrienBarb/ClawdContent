@@ -423,6 +423,15 @@ export async function uploadMedia(
 // ---------------------------------------------------------------------------
 
 // GET /v1/analytics — post-level metrics
+/** Per-platform target inside an analytics post — carries the account id we use
+ *  to scope a platform-wide response down to one account. */
+export interface AnalyticsPostPlatform {
+  platform?: string;
+  /** Zernio returns this as a string OR a populated object { _id, ... }. */
+  accountId?: string | { _id: string };
+  accountUsername?: string;
+}
+
 export interface AnalyticsPost {
   _id: string;
   latePostId: string | null;
@@ -438,11 +447,19 @@ export interface AnalyticsPost {
     saves: number;
     clicks: number;
     views: number;
+    /** Avg seconds a Reel was watched (IG only; 0 elsewhere). IG's #1 ranking signal. */
+    igReelsAvgWatchTime: number;
+    /** Total seconds watched across all Reel views (IG only; 0 elsewhere). */
+    igReelsVideoViewTotalTime: number;
     engagementRate: number;
   };
   platform: string;
+  /** Per-platform targets — used to attribute the post to a specific account. */
+  platforms?: AnalyticsPostPlatform[];
   platformPostUrl: string | null;
   isExternal: boolean;
+  /** ISO timestamp the post was scheduled for (present on Zernio analytics rows). */
+  scheduledFor?: string | null;
   mediaType?: string | null;
   thumbnailUrl?: string | null;
 }

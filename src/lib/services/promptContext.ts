@@ -6,6 +6,7 @@
  */
 
 import type { Insights } from "@/lib/schemas/insights";
+import type { SocialStrategy } from "@/lib/schemas/strategy";
 
 interface FormatBusinessContextOptions {
   /** Prefix the block with `## Business`. Default: true. */
@@ -43,6 +44,38 @@ Services: ${services}${brandLines}`;
 }
 
 /**
+ * One-line steer per onboarding goal (`User.onboardingGoal`). Drives BOTH the
+ * strategy and the drafting prompts so every post pulls toward what the user
+ * actually wants. Returns "" when the goal is unset/unknown — never invents one.
+ */
+const GOAL_STEERS: Record<string, string> = {
+  find_customers:
+    "Primary goal: find new customers (leads & sales). Bias toward posts that move people toward buying — offers, social proof, clear CTAs to enquire, book, or visit.",
+  build_community:
+    "Primary goal: build an engaged community (loyal, repeat audience). Bias toward conversation starters, replies, recurring formats, and insider / behind-the-scenes content.",
+  brand_awareness:
+    "Primary goal: grow brand awareness (reach new people). Bias toward shareable, discovery-friendly content — strong hooks, Reels, relatable moments.",
+  authority:
+    "Primary goal: establish authority (be the go-to expert). Bias toward how-tos, insights, myth-busting, and opinionated takes that show expertise.",
+};
+
+interface FormatGoalContextOptions {
+  /** Prefix the block with `## Goal`. Default: true. */
+  withHeader?: boolean;
+}
+
+export function formatGoalContext(
+  goal: string | null | undefined,
+  options: FormatGoalContextOptions = {}
+): string {
+  if (!goal) return "";
+  const steer = GOAL_STEERS[goal];
+  if (!steer) return "";
+  const withHeader = options.withHeader ?? true;
+  return withHeader ? `## Goal\n${steer}` : steer;
+}
+
+/**
  * Render the verbal brand identity (tone of voice, style, tagline) for a
  * prompt. Visual tokens (colours, fonts, logo) are intentionally omitted —
  * they don't help write a caption. Returns "" when there's nothing to add.
@@ -74,6 +107,39 @@ function formatBrandVoice(branding: unknown): string {
   }
 
   return lines.length > 0 ? `\n${lines.join("\n")}` : "";
+}
+
+/**
+ * Render the account's growth strategy as a compact steer for the drafting
+ * prompt — so generated posts pull toward the pillars and double-down on what
+ * works. Returns "" when there's no strategy yet (cold-start / not generated).
+ * Positioning/post-ideas are intentionally omitted: they're for the user to
+ * read, not for the model to copy into a caption.
+ */
+export function formatStrategyContext(
+  strategy: SocialStrategy | null,
+  options: { withHeader?: boolean } = {}
+): string {
+  if (!strategy) return "";
+  const withHeader = options.withHeader ?? true;
+  const lines: string[] = [];
+
+  if (strategy.contentPillars.length > 0) {
+    lines.push(
+      `Content pillars: ${strategy.contentPillars
+        .map((p) => p.name)
+        .join(", ")}`
+    );
+  }
+  if (strategy.doubleDown.length > 0) {
+    lines.push(`Lean into (working): ${strategy.doubleDown.join("; ")}`);
+  }
+  if (strategy.stop.length > 0) {
+    lines.push(`Avoid / fix: ${strategy.stop.join("; ")}`);
+  }
+  if (lines.length === 0) return "";
+
+  return withHeader ? `## Strategy to follow\n${lines.join("\n")}` : lines.join("\n");
 }
 
 interface FormatVoiceFingerprintOptions {
