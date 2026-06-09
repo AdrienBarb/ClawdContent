@@ -53,6 +53,7 @@ export const appRouter = {
     onboardingSave: "/api/onboarding/save",
     onboardingSamples: "/api/onboarding/samples",
     onboardingConfirm: "/api/onboarding/confirm",
+    onboardingPlan: "/api/onboarding/plan",
     brandingLogo: "/api/branding/logo",
     analytics: "/api/analytics",
     analyticsPosts: "/api/analytics/posts",

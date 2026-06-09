@@ -1,25 +1,17 @@
 "use client";
 
-import {
-  CalendarBlankIcon,
-  LockSimpleIcon,
-  PaperPlaneTiltIcon,
-  PenNibIcon,
-  SpinnerGapIcon,
-} from "@phosphor-icons/react";
+import { LockSimpleIcon, SpinnerGapIcon } from "@phosphor-icons/react";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
 import { appRouter } from "@/lib/constants/appRouter";
 import useApi from "@/lib/hooks/useApi";
-
-const PERKS = [
-  { icon: CalendarBlankIcon, label: "We plan your content week" },
-  { icon: PenNibIcon, label: "We write every post in your voice" },
-  { icon: PaperPlaneTiltIcon, label: "We publish to your accounts for you" },
-];
+import { useOnboardingPlan } from "@/lib/hooks/useOnboardingPlan";
+import PlanReveal from "./PlanReveal";
+import PlanBuilding from "./PlanBuilding";
 
 export default function Step6Paywall() {
   const { usePost } = useApi();
+  const { data: plan } = useOnboardingPlan();
 
   const { mutate: checkout, isPending: isCheckingOut } = usePost(
     appRouter.api.checkout,
@@ -39,33 +31,21 @@ export default function Step6Paywall() {
       successUrl: `${appRouter.onboarding}?stripe_success=1`,
     });
 
+  // Two states only: the plan is ready (reveal) or it's still loading. The
+  // strategy is generated in the background and Inngest retries it on failure,
+  // so the loading state always resolves into the reveal on its own.
+  const readyPlan =
+    plan?.status === "ready" && plan.after != null ? plan : null;
+
   return (
     <div>
-      <div className="text-center mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-          We&apos;ll take it from here
-        </h1>
-        <p className="text-gray-500 mt-2">
-          We&apos;ve learned your business and how you sound. Start your free
-          trial and we&apos;ll plan, write, and publish your posts for you.
-        </p>
-      </div>
+      {readyPlan ? (
+        <PlanReveal plan={readyPlan} />
+      ) : (
+        <PlanBuilding handle={plan?.account.handle} />
+      )}
 
-      <div className="space-y-3">
-        {PERKS.map(({ icon: Icon, label }) => (
-          <div
-            key={label}
-            className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3"
-          >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-500">
-              <Icon className="h-5 w-5" />
-            </span>
-            <span className="text-sm text-gray-800">{label}</span>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-8 rounded-2xl border border-gray-200 bg-white p-5 text-center">
+      <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-5 text-center">
         <div className="flex items-center justify-center gap-1.5 text-sm font-medium text-gray-900">
           <LockSimpleIcon className="h-4 w-4 text-[#e8614d]" />
           Start your 3-day free trial

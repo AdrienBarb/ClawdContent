@@ -10,20 +10,6 @@ async function markAnalysisCompleted(socialAccountId: string): Promise<void> {
   });
 }
 
-// Best-effort strategy generation. Swallows its own errors so a model hiccup
-// never fails the analysis run or blocks `analysisStatus`. Runs AFTER the
-// completion flip — the strategy fills in shortly after the dashboard unblocks.
-async function computeStrategyBestEffort(socialAccountId: string): Promise<void> {
-  try {
-    await computeStrategy(socialAccountId);
-  } catch (err) {
-    console.error(
-      `[analyze-account] strategy generation failed (non-fatal) for ${socialAccountId}:`,
-      err instanceof Error ? err.message : err
-    );
-  }
-}
-
 export const analyzeAccount = inngest.createFunction(
   { id: "analyze-account", retries: 3, triggers: [{ event: "account/connected" }] },
   async ({ event, step }) => {
@@ -62,9 +48,13 @@ export const analyzeAccount = inngest.createFunction(
 
     // Strategy is derived from the just-saved insights. Skip when the first
     // pass returned null (account deleted) — there's nothing to build from.
+    // computeStrategy THROWS on a model failure (it returns null only for
+    // legitimate skips: deleted account / unsupported platform / no KB), so a
+    // failed generation re-runs via Inngest's step retries. Runs after the
+    // completion flip, so even an exhausted retry leaves analysisStatus intact.
     if (insights !== null) {
       await step.run("compute-strategy", async () => {
-        await computeStrategyBestEffort(socialAccountId);
+        await computeStrategy(socialAccountId);
         return null;
       });
     }
@@ -95,10 +85,11 @@ export const refreshInsights = inngest.createFunction(
       await markAnalysisCompleted(socialAccountId);
     });
 
-    // Refresh the strategy off the new insights (best-effort, same as connect).
+    // Refresh the strategy off the new insights. Throws on a model failure so
+    // Inngest retries the step (same as connect).
     if (insights !== null) {
       await step.run("compute-strategy", async () => {
-        await computeStrategyBestEffort(socialAccountId);
+        await computeStrategy(socialAccountId);
         return null;
       });
     }
