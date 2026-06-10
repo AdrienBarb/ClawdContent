@@ -34,7 +34,7 @@ export default async function BlogPage() {
         </h1>
         <div className="text-lg text-muted-foreground leading-relaxed space-y-4">
           <p>
-            Practical writing for people who'd rather run their business, ship
+            Practical writing for people who&apos;d rather run their business, ship
             their product, or make their work, instead of spending their
             evenings stuck on Instagram and Facebook.
           </p>
@@ -100,7 +100,7 @@ export default async function BlogPage() {
             </h3>
             <p className="text-muted-foreground text-sm">
               Small business owners, solo founders and indie hackers, and
-              creators who'd rather make than post. Anyone who wants social
+              creators who&apos;d rather make than post. Anyone who wants social
               media handled without it becoming a second job.
             </p>
           </div>
