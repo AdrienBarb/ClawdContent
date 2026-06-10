@@ -103,7 +103,7 @@ export default async function AlternativesPage() {
         </h2>
         <p className="text-muted-foreground mb-6">
           Your AI social media manager. It learns your brand, plans your content,
-          and publishes to Instagram and Facebook. $49/month, unlimited posts.
+          and publishes to Instagram and Facebook. $99/month, unlimited posts.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Button

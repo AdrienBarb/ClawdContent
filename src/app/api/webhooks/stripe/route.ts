@@ -274,9 +274,10 @@ async function handleCheckoutCompleted(
     },
   });
 
-  // Starting the trial completes onboarding — this is the gate the dashboard
-  // layout checks (replaces the old knowledgeBase-null gate). Idempotent: a
-  // redelivered checkout.session.completed just rewrites the same timestamp.
+  // The first successful checkout completes onboarding — this is the gate the
+  // dashboard layout checks (replaces the old knowledgeBase-null gate).
+  // Idempotent: a redelivered checkout.session.completed rewrites the same
+  // timestamp.
   await prisma.user.update({
     where: { id: userId },
     data: { onboardingCompletedAt: new Date() },

@@ -1,17 +1,12 @@
 "use client";
 
-import {
-  ArrowLeftIcon,
-  ArrowRightIcon,
-  CheckIcon,
-  SpinnerGapIcon,
-} from "@phosphor-icons/react";
+import { CheckIcon } from "@phosphor-icons/react";
 import toast from "react-hot-toast";
-import { Button } from "@/components/ui/button";
 import ConnectAccountButtons from "@/components/dashboard/ConnectAccountButtons";
 import { appRouter } from "@/lib/constants/appRouter";
 import useApi from "@/lib/hooks/useApi";
 import type { OnboardingStatus } from "@/lib/schemas/onboarding";
+import OnboardingShell from "./OnboardingShell";
 
 // Onboarding focuses on the two platforms dominant among real users. The
 // dashboard connect UI still offers every supported platform.
@@ -42,17 +37,16 @@ export default function Step2Connect({
   });
 
   return (
-    <div>
-      <div className="text-center mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-          Connect an account
-        </h1>
-        <p className="text-gray-500 mt-2">
-          Connect at least one social account. We&apos;ll learn how you post and
-          draft content ready for it.
-        </p>
-      </div>
-
+    <OnboardingShell
+      step={2}
+      title="Connect your social accounts"
+      subtitle="Link your Instagram or Facebook. We'll see what's worked for you before, so the posts we plan fit your account from day one."
+      onBack={onBack}
+      onSubmit={() => save({ step: 3 })}
+      ctaLabel="Continue"
+      ctaDisabled={!hasAccount}
+      isSubmitting={isPending}
+    >
       <ConnectAccountButtons
         onAccountConnected={onRefetch}
         connectedPlatforms={connectedPlatforms}
@@ -67,32 +61,6 @@ export default function Step2Connect({
           {accounts.length} account{accounts.length > 1 ? "s" : ""} connected
         </p>
       )}
-
-      <div className="mt-8 flex items-center justify-between">
-        <button
-          type="button"
-          onClick={onBack}
-          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
-        >
-          <ArrowLeftIcon className="h-4 w-4" />
-          Back
-        </button>
-        <Button
-          type="button"
-          className="bg-primary hover:bg-[#E84A36] text-white"
-          disabled={!hasAccount || isPending}
-          onClick={() => save({ step: 3 })}
-        >
-          {isPending ? (
-            <SpinnerGapIcon className="h-4 w-4 animate-spin" />
-          ) : (
-            <>
-              Continue
-              <ArrowRightIcon className="h-4 w-4 ml-1.5" />
-            </>
-          )}
-        </Button>
-      </div>
-    </div>
+    </OnboardingShell>
   );
 }

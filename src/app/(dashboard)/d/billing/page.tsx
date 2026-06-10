@@ -6,9 +6,9 @@ import { prisma } from "@/lib/db/prisma";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ManageSubscriptionButton } from "./ManageSubscriptionButton";
 import BillingUnsubscribed from "@/components/dashboard/BillingUnsubscribed";
-import ChangePlanSection from "@/components/dashboard/ChangePlanSection";
 import PageHeader from "@/components/dashboard/PageHeader";
 import { getPlan, resolvePlanId } from "@/lib/constants/plans";
+import { getSubscriptionPrice } from "@/lib/services/subscription";
 
 async function BillingContent() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -34,6 +34,15 @@ async function BillingContent() {
   const planId = resolvePlanId(subscription.planId);
   const plan = getPlan(planId);
 
+  // Legacy subscribers keep grandfathered prices — show what Stripe actually
+  // bills, falling back to the current plan price if the lookup fails.
+  const livePrice = await getSubscriptionPrice(
+    subscription.stripeSubscriptionId
+  );
+  const amount = livePrice?.amount ?? plan.monthlyPrice;
+  const displayAmount = Number.isInteger(amount) ? amount : amount.toFixed(2);
+  const intervalLabel = livePrice?.interval === "year" ? "/year" : "/month";
+
   const activeAccountCount = lateProfile?.socialAccounts?.length ?? 0;
 
   return (
@@ -54,9 +63,9 @@ async function BillingContent() {
 
         <div className="flex items-baseline gap-1 mb-4">
           <span className="text-4xl font-semibold text-gray-900">
-            ${plan.monthlyPrice}
+            ${displayAmount}
           </span>
-          <span className="text-gray-400 text-lg">/month</span>
+          <span className="text-gray-400 text-lg">{intervalLabel}</span>
         </div>
 
         {/* Usage */}
@@ -108,9 +117,6 @@ async function BillingContent() {
           <ManageSubscriptionButton />
         </div>
       </div>
-
-      {/* Change Plan */}
-      {isActive && <ChangePlanSection currentPlanId={planId} />}
     </div>
   );
 }

@@ -12,8 +12,7 @@ import Step3Goal from "./Step3Goal";
 import Step4BusinessInfo from "./Step4BusinessInfo";
 import Step5Branding from "./Step5Branding";
 import Step6Paywall from "./Step6Paywall";
-
-const TOTAL_STEPS = 6;
+import { TOTAL_STEPS } from "./OnboardingShell";
 
 export default function OnboardingWizard({
   initialStep,
@@ -30,8 +29,8 @@ export default function OnboardingWizard({
 
   const step = Math.min(Math.max(rawStep || 1, 1), TOTAL_STEPS);
 
-  // Trial started → onboarding complete → into the app. Guard so the redirect
-  // fires once and the step UI doesn't flash behind it.
+  // Subscription started → onboarding complete → into the app. Guard so the
+  // redirect fires once and the step UI doesn't flash behind it.
   const redirected = useRef(false);
   useEffect(() => {
     if (status?.isCompleted && !redirected.current) {
@@ -64,63 +63,47 @@ export default function OnboardingWizard({
 
   if (status?.isCompleted || (stripeSuccess && !status?.isCompleted)) {
     return (
-      <div className="flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center px-4 text-center">
+      <div className="flex flex-col items-center justify-center px-4 text-center">
         <SpinnerGapIcon className="h-8 w-8 animate-spin text-primary" />
         <p className="mt-4 text-sm text-gray-600">Setting up your account…</p>
       </div>
     );
   }
 
+  // Each step renders its own OnboardingShell — the layout centers the card.
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center px-4">
-      <div className="w-full max-w-lg">
-        <div className="flex items-center justify-center gap-2 mb-8">
-          {Array.from({ length: TOTAL_STEPS }, (_, i) => i + 1).map((s) => (
-            <div
-              key={s}
-              className={`h-2 w-8 rounded-full transition-colors ${
-                s === step
-                  ? "bg-primary"
-                  : s < step
-                    ? "bg-primary/40"
-                    : "bg-gray-200"
-              }`}
-            />
-          ))}
-        </div>
-
-        {step === 1 && <Step1Website status={status} onNext={() => goTo(2)} />}
-        {step === 2 && (
-          <Step2Connect
-            status={status}
-            onRefetch={() => void refetch()}
-            onBack={() => goTo(1)}
-            onNext={() => goTo(3)}
-          />
-        )}
-        {step === 3 && (
-          <Step3Goal
-            status={status}
-            onBack={() => goTo(2)}
-            onNext={() => goTo(4)}
-          />
-        )}
-        {step === 4 && (
-          <Step4BusinessInfo
-            status={status}
-            onBack={() => goTo(3)}
-            onNext={() => goTo(5)}
-          />
-        )}
-        {step === 5 && (
-          <Step5Branding
-            status={status}
-            onBack={() => goTo(4)}
-            onNext={() => goTo(6)}
-          />
-        )}
-        {step === 6 && <Step6Paywall />}
-      </div>
-    </div>
+    <>
+      {step === 1 && <Step1Website status={status} onNext={() => goTo(2)} />}
+      {step === 2 && (
+        <Step2Connect
+          status={status}
+          onRefetch={() => void refetch()}
+          onBack={() => goTo(1)}
+          onNext={() => goTo(3)}
+        />
+      )}
+      {step === 3 && (
+        <Step3Goal
+          status={status}
+          onBack={() => goTo(2)}
+          onNext={() => goTo(4)}
+        />
+      )}
+      {step === 4 && (
+        <Step4BusinessInfo
+          status={status}
+          onBack={() => goTo(3)}
+          onNext={() => goTo(5)}
+        />
+      )}
+      {step === 5 && (
+        <Step5Branding
+          status={status}
+          onBack={() => goTo(4)}
+          onNext={() => goTo(6)}
+        />
+      )}
+      {step === 6 && <Step6Paywall />}
+    </>
   );
 }

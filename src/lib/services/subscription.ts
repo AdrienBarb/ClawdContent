@@ -3,7 +3,6 @@ import { stripe } from "@/lib/stripe/client";
 import {
   type PlanId,
   type BillingInterval,
-  getPlan,
   getStripePriceId,
 } from "@/lib/constants/plans";
 
@@ -38,7 +37,6 @@ export async function createCheckoutSession(
   }
 
   const priceId = getStripePriceId(planId, interval);
-  const plan = getPlan(planId);
 
   const baseUrl =
     process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
@@ -60,9 +58,9 @@ export async function createCheckoutSession(
       planId,
       ...(affonsoReferral && { affonso_referral: affonsoReferral }),
     },
+    // Hard paywall: no trial — the first charge happens at checkout.
     subscription_data: {
       metadata: { userId, planId },
-      ...(plan.hasTrial && { trial_period_days: plan.trialDays }),
     },
   });
 
@@ -97,53 +95,24 @@ export async function createPortalSession(userId: string): Promise<string> {
   return portalSession.url;
 }
 
-export async function changePlan(
-  userId: string,
-  newPlanId: PlanId,
-  newInterval: BillingInterval
-): Promise<void> {
-  const subscription = await prisma.subscription.findUnique({
-    where: { userId },
-  });
-
-  if (!subscription) {
-    throw new Error("NO_SUBSCRIPTION");
+// The amount actually billed on the live Stripe subscription. Legacy
+// subscribers keep grandfathered prices ($49/mo, old yearly plans) that no
+// longer match the PLANS constant — never display plan.monthlyPrice as "what
+// you pay" without checking this first.
+export async function getSubscriptionPrice(
+  stripeSubscriptionId: string
+): Promise<{ amount: number; interval: "month" | "year" } | null> {
+  try {
+    const sub = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+    const price = sub.items.data[0]?.price;
+    if (price?.unit_amount == null) return null;
+    return {
+      amount: price.unit_amount / 100,
+      interval: price.recurring?.interval === "year" ? "year" : "month",
+    };
+  } catch {
+    return null;
   }
-
-  if (
-    subscription.status !== "active" &&
-    subscription.status !== "trialing"
-  ) {
-    throw new Error("SUBSCRIPTION_NOT_ACTIVE");
-  }
-
-  const newPriceId = getStripePriceId(newPlanId, newInterval);
-
-  const stripeSub = await stripe.subscriptions.retrieve(
-    subscription.stripeSubscriptionId
-  );
-
-  const item = stripeSub.items.data[0];
-  if (!item) {
-    throw new Error("No subscription item found");
-  }
-
-  // Check if this is the same price (no change needed)
-  if (item.price.id === newPriceId) {
-    throw new Error("SAME_PLAN");
-  }
-
-  await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
-    items: [{ id: item.id, price: newPriceId }],
-    proration_behavior: "always_invoice",
-    metadata: { userId, planId: newPlanId },
-  });
-
-  // Update DB immediately (webhook will also update, idempotent)
-  await prisma.subscription.update({
-    where: { userId },
-    data: { planId: newPlanId },
-  });
 }
 
 export async function syncSubscriptionStatus(

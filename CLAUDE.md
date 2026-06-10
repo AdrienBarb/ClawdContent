@@ -14,7 +14,7 @@ PostClaw is an AI social media manager. It learns your brand, plans content, and
 
 **Voice:** Match the audience. For SMB-facing copy: plain language, concrete examples — "Would a photographer or a caterer in Leeds understand this?" still applies. For founder/creator-facing copy: heavier startup jargon is fine. Avoid voice that talks past whichever segment you're addressing.
 
-**Pricing:** One plan — `pro` at $49/mo (or 30% off yearly). Legacy `starter`/`business` IDs still resolve to `pro` for old subscribers.
+**Pricing:** One plan — `pro` at $99/mo, monthly only (yearly billing + free trial removed 2026-06-10). Hard paywall: no free posts, no free generations — onboarding ends at the paywall and `/d` requires a subscription to do anything. Legacy `starter`/`business` IDs still resolve to `pro`; old $49 subscribers keep their grandfathered Stripe price (billing page shows the live Stripe amount, not the constant).
 
 ## How it works
 
@@ -24,14 +24,14 @@ PostClaw is an AI social media manager. It learns your brand, plans content, and
 4. First connect → Inngest `analyze-account` (insights only — suggestions are NOT generated here)
 5. `/d` shows the chat composer + drafts board. User chats ("draft 5 posts about my Easter menu") → `generate_posts` tool → drafts appear on the board
 6. User reviews, edits, schedules, publishes
-7. Stripe subscribe ($49/mo) for unlimited use
+7. Stripe subscription ($99/mo) — required at the end of onboarding (hard paywall, no trial) before reaching `/d`
 
 ## Architecture
 
 ```
 Next.js 16 (App Router, RSC) on Vercel
   ├── Better Auth (magic link + Google OAuth)
-  ├── Stripe (single $49 plan + webhook)
+  ├── Stripe (single $99 plan + webhook)
   ├── Zernio API (account connect + compose + analytics — Instagram + Facebook)
   ├── Inngest (account/connected, account/refresh-insights)
   ├── Anthropic Sonnet 4.6 — insights, suggestions, rewrites, onboarding extraction

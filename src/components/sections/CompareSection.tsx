@@ -8,7 +8,7 @@ const rows: [string, Cell, Cell, Cell, Cell][] = [
   ["Schedules at peak times", true, true, true, false],
   ["Learns your business", true, false, false, false],
   ["Setup under 5 minutes", true, false, false, false],
-  ["Monthly cost", "$49", "$15", "$99", "$2,000+"],
+  ["Monthly cost", "$99", "$15", "$99", "$2,000+"],
 ];
 
 function renderCell(v: Cell) {

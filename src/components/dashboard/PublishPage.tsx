@@ -61,7 +61,7 @@ export default function PublishPage() {
         status?.subscription?.status === "trialing"
       }
       postsPublished={status?.postsPublished ?? 0}
-      freePostLimit={status?.freePostLimit ?? 5}
+      freePostLimit={status?.freePostLimit ?? 0}
       onPublishedOrScheduled={refetchStatus}
     />
   );
@@ -92,9 +92,6 @@ function PublishShell({
     platform: string;
     username: string;
   } | null>(null);
-
-  const isPostLimitReached =
-    !hasSubscription && postsPublished >= freePostLimit;
 
   const invalidateSuggestions = () => {
     qc.invalidateQueries({ queryKey: SUGGESTIONS_QUERY_KEY });
@@ -168,31 +165,16 @@ function PublishShell({
       {!hasSubscription && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-6 z-30">
           <div className="flex items-center gap-3 rounded-full bg-white border border-gray-200 shadow-lg px-4 py-2.5">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-gray-500">
-                {postsPublished}/{freePostLimit} free posts used
-              </span>
-              <div className="w-20 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all"
-                  style={{
-                    width: `${Math.min(100, (postsPublished / freePostLimit) * 100)}%`,
-                    backgroundColor: isPostLimitReached
-                      ? "#ef4444"
-                      : "#e8614d",
-                  }}
-                />
-              </div>
-            </div>
-            {isPostLimitReached && (
-              <button
-                onClick={() => setShowSubscribeModal(true)}
-                className="text-xs font-medium text-white rounded-full h-9 px-4 cursor-pointer"
-                style={{ backgroundColor: "#e8614d" }}
-              >
-                Subscribe
-              </button>
-            )}
+            <span className="text-xs font-medium text-gray-500">
+              Subscribe to publish your posts
+            </span>
+            <button
+              onClick={() => setShowSubscribeModal(true)}
+              className="text-xs font-medium text-white rounded-full h-9 px-4 cursor-pointer"
+              style={{ backgroundColor: "#e8614d" }}
+            >
+              Subscribe
+            </button>
           </div>
         </div>
       )}

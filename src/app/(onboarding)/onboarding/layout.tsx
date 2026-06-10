@@ -16,7 +16,7 @@ export default async function OnboardingLayout({
     redirect("/");
   }
 
-  // Onboarding is complete once the trial has started (onboardingCompletedAt).
+  // Onboarding is complete once the subscription has started (onboardingCompletedAt).
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: { onboardingCompletedAt: true },
@@ -27,8 +27,8 @@ export default async function OnboardingLayout({
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-5xl px-6 py-8">{children}</div>
+    <div className="flex min-h-[100dvh] items-center justify-center bg-[#faf9f5] px-0 py-0 sm:px-4 sm:py-8">
+      {children}
     </div>
   );
 }

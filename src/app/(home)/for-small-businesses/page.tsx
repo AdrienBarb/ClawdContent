@@ -9,7 +9,7 @@ const PAGE_PATH = "/for-small-businesses";
 const PAGE_URL = `${config.project.url}${PAGE_PATH}`;
 const PAGE_TITLE = "Social Media Manager for Small Business Owners";
 const PAGE_DESCRIPTION =
-  "A social media manager built for photographers, caterers, coaches, consultants, and local shops. Plans your posts, writes them in your voice, and publishes on schedule for $49/mo.";
+  "A social media manager built for photographers, caterers, coaches, consultants, and local shops. Plans your posts, writes them in your voice, and publishes on schedule for $99/mo.";
 
 export const metadata: Metadata = {
   title: PAGE_TITLE,
@@ -127,7 +127,7 @@ const webPageSchema = {
     operatingSystem: "Web",
     offers: {
       "@type": "Offer",
-      price: "49",
+      price: "99",
       priceCurrency: "USD",
       availability: "https://schema.org/InStock",
     },
@@ -173,14 +173,14 @@ export default function ForSmallBusinessesPage() {
               <em className="italic text-[#ec6f5b]">We run the feed.</em>
             </h1>
             <p className="mt-9 max-w-[640px] text-base leading-[1.55] text-[#b9bdd6] md:text-xl">
-              PostClaw is a social media manager for photographers, caterers, coaches, consultants, and local shops. It learns your business, writes posts in your voice, and publishes to your Instagram and Facebook on schedule. $49 a month, the agency you&apos;d hire costs forty times more.
+              PostClaw is a social media manager for photographers, caterers, coaches, consultants, and local shops. It learns your business, writes posts in your voice, and publishes to your Instagram and Facebook on schedule. $99 a month, the agency you&apos;d hire costs twenty times more.
             </p>
             <div className="mt-11 flex flex-wrap items-center justify-center gap-3.5">
               <Link
                 href="#pricing"
                 className="cursor-pointer rounded-full bg-[#ec6f5b] px-8 py-4 text-sm font-semibold text-white shadow-[0_14px_40px_-10px_#ec6f5b] transition-transform hover:-translate-y-0.5"
               >
-                Get my 5 free posts →
+                Start Growing →
               </Link>
               <Link
                 href="/"

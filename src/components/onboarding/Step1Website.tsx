@@ -5,12 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { z } from "zod";
 import toast from "react-hot-toast";
-import {
-  ArrowRightIcon,
-  GlobeIcon,
-  SpinnerGapIcon,
-} from "@phosphor-icons/react";
-import { Button } from "@/components/ui/button";
+import { GlobeIcon } from "@phosphor-icons/react";
 import { Input } from "@/components/ui/input";
 import { appRouter } from "@/lib/constants/appRouter";
 import useApi from "@/lib/hooks/useApi";
@@ -18,6 +13,7 @@ import {
   onboardingStartSchema,
   type OnboardingStatus,
 } from "@/lib/schemas/onboarding";
+import OnboardingShell from "./OnboardingShell";
 
 type FormData = z.infer<typeof onboardingStartSchema>;
 
@@ -48,25 +44,24 @@ export default function Step1Website({ status, onNext }: Props) {
       toast.error(error.message || "Something went wrong. Please try again."),
   });
 
-  const onSubmit = (data: FormData) => start({ websiteUrl: data.websiteUrl });
-  const onError = () =>
+  const onValid = (data: FormData) => start({ websiteUrl: data.websiteUrl });
+  const onInvalid = () =>
     toast.error(form.formState.errors.websiteUrl?.message ?? "Invalid URL");
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit, onError)}>
-      <div className="text-center mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-          What&apos;s your website?
-        </h1>
-        <p className="text-gray-500 mt-2">
-          We&apos;ll read it to learn your business and how you sound — so your
-          posts feel like you.
-        </p>
-      </div>
-
+    <OnboardingShell
+      step={1}
+      title="Let's start with your website"
+      subtitle="Drop in your link and we'll read your site to learn what you do and how you sound. That way every post we write sounds like you."
+      asForm
+      onSubmit={form.handleSubmit(onValid, onInvalid)}
+      ctaLabel="Continue"
+      submittingLabel="Starting…"
+      isSubmitting={isPending}
+    >
       <label
         htmlFor="websiteUrl"
-        className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2"
+        className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-700"
       >
         <GlobeIcon className="h-4 w-4" />
         Your website
@@ -79,26 +74,6 @@ export default function Step1Website({ status, onNext }: Props) {
         className="rounded-xl bg-white"
         {...form.register("websiteUrl")}
       />
-
-      <div className="mt-8 flex justify-end">
-        <Button
-          type="submit"
-          className="bg-primary hover:bg-[#E84A36] text-white"
-          disabled={isPending}
-        >
-          {isPending ? (
-            <>
-              <SpinnerGapIcon className="h-4 w-4 mr-1.5 animate-spin" />
-              Starting…
-            </>
-          ) : (
-            <>
-              Continue
-              <ArrowRightIcon className="h-4 w-4 ml-1.5" />
-            </>
-          )}
-        </Button>
-      </div>
-    </form>
+    </OnboardingShell>
   );
 }

@@ -1,42 +1,36 @@
 export type PlanId = "starter" | "pro" | "business"; // starter/business kept for legacy subscribers
+// "yearly" survives only so legacy Stripe price mappings still resolve in the
+// webhook — new checkouts are monthly-only (yearly billing removed 2026-06-10).
 export type BillingInterval = "monthly" | "yearly";
 
 export interface Plan {
   id: PlanId;
   name: string;
   monthlyPrice: number;
-  yearlyTotalPrice: number;
-  yearlyMonthlyEquivalent: number;
   socialAccountLimit: number;
   socialAccountLabel: string;
-  hasTrial: boolean;
-  trialDays: number;
   highlighted: boolean;
   cta: string;
 }
-
-const YEARLY_DISCOUNT = 0.7; // 30% off
 
 export const PLANS: Plan[] = [
   {
     id: "pro",
     name: "PostClaw",
-    monthlyPrice: 49,
-    yearlyTotalPrice: Math.round(49 * 12 * YEARLY_DISCOUNT * 100) / 100,
-    yearlyMonthlyEquivalent:
-      Math.round(((49 * 12 * YEARLY_DISCOUNT) / 12) * 100) / 100,
+    monthlyPrice: 99,
     socialAccountLimit: 9,
     socialAccountLabel: "All social accounts (up to 9)",
-    hasTrial: true,
-    trialDays: 3,
     highlighted: true,
-    cta: "Start for free",
+    cta: "Subscribe",
   },
 ];
 
 export const DEFAULT_PLAN_ID: PlanId = "pro";
 
-export const FREE_POST_LIMIT = 5;
+// Hard paywall: publishing requires an active subscription. Kept as a
+// constant (rather than ripping out the gating) so churned/legacy users in
+// /d hit the subscribe prompts instead of a dead end.
+export const FREE_POST_LIMIT = 0;
 
 export interface SharedFeature {
   label: string;
@@ -75,15 +69,6 @@ export function getPlan(planId: PlanId | string): Plan {
   return plan;
 }
 
-export function getDisplayPrice(
-  plan: Plan,
-  interval: BillingInterval
-): number {
-  return interval === "yearly"
-    ? plan.yearlyMonthlyEquivalent
-    : plan.monthlyPrice;
-}
-
 // Stripe price mappings
 // First match per plan+interval is used for new checkouts (getStripePriceId)
 // All entries are checked for webhook resolution (getPlanFromStripePriceId)
@@ -94,10 +79,12 @@ interface StripePriceMapping {
 }
 
 const STRIPE_PRICES: StripePriceMapping[] = [
-  // Current plan — new checkouts use these
+  // Current price — new checkouts use this ($99/mo, monthly only)
+  { envVar: "STRIPE_PRICE_POSTCLAW_99_MONTHLY", planId: "pro", interval: "monthly" },
+  // Legacy prices — webhook resolution only (all resolve to "pro").
+  // Old $49 monthly / $411.60 yearly subscribers keep their grandfathered price.
   { envVar: "STRIPE_PRICE_POSTCLAW_MONTHLY", planId: "pro", interval: "monthly" },
   { envVar: "STRIPE_PRICE_POSTCLAW_YEARLY", planId: "pro", interval: "yearly" },
-  // Legacy prices — webhook resolution only (all resolve to "pro")
   { envVar: "STRIPE_PRICE_PRO_MONTHLY", planId: "pro", interval: "monthly" },
   { envVar: "STRIPE_PRICE_PRO_YEARLY", planId: "pro", interval: "yearly" },
   { envVar: "STRIPE_PRICE_STARTER_MONTHLY", planId: "pro", interval: "monthly" },

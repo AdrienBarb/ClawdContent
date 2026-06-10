@@ -2,18 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
-import {
-  ArrowLeftIcon,
-  ArrowRightIcon,
-  SpinnerGapIcon,
-  WarningCircleIcon,
-} from "@phosphor-icons/react";
+import { SpinnerGapIcon, WarningCircleIcon } from "@phosphor-icons/react";
 import toast from "react-hot-toast";
-import { Button } from "@/components/ui/button";
 import { appRouter } from "@/lib/constants/appRouter";
 import useApi from "@/lib/hooks/useApi";
 import type { OnboardingStatus } from "@/lib/schemas/onboarding";
 import FormField from "./FormField";
+import OnboardingShell from "./OnboardingShell";
 
 interface FormData {
   businessName: string;
@@ -48,7 +43,9 @@ export default function Step4BusinessInfo({ status, onBack, onNext }: Props) {
   const isWaiting =
     !kb &&
     !timedOut &&
-    (!analysis || analysis.status === "pending" || analysis.status === "running");
+    (!analysis ||
+      analysis.status === "pending" ||
+      analysis.status === "running");
   const isFailed =
     !kb && (analysis?.status === "failed" || (timedOut && !source));
 
@@ -81,16 +78,20 @@ export default function Step4BusinessInfo({ status, onBack, onNext }: Props) {
       step: 5,
     });
 
+  // Polling skeleton while the website analysis runs — inside the same frame so
+  // the wizard never resizes or jumps.
   if (isWaiting) {
     return (
-      <div className="text-center">
-        <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-          Reading your website…
-        </h1>
-        <p className="text-gray-500 mt-2">
-          This takes a few seconds. Hang tight.
-        </p>
-        <div className="mt-8 space-y-4">
+      <OnboardingShell
+        step={4}
+        title="Reading your website…"
+        subtitle="This only takes a few seconds. Hang tight."
+        onBack={onBack}
+        onSubmit={() => {}}
+        ctaLabel="Continue"
+        ctaDisabled
+      >
+        <div className="space-y-4">
           {[0, 1, 2].map((i) => (
             <div key={i} className="space-y-2">
               <div className="h-3 w-24 animate-pulse rounded bg-gray-200" />
@@ -98,27 +99,29 @@ export default function Step4BusinessInfo({ status, onBack, onNext }: Props) {
             </div>
           ))}
         </div>
-        <p className="mt-6 flex items-center justify-center gap-2 text-sm text-gray-400">
+        <p className="mt-6 flex items-center gap-2 text-sm text-gray-400">
           <SpinnerGapIcon className="h-4 w-4 animate-spin" />
           Analyzing your business
         </p>
-      </div>
+      </OnboardingShell>
     );
   }
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)}>
-      <div className="text-center mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-          {isFailed ? "Tell us about your business" : "Here's what we understood"}
-        </h1>
-        <p className="text-gray-500 mt-2">
-          {isFailed
-            ? "We couldn't read your site. Fill in your details below."
-            : "Check that everything looks right. You can edit any field."}
-        </p>
-      </div>
-
+    <OnboardingShell
+      step={4}
+      title={isFailed ? "Tell us about your business" : "Here's what we learned about you"}
+      subtitle={
+        isFailed
+          ? "We couldn't read your website, so add the basics yourself. It only takes a minute."
+          : "We pulled this from your website. Have a look and fix anything that's not quite right."
+      }
+      onBack={onBack}
+      asForm
+      onSubmit={form.handleSubmit(onSubmit)}
+      ctaLabel="Continue"
+      isSubmitting={isPending}
+    >
       {isFailed && (
         <div className="mb-5 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
           <WarningCircleIcon className="mt-0.5 h-4 w-4 shrink-0" />
@@ -145,31 +148,6 @@ export default function Step4BusinessInfo({ status, onBack, onNext }: Props) {
           {...form.register("services")}
         />
       </div>
-
-      <div className="mt-8 flex items-center justify-between">
-        <button
-          type="button"
-          onClick={onBack}
-          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
-        >
-          <ArrowLeftIcon className="h-4 w-4" />
-          Back
-        </button>
-        <Button
-          type="submit"
-          className="bg-primary hover:bg-[#E84A36] text-white"
-          disabled={isPending}
-        >
-          {isPending ? (
-            <SpinnerGapIcon className="h-4 w-4 animate-spin" />
-          ) : (
-            <>
-              Next
-              <ArrowRightIcon className="h-4 w-4 ml-1.5" />
-            </>
-          )}
-        </Button>
-      </div>
-    </form>
+    </OnboardingShell>
   );
 }

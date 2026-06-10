@@ -9,7 +9,7 @@ const PAGE_PATH = "/for-founders";
 const PAGE_URL = `${config.project.url}${PAGE_PATH}`;
 const PAGE_TITLE = "Social Media Manager for Solo Founders & Indie Hackers";
 const PAGE_DESCRIPTION =
-  "A social media manager for solo founders and indie hackers shipping product. Build-in-public posts, launch announcements, customer wins. $49/mo. Cheaper than your domain bill, faster than hiring.";
+  "A social media manager for solo founders and indie hackers shipping product. Build-in-public posts, launch announcements, customer wins. $99/mo. Cheaper than hiring, faster than doing it yourself.";
 
 export const metadata: Metadata = {
   title: PAGE_TITLE,
@@ -81,8 +81,8 @@ const faqs = [
     a: "Yes. You tell it what's happening, it categorizes the moment (launch, build-in-public, customer story, milestone) and writes native posts for each. Coordinated across your Instagram and Facebook in one go.",
   },
   {
-    q: "Why $49/mo and not free?",
-    a: "Hiring even a fractional social manager runs $1,500 to $4,000 a month. PostClaw is the cost of two coffee subscriptions and runs around the clock. Cheaper than the time you'd spend doing this yourself if you charged your hourly rate.",
+    q: "Why $99/mo and not free?",
+    a: "Hiring even a fractional social manager runs $1,500 to $4,000 a month. PostClaw is a fraction of that and runs around the clock. Cheaper than the time you'd spend doing this yourself if you charged your hourly rate.",
   },
   {
     q: "Can I export my posts if I leave?",
@@ -127,7 +127,7 @@ const webPageSchema = {
     operatingSystem: "Web",
     offers: {
       "@type": "Offer",
-      price: "49",
+      price: "99",
       priceCurrency: "USD",
       availability: "https://schema.org/InStock",
     },
@@ -173,14 +173,14 @@ export default function ForFoundersPage() {
               <em className="italic text-[#ec6f5b]">We&apos;ll ship the posts.</em>
             </h1>
             <p className="mt-9 max-w-[640px] text-base leading-[1.55] text-[#b9bdd6] md:text-xl">
-              Building, shipping, talking to users, that&apos;s the job. Posting to Instagram and Facebook every day shouldn&apos;t be. PostClaw drafts a week of posts from a sentence and publishes them for $49 a month.
+              Building, shipping, talking to users, that&apos;s the job. Posting to Instagram and Facebook every day shouldn&apos;t be. PostClaw drafts a week of posts from a sentence and publishes them for $99 a month.
             </p>
             <div className="mt-11 flex flex-wrap items-center justify-center gap-3.5">
               <Link
                 href="#pricing"
                 className="cursor-pointer rounded-full bg-[#ec6f5b] px-8 py-4 text-sm font-semibold text-white shadow-[0_14px_40px_-10px_#ec6f5b] transition-transform hover:-translate-y-0.5"
               >
-                Get my 5 free posts →
+                Start Growing →
               </Link>
               <Link
                 href="/"

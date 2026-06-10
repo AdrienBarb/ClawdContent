@@ -1,19 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import {
-  ArrowLeftIcon,
-  ArrowRightIcon,
-  SpinnerGapIcon,
-} from "@phosphor-icons/react";
 import toast from "react-hot-toast";
-import { Button } from "@/components/ui/button";
 import BrandingEditor from "@/components/onboarding/BrandingEditor";
 import { appRouter } from "@/lib/constants/appRouter";
 import useApi from "@/lib/hooks/useApi";
 import type { OnboardingStatus } from "@/lib/schemas/onboarding";
 import type { Branding } from "@/lib/schemas/knowledgeBase";
 import FormField from "./FormField";
+import OnboardingShell from "./OnboardingShell";
 
 interface Props {
   status: OnboardingStatus | undefined;
@@ -67,17 +62,15 @@ export default function Step5Branding({ status, onBack, onNext }: Props) {
     });
 
   return (
-    <div>
-      <div className="text-center mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-          Your brand
-        </h1>
-        <p className="text-gray-500 mt-2">
-          We picked up your look and voice. Tweak anything that&apos;s off so
-          your posts feel on-brand.
-        </p>
-      </div>
-
+    <OnboardingShell
+      step={5}
+      title="Here's your brand"
+      subtitle="We picked up your logo, colors, and the way you talk. Tweak anything that looks or sounds off, so your posts stay on brand."
+      onBack={onBack}
+      onSubmit={handleSave}
+      ctaLabel="Continue"
+      isSubmitting={isPending}
+    >
       <div className="space-y-6">
         <BrandingEditor value={branding} onChange={setBranding} />
 
@@ -108,32 +101,6 @@ export default function Step5Branding({ status, onBack, onNext }: Props) {
           onChange={(e) => setTagline(e.target.value)}
         />
       </div>
-
-      <div className="mt-8 flex items-center justify-between">
-        <button
-          type="button"
-          onClick={onBack}
-          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
-        >
-          <ArrowLeftIcon className="h-4 w-4" />
-          Back
-        </button>
-        <Button
-          type="button"
-          className="bg-primary hover:bg-[#E84A36] text-white"
-          disabled={isPending}
-          onClick={handleSave}
-        >
-          {isPending ? (
-            <SpinnerGapIcon className="h-4 w-4 animate-spin" />
-          ) : (
-            <>
-              Next
-              <ArrowRightIcon className="h-4 w-4 ml-1.5" />
-            </>
-          )}
-        </Button>
-      </div>
-    </div>
+    </OnboardingShell>
   );
 }

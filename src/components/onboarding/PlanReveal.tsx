@@ -2,17 +2,18 @@
 
 import type { PaywallPlan } from "@/lib/schemas/onboardingPlan";
 import PlanDelta from "./PlanDelta";
+import PlanPositioning from "./PlanPositioning";
 import PlanPillars from "./PlanPillars";
-import PlanIdeas from "./PlanIdeas";
+import PlanFormats from "./PlanFormats";
 import PlanCoaching from "./PlanCoaching";
 
 /**
- * The "aha" reveal: an honest "before" diagnosis next to the specific plan
- * we've already written for this account, framed around the user's goal. Sits
- * above the trial CTA on the final onboarding step.
+ * The "aha" reveal: a clear before/after, then the strategy we've already
+ * written for this account — angle, themes, cadence & format plan, and what
+ * we'll lean into. Sits above the subscribe CTA on the final onboarding step.
  */
 export default function PlanReveal({ plan }: { plan: PaywallPlan }) {
-  const { after, before, goalLabel, dataQuality } = plan;
+  const { after, before } = plan;
 
   if (!after) return null; // caller guards; defensive
 
@@ -20,34 +21,30 @@ export default function PlanReveal({ plan }: { plan: PaywallPlan }) {
     ? `@${plan.account.handle}`
     : (plan.businessName ?? "your account");
 
-  const isFresh =
-    dataQuality === "cold_start" || dataQuality === "platform_no_history";
-
-  const lead = isFresh
-    ? `You're just getting started${
-        goalLabel ? ` — here's your plan to ${goalLabel}` : " — here's your plan"
-      }.`
-    : `Today you're ${before.diagnosis.slice(0, 2).join(", ")}.${
-        goalLabel ? ` Here's the plan to ${goalLabel}.` : ""
-      }`;
-
   return (
-    <div className="space-y-3">
-      <header className="text-center">
-        <p className="mb-2 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-gray-400">
+    <div className="space-y-4">
+      <header>
+        <p className="mb-2 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-gray-400">
           Your plan is ready
         </p>
         <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-          Here&apos;s what we&apos;ll do for {who}
+          Here&apos;s the plan for {who}
         </h1>
-        <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-gray-500">
-          {lead}
-        </p>
+        {after.summary ? (
+          <p className="mt-2 text-sm leading-relaxed text-gray-500">
+            {after.summary}
+          </p>
+        ) : null}
       </header>
 
       <PlanDelta before={before} after={after} />
+      <PlanPositioning positioning={after.positioning} />
       <PlanPillars pillars={after.pillars} />
-      <PlanIdeas ideas={after.ideas} />
+      <PlanFormats
+        postsPerWeek={after.postsPerWeek}
+        cadenceRationale={after.cadenceRationale}
+        formatPlan={after.formatPlan}
+      />
       <PlanCoaching doubleDown={after.doubleDown} stop={after.stop} />
     </div>
   );

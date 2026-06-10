@@ -88,6 +88,18 @@ describe("buildStrategyPrompt", () => {
     expect(prompt).toContain("What's underperforming"); // bottom posts block
   });
 
+  it("constrains formats to the publishable list and never offers Stories", () => {
+    const inputs = buildStrategyInputs({
+      platform: "instagram",
+      insights: richInsights,
+      goal: "find_customers",
+      kb: igKb,
+    });
+    const prompt = buildStrategyPrompt(inputs, null);
+    expect(prompt).toContain("We can only publish these Instagram formats");
+    expect(prompt).not.toContain("story ="); // KB format-mix line offers no Stories
+  });
+
   it("omits the goal block and flags missing history when there's no data", () => {
     const inputs = buildStrategyInputs({
       platform: "instagram",
@@ -116,8 +128,9 @@ describe("assembleStrategy", () => {
       pillar: "pillar 0",
       why: "fits the goal",
     })),
+    // Real publishable formats — the publishability guard runs before the cap.
     formatPlan: Array.from({ length: 12 }, (_, i) => ({
-      format: `format ${i}`,
+      format: ["reel", "carousel", "image"][i % 3],
       action: "start" as const,
       rationale: "gap",
     })),
@@ -155,5 +168,24 @@ describe("assembleStrategy", () => {
   it("produces an object that passes the stored schema", () => {
     const s = assembleStrategy(overflowingLLM, inputs, "2026-06-08T00:00:00.000Z", "m");
     expect(() => strategyStoredSchema.parse(s)).not.toThrow();
+  });
+
+  it("drops unpublishable formats (Stories) from formatPlan and postIdeas", () => {
+    const llm: StrategyLLMOutput = {
+      ...overflowingLLM,
+      formatPlan: [
+        { format: "Reel", action: "increase", rationale: "reach" },
+        { format: "Story", action: "start", rationale: "presence" },
+        { format: "stories", action: "maintain", rationale: "presence" },
+        { format: "Carousel", action: "maintain", rationale: "saves" },
+      ],
+      postIdeas: [
+        { idea: "BTS poll story", format: "story", pillar: "p", why: "w" },
+        { idea: "Oven reel", format: "reel", pillar: "p", why: "w" },
+      ],
+    };
+    const s = assembleStrategy(llm, inputs, "2026-06-08T00:00:00.000Z", "m");
+    expect(s.formatPlan.map((f) => f.format)).toEqual(["Reel", "Carousel"]);
+    expect(s.postIdeas.map((p) => p.format)).toEqual(["reel"]);
   });
 });

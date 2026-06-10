@@ -30,7 +30,7 @@ export default function TestimonialsSection() {
             What owners say
           </div>
           <h2 className="font-display text-4xl leading-none tracking-[-0.025em] text-balance md:text-5xl lg:text-[72px]">
-            &ldquo;I&apos;d rather pay $49 than spend{" "}
+            &ldquo;I&apos;d rather pay $99 than spend{" "}
             <em className="italic text-[#ec6f5b]">another Sunday</em> writing captions.&rdquo;
           </h2>
         </div>

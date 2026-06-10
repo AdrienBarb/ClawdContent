@@ -48,7 +48,11 @@ export default function Navbar() {
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="md:hidden text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             >
-              {isMobileMenuOpen ? <XIcon className="h-6 w-6" /> : <ListIcon className="h-6 w-6" />}
+              {isMobileMenuOpen ? (
+                <XIcon className="h-6 w-6" />
+              ) : (
+                <ListIcon className="h-6 w-6" />
+              )}
             </button>
             <Link
               href="/"
@@ -57,18 +61,24 @@ export default function Navbar() {
               {config.project.shortName || config.project.name}
             </Link>
             <div className="hidden md:flex items-center gap-6">
-              <a href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <a
+                href="#how-it-works"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
                 How It Works
               </a>
-              <a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <a
+                href="#pricing"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
                 Pricing
               </a>
-              <a href="#faq" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <a
+                href="#faq"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
                 FAQ
               </a>
-              <Link href="/affiliates" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Affiliates
-              </Link>
             </div>
           </div>
 
@@ -85,8 +95,14 @@ export default function Navbar() {
                       </Avatar>
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-card border-border rounded-xl shadow-lg">
-                    <DropdownMenuItem asChild className="cursor-pointer text-foreground focus:bg-muted focus:text-foreground">
+                  <DropdownMenuContent
+                    align="end"
+                    className="bg-card border-border rounded-xl shadow-lg"
+                  >
+                    <DropdownMenuItem
+                      asChild
+                      className="cursor-pointer text-foreground focus:bg-muted focus:text-foreground"
+                    >
                       <Link href="/d">Dashboard</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem
@@ -102,7 +118,7 @@ export default function Navbar() {
                   onClick={() => setIsSignInModalOpen(true)}
                   className="hidden md:inline-flex px-5 py-2 text-sm font-semibold cursor-pointer bg-primary hover:bg-[#d85a47] text-primary-foreground rounded-full transition-all"
                 >
-                  Start free
+                  Get Started
                 </Button>
               )}
             </>
@@ -132,13 +148,6 @@ export default function Navbar() {
             >
               FAQ
             </a>
-            <Link
-              href="/affiliates"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Affiliates
-            </Link>
             {config.features.auth && !session?.user && (
               <Button
                 onClick={() => {
@@ -147,7 +156,7 @@ export default function Navbar() {
                 }}
                 className="w-full text-sm font-medium cursor-pointer bg-primary hover:bg-[#E84A36] text-primary-foreground rounded-full"
               >
-                Get started free
+                Get Started
               </Button>
             )}
           </div>

@@ -14,7 +14,7 @@ import type { KnowledgeBase } from "@/lib/schemas/knowledgeBase";
 
 // Polling endpoint for the wizard. Status-only (no Zernio sync) — mirrors
 // /api/dashboard/status. Screen 3 polls until websiteAnalysis resolves; the
-// final screen polls subscription.status after the trial CTA.
+// final screen polls subscription.status after the subscribe CTA.
 export async function GET() {
   try {
     const session = await auth.api.getSession({ headers: await headers() });

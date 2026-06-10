@@ -38,35 +38,35 @@ export default function PricingSection() {
           </div>
           <h2 className="font-display text-4xl leading-none tracking-[-0.025em] text-balance md:text-6xl lg:text-[80px]">
             One plan.{" "}
-            <em className="italic text-[#ec6f5b]">Less than your phone bill.</em>
+            <em className="italic text-[#ec6f5b]">No tiers, no add-ons.</em>
           </h2>
           <p className="mt-5 text-base text-[#b9bdd6] md:text-[17px]">
-            An agency runs $2,000/mo. Yours is $49.
+            An agency runs $2,000/mo. Yours is $99.
           </p>
         </div>
 
         <div className="grid grid-cols-1 items-center gap-10 rounded-[32px] border border-[#2a2d52] bg-[#191b3a] p-8 md:grid-cols-2 md:gap-14 md:p-14">
           <div>
             <div className="mb-6 inline-block rounded-full bg-[#ec6f5b22] px-3.5 py-1.5 text-xs tracking-[0.05em] text-[#f8a594]">
-              Save 30% yearly
+              Everything included
             </div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-6xl font-semibold leading-none tracking-[-0.04em] text-white md:text-7xl">
-                $49
+                $99
               </span>
               <span className="text-base text-[#7a7fa0] md:text-lg">/month</span>
             </div>
             <p className="mt-4 max-w-[380px] text-sm leading-[1.55] text-[#b9bdd6] md:text-base">
-              Or $34/mo billed yearly. Everything included. Cancel anytime, two clicks.
+              No tiers, no add-ons, no surprises. Cancel anytime, two clicks.
             </p>
             <button
               onClick={handleGetStarted}
               className="mt-8 cursor-pointer rounded-full bg-[#ec6f5b] px-8 py-4 text-sm font-semibold text-white shadow-[0_14px_40px_-10px_#ec6f5b] transition-transform hover:-translate-y-0.5"
             >
-              Get my 5 free posts →
+              Start Growing →
             </button>
             <div className="mt-3 text-xs text-[#7a7fa0]">
-              5 free posts. No credit card.
+              Set up in 2 minutes.
             </div>
           </div>
 

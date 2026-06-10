@@ -44,7 +44,7 @@ const softwareAppSchema = {
     {
       "@type": "Offer",
       name: "PostClaw",
-      price: "49",
+      price: "99",
       priceCurrency: "USD",
       availability: "https://schema.org/InStock",
     },

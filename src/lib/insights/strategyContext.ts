@@ -10,6 +10,7 @@ import {
   formatBusinessContext,
   formatGoalContext,
 } from "@/lib/services/promptContext";
+import { formatLabel } from "@/lib/insights/paywallPlan";
 import {
   STRATEGY_VERSION,
   type StrategyLLMOutput,
@@ -180,19 +181,22 @@ export function buildStrategyPrompt(
   sections.push(`## ${inputs.displayName} principles\n${kb.principles.map((p) => `- ${p}`).join("\n")}`);
 
   // --- Task ---
+  const publishableFormats = kb.formatMix.map((f) => f.format).join(", ");
   sections.push(`## Your task
 Produce a growth strategy as a JSON object, aligned to their PRIMARY GOAL and grounded in the numbers above:
 - positioning: 2-3 sentences on how this business should show up on ${inputs.displayName} to hit their goal.
 - contentPillars: 3-5 recurring themes (name + one-line description) rooted in their services and goal.
 - postIdeas: 5-8 concrete, ready-to-act ideas. Each names a SPECIFIC topic ("a post about …"), a format, the pillar it belongs to, and WHY it fits their goal/audience.
-- formatPlan: for each format that matters on ${inputs.displayName}, an action (start | increase | maintain | reduce) + a one-line rationale tied to the mix gap or what's working.
+- formatPlan: one entry per format from the publishable list below, an action (start | increase | maintain | reduce) + a one-line rationale tied to the mix gap or what's working.
 - doubleDown: 2-4 things their data shows are working — do more of these. If there's no data yet, base on best practices.
 - stop: 1-3 things to stop or fix (from weak posts or format gaps). If no data, base on best practices.
 - targetPostsPerWeek: a single realistic number, moving them toward the recommended band (don't overshoot for a busy owner).
 - cadenceRationale: one sentence explaining the cadence move.
 - summary: a 1-2 sentence TL;DR the owner reads first.
 
-Write in the same language as the business context. Be concrete and specific to THIS business.`);
+We can only publish these ${inputs.displayName} formats for them: ${publishableFormats}. Every postIdeas format and every formatPlan format MUST be one of these. Never recommend Stories, Lives, or any other format anywhere in the strategy (including formatPlan, postIdeas, doubleDown, stop, positioning, and summary).
+
+Write in the same language as the business context. Be concrete and specific to THIS business. Use plain, everyday language a busy small business owner understands. Do not use em dashes or en dashes anywhere; use commas, periods, or parentheses instead.`);
 
   return sections.join("\n\n");
 }
@@ -208,6 +212,14 @@ export function assembleStrategy(
   generatedAt: string,
   model: string
 ): SocialStrategy {
+  // Hard guard: only formats from the platform KB (plus plain feed video) are
+  // publishable through Zernio. Drop anything else the model slipped in — e.g.
+  // Stories — so an unpublishable recommendation can never reach the UI.
+  // Compared post-normalisation, so "Story" / "stories" / "Stories" all match.
+  const publishable = new Set(inputs.kb.formatMix.map((f) => formatLabel(f.format)));
+  publishable.add("Video"); // feed video is always publishable (an IG video IS a Reel)
+  const isPublishable = (format: string) => publishable.has(formatLabel(format));
+
   return {
     version: STRATEGY_VERSION,
     generatedAt,
@@ -217,8 +229,8 @@ export function assembleStrategy(
     positioning: llm.positioning,
     summary: llm.summary,
     contentPillars: llm.contentPillars.slice(0, 6),
-    postIdeas: llm.postIdeas.slice(0, 12),
-    formatPlan: llm.formatPlan.slice(0, 8),
+    postIdeas: llm.postIdeas.filter((p) => isPublishable(p.format)).slice(0, 12),
+    formatPlan: llm.formatPlan.filter((f) => isPublishable(f.format)).slice(0, 8),
     cadence: {
       currentPerWeek: inputs.cadence.actualPostsPerWeek,
       targetPerWeek: llm.targetPostsPerWeek,

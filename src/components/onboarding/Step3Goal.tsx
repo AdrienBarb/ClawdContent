@@ -1,14 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import {
-  ArrowLeftIcon,
-  ArrowRightIcon,
-  CheckIcon,
-  SpinnerGapIcon,
-} from "@phosphor-icons/react";
+import { CheckIcon } from "@phosphor-icons/react";
 import toast from "react-hot-toast";
-import { Button } from "@/components/ui/button";
 import { appRouter } from "@/lib/constants/appRouter";
 import useApi from "@/lib/hooks/useApi";
 import {
@@ -16,6 +10,7 @@ import {
   type OnboardingGoal,
   type OnboardingStatus,
 } from "@/lib/schemas/onboarding";
+import OnboardingShell from "./OnboardingShell";
 
 interface Props {
   status: OnboardingStatus | undefined;
@@ -47,16 +42,16 @@ export default function Step3Goal({ status, onBack, onNext }: Props) {
   };
 
   return (
-    <div>
-      <div className="text-center mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-          What do you want social to do for you?
-        </h1>
-        <p className="text-gray-500 mt-2">
-          Pick your main goal — we&apos;ll build your content strategy around it.
-        </p>
-      </div>
-
+    <OnboardingShell
+      step={3}
+      title="What do you want from social media?"
+      subtitle="Pick the one goal that matters most right now. We'll build every post around it."
+      onBack={onBack}
+      onSubmit={handleNext}
+      ctaLabel="Continue"
+      ctaDisabled={!selected}
+      isSubmitting={isPending}
+    >
       <div className="space-y-3">
         {ONBOARDING_GOALS.map((goal) => {
           const isSelected = selected === goal.value;
@@ -94,32 +89,6 @@ export default function Step3Goal({ status, onBack, onNext }: Props) {
           );
         })}
       </div>
-
-      <div className="mt-8 flex items-center justify-between">
-        <button
-          type="button"
-          onClick={onBack}
-          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
-        >
-          <ArrowLeftIcon className="h-4 w-4" />
-          Back
-        </button>
-        <Button
-          type="button"
-          className="bg-primary hover:bg-[#E84A36] text-white"
-          disabled={!selected || isPending}
-          onClick={handleNext}
-        >
-          {isPending ? (
-            <SpinnerGapIcon className="h-4 w-4 animate-spin" />
-          ) : (
-            <>
-              Next
-              <ArrowRightIcon className="h-4 w-4 ml-1.5" />
-            </>
-          )}
-        </Button>
-      </div>
-    </div>
+    </OnboardingShell>
   );
 }

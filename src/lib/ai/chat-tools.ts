@@ -151,7 +151,7 @@ export function createChatTools({
             payload,
             message: payload.isPaid
               ? `The user has run out of monthly allowance. Offer the Boost pack ($9) or wait until ${payload.resetAt}.`
-              : `The user has used their free allowance. Tell them to upgrade to Pro to keep planning posts.`,
+              : `The user doesn't have an active subscription. Tell them to subscribe to keep planning posts.`,
           };
         }
         if (balance < costAll) {
@@ -319,7 +319,7 @@ export function createChatTools({
             payload,
             message: payload.isPaid
               ? `The user has run out of monthly allowance. Offer the Boost pack or wait until ${payload.resetAt}.`
-              : "The user has used their free allowance. Tell them to upgrade to Pro.",
+              : "The user doesn't have an active subscription. Tell them to subscribe.",
           };
         }
 
@@ -496,7 +496,7 @@ export function createChatTools({
             payload,
             message: payload.isPaid
               ? `The user has run out of monthly allowance. Offer the Boost pack or wait until ${payload.resetAt}.`
-              : "The user has used their free allowance. Tell them to upgrade to Pro.",
+              : "The user doesn't have an active subscription. Tell them to subscribe.",
           };
         }
 
@@ -882,7 +882,7 @@ function summarizeBulkPublish(
     ? {
         reason: "free_post_limit_reached",
         suggestion:
-          "Tell the user they've hit the free post cap and need to upgrade to Pro to publish more.",
+          "Tell the user publishing requires an active subscription — they need to subscribe to publish.",
       }
     : undefined;
 
@@ -919,7 +919,7 @@ function describeFailure(
         id,
         reason: "free_post_limit_reached",
         message:
-          "This account has hit the free post cap. Upgrade to Pro to keep going.",
+          "Publishing requires an active subscription. Subscribe to keep going.",
         recoverable: false,
       };
     case "no_schedule_staged":

@@ -8,7 +8,13 @@ Powers account analysis + the "Get ideas" feature. Every field is labelled by so
 First connect (Inngest analyzeAccount):
   account/connected →
     compute-insights (source: external)
-    if syncTriggered: sleep 60s → compute-insights-after-sync   (max 2 calls, no loop)
+    if syncTriggered OR first pass found 0 posts (fresh connect → Zernio's
+      initial import runs with syncTriggered=false): poll backfill every 10s
+      with a light probeSyncStatus check (getAnalytics only — no LLM, no DB
+      write); exit as soon as syncTriggered clears (only when the flag sent us
+      here) OR data is rich (≥5 posts) OR post count grows; capped at 6 probes
+      (~60s). Then compute-insights-after-sync.   ← worst case still 2 full
+                                                     compute-insights calls
     mark-analysis-completed   ← flips as soon as insights are saved
 
 Reconnect / backfill (Inngest refreshInsights):
@@ -28,7 +34,7 @@ User chats in /d (chat tool `generate_posts`, calls createFromBrief synchronousl
 
 | Service | Owns |
 |---|---|
-| `zernioContext.ts` | Per-platform Zernio fetcher: account, posts, analytics, best-times, posting frequency, followers. Handles 402 / 403 gracefully. |
+| `zernioContext.ts` | Per-platform Zernio fetcher: account, posts, analytics, best-times, posting frequency, followers. Handles 402 / 403 gracefully. `probeSyncStatus` is a light backfill-staleness check (getAnalytics only, no LLM/DB) used by the analyze-account poll loop. |
 | `accountInsights.ts` | `computeInsights` writes `insights` + `lastAnalyzedAt` only — does NOT touch `analysisStatus`. Cross-platform voice borrowing for cold-start. Returns `null` if account no longer exists. |
 | `createFromBrief.ts` | `createFromBrief` reads cached insights as-is, asks Claude for posts shaped to the user's brief, and appends the new batch alongside any existing drafts on the targeted accounts. |
 
@@ -67,7 +73,7 @@ When a platform is cold-start (LinkedIn personal first scan, Bluesky, or any acc
 
 | Function | Trigger | Steps |
 |---|---|---|
-| `analyze-account` | `account/connected` | compute-insights → (if syncTriggered) sleep 60s + compute-insights-after-sync → mark-analysis-completed (retries: 3) |
+| `analyze-account` | `account/connected` | compute-insights → (if syncTriggered OR 0 posts on first pass) bounded poll: probe every 10s, early-exit when sync clears / data rich / posts grow, cap 6 probes (~60s) + compute-insights-after-sync → mark-analysis-completed (retries: 3) |
 | `refresh-insights` | `account/refresh-insights` | compute-insights (`source: all`) → mark-analysis-completed (retries: 2) |
 
 `analysisStatus` flips `analyzing` → `completed` as soon as insights are saved. `refreshInsights` is idempotent (`completed` → `completed`, `pending` → `completed`).

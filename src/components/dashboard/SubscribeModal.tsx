@@ -5,7 +5,7 @@ import { XIcon } from "@phosphor-icons/react";
 import { appRouter } from "@/lib/constants/appRouter";
 import useApi from "@/lib/hooks/useApi";
 import PricingCards from "@/components/PricingCards";
-import type { PlanId, BillingInterval } from "@/lib/constants/plans";
+import type { PlanId } from "@/lib/constants/plans";
 
 interface SubscribeModalProps {
   open: boolean;
@@ -26,9 +26,9 @@ export default function SubscribeModal({
     onSettled: () => setLoadingPlanId(null),
   });
 
-  const handleSelectPlan = (planId: PlanId, interval: BillingInterval) => {
+  const handleSelectPlan = (planId: PlanId) => {
     setLoadingPlanId(planId);
-    createCheckout({ planId, interval });
+    createCheckout({ planId, interval: "monthly" });
   };
 
   if (!open) return null;
@@ -46,10 +46,10 @@ export default function SubscribeModal({
 
           <div className="text-center mb-6">
             <h1 className="text-xl font-semibold tracking-tight text-foreground mb-1">
-              Choose your plan
+              Subscribe to PostClaw
             </h1>
             <p className="text-sm text-muted-foreground">
-              Start publishing everywhere with your social media manager.
+              Start publishing with your social media manager.
             </p>
           </div>
 

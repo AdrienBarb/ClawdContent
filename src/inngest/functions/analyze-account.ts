@@ -2,6 +2,15 @@ import { inngest } from "../client";
 import { prisma } from "@/lib/db/prisma";
 import { computeInsights } from "@/lib/services/accountInsights";
 import { computeStrategy } from "@/lib/services/socialStrategy";
+import { probeSyncStatus, RICH_THRESHOLD } from "@/lib/services/zernioContext";
+
+// Bounded poll-with-early-exit for Zernio's async backfill. Instead of one blind
+// 60s wait, we probe every PROBE_INTERVAL and stop the moment the data is ready,
+// capped at MAX_PROBES iterations (≈60s). Fast accounts finish in ~10-15s; slow
+// accounts still get the full window, so data quality never regresses.
+const PROBE_INTERVAL_SECONDS = 10;
+const PROBE_INTERVAL = `${PROBE_INTERVAL_SECONDS}s`; // single source of truth — keeps the log math in sync
+const MAX_PROBES = 6; // 6 × 10s = 60s ceiling (matches the old fixed sleep)
 
 async function markAnalysisCompleted(socialAccountId: string): Promise<void> {
   await prisma.socialAccount.updateMany({
@@ -21,15 +30,69 @@ export const analyzeAccount = inngest.createFunction(
       return computeInsights(socialAccountId, { source: "external" });
     });
 
-    // If Zernio kicked off a sync, wait once and recompute on the better data.
-    // We do NOT recurse on syncTriggered — at most one retry, then we accept
-    // whatever data we have (no infinite loop). Skipped if the first pass
-    // returned null (account deleted between event and processing).
-    if (insights?.meta.syncTriggered) {
+    // Poll-and-recompute when the first pass looks premature:
+    //  - syncTriggered=true → Zernio reported a backfill in flight, OR
+    //  - zero posts on a platform WITH external history → on a fresh connect
+    //    Zernio starts the initial import from the connect itself, NOT from our
+    //    analytics read, so it reports syncTriggered=false while the backfill is
+    //    still running. "0 posts seconds after connect" therefore usually means
+    //    "not imported yet", not "never posted" — wait for posts to appear.
+    // We probe every PROBE_INTERVAL with a lightweight check (no Claude
+    // inference, no DB write) and stop as soon as the data looks settled —
+    // capped at MAX_PROBES (≈60s) so there's no infinite loop. Skipped if the
+    // first pass returned null (account deleted).
+    const syncInFlight = insights?.meta.syncTriggered === true;
+    const emptyFirstPass =
+      insights !== null &&
+      insights.meta.postsAnalyzed === 0 &&
+      insights.meta.dataQuality !== "platform_no_history";
+
+    if (insights !== null && (syncInFlight || emptyFirstPass)) {
+      const baselinePostCount = insights.meta.postsAnalyzed;
       console.log(
-        `[analyze-account] ⏳ syncTriggered=true, waiting 60s for Zernio backfill (socialAccountId=${socialAccountId})`
+        `[analyze-account] ⏳ ${syncInFlight ? "syncTriggered=true" : "empty first pass (backfill likely still importing)"} — polling Zernio backfill (interval=${PROBE_INTERVAL}, max=${MAX_PROBES}, baselinePosts=${baselinePostCount}, socialAccountId=${socialAccountId})`
       );
-      await step.sleep("wait-for-sync", "60s");
+
+      for (let i = 0; i < MAX_PROBES; i++) {
+        await step.sleep(`wait-for-sync-${i}`, PROBE_INTERVAL);
+
+        const probe = await step.run(`probe-sync-${i}`, async () => {
+          return probeSyncStatus(socialAccountId);
+        });
+
+        const waited = (i + 1) * PROBE_INTERVAL_SECONDS;
+
+        // Only trust a cleared sync flag when the flag is what sent us here —
+        // on an empty first pass it was false the whole time, so the only real
+        // signals are posts appearing (or the cap).
+        if (syncInFlight && !probe.syncTriggered) {
+          console.log(
+            `[analyze-account] ✓ backfill settled after ~${waited}s (syncTriggered=false, postCount=${probe.postCount}) — recomputing`
+          );
+          break;
+        }
+        if (probe.postCount >= RICH_THRESHOLD) {
+          console.log(
+            `[analyze-account] ✓ rich data after ~${waited}s (postCount=${probe.postCount}) — recomputing`
+          );
+          break;
+        }
+        if (probe.postCount > baselinePostCount) {
+          console.log(
+            `[analyze-account] ✓ new data landed after ~${waited}s (postCount ${baselinePostCount}→${probe.postCount}) — recomputing`
+          );
+          break;
+        }
+        if (i === MAX_PROBES - 1) {
+          console.log(
+            `[analyze-account] ⏰ cap reached (~${waited}s) still syncing (postCount=${probe.postCount}) — accepting whatever data we have`
+          );
+        } else {
+          console.log(
+            `[analyze-account] … still waiting after ~${waited}s (syncTriggered=${probe.syncTriggered}, postCount=${probe.postCount})`
+          );
+        }
+      }
 
       const refreshed = await step.run("compute-insights-after-sync", async () => {
         return computeInsights(socialAccountId, { source: "external" });

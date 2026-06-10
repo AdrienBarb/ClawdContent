@@ -7,10 +7,11 @@ import {
   type BestTimeSlot,
   type PostingFrequencyRow,
 } from "@/lib/late/mutations";
-import { getPlatformConfig } from "@/lib/insights/platformConfig";
+import { getPlatformConfig, isSupportedPlatform } from "@/lib/insights/platformConfig";
 import { postBelongsToAccount } from "@/lib/insights/extract";
 import type { DataQuality } from "@/lib/schemas/insights";
 import { isDevelopment } from "@/utils/environments";
+import { prisma } from "@/lib/db/prisma";
 
 export interface AccountMeta {
   followersCount: number | null;
@@ -42,7 +43,7 @@ interface GatherOptions {
 }
 
 const POST_LIMIT = 20;
-const RICH_THRESHOLD = 5;
+export const RICH_THRESHOLD = 5;
 
 function pickSortBy(primaryMetric: string): string {
   if (primaryMetric === "views") return "views";
@@ -275,4 +276,69 @@ export async function gatherAccountContext(
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
+}
+
+export interface SyncProbe {
+  syncTriggered: boolean;
+  postCount: number;
+}
+
+/**
+ * Lightweight poll of Zernio's analytics staleness for ONE account — used by the
+ * analyze-account bounded wait loop to decide whether the background backfill has
+ * landed yet. Deliberately cheap: a single `getAnalytics` read, NO Claude
+ * inference and NO DB write (unlike `computeInsights`). Returns the same
+ * `{ syncTriggered:false, postCount:0 }` sentinel on a missing/unsupported
+ * account so the caller's loop exits cleanly instead of throwing.
+ */
+export async function probeSyncStatus(
+  socialAccountId: string
+): Promise<SyncProbe> {
+  const account = await prisma.socialAccount.findUnique({
+    where: { id: socialAccountId },
+    include: { lateProfile: true },
+  });
+
+  // Account deleted between event and probe → stop waiting (nothing to wait for).
+  if (!account) {
+    console.warn(
+      `[zernioContext] ⚠️  probeSyncStatus: socialAccount ${socialAccountId} no longer exists — exiting wait`
+    );
+    return { syncTriggered: false, postCount: 0 };
+  }
+
+  // Legacy account on an unsupported platform — exit the wait silently.
+  if (!isSupportedPlatform(account.platform)) {
+    return { syncTriggered: false, postCount: 0 };
+  }
+
+  const config = getPlatformConfig(account.platform);
+  // Mirror gatherAccountContext: probe always runs with source "external".
+  const skipPostFetch = !config.supportsAnalytics || config.noExternalHistory;
+  const sortBy = pickSortBy(config.primaryMetric);
+  const limit = skipPostFetch ? 1 : POST_LIMIT;
+
+  const analytics = await getAnalytics(account.lateProfile.lateApiKey, {
+    source: "external",
+    platform: account.platform,
+    sortBy,
+    order: "desc",
+    limit,
+  });
+
+  const syncTriggered = analytics.overview.dataStaleness?.syncTriggered ?? false;
+
+  // Scope to THIS account's posts on a multi-account profile (same rule as
+  // gatherAccountContext) so postCount is comparable to the first pass's count.
+  let posts = analytics.posts;
+  if ((analytics.accounts?.length ?? 0) > 1) {
+    posts = posts.filter((p) => postBelongsToAccount(p, account.lateAccountId));
+  }
+  const postCount = skipPostFetch ? 0 : posts.length;
+
+  console.log(
+    `[zernioContext] 🔁 probeSyncStatus account=${socialAccountId} platform=${account.platform} → syncTriggered=${syncTriggered}, postCount=${postCount}`
+  );
+
+  return { syncTriggered, postCount };
 }

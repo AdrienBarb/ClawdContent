@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-const MONTHLY_PRICE = 49;
+const MONTHLY_PRICE = 99;
 const COMMISSION_RATE = 0.4;
 
 export default function RevenueSimulator() {
@@ -20,7 +20,7 @@ export default function RevenueSimulator() {
           PostClaw plan
         </p>
         <p className="text-2xl font-bold text-foreground">
-          $49<span className="text-base font-medium text-muted-foreground">/mo</span>
+          $99<span className="text-base font-medium text-muted-foreground">/mo</span>
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
           You earn 40% = ${monthlyPerReferral.toFixed(2)}/mo per referral

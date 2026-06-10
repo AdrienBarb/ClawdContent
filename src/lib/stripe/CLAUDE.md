@@ -25,4 +25,4 @@ Handler: `src/app/api/webhooks/stripe/route.ts`. Signature-verified.
 
 ## Plan resolution
 
-Single plan today: `pro` at $49/mo (or 30% off yearly). Legacy IDs (`starter`, `business`) still resolve to `pro` for old subscribers via `getPlanFromStripePriceId` in `src/lib/constants/plans.ts`.
+Single plan today: `pro` at $99/mo, monthly only — no trial, no yearly (both removed 2026-06-10). New checkouts use `STRIPE_PRICE_POSTCLAW_99_MONTHLY`. Legacy IDs (`starter`, `business`) and the old $49 monthly / yearly prices still resolve to `pro` for old subscribers via `getPlanFromStripePriceId` in `src/lib/constants/plans.ts` — grandfathered subscribers keep their old price (use `getSubscriptionPrice` to display what Stripe actually bills).

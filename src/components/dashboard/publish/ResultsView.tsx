@@ -143,7 +143,7 @@ export function ResultsView({
   onAddPost?: (account: AccountLite) => void;
   onBulkComplete?: (publishedOrScheduledCount: number) => void;
   embedded?: boolean;
-  /** Free posts remaining; null = unlimited (subscribed). */
+  /** Publish quota remaining (0 when unsubscribed); null = unlimited (subscribed). */
   quotaRemaining: number | null;
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -251,8 +251,8 @@ export function ResultsView({
 
   // Send all is sequential — Zernio rate-limits per-account, and ordering
   // keeps per-row toasts predictable on failure. The server enforces the
-  // free-post quota on both publish AND schedule (route.ts:141), so the
-  // pre-flight trim treats them the same.
+  // subscription publish gate on both publish AND schedule (route.ts:141),
+  // so the pre-flight trim treats them the same.
   const runSendAll = async () => {
     const ids = Array.from(selected);
     if (ids.length === 0 || bulkBusyRef.current) return;
@@ -290,7 +290,7 @@ export function ResultsView({
       const skipReason = (media: number, limit: number): string[] => {
         const parts: string[] = [];
         if (media > 0) parts.push(`${media} missing media`);
-        if (limit > 0) parts.push(`${limit} over free plan limit`);
+        if (limit > 0) parts.push(`${limit} need a subscription`);
         return parts;
       };
 

@@ -1,9 +1,7 @@
 "use client";
 
-import { XIcon, ArrowUpRightIcon } from "@phosphor-icons/react";
+import { XIcon, UsersThreeIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
-import { appRouter } from "@/lib/constants/appRouter";
 
 interface UpgradeModalProps {
   open: boolean;
@@ -12,14 +10,15 @@ interface UpgradeModalProps {
   accountLimit: number;
 }
 
+// Single plan, single interval — there is no higher tier to upgrade to.
+// Hitting the account cap is a hard product limit: the only way forward is
+// disconnecting an account the user no longer needs.
 export default function UpgradeModal({
   open,
   onOpenChange,
   currentPlanName,
   accountLimit,
 }: UpgradeModalProps) {
-  const router = useRouter();
-
   if (!open) return null;
 
   return (
@@ -34,33 +33,24 @@ export default function UpgradeModal({
           </button>
 
           <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 mx-auto mb-4">
-            <ArrowUpRightIcon className="h-7 w-7 text-primary" />
+            <UsersThreeIcon className="h-7 w-7 text-primary" />
           </div>
 
           <h2 className="text-xl font-semibold text-foreground mb-2">
-            Upgrade your plan
+            Account limit reached
           </h2>
           <p className="text-muted-foreground text-sm mb-6">
-            You&apos;ve reached the limit of {accountLimit} social accounts on
-            the {currentPlanName} plan. Upgrade to connect more accounts.
+            You&apos;ve connected the maximum of {accountLimit} social accounts
+            included in the {currentPlanName} plan. Disconnect an account you
+            no longer use to connect a new one.
           </p>
 
           <Button
             className="w-full bg-primary hover:bg-[#E84A36] text-white h-12"
-            onClick={() => {
-              onOpenChange(false);
-              router.push(appRouter.billing);
-            }}
-          >
-            View plans
-          </Button>
-
-          <button
             onClick={() => onOpenChange(false)}
-            className="mt-3 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
           >
-            Maybe later
-          </button>
+            Got it
+          </Button>
         </div>
       </div>
     </div>

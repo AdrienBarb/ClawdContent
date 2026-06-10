@@ -217,7 +217,13 @@ describe("buildPaywallPlan — ready (rich account)", () => {
 
   it("orders target formats Reels-first and lists newly added formats", () => {
     expect(plan.after?.targetFormatLabels).toEqual(["Reels", "Carousels", "Photos"]);
-    expect(plan.after?.newFormatLabels).toEqual(["Reels", "Carousels", "Stories"]);
+    expect(plan.after?.newFormatLabels).toEqual(["Reels", "Carousels"]);
+  });
+
+  it("scrubs unpublishable Stories from legacy stored strategies", () => {
+    // makeStrategy carries a "story" formatPlan entry (pre-guard stored shape) —
+    // Zernio can't publish Stories, so the plan must never surface it.
+    expect(plan.after?.formatPlan.map((f) => f.label)).not.toContain("Stories");
   });
 
   it("lists concrete, business-specific post ideas", () => {

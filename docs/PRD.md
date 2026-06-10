@@ -9,7 +9,7 @@ Small business owners — caterers, photographers, coaches, local services — k
 PostClaw analyzes their business and their existing social accounts, then generates a week of ready-to-publish posts from a single sentence. Cross-platform by default, one-click schedule. The system learns from what works on each account and improves recommendations over time.
 
 **Success Criteria**
-- $5K MRR by October 2026 (~100 paying customers at $49/mo)
+- $5K MRR by October 2026 (~50 paying customers at $99/mo)
 - Free-to-paid conversion rate (primary north-star metric)
 - Activated users return 4+ times per month
 
@@ -70,7 +70,7 @@ PostClaw analyzes their business and their existing social accounts, then genera
 6. PostClaw generates a week of posts on the drafts board (cross-platform variants).
 7. User reviews, edits if needed, clicks **Schedule** or **Post Now** on each card.
 8. Posts publish via Zernio. PostClaw tracks performance and uses it to improve the next batch.
-9. After ~3 successful generations, paywall: $49/mo for unlimited use.
+9. Onboarding ends at a hard paywall: $99/mo (no trial) for access to the app.
 
 ## Out of Scope (v1)
 
@@ -91,7 +91,7 @@ Explicitly **NOT** building in MVP:
 ## Success Metrics
 
 **Primary Metrics**:
-- **MRR**: $5,000 by October 2026 (~100 customers at $49/mo).
+- **MRR**: $5,000 by October 2026 (~50 customers at $99/mo).
 - **Free → paid conversion rate**: north-star — to be baselined in first 4 weeks post-launch.
 - **Activation rate**: % of signups who publish or schedule a post within 7 days.
 

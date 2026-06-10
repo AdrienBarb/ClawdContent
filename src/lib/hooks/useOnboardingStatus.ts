@@ -7,7 +7,7 @@ const QUERY_KEY = ["onboardingStatus"];
 
 // Mirrors useDashboardStatus. Polls every 2s while the background website
 // analysis is in flight (screen 3) — otherwise it's a one-shot read. The
-// final screen calls refetch() after the trial CTA to detect completion.
+// final screen calls refetch() after the subscribe CTA to detect completion.
 export function useOnboardingStatus() {
   return useQuery<OnboardingStatus>({
     queryKey: QUERY_KEY,

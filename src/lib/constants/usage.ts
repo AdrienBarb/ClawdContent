@@ -16,10 +16,10 @@ export const ACTION_COST: Record<UsageType, number> = {
 };
 
 // Period budgets, expressed in points.
-//   FREE   = 10 points  → 5 generations max OR 10 rewrites OR a mix
+//   FREE   = 0 points   → hard paywall: no generations without a subscription
 //   PRO    = 500 points → 250 generations max OR 500 rewrites OR a mix
 //   TOPUP  = 100 points (+~$0.04 COGS per point at the heavy end)
-export const FREE_LIFETIME_POINTS = 10;
+export const FREE_LIFETIME_POINTS = 0;
 export const PRO_PERIOD_POINTS = 500;
 export const TOPUP_PACK_POINTS = 100;
 export const TOPUP_PACK_PRICE_USD = 9;

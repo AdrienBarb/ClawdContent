@@ -4,7 +4,7 @@ import { brandingSchema, type KnowledgeBase } from "@/lib/schemas/knowledgeBase"
 /**
  * Onboarding is a 5-screen resumable wizard. Progress lives on the `User` row
  * (`onboardingStep`, `websiteAnalysis`) and the completion gate is
- * `onboardingCompletedAt` (set when the user starts their trial). The website
+ * `onboardingCompletedAt` (set when the user subscribes). The website
  * scrape + extraction runs in the background via Inngest, so screen 3 polls
  * `/api/onboarding/status` for the result.
  */

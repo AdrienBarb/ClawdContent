@@ -27,7 +27,7 @@ interface Props {
     platform: string;
     username: string;
   }) => void;
-  /** Free posts remaining; null = unlimited (subscribed). */
+  /** Publish quota remaining (0 when unsubscribed); null = unlimited (subscribed). */
   quotaRemaining: number | null;
 }
 

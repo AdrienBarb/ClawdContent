@@ -70,9 +70,17 @@ const FORMAT_PRIORITY: Record<string, number> = {
   Carousels: 1,
   Video: 2,
   Photos: 3,
-  Stories: 4,
-  Posts: 5,
+  Posts: 4,
 };
+
+/**
+ * Zernio cannot publish Stories, so a plan must never promise them. New
+ * strategies are already filtered at generation (assembleStrategy guard); this
+ * read-time check also scrubs strategies stored before that guard existed.
+ */
+function isPublishableLabel(label: string): boolean {
+  return label !== "Stories";
+}
 
 function dedupe(values: string[]): string[] {
   return Array.from(new Set(values));
@@ -224,12 +232,14 @@ function buildAfter(account: RawAccountInput): PaywallPlanAfter | null {
   const strategy = parseStrategy(account.strategy);
   if (!strategy) return null;
 
-  const formatPlan = strategy.formatPlan.map((f) => ({
-    format: f.format,
-    label: formatLabel(f.format),
-    action: f.action,
-    rationale: f.rationale,
-  }));
+  const formatPlan = strategy.formatPlan
+    .map((f) => ({
+      format: f.format,
+      label: formatLabel(f.format),
+      action: f.action,
+      rationale: f.rationale,
+    }))
+    .filter((f) => isPublishableLabel(f.label));
 
   const newFormatLabels = dedupe(
     formatPlan
@@ -243,12 +253,15 @@ function buildAfter(account: RawAccountInput): PaywallPlanAfter | null {
     .sort((a, b) => (FORMAT_PRIORITY[a] ?? 9) - (FORMAT_PRIORITY[b] ?? 9))
     .slice(0, 3);
 
-  const ideas = strategy.postIdeas.slice(0, 3).map((p) => ({
-    idea: p.idea,
-    format: p.format,
-    formatLabel: formatLabel(p.format),
-    pillar: p.pillar,
-  }));
+  const ideas = strategy.postIdeas
+    .filter((p) => isPublishableLabel(formatLabel(p.format)))
+    .slice(0, 3)
+    .map((p) => ({
+      idea: p.idea,
+      format: p.format,
+      formatLabel: formatLabel(p.format),
+      pillar: p.pillar,
+    }));
 
   return {
     postsPerWeek: strategy.cadence.targetPerWeek,

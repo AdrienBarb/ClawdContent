@@ -17,7 +17,7 @@ const comparisons = [
   },
   {
     without: "Hiring a social media person: $1,000–2,000/mo",
-    with: "$49/mo. Everything included.",
+    with: "$99/mo. Everything included.",
   },
 ];
 

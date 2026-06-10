@@ -89,10 +89,10 @@ export default function UsageLimitModal() {
           {!isPaid ? (
             <>
               <h2 className="text-xl font-semibold tracking-tight text-gray-900 mb-1">
-                You&apos;ve used your free allowance
+                Your subscription isn&apos;t active
               </h2>
               <p className="text-[13px] leading-relaxed text-gray-500 mb-5">
-                Upgrade to Pro to keep planning and writing posts.
+                Subscribe to keep planning and writing posts.
               </p>
 
               <ul className="flex flex-col gap-2 mb-6">
@@ -128,7 +128,7 @@ export default function UsageLimitModal() {
                 }}
               >
                 {busy && <CircleNotchIcon className="h-4 w-4 animate-spin" />}
-                Upgrade to Pro
+                Subscribe now
               </button>
               <button
                 onClick={close}

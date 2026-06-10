@@ -9,7 +9,7 @@ const PAGE_PATH = "/for-creators";
 const PAGE_URL = `${config.project.url}${PAGE_PATH}`;
 const PAGE_TITLE = "Social Media Manager for Creators";
 const PAGE_DESCRIPTION =
-  "A social media manager for video creators, newsletter writers, course makers, and indie artists. One idea becomes a week of Instagram and Facebook posts. $49/mo, less than your editing software.";
+  "A social media manager for video creators, newsletter writers, course makers, and indie artists. One idea becomes a week of Instagram and Facebook posts. $99/mo, a fraction of what an editor costs.";
 
 export const metadata: Metadata = {
   title: PAGE_TITLE,
@@ -127,7 +127,7 @@ const webPageSchema = {
     operatingSystem: "Web",
     offers: {
       "@type": "Offer",
-      price: "49",
+      price: "99",
       priceCurrency: "USD",
       availability: "https://schema.org/InStock",
     },
@@ -173,14 +173,14 @@ export default function ForCreatorsPage() {
               <em className="italic text-[#ec6f5b]">We&apos;ll post about it.</em>
             </h1>
             <p className="mt-9 max-w-[640px] text-base leading-[1.55] text-[#b9bdd6] md:text-xl">
-              You make videos, newsletters, courses, art. PostClaw turns one idea into a week of Instagram and Facebook posts and handles publishing. Get your hours back. $49 a month, less than your editing software.
+              You make videos, newsletters, courses, art. PostClaw turns one idea into a week of Instagram and Facebook posts and handles publishing. Get your hours back. $99 a month, a fraction of what an editor costs.
             </p>
             <div className="mt-11 flex flex-wrap items-center justify-center gap-3.5">
               <Link
                 href="#pricing"
                 className="cursor-pointer rounded-full bg-[#ec6f5b] px-8 py-4 text-sm font-semibold text-white shadow-[0_14px_40px_-10px_#ec6f5b] transition-transform hover:-translate-y-0.5"
               >
-                Get my 5 free posts →
+                Start Growing →
               </Link>
               <Link
                 href="/"

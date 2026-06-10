@@ -23,7 +23,7 @@ const stats: [string, string][] = [
   ["48,200", "posts published"],
   ["1,472", "businesses on board"],
   ["2 min", "average setup"],
-  ["40×", "cheaper than a $2,000 agency"],
+  ["20×", "cheaper than a $2,000 agency"],
 ];
 
 export default function HeroSection({ variant = "control" }: HeroSectionProps) {
@@ -72,7 +72,7 @@ export default function HeroSection({ variant = "control" }: HeroSectionProps) {
               onClick={handleGetStarted}
               className="cursor-pointer rounded-full bg-[#ec6f5b] px-8 py-4 text-sm font-semibold text-white shadow-[0_14px_40px_-10px_#ec6f5b] transition-transform hover:-translate-y-0.5"
             >
-              Get my 5 free posts →
+              Start Growing →
             </button>
             <a
               href="#demo"

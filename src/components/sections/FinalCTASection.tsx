@@ -44,10 +44,10 @@ export default function FinalCTASection() {
           onClick={handleGetStarted}
           className="cursor-pointer rounded-full bg-[#ec6f5b] px-9 py-5 text-base font-semibold text-white shadow-[0_14px_40px_-10px_#ec6f5b] transition-transform hover:-translate-y-0.5"
         >
-          Get my 5 free posts →
+          Start Growing →
         </button>
         <p className="mt-5 text-[13px] text-[#7e8298]">
-          5 free posts. No credit card. $49/mo after.
+          $99/mo. Cancel anytime, two clicks.
         </p>
       </div>
       <SignInModal open={isSignInModalOpen} onOpenChange={setIsSignInModalOpen} />

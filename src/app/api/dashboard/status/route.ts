@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { after } from "next/server";
 import { prisma } from "@/lib/db/prisma";
-import { getPlan, resolvePlanId } from "@/lib/constants/plans";
+import { FREE_POST_LIMIT, getPlan, resolvePlanId } from "@/lib/constants/plans";
 import { syncAccountsFromLate } from "@/lib/services/accounts";
 import { getBalanceSummary } from "@/lib/services/usage";
 import { isSupportedPlatform } from "@/lib/insights/platformConfig";
@@ -100,7 +100,7 @@ export async function GET() {
         lastAnalyzedAt: a.lastAnalyzedAt?.toISOString() ?? null,
       })),
       postsPublished: user?.postsPublished ?? 0,
-      freePostLimit: 5,
+      freePostLimit: FREE_POST_LIMIT,
       usage,
     });
   } catch (error) {

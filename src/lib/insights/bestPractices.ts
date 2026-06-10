@@ -52,7 +52,11 @@ export interface PlatformBestPractices {
   displayName: string;
   /** Cited recommended posting cadence. */
   recommendedPostsPerWeek: PostsPerWeekRange;
-  /** The role each format plays for growth, best → least valuable. */
+  /**
+   * The role each format plays for growth, best → least valuable. ONLY formats
+   * Zernio can publish belong here — this doubles as the strategy's
+   * publishable-formats allowlist (prompt constraint + assembleStrategy guard).
+   */
   formatMix: FormatRole[];
   /** Fallback posting times (UTC, dayOfWeek 0=Monday) — single source: platformConfig. */
   bestTimeDefaults: { dayOfWeek: number; hour: number }[];
@@ -89,12 +93,9 @@ export const BEST_PRACTICES: Record<string, PlatformBestPractices> = {
         // 3-5× likes, Buffer 2026) are the signals that compound.
         bestFor: "Earning saves and shares — how-tos, tips, before/after. ~25% of posts.",
       },
-      {
-        format: "story",
-        role: "Retention of existing audience",
-        // Buffer 2026: Stories keep you top-of-mind but get little discovery boost.
-        bestFor: "Staying present with current followers — polls, BTS, daily moments.",
-      },
+      // NB: no "story" entry on purpose — Zernio cannot publish Stories, so the
+      // strategy must never plan around them. `formatMix` doubles as the
+      // publishable-formats allowlist (see strategyContext prompt + guard).
       {
         format: "image",
         role: "Low-reach filler",

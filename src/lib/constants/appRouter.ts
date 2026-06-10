@@ -40,7 +40,6 @@ export const appRouter = {
     suggestions: "/api/suggestions",
     chat: "/api/chat",
     billingPortal: "/api/billing/portal",
-    billingChangePlan: "/api/billing/change-plan",
     billingTopup: "/api/billing/topup",
     media: "/api/media",
     mediaUpload: "/api/media/upload",

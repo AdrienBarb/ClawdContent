@@ -71,7 +71,7 @@ const faqs = [
   {
     question: "How does recurring commission work?",
     answer:
-      "You earn 40% of every payment your referral makes, for as long as they stay subscribed. PostClaw is $49/mo, so each active referral = $19.60/month, every month. 20 active referrals = $392/month recurring ($4,704/year). Yearly plan referrals pay 40% of the discounted yearly total upfront.",
+      "You earn 40% of every payment your referral makes, for as long as they stay subscribed. PostClaw is $99/mo, so each active referral = $39.60/month, every month. 20 active referrals = $792/month recurring ($9,504/year).",
   },
   {
     question: "What happens if my referral cancels or gets refunded?",
@@ -154,7 +154,7 @@ export default function AffiliatesPage() {
               {
                 step: "3",
                 title: "Earn every month",
-                desc: "Get 40% of every payment your referrals make — $19.60/mo per referral, recurring for as long as they stay.",
+                desc: "Get 40% of every payment your referrals make — $39.60/mo per referral, recurring for as long as they stay.",
               },
             ].map((item) => (
               <div key={item.step} className="flex gap-5">
@@ -239,7 +239,7 @@ export default function AffiliatesPage() {
             Ready to start earning?
           </h2>
           <p className="mt-4 text-muted-foreground">
-            Join the PostClaw affiliate program today and earn $19.60/month for
+            Join the PostClaw affiliate program today and earn $39.60/month for
             every small business owner you bring on board.
           </p>
           <div className="mt-8">

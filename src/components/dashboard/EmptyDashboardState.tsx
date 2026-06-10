@@ -45,7 +45,7 @@ export default function EmptyDashboardState({
       {/* Trust signals ------------------------------------------- */}
       <ul className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[12.5px] text-gray-500">
         <TrustItem>We never post without you tapping Post</TrustItem>
-        <TrustItem>Your first 5 posts are free — no credit card</TrustItem>
+        <TrustItem>Cancel anytime, two clicks</TrustItem>
         <TrustItem>Disconnect any account in one click</TrustItem>
       </ul>
 

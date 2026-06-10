@@ -31,7 +31,7 @@ export default function BillingUnsubscribed() {
             className="inline-flex items-center justify-center rounded-md bg-primary hover:bg-[#E84A36] text-white px-6 py-2.5 text-sm font-medium transition-colors cursor-pointer"
             onClick={() => setShowModal(true)}
           >
-            View plans
+            Subscribe
           </button>
         </div>
       </div>
