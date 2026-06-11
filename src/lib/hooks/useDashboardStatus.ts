@@ -10,19 +10,11 @@ interface AccountInfo {
   lastAnalyzedAt: string | null;
 }
 
-export interface UsageBreakdown {
-  // Single number 0–100. UI never shows raw points or caps.
-  percentageRemaining: number;
-  resetAt: string | null;
-  isPaid: boolean;
-}
-
 export interface DashboardStatus {
   accounts: AccountInfo[];
   subscription: { status: string } | null;
   postsPublished: number;
   freePostLimit: number;
-  usage: UsageBreakdown;
 }
 
 const QUERY_KEY = ["dashboardStatus"];

@@ -29,8 +29,22 @@ model User {
   onboardingGoal             String?
   postsPublished             Int              @default(0)
   lastSuggestionsGeneratedAt DateTime?
-  usageLedger                UsageLedger[]
   outcomeSnapshot            OutcomeSnapshot?
+
+  // --- Autopilot ---
+  // autopilotMode: "full_auto" (default — weekly batches commit to Zernio
+  // immediately) | "review" (batch is staged locally until the user approves).
+  autopilotMode    String        @default("full_auto")
+  // Set when the user pauses the autopilot; dispatch skips paused users.
+  autopilotPausedAt DateTime?
+  // One-shot steering note ("we launch the summer menu Tuesday") consumed and
+  // cleared by the next weekly batch.
+  pendingBrief     String?
+  // Frozen per-user visual brand kit (logo URL, hex palette, style-anchor
+  // phrase, reference image URLs) built once from knowledgeBase.branding —
+  // keeps generated media visually consistent week over week.
+  styleKit         Json?
+  weeklyBatches    WeeklyBatch[]
 
   @@unique([email])
   @@map("user")
@@ -147,6 +161,12 @@ model PostSuggestion {
   mediaItems      Json? // [{url, type: "image"|"video"}, ...]
   scheduledAt     DateTime?
   createdAt       DateTime      @default(now())
+  // Weekly autopilot batch this draft belongs to (null = manual/chat draft).
+  batchId         String?
+  batch           WeeklyBatch?  @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  // "draft" (normal) | "needs_media" (media generation failed twice — post is
+  // held back from commit and surfaced in the digest/attention strip).
+  status          String        @default("draft")
 
   // --- Publish-flow idempotency ---
   // Stamped just before we hit Zernio. Acts as a soft lock so a second click
@@ -159,7 +179,38 @@ model PostSuggestion {
   publishedExternalId String?
 
   @@index([socialAccountId])
+  @@index([batchId])
   @@map("post_suggestion")
+}
+
+// One row per user per autopilot week. Acts as the idempotency anchor for the
+// Sunday dispatch (unique [userId, weekStart]) and the source for the digest
+// email + dashboard status banner.
+//   status: "generating" | "ready" | "failed"
+//   mode:   "full_auto" | "review" — snapshot of User.autopilotMode at generation
+//   posts:  compact snapshot for digest/attention rendering —
+//           [{ externalPostId?, suggestionId?, accountId, platform, username,
+//              scheduledAt, contentPreview, mediaUrl?, mediaType?, status,
+//              retriedAt? }]
+model WeeklyBatch {
+  id           String           @id @default(cuid())
+  userId       String
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weekStart    DateTime
+  status       String           @default("generating")
+  mode         String           @default("full_auto")
+  brief        String?
+  posts        Json?
+  error        String?
+  digestSentAt DateTime?
+  approvedAt   DateTime?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  suggestions  PostSuggestion[]
+
+  @@unique([userId, weekStart])
+  @@index([userId])
+  @@map("weekly_batch")
 }
 
 model Media {
@@ -204,34 +255,4 @@ model OutcomeSnapshot {
   failedPosts     Json
 
   @@map("outcome_snapshot")
-}
-
-// Event-sourced ledger for AI usage allowance.
-// amount: negative = consume, positive = grant or refund.
-// bucket conventions:
-//   "free-lifetime"               → free user, never resets
-//   "period:{ISO-date}"           → Pro user, resets per Stripe billing period
-//   "topup:{stripeSessionId}"     → one-time pack, never expires
-// dedupKey enforces idempotency across retries / webhook redelivery /
-// AI SDK tool-call replays. Examples:
-//   "consume:{toolCallId}"
-//   "refund:{toolCallId}:partial"
-//   "period:{stripeSubscriptionId}:{ISO}:{type}"
-//   "topup:{stripeSessionId}"
-model UsageLedger {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type      String // "draft_generation" | "rewrite"
-  amount    Int
-  bucket    String
-  reason    String // "consume" | "refund" | "subscription_grant" | "topup_grant"
-  dedupKey  String
-  metadata  Json?
-  createdAt DateTime @default(now())
-
-  @@unique([userId, dedupKey])
-  @@index([userId, type])
-  @@index([userId, bucket])
-  @@map("usage_ledger")
 }

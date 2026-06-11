@@ -30,10 +30,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { appRouter } from "@/lib/constants/appRouter";
 import { AccountChipSelector } from "./AccountChipSelector";
 import {
-  useUsageModalStore,
-  type UsageLimitPayload,
-} from "@/lib/stores/usageModalStore";
-import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
@@ -172,8 +168,6 @@ export function ChatPanel({
     transport,
     onFinish: () => {
       onSuggestionsChanged();
-      // Refresh the sidebar usage meter — every chat turn that hits
-      // generate_posts / regenerate_post will have moved the ledger.
       queryClient.invalidateQueries({ queryKey: ["dashboardStatus"] });
     },
   });
@@ -274,36 +268,6 @@ export function ChatPanel({
   };
 
   const isFresh = messages.length === 0;
-
-  // Tool-result scanner: when the assistant streams a tool result with
-  // surface === "paywall_modal", open the global usage modal. Tracks the
-  // last scanned message id so we don't re-fire on every render.
-  const openUsageModal = useUsageModalStore((s) => s.open);
-  const lastScannedIdRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (messages.length === 0) return;
-    const last = messages[messages.length - 1];
-    if (last.id === lastScannedIdRef.current) return;
-    if (last.role !== "assistant") return;
-
-    for (const part of last.parts) {
-      if (
-        typeof part === "object" &&
-        part !== null &&
-        "state" in part &&
-        (part as { state?: string }).state === "output-available"
-      ) {
-        const out = (part as { output?: unknown }).output as
-          | { surface?: string; payload?: UsageLimitPayload }
-          | undefined;
-        if (out?.surface === "paywall_modal" && out.payload) {
-          openUsageModal(out.payload);
-          break;
-        }
-      }
-    }
-    lastScannedIdRef.current = last.id;
-  }, [messages, openUsageModal]);
 
   // Auto-stick-to-bottom: only scroll the thread to the bottom on new
   // content if the user was already at the bottom. Lets them scroll up to

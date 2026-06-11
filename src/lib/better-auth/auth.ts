@@ -8,10 +8,7 @@ import config from "@/lib/config";
 import { captureServerEvent, identifyUser } from "@/lib/tracking/postHogClient";
 import { getDistinctIdFromHeader } from "@/lib/tracking/distinctId";
 import { getUtmFromCookieHeader } from "@/lib/tracking/utm";
-import {
-  createBrevoContact,
-  trackSignupCompleted,
-} from "@/lib/services/email";
+import { createMarketingContact } from "@/lib/services/email";
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -95,12 +92,11 @@ export const auth = betterAuth({
             console.error(`Failed to create profile for user ${user.id}:`, err)
           );
 
-          // Brevo: create contact + trigger onboarding automation
-          await createBrevoContact({
+          // Resend audience: keep the marketing contact list in sync
+          await createMarketingContact({
             email: user.email,
             name: user.name,
           });
-          await trackSignupCompleted(user.email);
         },
       },
     },

@@ -7,7 +7,6 @@ import { after } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { FREE_POST_LIMIT, getPlan, resolvePlanId } from "@/lib/constants/plans";
 import { syncAccountsFromLate } from "@/lib/services/accounts";
-import { getBalanceSummary } from "@/lib/services/usage";
 import { isSupportedPlatform } from "@/lib/insights/platformConfig";
 
 // Throttle account sync: once per user per 60 seconds
@@ -28,7 +27,7 @@ export async function GET() {
 
     const userId = session.user.id;
 
-    const [user, subscription, lateProfile, usage] = await Promise.all([
+    const [user, subscription, lateProfile] = await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
         select: {
@@ -43,7 +42,6 @@ export async function GET() {
         where: { userId },
         include: { socialAccounts: true },
       }),
-      getBalanceSummary(userId),
     ]);
 
     const planId = resolvePlanId(subscription?.planId);
@@ -101,7 +99,6 @@ export async function GET() {
       })),
       postsPublished: user?.postsPublished ?? 0,
       freePostLimit: FREE_POST_LIMIT,
-      usage,
     });
   } catch (error) {
     return errorHandler(error);
