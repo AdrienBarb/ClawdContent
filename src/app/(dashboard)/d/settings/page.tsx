@@ -6,12 +6,20 @@ import useApi from "@/lib/hooks/useApi";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import PageHeader from "@/components/dashboard/PageHeader";
-import { GlobeIcon, CheckIcon } from "@phosphor-icons/react";
+import {
+  GlobeIcon,
+  CheckIcon,
+  SteeringWheelIcon,
+} from "@phosphor-icons/react";
 
 const ALL_TIMEZONES = Intl.supportedValuesOf("timeZone");
 
 interface DashboardStatus {
   timezone: string | null;
+  autopilot?: {
+    mode: string;
+    paused: boolean;
+  };
 }
 
 export default function SettingsPage() {
@@ -38,6 +46,11 @@ export default function SettingsPage() {
   const { mutate: updateTimezone, isPending } = usePatch("/api/user/timezone", {
     onSuccess: () => refetch(),
   });
+
+  const { mutate: updateAutopilot, isPending: autopilotPending } = usePatch(
+    "/api/autopilot/settings",
+    { onSuccess: () => refetch() }
+  );
 
   const currentTimezone = status?.timezone;
 
@@ -142,6 +155,92 @@ export default function SettingsPage() {
         title="Settings"
         subtitle="Manage your account preferences."
       />
+
+      <div className="rounded-2xl bg-white p-6 shadow-sm border border-gray-100">
+        <div className="flex items-center gap-3 mb-5">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-600">
+            <SteeringWheelIcon className="h-5 w-5" />
+          </span>
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900">Autopilot</h3>
+            <p className="text-xs text-gray-500">
+              How your weekly posts get planned and published
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-4 max-w-md">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-[13px] font-medium text-gray-900">
+                Publish automatically
+              </p>
+              <p className="text-[12px] leading-relaxed text-gray-500">
+                On: each week is scheduled as soon as it&apos;s ready — you can
+                still veto or edit anything. Off: nothing publishes until you
+                hit &ldquo;Launch my week&rdquo;.
+              </p>
+            </div>
+            <button
+              role="switch"
+              aria-checked={status?.autopilot?.mode !== "review"}
+              disabled={autopilotPending}
+              onClick={() =>
+                updateAutopilot({
+                  mode:
+                    status?.autopilot?.mode === "review"
+                      ? "full_auto"
+                      : "review",
+                })
+              }
+              className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50 ${
+                status?.autopilot?.mode !== "review"
+                  ? "bg-[#2d2a25]"
+                  : "bg-gray-300"
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                  status?.autopilot?.mode !== "review"
+                    ? "translate-x-[22px]"
+                    : "translate-x-0.5"
+                }`}
+              />
+            </button>
+          </div>
+
+          <div className="flex items-start justify-between gap-4 border-t border-gray-100 pt-4">
+            <div className="min-w-0">
+              <p className="text-[13px] font-medium text-gray-900">
+                Pause autopilot
+              </p>
+              <p className="text-[12px] leading-relaxed text-gray-500">
+                No new weeks get planned while paused. Already-scheduled posts
+                still go out unless you remove them.
+              </p>
+            </div>
+            <button
+              role="switch"
+              aria-checked={status?.autopilot?.paused === true}
+              disabled={autopilotPending}
+              onClick={() =>
+                updateAutopilot({ paused: !(status?.autopilot?.paused === true) })
+              }
+              className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50 ${
+                status?.autopilot?.paused ? "bg-[#2d2a25]" : "bg-gray-300"
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                  status?.autopilot?.paused
+                    ? "translate-x-[22px]"
+                    : "translate-x-0.5"
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+      </div>
 
       <div className="rounded-2xl bg-white p-6 shadow-sm border border-gray-100">
         <div className="flex items-center gap-3 mb-4">

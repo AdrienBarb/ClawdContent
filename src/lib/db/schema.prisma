@@ -167,6 +167,9 @@ model PostSuggestion {
   // "draft" (normal) | "needs_media" (media generation failed twice — post is
   // held back from commit and surfaced in the digest/attention strip).
   status          String        @default("draft")
+  // Autopilot media plan (kind/prompts/slides — src/lib/media/mediaPlan.ts)
+  // kept so "regenerate media" can re-render the same concept.
+  mediaPlan       Json?
 
   // --- Publish-flow idempotency ---
   // Stamped just before we hit Zernio. Acts as a soft lock so a second click

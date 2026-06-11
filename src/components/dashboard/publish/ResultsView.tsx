@@ -368,7 +368,7 @@ export function ResultsView({
       className={
         embedded
           ? "flex flex-col min-w-0"
-          : "-mx-8 -my-6 flex flex-col min-w-0 h-[calc(100dvh-3.5rem)] md:h-[100dvh] overflow-hidden"
+          : "-mx-8 -my-6 flex flex-col min-w-0 h-[calc(100dvh-3.5rem)] overflow-hidden"
       }
     >
       {/* Board — standalone owns its own scroll container; embedded scrolls with the page. */}

@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db/prisma";
+import { Prisma } from "@prisma/client";
 import { generateObject } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { getPlatformConfig } from "@/lib/insights/platformConfig";
@@ -269,6 +270,7 @@ export async function planAccountWeek({
         const post = posts[i];
         const scheduledAt = slotToUtc(weekStart, spreadSlots[i], timeZone);
         const content = humanizeContent(post.content);
+        const mediaPlan = toMediaPlan(post);
         const row = await tx.postSuggestion.create({
           data: {
             socialAccountId,
@@ -280,6 +282,7 @@ export async function planAccountWeek({
             suggestedHour: spreadSlots[i].hour,
             reasoning: post.reasoning,
             scheduledAt,
+            mediaPlan: mediaPlan as unknown as Prisma.InputJsonValue,
           },
         });
         planned.push({
