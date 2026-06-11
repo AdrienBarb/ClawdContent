@@ -25,25 +25,26 @@ PostClaw is an employee you hired, not a tool you operate. The app is the window
 
 - **Market wedge:** Predis.ai (closest competitor, $19/mo) meters with credits (no rollover) and hard-caps auto-posting at **2-3 posts/day even at $212/mo**; Buffer's AI is a bolt-on. Our positioning: **"no credits, no caps"**, flat $99. Do NOT claim cron+digest+veto is unique (refuted) or that credit exhaustion drives Predis churn (refuted).
 - **Category-wide #1 complaint (verified):** generic, brand-blind AI output. Our moat = deep knowledgeBase injection into every caption + native-preview review UX.
-- **Media architecture: template-first, not diffusion-first** (this is how Predis actually works — layered templates, locked brand layers, AI-editable text slots).
+- **Media architecture: SINGLE PROVIDER = Google Gemini API.** ALL media is AI-generated (founder dropped Satori/templates entirely on 2026-06-11). One key, one SDK (`@google/genai`), one invoice — images (incl. text cards + carousels) AND video under one API. Verified the only single-provider that covers everything: OpenAI disqualified (no video — Sora API EOL 2026-09-24; and gpt-image can't hit exact IG pixel dims since 1080 isn't a multiple of 16).
 
-### Media stack (pricing verified on primary sources 2026-06-11)
+### Media stack (single provider Google Gemini — pricing verified on official Gemini API docs 2026-06-11)
 
-| Format | Primary | Cost | Fallback (config-switchable) |
-|---|---|---|---|
-| Quote/tip cards, carousel slides | **Satori** (HTML/CSS→SVG, JSX templates) + resvg → PNG | ~$0 | — |
-| Photoreal/lifestyle images | **FLUX.2 [pro]** via fal.ai | $0.03/img @1MP, $0.045 @4:5 1080×1350 | gemini-3.1-flash-image (Nano Banana 2, GA, $0.067/1K) |
-| Reels / video | **Seedance 1.5 Pro image-to-video** via fal.ai | ~$0.026/s silent @720p (audio OFF by default — IG provides music) | Veo 3.1 Fast via Gemini API ($0.10/s, 8s max, 2-day retention → download immediately) |
-| Text inside generated scenes | Ideogram 4.0 (appoint) | $0.03–0.10/img | — |
+| Need | Model | Cost (Batch tier for the Sunday burst) |
+|---|---|---|
+| Text cards (promo/sale/quote/tip) + ALL carousel slides + hero/brand-consistent shots | **Nano Banana Pro** (`gemini-3-pro-image`) | ~$0.067/img (1K-2K Batch), $0.134 Standard |
+| Photoreal/lifestyle images with NO on-image text (food, venues, products, people) | **Nano Banana 2** (`gemini-3.1-flash-image`) | ~$0.034-0.050/img Batch ($0.067-0.101 Standard) |
+| Reels / 9:16 video | **Veo 3.1 Fast** (`veo-3.1-fast-generate-preview`) | $0.12/s @1080p → ~$0.96 per 8s clip; escalate to Veo 3.1 Standard ($0.40/s) only for hero clips |
 
 Key facts:
-- **Image-to-video is the architecture**: generate a brand still at 1080×1920 (FLUX, brand hex colors in prompt — FLUX honors exact hex) then animate with Seedance. Text-to-video cannot hold brand colors/logos. Composite logos AFTER video gen (motion warps logos) or keep motion subtle.
-- FLUX.2 [pro] reference images: max **8 (BFL direct) / 9 (fal)** — not 10. `safety_tolerance` range **1-5 on fal** (default 2, keep it).
-- No SynthID watermark on FLUX (Gemini images carry SynthID → Meta "AI info" label risk → that's why Gemini is fallback).
-- One fal.ai account: queue API + webhooks → fits Inngest. **fal URLs are short-lived — persist to Supabase `media` bucket immediately.** fal bills only successful generations.
-- Satori constraints: flexbox only (no grid, no z-index, no calc()), TTF/OTF/WOFF fonts only (no WOFF2), CSS variables WITH fallback values OK, rasterize via resvg before IG/FB publish.
-- Cost guardrails: cap **~60 generated video seconds/user/week**, default **2 Reels/week/user**; total media ≈ $5-9/user/mo ≈ 5-9% of ARPU.
-- **Dead ends — do not use:** Sora API (EOL 2026-09-24), Kling official API ($4,200 prepaid min), Midjourney (no public API).
+- **TEXT TRADEOFF ACCEPTED (founder decision 2026-06-11): Google + OCR guard on DAY 1.** Nano Banana Pro trails OpenAI gpt-image-2 by ~6-15% on headline/label/price-callout text accuracy. Mitigation = mandatory headless **OCR-diff + regenerate guard** on every text-bearing image/slide (OCR the render, diff vs intended copy, regenerate that single asset on mismatch). gpt-image escape hatch (a 2nd fal.ai key routing only text-heavy slides) is DOCUMENTED ONLY — not built day 1.
+- **Aspect ratios:** Gemini 3 image models natively support 4:5 and 9:16 (confirmed). BUT you pick ratio + resolution tier (1K/2K/4K), NOT arbitrary WxH — generate at 2K and add ONE deterministic downscale/crop step (e.g. `sharp`) to land exactly on 1080×1350 / 1080×1920 before Zernio. Do NOT hardcode intermediate pixel dims (unverifiable).
+- **Carousels = chained generation, NO atomic deck call exists on any provider.** Recipe (anti-drift, fully AI, zero templates): (1) build per-user brand kit once (logo, 1-2 style/color reference images, exact hex codes, a fixed "style-anchor phrase"). (2) Slide 1 = the cover/style anchor via Nano Banana Pro at 4:5, passing logo + brand swatch + style phrase + hex + headline. (3) Slides 2..N: re-anchor EVERY slide to the COVER (not slide→slide→slide — cumulative chaining drifts palette past ~7-8 gens), passing cover as style/layout ref + logo + style phrase + hex, changing only that slide's headline/subject. Keep one aspect ratio for the set. OCR-verify each slide. ~$0.40 per 6-slide carousel on Batch.
+- **Video = image-to-video for brand continuity:** seed a Veo Reel from a Nano Banana hero frame. Veo 3.1 = native 9:16, native audio, max 8s (4s/6s also), 1080p. Async create→poll → fits the Inngest Sunday batch (submit, poll/resume, store to Supabase, hand URL to Zernio).
+- **Veo 3.1 is paid PREVIEW (not GA):** version-pinned `-preview` model ids — wrap in a constant, plan a GA migration. EU/UK/CH/MENA: Veo `personGeneration` restricted to `allow_adult` (founder is EU-based — verify region availability for people-in-video).
+- **SynthID + C2PA are baked into EVERY Google image/video and cannot be removed.** With 2026 Google-Meta C2PA alignment, IG/FB will likely surface Meta's "AI info" label on output. Unavoidable with Google — disclose-by-design, not a bug.
+- **Persistence:** Gemini returns inline base64 (images) / a short-lived operation result (video) — download to Supabase `media` bucket immediately. No free tier on any image or video model.
+- **Reliability:** run the whole-fleet Sunday burst on the Batch image tier (or Vertex AI for higher rate limits — identical code) with retry/backoff; stagger users (Inngest concurrency keys), don't fire all at once (Gemini image endpoints show peak-load 503s).
+- **Cost guardrails:** default **2 Reels/week/user**; total media ≈ **$2-3/user/week (~$8-13/user/mo worst case), <6% of ARPU.** Use Batch images + Veo Fast as defaults; reserve Standard tiers for hero assets.
 
 ## 3. Current-state facts (verified by multi-agent exploration — saves you re-exploring)
 
@@ -73,8 +74,16 @@ State convention: full_auto → posts committed to Zernio at generation, local r
 
 ### 4.2 Media pipeline (`src/lib/media/` — new adapter dir, service-layer rules apply)
 
-- `falClient.ts` — queue submit + webhook/poll helper (one API key, `FAL_API_KEY`).
-- `satoriTemplates/` — 6-8 branded JSX templates (quote card, tip list, promo/offer, announcement, before/after, carousel slide set) with brand colors as CSS vars + tasteful no-branding fallback palettes; `satoriRender.ts` (Satori → resvg → PNG → Supabase).
+Single provider: **Google Gemini API** (`@google/genai`, key `GEMINI_API_KEY`). All media AI-generated, no templates.
+- `geminiImage.ts` — Nano Banana Pro (`gemini-3-pro-image`) for text cards/carousels/hero, Nano Banana 2 (`gemini-3.1-flash-image`) for no-text photoreal; Batch tier for the Sunday burst; pass brand kit reference images + hex codes; request 4:5 / 9:16; returns base64 → Supabase.
+- `geminiVideo.ts` — Veo 3.1 Fast (`veo-3.1-fast-generate-preview`) image-to-video from a hero frame; async create→poll inside an Inngest step; model id behind a constant (preview → GA migration).
+- `ocrGuard.ts` — **mandatory day-1 text QA**: OCR each text-bearing image/slide, diff vs intended copy, regenerate the single asset on mismatch (bounded retries). This is the agreed mitigation for Google's text gap vs gpt-image.
+- `carousel.ts` — chained slide generation anchored to the cover (anti-drift recipe in §2); re-inject hex + style-anchor phrase per slide; one aspect ratio for the set.
+- `styleKit.ts` — build/store per-user brand kit (logo, 1-2 style/color refs, exact hex codes, frozen style-anchor phrase) once from knowledgeBase.
+- `imageSize.ts` — deterministic downscale/crop (`sharp`) to exact 1080×1350 / 1080×1920 after generation.
+- `mediaPlan.ts` — map a planned post's format → the right generator; degrade on failure (video→static image; image→`needs_media`).
+- Reuse `mediaValidation.ts` platform rules before commit. Persist every asset to Supabase `media` immediately (Gemini outputs are inline/short-lived).
+- Escape hatch (DOCUMENTED, not built): a 2nd `fal.ai` key routing only text-heavy slides to `gpt-image-2` if Google text accuracy ever drives churn.
 - `photoreal.ts` — FLUX.2 [pro] adapter (+ Gemini fallback behind config flag); per-placement native sizes (1:1 1024², 4:5 1080×1350, 9:16 1080×1920).
 - `reels.ts` — brand still (FLUX 1080×1920) → Seedance 1.5 Pro i2v (4-12s, audio off, 9:16) → MP4 → Supabase (+ Veo fallback flag).
 - `styleKit.ts` — build/refresh per-user style kit from knowledgeBase.
@@ -88,7 +97,7 @@ State convention: full_auto → posts committed to Zernio at generation, local r
   1. `refresh-insights` per account (reuse `computeInsights`, source "all")
   2. `plan-week` (LLM, generateObject): inputs = strategy (per account), knowledgeBase, goal, best times, `OutcomeSnapshot`, `pendingBrief` (consume + clear), recent published posts (no repetition); output = per-account post list: day/time slot, format (per formatPlan + cadence target), topic, media plan. Caps: cadence target per account, ≤2 Reels/user/week, ≤60 video-seconds/user/week.
   3. `captions` — reuse `createFromBrief` internals / `promptContext` voice fingerprint; inject concrete KB specifics into every caption.
-  4. `media` — parallel steps via `mediaPlan.ts` (fal queue + step polling or webhook→event).
+  4. `media` — parallel steps via `mediaPlan.ts` (Gemini image base64 / Veo create→poll), each asset through `ocrGuard` (text-bearing) + `imageSize` downscale, persisted to Supabase.
   5. `commit` — full_auto: validate + Zernio `createPost(publishNow:false, scheduledAt)` per post (system-initiated variant of `publishOrScheduleSuggestion`: bypass chat cooldown, no UsageLedger, respect soft-lock/idempotency via `publishedExternalId`); review: stage locally with `scheduledAt`.
   6. `digest` — send via Resend (~18:00 local).
   7. Failure handling: media fail ×2 → degrade; whole-batch fail → batch `status:"failed"` + alert email + retry next hour (max 3).
@@ -118,7 +127,7 @@ State convention: full_auto → posts committed to Zernio at generation, local r
 | # | Epic | Size | Content |
 |---|---|---|---|
 | **E1** | Foundations | M | Prisma migration (WeeklyBatch, User/PostSuggestion fields) · delete UsageLedger/topup/usage service + adjust chat tools · Brevo→Resend consolidation + React Email base |
-| **E2** | Media pipeline | L | falClient · Satori template system + raster + no-brand fallback · FLUX.2 adapter (+Gemini flag) · Seedance i2v adapter (+Veo flag) · styleKit · mediaPlan + degradation + Supabase persistence |
+| **E2** | Media pipeline (Google Gemini, single provider) | L | `@google/genai` client · geminiImage (Nano Banana Pro + 2) · geminiVideo (Veo 3.1 Fast i2v) · **ocrGuard (day-1 text QA)** · carousel chained anti-drift · styleKit · imageSize downscale to exact IG dims · mediaPlan + degradation + Supabase persistence |
 | **E3** | Autopilot loop | L | planWeek service · captions reuse · autopilot-dispatch (tz-aware hourly cron) · generate-week function · first-week trigger post-checkout · system commit path (cooldown bypass, idempotency) |
 | **E4** | Digest & actions | M | digest React Email template · signed action tokens + `/api/autopilot/actions` · review-mode "Launch my week" · failure/disconnect alert emails |
 | **E5** | UI v2 | L | navbar + sidebar removal + route consolidation · week timeline · IG/FB native preview cards · brief bar · edit sheet · `/d/results` · settings toggles · post-payment "preparing" landing |
@@ -140,6 +149,7 @@ State convention: full_auto → posts committed to Zernio at generation, local r
 8. UX: Option A single page, no sidebar, navbar + avatar menu; **native IG/FB preview cards**.
 9. Batch timing: **Sunday 17:00 user-local generation, ~18:00 digest**. Cap **2 Reels/week** default.
 10. **OutcomesSection: KEEP AS-IS, do not touch** (founder overruled the fake-testimonials concern — flagged 2026-06-11, his call).
+11. **Media = SINGLE PROVIDER Google Gemini, NO Satori/templates** (founder 2026-06-11): all media AI-generated. Nano Banana Pro (text cards/carousels/hero) + Nano Banana 2 (photoreal) + Veo 3.1 Fast (Reels). **Accept the ~6-15% text-accuracy gap vs gpt-image and ship Google + OCR guard on day 1**; gpt-image via fal.ai is a documented escape hatch only, not built day 1. Verified: OpenAI can't be the single provider (Sora video EOL 2026-09-24; no native exact IG pixel dims).
 
 ## 7. Standing project rules (from CLAUDE.md + memory — apply everywhere)
 
@@ -148,4 +158,4 @@ State convention: full_auto → posts committed to Zernio at generation, local r
 - Zernio is "Late" in code; `day_of_week` 0=Monday; media types image/video/gif/document; immediate posts need `publishNow:true`.
 - Prisma 7 adapter-pg only; routes thin → services; no barrel imports; Server Components default; `useApi` for client fetching.
 - Never test by posting on real user accounts.
-- New env vars to document in `docs/environment.md`: `FAL_API_KEY`, `RESEND_API_KEY` (exists?), `GEMINI_API_KEY` (fallback), autopilot action-token secret.
+- New env vars to document in `docs/environment.md`: `GEMINI_API_KEY` (all media — images + video), `RESEND_API_KEY`, autopilot action-token secret. (`FAL_API_KEY` only if/when the gpt-image escape hatch is ever built — not day 1.)
