@@ -5,6 +5,11 @@
 DATABASE_URL=                    # Used by adapter-pg at runtime
 DIRECT_URL=                      # Used by Prisma CLI (prisma.config.ts)
 
+# Supabase Storage (media bucket)
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+
 # Authentication
 BETTER_AUTH_SECRET=
 BETTER_AUTH_URL=
@@ -26,15 +31,19 @@ STRIPE_PRICE_STARTER_YEARLY=
 STRIPE_PRICE_BUSINESS_MONTHLY=
 STRIPE_PRICE_BUSINESS_YEARLY=
 
-# Email (Resend — magic links + transactional)
+# Email (Resend — single email provider: magic links, digests, alerts)
 RESEND_API_KEY=
+RESEND_AUDIENCE_ID=              # Optional — marketing contact list sync (signup/removal)
 
-# Email Automation (Brevo)
-BREVO_API_KEY=
-BREVO_LIST_ID=
-
-# AI (Anthropic)
+# AI — text (Anthropic)
 ANTHROPIC_API_KEY=               # Read by @ai-sdk/anthropic provider
+
+# AI — media (Google Gemini, single provider for ALL generated media)
+GEMINI_API_KEY=                  # Nano Banana Pro/2 images + Veo 3.1 Fast Reels
+
+# Autopilot
+AUTOPILOT_ACTION_SECRET=         # HMAC secret for one-click digest action links
+                                 # (falls back to BETTER_AUTH_SECRET if unset)
 
 # Website Scraping (Firecrawl, onboarding only)
 FIRECRAWL_API_KEY=
@@ -54,11 +63,6 @@ NEXT_PUBLIC_SANITY_DATASET=
 # Analytics (PostHog)
 NEXT_PUBLIC_POSTHOG_KEY=
 NEXT_PUBLIC_POSTHOG_HOST=
-
-# Media (Cloudinary)
-NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=
-CLOUDINARY_API_KEY=
-CLOUDINARY_API_SECRET=
 
 # App
 NEXT_PUBLIC_APP_ENV=             # production / staging / development

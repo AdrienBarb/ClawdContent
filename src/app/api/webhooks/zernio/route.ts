@@ -5,6 +5,10 @@ import { prisma } from "@/lib/db/prisma";
 import { resendClient } from "@/lib/resend/resendClient";
 import { AccountDisconnectedEmail } from "@/lib/emails/AccountDisconnectedEmail";
 import config from "@/lib/config";
+import { retryPost } from "@/lib/late/mutations";
+import { updateBatchPostSnapshot } from "@/lib/services/autopilot/batch";
+import { sendPostFailedAlert } from "@/lib/services/autopilot/digest";
+import type { BatchPostSnapshot } from "@/lib/schemas/autopilot";
 
 const ZERNIO_WEBHOOK_SECRET = process.env.ZERNIO_WEBHOOK_SECRET;
 
@@ -115,6 +119,62 @@ export async function POST(req: NextRequest) {
       console.error(
         `[Zernio Webhook] Post ${event.event} — postId=${id} content="${content?.slice(0, 50)}..." failures=[${failedPlatforms}]`
       );
+
+      // Autopilot safety net: posts that belong to a weekly batch get ONE
+      // automatic retry; a second failure marks the snapshot "failed" (the
+      // dashboard attention strip reads it) and emails the user. The
+      // retriedAt marker is what stops a retry loop — Zernio fires
+      // post.failed again if the retry also fails.
+      after(async () => {
+        try {
+          const batch = await prisma.weeklyBatch.findFirst({
+            where: { posts: { array_contains: [{ externalPostId: id }] } },
+            orderBy: { weekStart: "desc" },
+            select: { id: true, userId: true, posts: true },
+          });
+          if (!batch || !Array.isArray(batch.posts)) return;
+          const snapshot = (batch.posts as unknown as BatchPostSnapshot[]).find(
+            (p) => p.externalPostId === id
+          );
+          if (!snapshot) return;
+
+          if (!snapshot.retriedAt) {
+            const profile = await prisma.lateProfile.findUnique({
+              where: { userId: batch.userId },
+              select: { lateApiKey: true },
+            });
+            if (!profile) return;
+            await retryPost(id, profile.lateApiKey);
+            await updateBatchPostSnapshot(
+              batch.id,
+              { externalPostId: id },
+              { retriedAt: new Date().toISOString() }
+            );
+            console.log(`[Zernio Webhook] retried autopilot post ${id}`);
+            return;
+          }
+
+          await updateBatchPostSnapshot(
+            batch.id,
+            { externalPostId: id },
+            { status: "failed" }
+          );
+          await sendPostFailedAlert({
+            userId: batch.userId,
+            platform: snapshot.platform,
+            username: snapshot.username,
+            contentPreview: snapshot.contentPreview ?? null,
+          });
+          console.log(
+            `[Zernio Webhook] autopilot post ${id} failed twice — user alerted`
+          );
+        } catch (err) {
+          console.error(
+            "[Zernio Webhook] post.failed retry handling error:",
+            err
+          );
+        }
+      });
       break;
     }
 

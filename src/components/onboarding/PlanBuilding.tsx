@@ -5,9 +5,36 @@ import { SpinnerGapIcon } from "@phosphor-icons/react";
 /**
  * Shown while the growth strategy is still being authored (it's generated
  * asynchronously after connect). Resolves into the reveal on its own once the
- * plan lands — no reload needed.
+ * plan lands — no reload needed. After the polling window closes (`timedOut`)
+ * it switches to a fallback so the paywall never looks stuck: the user can
+ * subscribe now and find the plan inside.
  */
-export default function PlanBuilding({ handle }: { handle?: string | null }) {
+export default function PlanBuilding({
+  handle,
+  timedOut = false,
+}: {
+  handle?: string | null;
+  timedOut?: boolean;
+}) {
+  if (timedOut) {
+    return (
+      <div
+        className="rounded-2xl border border-gray-200 bg-white p-5"
+        role="status"
+        aria-live="polite"
+      >
+        <h3 className="text-sm font-semibold tracking-tight text-gray-900">
+          Your plan is taking a little longer than usual
+        </h3>
+        <p className="mt-2 text-[13px] leading-relaxed text-gray-500">
+          We&apos;re still studying {handle ? `@${handle}` : "your account"} in
+          the background. You can activate now — your plan and your first week
+          of posts will be waiting inside.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div
       className="rounded-2xl border border-gray-200 bg-white p-5"

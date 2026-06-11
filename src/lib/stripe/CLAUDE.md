@@ -16,10 +16,10 @@ Handler: `src/app/api/webhooks/stripe/route.ts`. Signature-verified.
 
 | Event | Action |
 |---|---|
-| `checkout.session.completed` | Upsert subscription, `ensureUserProfile` (idempotent), Brevo `subscription_started` |
+| `checkout.session.completed` | Upsert subscription, set `onboardingCompletedAt`, `ensureUserProfile` (idempotent), **send `autopilot/generate-week` (reason `first_week`, deduped event id)** in `after()` |
 | `customer.subscription.created` | Idempotent upsert |
 | `customer.subscription.updated` | Sync status, plan, period dates, `cancelAtPeriodEnd` |
-| `customer.subscription.deleted` | Status → `canceled`, Brevo update, `cleanupUserProfile` in `after()` |
+| `customer.subscription.deleted` | Status → `canceled`, `cleanupUserProfile` in `after()` |
 | `invoice.payment_succeeded` | Update period dates |
 | `invoice.payment_failed` | Status → `past_due`. **Do NOT deprovision** — Stripe retries. |
 

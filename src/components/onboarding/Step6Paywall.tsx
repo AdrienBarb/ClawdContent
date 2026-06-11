@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { appRouter } from "@/lib/constants/appRouter";
 import useApi from "@/lib/hooks/useApi";
@@ -8,9 +9,20 @@ import PlanReveal from "./PlanReveal";
 import PlanBuilding from "./PlanBuilding";
 import OnboardingShell from "./OnboardingShell";
 
+// Mirrors useOnboardingPlan's polling ceiling (48 × 2.5s) with a little slack:
+// past this point the building state switches to a subscribe-anyway fallback
+// so the paywall never hangs on a failed background generation.
+const BUILDING_TIMEOUT_MS = 130_000;
+
 export default function Step6Paywall() {
   const { usePost } = useApi();
   const { data: plan } = useOnboardingPlan();
+  const [timedOut, setTimedOut] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setTimedOut(true), BUILDING_TIMEOUT_MS);
+    return () => clearTimeout(t);
+  }, []);
 
   const { mutate: checkout, isPending: isCheckingOut } = usePost(
     appRouter.api.checkout,
@@ -48,14 +60,14 @@ export default function Step6Paywall() {
       footMicro={
         <>
           <span className="font-medium text-gray-600">$99/mo</span> · cancel
-          anytime
+          anytime · your first week of posts will be ready in minutes
         </>
       }
     >
       {readyPlan ? (
         <PlanReveal plan={readyPlan} />
       ) : (
-        <PlanBuilding handle={plan?.account.handle} />
+        <PlanBuilding handle={plan?.account.handle} timedOut={timedOut} />
       )}
     </OnboardingShell>
   );
