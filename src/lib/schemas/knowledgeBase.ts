@@ -72,6 +72,8 @@ export const brandingSchema = z.object({
     .optional(),
   styleAdjectives: z.array(z.string()).optional(),
   tagline: z.string().optional(),
+  /** Optional brand photos (Supabase URLs) used as style references for generated media. */
+  photoUrls: z.array(z.string()).optional(),
 });
 
 export type Branding = z.infer<typeof brandingSchema>;
