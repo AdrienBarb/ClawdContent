@@ -3,6 +3,7 @@ import { fetchData } from "./useApi";
 
 interface AccountInfo {
   id: string;
+  lateAccountId: string;
   platform: string;
   username: string;
   status: string;

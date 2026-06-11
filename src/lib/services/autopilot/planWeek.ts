@@ -59,6 +59,8 @@ interface PlanAccountWeekArgs {
   brief: string | null;
   /** Reel budget remaining for this user this week (decremented across accounts). */
   reelBudget: number;
+  /** Earlier days are covered by a prior batch — only plan slots after this. */
+  coverFrom?: Date | null;
 }
 
 export interface PlanAccountWeekResult {
@@ -97,7 +99,9 @@ function toMediaPlan(post: PlannedPost): PostMediaPlan {
         imagePrompt: post.media.imagePrompt,
       };
     case "carousel":
-      return { kind: "carousel", slides: (post.media.slides ?? []).slice(0, 6) };
+      // Cap at 4: each slide is a full generate + OCR round-trip and the whole
+      // carousel renders inside one Inngest step (serverless duration budget).
+      return { kind: "carousel", slides: (post.media.slides ?? []).slice(0, 4) };
     case "reel":
       return {
         kind: "reel",
@@ -168,6 +172,7 @@ export async function planAccountWeek({
   weekStart,
   brief,
   reelBudget,
+  coverFrom = null,
 }: PlanAccountWeekArgs): Promise<PlanAccountWeekResult> {
   const account = await prisma.socialAccount.findUnique({
     where: { id: socialAccountId },
@@ -185,7 +190,17 @@ export async function planAccountWeek({
   const knowledgeBase =
     (user.knowledgeBase as Record<string, unknown> | null) ?? null;
 
-  const postCount = cadenceTarget(strategy);
+  // When a prior batch (typically the first week) already covers part of the
+  // coming week, plan only the remainder — scaled cadence, never below 1.
+  const fullTarget = cadenceTarget(strategy);
+  const weekEnd = weekStart.getTime() + 7 * 24 * 60 * 60 * 1000;
+  const remainingDays = coverFrom
+    ? Math.max(0, Math.ceil((weekEnd - coverFrom.getTime()) / (24 * 60 * 60 * 1000)))
+    : 7;
+  if (remainingDays === 0) {
+    return { planned: [], reelsUsed: 0 };
+  }
+  const postCount = Math.max(1, Math.round((fullTarget * remainingDays) / 7));
   const allowReels = reelBudget > 0;
 
   const [recentPosts, outcomeSnapshot] = await Promise.all([
@@ -262,6 +277,21 @@ export async function planAccountWeek({
     usedDays.add(day);
     return { dayOfWeek: day, hour: slot.hour };
   });
+
+  // Drop slots that land in the already-covered window (prior batch posts).
+  if (coverFrom) {
+    const timeZoneRef = timeZone;
+    for (let i = posts.length - 1; i >= 0; i--) {
+      const at = slotToUtc(weekStart, spreadSlots[i], timeZoneRef);
+      if (at.getTime() < coverFrom.getTime()) {
+        posts.splice(i, 1);
+        spreadSlots.splice(i, 1);
+      }
+    }
+    if (posts.length === 0) {
+      return { planned: [], reelsUsed: 0 };
+    }
+  }
 
   const planned: PlannedSuggestion[] = [];
   await prisma.$transaction(
@@ -374,7 +404,7 @@ Produce EXACTLY ${input.postCount} posts for next week.
 Formats available:
 - "photo" — photoreal image; put the visual scene in media.imagePrompt (concrete subject, not vibes).
 - "text_card" — flat branded graphic; media.headline is the EXACT short on-image text (plus optional media.body). Great for offers, tips, quotes, announcements.
-- "carousel" — 3-6 slides in media.slides; first slide is the cover hook, the rest deliver value. Use at most 2.
+- "carousel" — 3-4 slides in media.slides; first slide is the cover hook, the rest deliver value. Use at most 2.
 ${input.allowReels ? `- "reel" — short vertical video; media.imagePrompt is the opening frame scene, media.reelPrompt the camera/action. Use at most 2 across the week.` : ""}
 ${input.requiresMedia ? `- "text" is NOT allowed on ${input.platformDisplayName} — every post needs media.` : `- "text" — caption only, no media.`}
 

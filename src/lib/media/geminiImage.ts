@@ -75,12 +75,61 @@ export async function generateImage({
 
 const MAX_REFERENCE_BYTES = 8 * 1024 * 1024;
 
+/**
+ * SSRF guard for reference fetches. The URLs originate from user-editable
+ * knowledgeBase fields (logoUrl can be an external CDN found by Firecrawl),
+ * so: https only, no IP-literal/localhost hosts, no redirects, and the
+ * resolved address must be public.
+ */
+async function isSafeRemoteUrl(raw: string): Promise<boolean> {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return false;
+  }
+  if (url.protocol !== "https:") return false;
+  const host = url.hostname.toLowerCase();
+  if (
+    host === "localhost" ||
+    host.endsWith(".local") ||
+    host.endsWith(".internal") ||
+    /^\d{1,3}(\.\d{1,3}){3}$/.test(host) || // IPv4 literal
+    host.includes(":") // IPv6 literal
+  ) {
+    return false;
+  }
+  try {
+    const { lookup } = await import("dns/promises");
+    const records = await lookup(host, { all: true });
+    for (const { address } of records) {
+      if (
+        /^(10\.|127\.|169\.254\.|192\.168\.|0\.)/.test(address) ||
+        /^172\.(1[6-9]|2\d|3[01])\./.test(address) ||
+        address === "::1" ||
+        address.toLowerCase().startsWith("fc") ||
+        address.toLowerCase().startsWith("fd") ||
+        address.toLowerCase().startsWith("fe80")
+      ) {
+        return false;
+      }
+    }
+    return records.length > 0;
+  } catch {
+    return false;
+  }
+}
+
 /** Fetch a stored asset (logo, brand photo) and return it as a reference part. */
 export async function fetchReferenceImage(
   url: string
 ): Promise<ReferenceImage | null> {
   try {
-    const res = await fetch(url);
+    if (!(await isSafeRemoteUrl(url))) {
+      console.warn(`[media:reference] blocked unsafe reference URL: ${url}`);
+      return null;
+    }
+    const res = await fetch(url, { redirect: "error" });
     if (!res.ok) return null;
     const contentType = res.headers.get("content-type") ?? "image/png";
     if (!contentType.startsWith("image/")) return null;

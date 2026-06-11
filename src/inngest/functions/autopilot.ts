@@ -10,6 +10,7 @@ import {
   failBatch,
   finalizeBatch,
   listAutopilotAccounts,
+  markCommitPhase,
   MAX_BATCH_ATTEMPTS,
 } from "@/lib/services/autopilot/batch";
 import {
@@ -83,53 +84,85 @@ export const autopilotDispatch = inngest.createFunction(
         select: { id: true, timezone: true },
       });
 
-      const events: { userId: string; weekStart: string; attempt: number }[] = [];
+      const events: {
+        userId: string;
+        weekStart: string;
+        coverFrom: string | null;
+        localHour: number;
+      }[] = [];
       for (const user of users) {
         const tz = user.timezone ?? DEFAULT_TIMEZONE;
         const local = getLocalParts(now, tz);
+        // Active window: every Sunday hour from 17:00 local onward. Later
+        // hours double as catch-up (cron outage at 17:00) and as the retry
+        // lane for failed batches.
         if (local.weekday !== SUNDAY || local.hour < DISPATCH_LOCAL_HOUR) continue;
 
         const weekStart = nextWeekStart(now, tz);
         const existing = await prisma.weeklyBatch.findUnique({
           where: { userId_weekStart: { userId: user.id, weekStart } },
-          select: { status: true, attempts: true },
+          select: { status: true, attempts: true, posts: true },
         });
 
-        if (local.hour === DISPATCH_LOCAL_HOUR) {
-          // Primary window: skip when a batch already exists, unless it
-          // failed with retry budget left.
+        if (existing) {
+          // A batch for the coming week exists: only failed batches with
+          // retry budget that never reached the commit phase (posts === null)
+          // are re-dispatched. claimWeeklyBatch enforces the same rules.
           if (
-            existing &&
-            !(existing.status === "failed" && existing.attempts < MAX_BATCH_ATTEMPTS)
+            existing.status !== "failed" ||
+            existing.attempts >= MAX_BATCH_ATTEMPTS ||
+            existing.posts !== null
           ) {
             continue;
           }
-          // A first-week batch generated in the last few days covers the
-          // coming days already — don't stack a second week on top of it.
-          const recent = await prisma.weeklyBatch.findFirst({
-            where: {
-              userId: user.id,
-              status: "ready",
-              createdAt: { gt: new Date(now.getTime() - 4 * 24 * 60 * 60 * 1000) },
-            },
-            select: { id: true },
+          events.push({
+            userId: user.id,
+            weekStart: weekStart.toISOString(),
+            coverFrom: null,
+            localHour: local.hour,
           });
-          if (recent) continue;
-        } else {
-          // Later Sunday hours: only re-dispatch failed batches (max 3 tries).
-          if (
-            !existing ||
-            existing.status !== "failed" ||
-            existing.attempts >= MAX_BATCH_ATTEMPTS
-          ) {
+          continue;
+        }
+
+        // No batch for the coming week yet. A recent batch (typically the
+        // first week, generated mid-week at checkout) may already cover part
+        // of it — plan only the uncovered remainder instead of stacking a
+        // full second week (or leaving a multi-day gap).
+        const latest = await prisma.weeklyBatch.findFirst({
+          where: {
+            userId: user.id,
+            status: { in: ["generating", "ready"] },
+            createdAt: { gt: new Date(now.getTime() - 8 * 24 * 60 * 60 * 1000) },
+          },
+          orderBy: { createdAt: "desc" },
+          select: { status: true, posts: true, createdAt: true },
+        });
+
+        let coverFrom: Date | null = null;
+        if (latest) {
+          if (latest.status === "generating") {
+            // Still building (e.g. user subscribed minutes ago) — it will
+            // cover the coming days; don't stack a second week on top.
             continue;
+          }
+          const covered = Array.isArray(latest.posts)
+            ? (latest.posts as { scheduledAt?: string }[])
+                .map((p) => (p.scheduledAt ? Date.parse(p.scheduledAt) : NaN))
+                .filter((t) => Number.isFinite(t))
+            : [];
+          const coverageEnd = covered.length > 0 ? Math.max(...covered) : 0;
+          const weekEnd = weekStart.getTime() + 6 * 24 * 60 * 60 * 1000;
+          if (coverageEnd >= weekEnd) continue; // week fully covered
+          if (coverageEnd > weekStart.getTime()) {
+            coverFrom = new Date(coverageEnd + 60 * 60 * 1000);
           }
         }
 
         events.push({
           userId: user.id,
           weekStart: weekStart.toISOString(),
-          attempt: existing?.attempts ?? 0,
+          coverFrom: coverFrom ? coverFrom.toISOString() : null,
+          localHour: local.hour,
         });
       }
       return events;
@@ -139,11 +172,17 @@ export const autopilotDispatch = inngest.createFunction(
       await step.sendEvent(
         "fan-out",
         due.map((d) => ({
-          // Attempt suffix: a retry must not collide with the original
-          // event id (Inngest dedupes ids for 24h).
-          id: `autopilot-${d.userId}-${d.weekStart}-a${d.attempt}`,
+          // Hour suffix: retries/catch-ups later the same Sunday must not
+          // collide with the original event id (Inngest dedupes ids for 24h),
+          // and is bounded (≤7 dispatches/Sunday) regardless of DB state.
+          id: `autopilot-${d.userId}-${d.weekStart}-h${d.localHour}`,
           name: "autopilot/generate-week",
-          data: { userId: d.userId, weekStart: d.weekStart, reason: "weekly" },
+          data: {
+            userId: d.userId,
+            weekStart: d.weekStart,
+            reason: "weekly",
+            ...(d.coverFrom ? { coverFrom: d.coverFrom } : {}),
+          },
         }))
       );
     }
@@ -153,7 +192,13 @@ export const autopilotDispatch = inngest.createFunction(
 );
 
 interface GenerateWeekEvent {
-  data: { userId: string; weekStart: string; reason: "weekly" | "first_week" };
+  data: {
+    userId: string;
+    weekStart: string;
+    reason: "weekly" | "first_week";
+    /** Plan only from this instant — earlier days are covered by a prior batch. */
+    coverFrom?: string;
+  };
 }
 
 export const autopilotGenerateWeek = inngest.createFunction(
@@ -173,13 +218,24 @@ export const autopilotGenerateWeek = inngest.createFunction(
         where: {
           userId_weekStart: { userId: original.userId, weekStart },
         },
-        select: { id: true, attempts: true },
+        select: { id: true, attempts: true, posts: true },
       });
       if (batch) {
-        await failBatch({ batchId: batch.id, error: "generation failed" });
-        // Alert once the retry budget is spent — earlier failures retry
-        // silently on the next hourly dispatch.
-        if (batch.attempts >= MAX_BATCH_ATTEMPTS) {
+        // Guarded transition — a batch already finalized "ready" (e.g. only
+        // the digest send failed) must never be demoted, or the hourly
+        // re-dispatch would re-plan and double-post the committed week.
+        const transitioned = await failBatch({
+          batchId: batch.id,
+          error: "generation failed",
+        });
+        // Alert when no automatic retry will follow: first weeks have no
+        // hourly retry lane, commit-phase batches are never re-armed, and
+        // the attempt budget caps everything else.
+        const willRetry =
+          original.reason === "weekly" &&
+          batch.attempts < MAX_BATCH_ATTEMPTS &&
+          batch.posts === null;
+        if (transitioned && !willRetry) {
           await sendBatchFailedAlert(original.userId);
         }
       }
@@ -191,7 +247,7 @@ export const autopilotGenerateWeek = inngest.createFunction(
     triggers: [{ event: "autopilot/generate-week" }],
   },
   async ({ event, step }) => {
-    const { userId, reason } = event.data as GenerateWeekEvent["data"];
+    const { userId, reason, coverFrom } = event.data as GenerateWeekEvent["data"];
     const weekStartISO = event.data.weekStart as string;
 
     // 1 — claim the batch (idempotency anchor; consumes pendingBrief)
@@ -257,6 +313,7 @@ export const autopilotGenerateWeek = inngest.createFunction(
           weekStart: new Date(batch.weekStart),
           brief: batch.brief,
           reelBudget,
+          coverFrom: coverFrom ? new Date(coverFrom) : null,
         })
       );
       reelBudget = Math.max(0, reelBudget - result.reelsUsed);
@@ -312,6 +369,16 @@ export const autopilotGenerateWeek = inngest.createFunction(
         );
       } else {
         mediaOutcome.set(post.suggestionId, result);
+        if (result.status === "needs_media") {
+          await step.run(`track-ocr-held-${post.suggestionId}`, () =>
+            captureServerEvent(userId, "autopilot_media_degraded", {
+              suggestionId: post.suggestionId,
+              kind: post.mediaPlan.kind,
+              to: "needs_media",
+              cause: "ocr_mismatch",
+            })
+          );
+        }
       }
     }
 
@@ -320,6 +387,11 @@ export const autopilotGenerateWeek = inngest.createFunction(
     const commitOutcome = new Map<string, { externalPostId: string | null; status: string }>();
 
     if (isFullAuto) {
+      // Commit-phase firewall: from here on the batch must never be re-armed
+      // by the retry lane (live Zernio posts would be duplicated). The marker
+      // is an empty posts array — claimWeeklyBatch refuses posts !== null.
+      await step.run("mark-commit-phase", () => markCommitPhase(batch.id));
+
       for (const post of planned) {
         const media = mediaOutcome.get(post.suggestionId);
         if (media?.status === "needs_media") {
@@ -327,13 +399,29 @@ export const autopilotGenerateWeek = inngest.createFunction(
           continue;
         }
         const commit = await step.run(`commit-${post.suggestionId}`, async () => {
-          const result = await publishOrScheduleSuggestion({
+          let result = await publishOrScheduleSuggestion({
             userId,
             suggestionId: post.suggestionId,
             action: "schedule",
           });
+          // Step re-execution races the 5-minute soft lock from a crashed
+          // earlier attempt — wait once and retry before declaring failure.
+          if (!result.ok && result.error === "already_publishing") {
+            await new Promise((r) => setTimeout(r, 10_000));
+            result = await publishOrScheduleSuggestion({
+              userId,
+              suggestionId: post.suggestionId,
+              action: "schedule",
+            });
+          }
           if (result.ok) {
             return { externalPostId: result.postId, status: "scheduled" };
+          }
+          // not_found here means a previous attempt already committed and
+          // deleted the row (crash after finalizeAfterZernio) — the post is
+          // live on Zernio; reporting "failed" would be wrong.
+          if (result.error === "not_found") {
+            return { externalPostId: null, status: "scheduled" };
           }
           console.warn(
             `[autopilot] commit failed suggestion=${post.suggestionId}: ${result.error}`
@@ -358,8 +446,9 @@ export const autopilotGenerateWeek = inngest.createFunction(
       const commit = commitOutcome.get(post.suggestionId);
       const status = commit?.status ?? media?.status ?? "draft";
       return {
-        suggestionId:
-          status === "scheduled" ? null : post.suggestionId, // committed rows are deleted
+        // Kept even after the local row is deleted on commit — digest action
+        // tokens minted against the staged id resolve through the snapshot.
+        suggestionId: post.suggestionId,
         externalPostId: commit?.externalPostId ?? null,
         accountId: post.accountId,
         platform: post.platform,
@@ -389,7 +478,9 @@ export const autopilotGenerateWeek = inngest.createFunction(
       })
     );
 
-    // 9 — digest (~18:00 local on the weekly run; immediately for week 1)
+    // 9 — digest (~18:00 local on the weekly run; immediately for week 1).
+    // The batch is already "ready": a digest failure must NEVER fail the run
+    // (onFailure would demote the batch and the week could regenerate).
     if (reason === "weekly") {
       // weekStart is local Monday 00:00 → Sunday 18:00 local is 6h before.
       const digestAt = new Date(
@@ -399,10 +490,22 @@ export const autopilotGenerateWeek = inngest.createFunction(
         await step.sleepUntil("wait-digest-time", digestAt);
       }
     }
-    await step.run("send-digest", () => sendWeeklyDigest(batch.id));
-    await step.run("track-digest", () =>
-      captureServerEvent(userId, "autopilot_digest_sent", { batchId: batch.id })
-    );
+    const digestSent = await step.run("send-digest", async () => {
+      try {
+        await sendWeeklyDigest(batch.id);
+        return true;
+      } catch (err) {
+        console.error(
+          `[autopilot] digest send failed batch=${batch.id}: ${err instanceof Error ? err.message : err}`
+        );
+        return false;
+      }
+    });
+    if (digestSent) {
+      await step.run("track-digest", () =>
+        captureServerEvent(userId, "autopilot_digest_sent", { batchId: batch.id })
+      );
+    }
 
     return {
       batchId: batch.id,
@@ -462,6 +565,22 @@ async function renderAndApplyStatic({
     result.mediaItems,
     post.mediaPlan.kind === "carousel" ? "carousel" : "image"
   );
+  // OCR guard verdict is binding (founder decision: text QA on day 1). A
+  // render that never matched its intended copy keeps its media attached for
+  // the edit sheet but is held back from auto-publishing.
+  if (!result.textVerified) {
+    await prisma.postSuggestion
+      .update({
+        where: { id: post.suggestionId },
+        data: { status: "needs_media" },
+      })
+      .catch(() => {});
+    return {
+      mediaUrl: result.mediaItems[0].url,
+      mediaType: "image",
+      status: "needs_media",
+    };
+  }
   return {
     mediaUrl: result.mediaItems[0].url,
     mediaType: "image",

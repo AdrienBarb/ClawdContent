@@ -4,6 +4,7 @@ import { auth } from "@/lib/better-auth/auth";
 import { NextResponse, NextRequest } from "next/server";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/db/prisma";
+import { Prisma } from "@prisma/client";
 import { confirmInputSchema } from "@/lib/schemas/knowledgeBase";
 
 export async function POST(req: NextRequest) {
@@ -33,6 +34,9 @@ export async function POST(req: NextRequest) {
           ? { businessDescription: data.businessDescription }
           : {}),
         knowledgeBase: data.knowledgeBase,
+        // The knowledgeBase (incl. branding) changed — drop the frozen style
+        // kit so the next media batch rebuilds from the fresh branding.
+        styleKit: Prisma.JsonNull,
       },
     });
 

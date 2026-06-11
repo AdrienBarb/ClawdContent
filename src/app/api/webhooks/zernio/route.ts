@@ -28,14 +28,14 @@ export async function POST(req: NextRequest) {
   const signature = req.headers.get("x-zernio-signature");
   const body = await req.text();
 
-  // Verify signature if secret is configured
-  if (ZERNIO_WEBHOOK_SECRET) {
-    if (!signature || !verifySignature(body, signature)) {
-      return NextResponse.json(
-        { error: "Invalid signature" },
-        { status: 401 }
-      );
-    }
+  // Fail closed: this webhook now mutates state (post retries, alert emails),
+  // so an unset secret must reject everything rather than trust the caller.
+  if (!ZERNIO_WEBHOOK_SECRET) {
+    console.error("[Zernio Webhook] ZERNIO_WEBHOOK_SECRET is not configured");
+    return NextResponse.json({ error: "Webhook not configured" }, { status: 503 });
+  }
+  if (!signature || !verifySignature(body, signature)) {
+    return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 
   const event = JSON.parse(body);

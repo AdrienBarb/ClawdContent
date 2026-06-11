@@ -108,6 +108,9 @@ export async function GET() {
         .length,
       accounts: supportedAccounts.map((a) => ({
         id: a.id,
+        // Zernio account id — lets the UI attribute Zernio posts (which carry
+        // platform accountIds) to the right account when two share a platform.
+        lateAccountId: a.lateAccountId,
         platform: a.platform,
         username: a.username,
         status: a.status,

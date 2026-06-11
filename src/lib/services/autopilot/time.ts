@@ -139,8 +139,13 @@ export function slotToUtc(
     { year: local.year, month: local.month, day: local.day, hour: slot.hour },
     timeZone
   );
-  if (at.getTime() < now.getTime() + 60 * 60 * 1000) {
-    at = new Date(at.getTime() + 7 * 24 * 60 * 60 * 1000);
+  // Past/too-tight slot (first-week batches anchor on "today", so the slot's
+  // weekday can be today with the hour already gone): walk forward one day at
+  // a time so the post still lands in the coming days, not a week out.
+  let bumps = 0;
+  while (at.getTime() < now.getTime() + 60 * 60 * 1000 && bumps < 7) {
+    at = new Date(at.getTime() + 24 * 60 * 60 * 1000);
+    bumps += 1;
   }
   return at;
 }

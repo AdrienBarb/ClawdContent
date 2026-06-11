@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import {
   CaretDownIcon,
@@ -13,7 +13,7 @@ import {
   XIcon,
 } from "@phosphor-icons/react";
 import { appRouter } from "@/lib/constants/appRouter";
-import { fetchData } from "@/lib/hooks/useApi";
+import useApi from "@/lib/hooks/useApi";
 import { useDashboardStatus } from "@/lib/hooks/useDashboardStatus";
 import { getPlatform } from "@/lib/constants/platforms";
 import { coerceMediaItems } from "@/lib/schemas/mediaItems";
@@ -23,10 +23,6 @@ import { FacebookPostPreview } from "@/components/dashboard/previews/FacebookPos
 import { PostEditSheet } from "./PostEditSheet";
 import type { Suggestion } from "@/components/dashboard/publish/types";
 import type { TimelineItem, ZernioPost } from "./types";
-
-const SUGGESTIONS_KEY = ["week", "suggestions"];
-const SCHEDULED_KEY = ["week", "scheduled"];
-const PUBLISHED_KEY = ["week", "published"];
 
 function dayLabel(iso: string, timeZone: string | null): string {
   const date = new Date(iso);
@@ -71,72 +67,76 @@ export default function WeekPage() {
     (a) => a.status !== "active"
   );
 
-  const { data: suggestionsData, isLoading: loadingSuggestions } = useQuery<{
-    suggestions: Suggestion[];
-  }>({
-    queryKey: SUGGESTIONS_KEY,
-    queryFn: () => fetchData(appRouter.api.suggestions),
-  });
-  const { data: scheduledData, isLoading: loadingScheduled } = useQuery<{
-    posts: ZernioPost[];
-  }>({
-    queryKey: SCHEDULED_KEY,
-    queryFn: () => fetchData(appRouter.api.posts, { status: "scheduled", limit: 50 }),
-  });
-  const { data: publishedData } = useQuery<{ posts: ZernioPost[] }>({
-    queryKey: PUBLISHED_KEY,
-    queryFn: () => fetchData(appRouter.api.posts, { status: "published", limit: 12 }),
-  });
-  const { data: failedData } = useQuery<{ posts: ZernioPost[] }>({
-    queryKey: ["week", "failed"],
-    queryFn: () => fetchData(appRouter.api.posts, { status: "failed", limit: 10 }),
-  });
+  const { useGet } = useApi();
+  const { data: suggestionsData, isLoading: loadingSuggestions } = useGet(
+    appRouter.api.suggestions
+  ) as { data: { suggestions: Suggestion[] } | undefined; isLoading: boolean };
+  const { data: scheduledData, isLoading: loadingScheduled } = useGet(
+    appRouter.api.posts,
+    { status: "scheduled", limit: 50 }
+  ) as { data: { posts: ZernioPost[] } | undefined; isLoading: boolean };
+  const { data: publishedData } = useGet(appRouter.api.posts, {
+    status: "published",
+    limit: 12,
+  }) as { data: { posts: ZernioPost[] } | undefined };
+  const { data: failedData } = useGet(appRouter.api.posts, {
+    status: "failed",
+    limit: 10,
+  }) as { data: { posts: ZernioPost[] } | undefined };
 
   const refetchAll = () => {
-    qc.invalidateQueries({ queryKey: ["week"] });
+    // useGet keys are ["get", {url, params}] — invalidate the whole family
+    // plus the status poller; cheap on this page's four queries.
+    qc.invalidateQueries({ queryKey: ["get"] });
     qc.invalidateQueries({ queryKey: ["dashboardStatus"] });
   };
 
-  const usernameForPlatform = (platform: string): string =>
-    activeAccounts.find((a) => a.platform === platform)?.username ?? "you";
+  // Prefer the Zernio account id carried on the post (two accounts can share
+  // a platform); fall back to platform lookup.
+  const usernameFor = (platform: string, accountId?: string): string => {
+    if (accountId) {
+      const byId = activeAccounts.find((a) => a.lateAccountId === accountId);
+      if (byId) return byId.username;
+    }
+    return activeAccounts.find((a) => a.platform === platform)?.username ?? "you";
+  };
 
-  const items: TimelineItem[] = useMemo(() => {
-    const local: TimelineItem[] = (suggestionsData?.suggestions ?? []).map(
-      (s) => ({
-        kind: "local",
-        id: s.id,
-        platform: s.socialAccount.platform,
-        username: s.socialAccount.username,
-        content: s.content,
-        contentType: s.contentType,
-        mediaItems: s.mediaItems,
-        scheduledAt: s.scheduledAt,
-        status: s.status === "needs_media" ? "needs_media" : "draft",
-      })
-    );
-    const committed: TimelineItem[] = (scheduledData?.posts ?? []).map((p) => {
-      const platform = p.platforms[0]?.platform ?? "instagram";
-      return {
-        kind: "zernio",
-        id: p.id,
-        platform,
-        username: usernameForPlatform(platform),
-        content: p.content,
-        contentType: (p.mediaItems ?? []).some((m) => m.type === "video")
-          ? "video"
-          : (p.mediaItems ?? []).length > 1
-            ? "carousel"
-            : (p.mediaItems ?? []).length === 1
-              ? "image"
-              : "text",
-        mediaItems: coerceMediaItems(p.mediaItems ?? []),
-        scheduledAt: p.scheduledAt,
-        status: "scheduled",
-      };
-    });
-    return [...local, ...committed];
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [suggestionsData, scheduledData, activeAccounts.length]);
+  // Plain computation (tens of items at most) — memoizing it invited stale
+  // closures over the accounts list for the username lookup.
+  const local: TimelineItem[] = (suggestionsData?.suggestions ?? []).map(
+    (s) => ({
+      kind: "local",
+      id: s.id,
+      platform: s.socialAccount.platform,
+      username: s.socialAccount.username,
+      content: s.content,
+      contentType: s.contentType,
+      mediaItems: s.mediaItems,
+      scheduledAt: s.scheduledAt,
+      status: s.status === "needs_media" ? "needs_media" : "draft",
+    })
+  );
+  const committed: TimelineItem[] = (scheduledData?.posts ?? []).map((p) => {
+    const platform = p.platforms[0]?.platform ?? "instagram";
+    return {
+      kind: "zernio",
+      id: p.id,
+      platform,
+      username: usernameFor(platform, p.platforms[0]?.accountId),
+      content: p.content,
+      contentType: (p.mediaItems ?? []).some((m) => m.type === "video")
+        ? "video"
+        : (p.mediaItems ?? []).length > 1
+          ? "carousel"
+          : (p.mediaItems ?? []).length === 1
+            ? "image"
+            : "text",
+      mediaItems: coerceMediaItems(p.mediaItems ?? []),
+      scheduledAt: p.scheduledAt,
+      status: "scheduled",
+    };
+  });
+  const items: TimelineItem[] = [...local, ...committed];
 
   const needsMedia = items.filter((i) => i.status === "needs_media");
   const failedPosts = failedData?.posts ?? [];
@@ -148,22 +148,20 @@ export default function WeekPage() {
     items.some((i) => i.kind === "local" && i.status === "draft");
 
   // Group timeline by local day; unscheduled drafts pool at the top.
-  const grouped = useMemo(() => {
-    const scheduled = items
-      .filter((i) => i.scheduledAt)
-      .sort((a, b) => (a.scheduledAt! < b.scheduledAt! ? -1 : 1));
-    const groups = new Map<string, TimelineItem[]>();
-    for (const item of scheduled) {
-      const label = dayLabel(item.scheduledAt!, timezone);
-      const list = groups.get(label) ?? [];
-      list.push(item);
-      groups.set(label, list);
-    }
-    return {
-      unscheduled: items.filter((i) => !i.scheduledAt),
-      days: Array.from(groups.entries()),
-    };
-  }, [items, timezone]);
+  const scheduledItems = items
+    .filter((i) => i.scheduledAt)
+    .sort((a, b) => (a.scheduledAt! < b.scheduledAt! ? -1 : 1));
+  const groups = new Map<string, TimelineItem[]>();
+  for (const item of scheduledItems) {
+    const label = dayLabel(item.scheduledAt!, timezone);
+    const list = groups.get(label) ?? [];
+    list.push(item);
+    groups.set(label, list);
+  }
+  const grouped = {
+    unscheduled: items.filter((i) => !i.scheduledAt),
+    days: Array.from(groups.entries()),
+  };
 
   const [editing, setEditing] = useState<TimelineItem | null>(null);
   const isLoading = loadingSuggestions || loadingScheduled;
@@ -209,8 +207,9 @@ export default function WeekPage() {
                   kind: "zernio",
                   id: p.id,
                   platform: p.platforms[0]?.platform ?? "instagram",
-                  username: usernameForPlatform(
-                    p.platforms[0]?.platform ?? "instagram"
+                  username: usernameFor(
+                    p.platforms[0]?.platform ?? "instagram",
+                    p.platforms[0]?.accountId
                   ),
                   content: p.content,
                   contentType: "image",
@@ -314,6 +313,9 @@ export default function WeekPage() {
 
       {editing ? (
         <PostEditSheet
+          // Key forces a remount per post — the sheet seeds its form state
+          // from props, so reusing the instance would show stale edits.
+          key={`${editing.kind}-${editing.id}`}
           item={editing}
           timezone={timezone}
           onClose={() => setEditing(null)}
@@ -520,6 +522,19 @@ function AutopilotBanner() {
         <p className="text-[13px] text-gray-700">
           Preparing your week — posts, visuals and times are being put
           together. This takes a few minutes.
+        </p>
+      </div>
+    );
+  }
+
+  if (batch?.status === "failed") {
+    return (
+      <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+        <WarningCircleIcon className="h-4 w-4 shrink-0 text-amber-600" />
+        <p className="text-[13px] text-amber-900">
+          This week&apos;s posts couldn&apos;t be prepared automatically.
+          We&apos;ll retry — in the meantime you can draft posts yourself
+          below.
         </p>
       </div>
     );

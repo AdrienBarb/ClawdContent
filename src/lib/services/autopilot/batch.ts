@@ -49,10 +49,22 @@ export async function claimWeeklyBatch({
   if (existing) {
     if (existing.status === "ready") return null;
     if (existing.attempts >= MAX_BATCH_ATTEMPTS) return null;
-    const updated = await prisma.weeklyBatch.update({
-      where: { id: existing.id },
-      data: { status: "generating", attempts: { increment: 1 }, error: null },
-    });
+    // `posts` is set the moment the commit phase starts (and at finalize).
+    // A failed run that already reached commit may have live Zernio posts
+    // with their local rows deleted — re-planning would double-post the
+    // week. Those batches never auto-retry; the user gets the alert instead.
+    if (existing.posts !== null) return null;
+    // Purge the prior attempt's uncommitted drafts so a re-plan can't leave
+    // two sets of rows under one batchId (review mode would commit both).
+    const [, updated] = await prisma.$transaction([
+      prisma.postSuggestion.deleteMany({
+        where: { batchId: existing.id, status: { in: ["draft", "needs_media"] } },
+      }),
+      prisma.weeklyBatch.update({
+        where: { id: existing.id },
+        data: { status: "generating", attempts: { increment: 1 }, error: null },
+      }),
+    ]);
     return toHandle(updated);
   }
 
@@ -110,16 +122,35 @@ export async function finalizeBatch({
   });
 }
 
+/**
+ * Guarded transition: only a batch still "generating" can fail. Without the
+ * guard, a late error (e.g. the digest send after finalize) would demote a
+ * fully-committed "ready" batch and the hourly re-dispatch would re-plan and
+ * double-post the whole week. Returns whether the transition happened.
+ */
 export async function failBatch({
   batchId,
   error,
 }: {
   batchId: string;
   error: string;
-}): Promise<void> {
+}): Promise<boolean> {
+  const res = await prisma.weeklyBatch.updateMany({
+    where: { id: batchId, status: "generating" },
+    data: { status: "failed", error: error.slice(0, 1000) },
+  });
+  return res.count > 0;
+}
+
+/**
+ * Stamp the commit-phase marker (empty posts array ≠ null). claimWeeklyBatch
+ * refuses to re-arm any batch whose `posts` is non-null — the duplicate-commit
+ * firewall for runs that crash mid-commit.
+ */
+export async function markCommitPhase(batchId: string): Promise<void> {
   await prisma.weeklyBatch.update({
     where: { id: batchId },
-    data: { status: "failed", error: error.slice(0, 1000) },
+    data: { posts: [] as unknown as Prisma.InputJsonValue },
   });
 }
 
@@ -130,27 +161,31 @@ export async function markDigestSent(batchId: string): Promise<void> {
   });
 }
 
-/** Update one post's snapshot entry inside WeeklyBatch.posts (best-effort). */
+/**
+ * Update one post's snapshot entry inside WeeklyBatch.posts. Serialized with
+ * a row lock — the webhook retry handler, digest actions and approve flow can
+ * all write concurrently, and an unguarded read-modify-write loses updates.
+ */
 export async function updateBatchPostSnapshot(
   batchId: string,
   match: { externalPostId?: string; suggestionId?: string },
   patch: Partial<BatchPostSnapshot>
 ): Promise<void> {
-  const batch = await prisma.weeklyBatch.findUnique({
-    where: { id: batchId },
-    select: { posts: true },
-  });
-  if (!batch || !Array.isArray(batch.posts)) return;
-  const posts = batch.posts as unknown as BatchPostSnapshot[];
-  const next = posts.map((p) => {
-    const hit =
-      (match.externalPostId && p.externalPostId === match.externalPostId) ||
-      (match.suggestionId && p.suggestionId === match.suggestionId);
-    return hit ? { ...p, ...patch } : p;
-  });
-  await prisma.weeklyBatch.update({
-    where: { id: batchId },
-    data: { posts: next as unknown as Prisma.InputJsonValue },
+  await prisma.$transaction(async (tx) => {
+    const rows = await tx.$queryRaw<{ posts: unknown }[]>`
+      SELECT "posts" FROM "weekly_batch" WHERE "id" = ${batchId} FOR UPDATE`;
+    const posts = rows[0]?.posts;
+    if (!Array.isArray(posts)) return;
+    const next = (posts as unknown as BatchPostSnapshot[]).map((p) => {
+      const hit =
+        (match.externalPostId && p.externalPostId === match.externalPostId) ||
+        (match.suggestionId && p.suggestionId === match.suggestionId);
+      return hit ? { ...p, ...patch } : p;
+    });
+    await tx.weeklyBatch.update({
+      where: { id: batchId },
+      data: { posts: next as unknown as Prisma.InputJsonValue },
+    });
   });
 }
 

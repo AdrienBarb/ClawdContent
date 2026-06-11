@@ -183,7 +183,9 @@ export async function renderStaticMedia({
     }
 
     if (plan.kind === "carousel") {
-      const slides = (plan.slides ?? []).slice(0, 6);
+      // 4-slide ceiling: the whole chain renders inside one Inngest step —
+      // each slide is a generation + OCR round-trip against the duration cap.
+      const slides = (plan.slides ?? []).slice(0, 4);
       if (slides.length < 2) {
         return { ok: false, mediaItems: [], textVerified: false, error: "carousel needs ≥2 slides" };
       }

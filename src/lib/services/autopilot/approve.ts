@@ -6,7 +6,7 @@ import type { BatchPostSnapshot } from "@/lib/schemas/autopilot";
 
 export type ApproveBatchResult =
   | { ok: true; scheduled: number; failed: number }
-  | { ok: false; error: "not_found" | "already_approved" };
+  | { ok: false; error: "not_found" | "already_approved" | "commit_failed" };
 
 /**
  * Review mode "Launch my week": commits every staged draft in the batch to
@@ -29,8 +29,20 @@ export async function approveBatch({
 
   const suggestions = await prisma.postSuggestion.findMany({
     where: { batchId, status: "draft" },
-    select: { id: true },
+    select: { id: true, scheduledAt: true },
   });
+
+  // Slots may have passed while the week waited for approval — bump stale
+  // times forward so the commit isn't rejected with schedule_in_past.
+  const minFuture = new Date(Date.now() + 60 * 60 * 1000);
+  for (const suggestion of suggestions) {
+    if (suggestion.scheduledAt && suggestion.scheduledAt < minFuture) {
+      await prisma.postSuggestion.update({
+        where: { id: suggestion.id },
+        data: { scheduledAt: minFuture },
+      });
+    }
+  }
 
   let scheduled = 0;
   let failed = 0;
@@ -80,21 +92,29 @@ export async function approveBatch({
     if (!p.suggestionId) return p;
     const outcome = statusBySuggestion.get(p.suggestionId);
     if (!outcome) return p;
+    // suggestionId is kept (the row is gone, but digest action tokens minted
+    // against the staged id resolve through this snapshot).
     return {
       ...p,
       status: outcome.status,
       externalPostId: outcome.externalPostId,
-      suggestionId: outcome.status === "scheduled" ? null : p.suggestionId,
     };
   });
 
+  // Total failure: keep the batch unapproved (the user can retry "Launch my
+  // week" once the cause — e.g. a lapsed card — is fixed) but persist the
+  // per-post statuses so the attention strip reflects reality.
+  const totalFailure = scheduled === 0 && failed > 0;
   await prisma.weeklyBatch.update({
     where: { id: batchId },
     data: {
-      approvedAt: new Date(),
+      ...(totalFailure ? {} : { approvedAt: new Date() }),
       posts: nextPosts as unknown as Prisma.InputJsonValue,
     },
   });
 
+  if (totalFailure) {
+    return { ok: false, error: "commit_failed" };
+  }
   return { ok: true, scheduled, failed };
 }

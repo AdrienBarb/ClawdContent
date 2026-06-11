@@ -1,6 +1,7 @@
 import { generateObject } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { prisma } from "@/lib/db/prisma";
+import { Prisma } from "@prisma/client";
 import { scrapeWebsite } from "@/lib/firecrawl/client";
 import { mapFirecrawlBranding, mergeBranding } from "@/lib/firecrawl/branding";
 import {
@@ -253,6 +254,9 @@ export async function saveOnboardingProgress(
       ...(nextKb ? { knowledgeBase: nextKb } : {}),
       ...(nextStep !== undefined ? { onboardingStep: nextStep } : {}),
       ...(input.goal !== undefined ? { onboardingGoal: input.goal } : {}),
+      // Branding changed → drop the frozen style kit so the next media batch
+      // rebuilds it from the fresh logo/colors/photos.
+      ...(hasBranding ? { styleKit: Prisma.JsonNull } : {}),
     },
   });
 }

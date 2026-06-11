@@ -41,13 +41,17 @@ export async function transcribeImageText(image: Buffer): Promise<string> {
 }
 
 function normalize(s: string): string {
-  return s
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9€$£%\s]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  return (
+    s
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/[^a-z0-9€$£%\s]/g, " ")
+      // Detach currency/percent symbols so "12€" and "12 €" tokenize the same.
+      .replace(/[€$£%]/g, " $& ")
+      .replace(/\s+/g, " ")
+      .trim()
+  );
 }
 
 export interface TextMatchResult {
@@ -65,9 +69,11 @@ export function textMatches(
   transcribed: string
 ): TextMatchResult {
   const haystack = ` ${normalize(transcribed)} `;
+  // Keep ALL numeric tokens (a single-digit price or date matters as much as
+  // a long one); only drop one-character word tokens.
   const tokens = normalize(intended)
     .split(" ")
-    .filter((t) => t.length > 1);
+    .filter((t) => t.length > 1 || /[\d€$£%]/.test(t));
   if (tokens.length === 0) return { ok: true, missingTokens: [] };
 
   const missing: string[] = [];
@@ -76,7 +82,9 @@ export function textMatches(
 
   for (const token of tokens) {
     const isNumeric = /\d/.test(token);
-    const present = haystack.includes(` ${token} `) || haystack.includes(token);
+    // Whole-token match only — a bare substring check would let "120" satisfy
+    // an intended "12" (false PASS on a wrong price).
+    const present = haystack.includes(` ${token} `);
     if (isNumeric) {
       if (!present) missing.push(token);
     } else {

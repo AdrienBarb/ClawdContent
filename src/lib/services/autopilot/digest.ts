@@ -29,9 +29,13 @@ function firstNameOf(name: string | null, email: string): string {
 }
 
 function timeLabel(iso: string, timeZone: string): string {
+  // Include the date — first-week slots can land up to a week out, and a bare
+  // weekday ("Monday 9:00 AM") would be ambiguous.
   return new Intl.DateTimeFormat("en-US", {
     timeZone,
-    weekday: "long",
+    weekday: "short",
+    month: "short",
+    day: "numeric",
     hour: "numeric",
     minute: "2-digit",
   }).format(new Date(iso));

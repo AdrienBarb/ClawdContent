@@ -73,8 +73,10 @@ export async function regenerateSuggestionMedia({
     data: {
       mediaItems: result.mediaItems as unknown as Prisma.InputJsonValue,
       contentType: plan.kind === "carousel" ? "carousel" : "image",
-      // A successful render clears the needs_media hold.
-      ...(suggestion.status === "needs_media" ? { status: "draft" } : {}),
+      // Only a render that passed the OCR guard clears the needs_media hold.
+      ...(suggestion.status === "needs_media" && result.textVerified
+        ? { status: "draft" }
+        : {}),
     },
   });
 
