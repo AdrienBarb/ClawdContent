@@ -202,6 +202,8 @@ model WeeklyBatch {
   brief        String?
   posts        Json?
   error        String?
+  // Generation attempts — hourly dispatch re-tries a failed batch up to 3×.
+  attempts     Int              @default(0)
   digestSentAt DateTime?
   approvedAt   DateTime?
   createdAt    DateTime         @default(now())

@@ -9,6 +9,11 @@ import {
   cleanupUserProfile,
 } from "@/lib/services/profile";
 import { getPlanFromStripePriceId } from "@/lib/constants/plans";
+import { inngest } from "@/inngest";
+import {
+  DEFAULT_TIMEZONE,
+  todayStart,
+} from "@/lib/services/autopilot/time";
 
 export async function POST(req: NextRequest) {
   const sig = req.headers.get("stripe-signature");
@@ -224,7 +229,7 @@ async function handleCheckoutCompleted(
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { name: true, email: true },
+    select: { name: true, email: true, timezone: true },
   });
 
   after(async () => {
@@ -233,6 +238,30 @@ async function handleCheckoutCompleted(
       console.log(`Ensured profile for user ${userId} after checkout`);
     } catch (err) {
       console.error(`Failed to ensure profile for user ${userId}:`, err);
+    }
+  });
+
+  // Magic moment: build week 1 while the user finishes checking out. The
+  // event id dedupes redelivered webhooks (Inngest drops duplicate ids for
+  // 24h); the WeeklyBatch unique constraint backstops beyond that.
+  after(async () => {
+    try {
+      const tz = user?.timezone ?? DEFAULT_TIMEZONE;
+      await inngest.send({
+        id: `autopilot-first-${userId}`,
+        name: "autopilot/generate-week",
+        data: {
+          userId,
+          weekStart: todayStart(new Date(), tz).toISOString(),
+          reason: "first_week",
+        },
+      });
+      console.log(`Triggered first autopilot week for user ${userId}`);
+    } catch (err) {
+      console.error(
+        `Failed to trigger first autopilot week for user ${userId}:`,
+        err
+      );
     }
   });
 }

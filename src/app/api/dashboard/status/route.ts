@@ -27,7 +27,7 @@ export async function GET() {
 
     const userId = session.user.id;
 
-    const [user, subscription, lateProfile] = await Promise.all([
+    const [user, subscription, lateProfile, latestBatch] = await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
         select: {
@@ -35,12 +35,29 @@ export async function GET() {
           websiteUrl: true,
           knowledgeBase: true,
           postsPublished: true,
+          autopilotMode: true,
+          autopilotPausedAt: true,
+          pendingBrief: true,
         },
       }),
       prisma.subscription.findUnique({ where: { userId } }),
       prisma.lateProfile.findUnique({
         where: { userId },
         include: { socialAccounts: true },
+      }),
+      prisma.weeklyBatch.findFirst({
+        where: { userId },
+        orderBy: { weekStart: "desc" },
+        select: {
+          id: true,
+          status: true,
+          mode: true,
+          weekStart: true,
+          digestSentAt: true,
+          approvedAt: true,
+          posts: true,
+          createdAt: true,
+        },
       }),
     ]);
 
@@ -99,6 +116,25 @@ export async function GET() {
       })),
       postsPublished: user?.postsPublished ?? 0,
       freePostLimit: FREE_POST_LIMIT,
+      autopilot: {
+        mode: user?.autopilotMode ?? "full_auto",
+        paused: user?.autopilotPausedAt !== null,
+        pendingBrief: user?.pendingBrief ?? null,
+        latestBatch: latestBatch
+          ? {
+              id: latestBatch.id,
+              status: latestBatch.status,
+              mode: latestBatch.mode,
+              weekStart: latestBatch.weekStart.toISOString(),
+              digestSentAt: latestBatch.digestSentAt?.toISOString() ?? null,
+              approvedAt: latestBatch.approvedAt?.toISOString() ?? null,
+              postCount: Array.isArray(latestBatch.posts)
+                ? latestBatch.posts.length
+                : 0,
+              createdAt: latestBatch.createdAt.toISOString(),
+            }
+          : null,
+      },
     });
   } catch (error) {
     return errorHandler(error);
