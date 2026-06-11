@@ -143,6 +143,10 @@ export function mergeBrandingEdit(
         patch.branding.logoUrl !== undefined
           ? patch.branding.logoUrl
           : (baseBranding.logoUrl ?? null),
+      photoUrls:
+        patch.branding.photoUrls !== undefined
+          ? patch.branding.photoUrls
+          : baseBranding.photoUrls,
     };
   }
 

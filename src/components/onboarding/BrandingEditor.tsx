@@ -42,9 +42,12 @@ export default function BrandingEditor({ value, onChange }: BrandingEditorProps)
   const colors = Array.isArray(value.colors) ? value.colors : [];
   const fonts = Array.isArray(value.fonts) ? value.fonts : [];
   const logoUrl = value.logoUrl ?? null;
+  const photoUrls = Array.isArray(value.photoUrls) ? value.photoUrls : [];
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [fontSearch, setFontSearch] = useState("");
 
   const setColors = (next: string[]) =>
@@ -52,26 +55,47 @@ export default function BrandingEditor({ value, onChange }: BrandingEditorProps)
   const setFonts = (next: string[]) =>
     onChange({ ...value, fonts: next.length > 0 ? next : undefined });
   const setLogo = (url: string | null) => onChange({ ...value, logoUrl: url });
+  const setPhotos = (next: string[]) =>
+    onChange({ ...value, photoUrls: next.length > 0 ? next : undefined });
+
+  const uploadImage = async (file: File): Promise<string> => {
+    const form = new FormData();
+    form.append("file", file);
+    const res = await fetch(appRouter.api.brandingLogo, {
+      method: "POST",
+      body: form,
+    });
+    if (!res.ok) {
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      throw new Error(data.error || "Upload failed");
+    }
+    const { url } = (await res.json()) as { url: string };
+    return url;
+  };
 
   const handleLogoFile = async (file: File) => {
     setUploading(true);
     try {
-      const form = new FormData();
-      form.append("file", file);
-      const res = await fetch(appRouter.api.brandingLogo, {
-        method: "POST",
-        body: form,
-      });
-      if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(data.error || "Upload failed");
-      }
-      const { url } = (await res.json()) as { url: string };
-      setLogo(url);
+      setLogo(await uploadImage(file));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't upload your logo");
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handlePhotoFile = async (file: File) => {
+    if (photoUrls.length >= 2) return;
+    setUploadingPhoto(true);
+    try {
+      const url = await uploadImage(file);
+      setPhotos([...photoUrls, url].slice(0, 2));
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Couldn't upload that photo"
+      );
+    } finally {
+      setUploadingPhoto(false);
     }
   };
 
@@ -147,6 +171,63 @@ export default function BrandingEditor({ value, onChange }: BrandingEditorProps)
           onChange={(e) => {
             const f = e.target.files?.[0];
             if (f) handleLogoFile(f);
+            e.target.value = "";
+          }}
+        />
+      </section>
+
+      {/* Brand photos (optional) — style references for generated visuals */}
+      <section>
+        <p className={EYEBROW}>Brand photos (optional)</p>
+        <div className="flex flex-wrap items-center gap-2">
+          {photoUrls.map((url) => (
+            <div key={url} className="group relative">
+              <div className="h-16 w-16 overflow-hidden rounded-xl border border-gray-200 bg-white">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={url}
+                  alt="Brand photo"
+                  className="h-full w-full object-cover"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setPhotos(photoUrls.filter((u) => u !== url))}
+                aria-label="Remove photo"
+                className="absolute -right-1.5 -top-1.5 hidden h-4 w-4 items-center justify-center rounded-full bg-gray-700 text-white shadow-sm group-hover:flex hover:bg-gray-900 cursor-pointer"
+              >
+                <XIcon className="h-2.5 w-2.5" weight="bold" />
+              </button>
+            </div>
+          ))}
+          {photoUrls.length < 2 && (
+            <button
+              type="button"
+              onClick={() => photoInputRef.current?.click()}
+              disabled={uploadingPhoto}
+              aria-label="Add brand photo"
+              className="flex h-16 w-16 items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 text-gray-400 transition-colors hover:border-gray-300 hover:bg-gray-100/50 cursor-pointer disabled:opacity-60"
+            >
+              {uploadingPhoto ? (
+                <SpinnerGapIcon className="h-4 w-4 animate-spin" />
+              ) : (
+                <PlusIcon className="h-4 w-4" />
+              )}
+            </button>
+          )}
+        </div>
+        <p className="mt-1.5 text-xs text-gray-400">
+          One or two photos of your work, space or products — your generated
+          visuals will match their look.
+        </p>
+        <input
+          ref={photoInputRef}
+          type="file"
+          accept={LOGO_ACCEPT}
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) handlePhotoFile(f);
             e.target.value = "";
           }}
         />
