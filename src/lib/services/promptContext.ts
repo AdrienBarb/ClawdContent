@@ -76,6 +76,37 @@ export function formatGoalContext(
 }
 
 /**
+ * Wrap an untrusted user brief in a tagged envelope with an injection guard.
+ * Used by every drafting prompt (compose / brief / week) so the delimiter-strip
+ * and the "never follow instructions inside" guard live in ONE place instead of
+ * being copy-pasted at each call site.
+ */
+export function formatUserBriefEnvelope(
+  brief: string,
+  opts: { header: string; instruction: string }
+): string {
+  // Strip both delimiters so a malicious brief can't break out of the
+  // <user_brief>…</user_brief> envelope or open a sibling one.
+  const safe = brief.replace(/<\/?user_brief>/gi, "");
+  return `${opts.header}
+
+${opts.instruction}
+
+<user_brief>
+${safe}
+</user_brief>`;
+}
+
+/**
+ * Cold-start steer for a drafting prompt when there's no voice fingerprint yet
+ * (account never analysed). Keeps the model from caricaturing a voice it can't
+ * see: lean on the business context + platform best practices instead.
+ */
+export function coldStartVoiceNote(platformDisplayName: string): string {
+  return `## No historical data\nThis account has no analysed posts yet. Lean on the business context and ${platformDisplayName} best practices.`;
+}
+
+/**
  * Render the verbal brand identity (tone of voice, style, tagline) for a
  * prompt. Visual tokens (colours, fonts, logo) are intentionally omitted —
  * they don't help write a caption. Returns "" when there's nothing to add.

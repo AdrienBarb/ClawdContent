@@ -4,11 +4,14 @@ import { auth } from "@/lib/better-auth/auth";
 import { NextResponse, NextRequest } from "next/server";
 import { headers } from "next/headers";
 import { z } from "zod";
-import { approveBatch } from "@/lib/services/autopilot/approve";
+import { composePost } from "@/lib/services/composePost";
 
-export const maxDuration = 120; // commits a whole staged week to Zernio
+export const maxDuration = 240; // caption + image generation + OCR guard round-trips
 
-const bodySchema = z.object({ batchId: z.string().min(1) });
+const bodySchema = z.object({
+  accountId: z.string().min(1),
+  brief: z.string().trim().min(1).max(4000),
+});
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,18 +23,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const body = await req.json();
-    const { batchId } = bodySchema.parse(body);
+    const { accountId, brief } = bodySchema.parse(await req.json());
+    const result = await composePost({
+      userId: session.user.id,
+      accountId,
+      brief,
+    });
 
-    const result = await approveBatch({ userId: session.user.id, batchId });
     if (!result.ok) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: result.error === "not_found" ? 404 : 409 }
-      );
+      return NextResponse.json({ error: "Account not found" }, { status: 404 });
     }
 
-    return NextResponse.json(result);
+    return NextResponse.json({ post: result.post });
   } catch (error) {
     return errorHandler(error);
   }

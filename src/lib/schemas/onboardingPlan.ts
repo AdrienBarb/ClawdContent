@@ -1,15 +1,17 @@
 import type { OnboardingGoal } from "@/lib/schemas/onboarding";
-import type { DataQuality } from "@/lib/schemas/insights";
 
 /**
  * The paywall "aha" view-model returned by `GET /api/onboarding/plan`.
  *
- * It fuses the user's CURRENT state ("before", from `SocialAccount.insights`)
- * with the already-authored growth strategy ("after", from
- * `SocialAccount.strategy`) for their primary account, framed around the goal
- * they picked in onboarding. Output-only — assembled server-side, never sent
- * back in. The strategy is generated asynchronously after connect, so `status`
- * is `"building"` (with `after: null`) until it lands; the client polls.
+ * It is purely the brand-level growth strategy ("after", from
+ * `User.businessStrategy`) — built early in onboarding from the knowledgeBase +
+ * goal, with NO social data, so it's ready instantly and `status` flips to
+ * `"ready"` the moment it lands. There is deliberately NO before/after
+ * comparison: this step reveals only the strategy. `account` carries the primary
+ * connected handle (for the header fallback / loading copy) and is `null` when no
+ * supported account is connected. Output-only — assembled server-side, never sent
+ * back in. While the strategy is still being authored, `status` is `"building"`
+ * (with `after: null`) and the client polls.
  *
  * Provider/engine names never appear here (no `model` field) — same rule as
  * `ClientStrategy` (see CLAUDE.md: no AI branding).
@@ -40,27 +42,6 @@ export interface PlanIdea {
   pillar: string;
 }
 
-export interface PlanContentMixItem {
-  type: string;
-  label: string;
-  percentage: number;
-}
-
-/** The honest current-state diagnosis — real numbers, no empty metrics. */
-export interface PaywallPlanBefore {
-  /** Rounded posts/week, or null when there's no posting history. */
-  postsPerWeek: number | null;
-  followers: number | null;
-  /** Account-wide average engagement rate (%), or null on cold-start. */
-  avgEngagement: number | null;
-  contentMix: PlanContentMixItem[];
-  /** The dominant current format ("Photos"), or null with no posts. */
-  topFormatLabel: string | null;
-  hasReels: boolean;
-  /** Short honest fragments ("posting about 1×/week", "mostly photos, no Reels"). */
-  diagnosis: string[];
-}
-
 /** The plan we've already written — null while still building. */
 export interface PaywallPlanAfter {
   postsPerWeek: number;
@@ -81,12 +62,23 @@ export interface PaywallPlanAfter {
 
 export interface PaywallPlan {
   status: PaywallPlanStatus;
-  account: { platform: string; handle: string };
+  /** The primary connected account, or null when none is connected. */
+  account: { platform: string; handle: string } | null;
   businessName: string | null;
   goal: OnboardingGoal | null;
   /** Verb phrase for copy ("get found by new customers"), or null. */
   goalLabel: string | null;
-  dataQuality: DataQuality;
-  before: PaywallPlanBefore;
   after: PaywallPlanAfter | null;
+}
+
+/** Subscribe-footer A/B variant (see `services/paywallExperiment.ts`). */
+export type PaywallVariant = "control" | "discount";
+
+/**
+ * What `GET /api/onboarding/plan` actually returns: the pure view-model plus
+ * the visitor's footer A/B variant, resolved at the route boundary. `discount`
+ * is only ever served when a real intro coupon is configured server-side.
+ */
+export interface PaywallPlanResponse extends PaywallPlan {
+  paywallVariant: PaywallVariant;
 }

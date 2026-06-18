@@ -8,13 +8,13 @@ import { createHmac, timingSafeEqual } from "crypto";
  * time — a veto link dies the moment the post goes live).
  */
 
-export type AutopilotAction = "veto" | "regenerate" | "approve_week";
+export type AutopilotAction = "veto" | "regenerate";
 
 export interface ActionTokenPayload {
   userId: string;
   /** Zernio post id (committed) or PostSuggestion id (staged). */
   postRef: string;
-  refKind: "external" | "local" | "batch";
+  refKind: "external" | "local";
   action: AutopilotAction;
   batchId: string;
   /** Unix seconds. */

@@ -193,8 +193,16 @@ export async function gatherAccountContext(
     );
   }
 
+  // `source=external` (the first-connect default) only returns organic history
+  // Zernio has already backfilled. When this reads posts=0 but overview.total>0,
+  // the user's posts exist but aren't in this source slice yet — that's the
+  // "I have posts but it says 0" case. Log enough to tell them apart.
   console.log(
-    `[zernioContext] 📦 analytics summary — posts=${analytics.posts.length}, accounts=${analytics.accounts?.length ?? 0}, syncTriggered=${analytics.overview.dataStaleness?.syncTriggered ?? false}`
+    `[zernioContext] 📦 analytics summary — source=${source}, posts=${analytics.posts.length}, ` +
+      `overview{total=${analytics.overview.totalPosts}, published=${analytics.overview.publishedPosts}, ` +
+      `scheduled=${analytics.overview.scheduledPosts}}, accounts=${analytics.accounts?.length ?? 0}, ` +
+      `lateAccountId=${lateAccountId}, lastSync=${analytics.overview.lastSync ?? "none"}, ` +
+      `syncTriggered=${analytics.overview.dataStaleness?.syncTriggered ?? false}`
   );
 
   // Attribute account meta ONLY to the matching account. Never fall back to

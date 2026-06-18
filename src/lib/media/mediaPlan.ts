@@ -11,6 +11,11 @@ import {
 import { resizeToExact, TARGET_DIMS } from "./imageSize";
 import { verifyImageText } from "./ocrGuard";
 import { generateVerifiedSlide, type CarouselSlideSpec } from "./carousel";
+import {
+  buildTextGraphicPrompt,
+  OCR_RETRY_SUFFIX,
+  MAX_TEXT_ATTEMPTS,
+} from "./textGraphic";
 import { downloadReel } from "./geminiVideo";
 import type { StyleKit } from "./styleKit";
 import type { MediaItem } from "@/lib/schemas/mediaItems";
@@ -88,20 +93,13 @@ function photoPrompt(plan: PostMediaPlan, kit: StyleKit): string {
 }
 
 function textCardPrompt(plan: PostMediaPlan, kit: StyleKit): string {
-  return [
-    "Design a flat social-media graphic (not a photo).",
-    `Render this headline EXACTLY, large and legible: "${plan.headline}".`,
-    plan.body ? `Smaller supporting text, rendered EXACTLY: "${plan.body}".` : "",
-    plan.imagePrompt ? `Background/visual theme: ${plan.imagePrompt}.` : "",
-    kit.palette.length > 0
-      ? `Use EXACTLY these brand colors: ${kit.palette.join(", ")}.`
-      : "",
-    kit.logoUrl ? "Place the provided logo small and unobtrusive in a corner." : "",
-    `Style: ${kit.styleAnchor}.`,
-    "No watermarks. No extra text beyond what is specified.",
-  ]
-    .filter(Boolean)
-    .join("\n");
+  return buildTextGraphicPrompt({
+    intro: "Design a flat social-media graphic (not a photo).",
+    headline: plan.headline ?? "",
+    body: plan.body,
+    backgroundTheme: plan.imagePrompt,
+    kit,
+  });
 }
 
 export interface StaticMediaResult {
@@ -111,8 +109,6 @@ export interface StaticMediaResult {
   textVerified: boolean;
   error?: string;
 }
-
-const MAX_TEXT_ATTEMPTS = 2;
 
 /**
  * Render photo / text_card / carousel media for one post and persist it.
@@ -154,13 +150,11 @@ export async function renderStaticMedia({
       const intended = [plan.headline, plan.body].filter(Boolean).join(" ");
       let lastData: Buffer | null = null;
       let verified = false;
+      const base = textCardPrompt(plan, kit);
       for (let attempt = 0; attempt < MAX_TEXT_ATTEMPTS; attempt++) {
         const image = await generateImage({
           model: NANO_BANANA_PRO,
-          prompt:
-            attempt === 0
-              ? textCardPrompt(plan, kit)
-              : `${textCardPrompt(plan, kit)}\nIMPORTANT: the previous render misspelled the text. Reproduce every word and number letter-perfect.`,
+          prompt: attempt === 0 ? base : `${base}${OCR_RETRY_SUFFIX}`,
           aspectRatio,
           referenceImages: refs,
         });

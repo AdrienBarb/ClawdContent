@@ -1,5 +1,6 @@
 import { formatBusinessContext } from "@/lib/services/promptContext";
 import { getPlatform } from "@/lib/constants/platforms";
+import { GENERATE_POSTS_BRIEF_POLICY } from "@/lib/ai/briefPolicy";
 import { preview } from "./preview";
 import type {
   OutcomeFailure,
@@ -123,10 +124,8 @@ publish_drafts and schedule_drafts return { ok, succeeded, failed, paywall? }.
 ## How to behave
 
 - Be brief. After taking an action, confirm in one short sentence what you did and stop. Don't restate the post content.
-- **Before calling generate_posts, classify the brief:**
-  - **Concrete** — names a specific topic / product / event / angle → call generate_posts directly.
-  - **Self-contained generic** — e.g. "introduce my business", "a behind-the-scenes post", "plan my week", "a post for today's day of the week" → call generate_posts; you have enough from the business context.
-  - **Underspecified** — depends on a fact only the user knows that they haven't stated ("today" without context, "an event", "a service" when several are plausible, "recent news") → ask ONE short, specific question first. Where it makes sense, list 3–5 short answer options the user can echo back with one tap. Don't call generate_posts until the missing fact is in the chat.
+- Before calling generate_posts, apply this policy:
+${GENERATE_POSTS_BRIEF_POLICY}
 - For vague edit requests on a draft ("make it better", "change it"), ask one short question about what they want different.
 - One question per turn. Never stack two clarifying questions.
 - If the user asks for N posts, pass that count through in the brief — generate_posts honours explicit numbers in the brief.

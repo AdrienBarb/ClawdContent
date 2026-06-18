@@ -1,7 +1,7 @@
 import type { UseQueryResult } from "@tanstack/react-query";
 import useApi from "@/lib/hooks/useApi";
 import { appRouter } from "@/lib/constants/appRouter";
-import type { PaywallPlan } from "@/lib/schemas/onboardingPlan";
+import type { PaywallPlanResponse } from "@/lib/schemas/onboardingPlan";
 
 // ~120s ceiling at 2.5s intervals — covers the slow Zernio-sync path (≈80s)
 // with margin. The strategy is generated async after connect; we keep polling
@@ -19,7 +19,7 @@ export function useOnboardingPlan() {
   const { useGet } = useApi();
 
   return useGet(appRouter.api.onboardingPlan, undefined, {
-    refetchInterval: (query: { state: { data?: PaywallPlan | null; dataUpdateCount: number } }) => {
+    refetchInterval: (query: { state: { data?: PaywallPlanResponse | null; dataUpdateCount: number } }) => {
       const { data, dataUpdateCount } = query.state;
       if (data?.status === "ready") return false; // landed → stop
       if (dataUpdateCount >= MAX_POLLS) return false; // give up
@@ -28,5 +28,5 @@ export function useOnboardingPlan() {
     // Keep polling through the build window even if the user tabs away
     // (window-focus refetch is disabled globally).
     refetchIntervalInBackground: true,
-  }) as UseQueryResult<PaywallPlan | null>;
+  }) as UseQueryResult<PaywallPlanResponse | null>;
 }

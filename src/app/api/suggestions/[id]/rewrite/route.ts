@@ -9,8 +9,16 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
 import { buildRewritePrompt, rewriteOutputSchema } from "@/lib/ai/rewrite";
 
+// Synchronous model call — give it room (a long caption rewrite can exceed the
+// platform default), matching the other generate* routes (chat/explore/actions).
+export const maxDuration = 60;
+
+// Accepts a preset keyword (rewrite/shorter/longer/casual/professional/hashtags/fix,
+// mapped in instructionMap) OR a free-text instruction from the week-card
+// "Rewrite caption" panel — buildRewritePrompt falls through to the raw string
+// for anything not in the map.
 const rewriteInputSchema = z.object({
-  instruction: z.enum(["rewrite", "shorter", "longer", "casual", "professional", "hashtags", "fix"]),
+  instruction: z.string().trim().min(1).max(500),
 });
 
 export async function POST(

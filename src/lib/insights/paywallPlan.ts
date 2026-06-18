@@ -1,19 +1,18 @@
 import { isSupportedPlatform } from "@/lib/insights/platformConfig";
 import { parseInsights } from "@/lib/services/insightsHelpers";
-import { parseStrategy } from "@/lib/schemas/strategy";
+import { parseStrategy, type SocialStrategy } from "@/lib/schemas/strategy";
 import type { DataQuality } from "@/lib/schemas/insights";
 import type { OnboardingGoal } from "@/lib/schemas/onboarding";
 import type {
   PaywallPlan,
   PaywallPlanAfter,
-  PaywallPlanBefore,
 } from "@/lib/schemas/onboardingPlan";
 
 /**
- * Pure assembly of the paywall before/after view-model. NO prisma / inngest /
- * AI-SDK imports — so the unit test can import it (see vitest.config.ts). The
- * service layer (`services/onboardingPlan.ts`) does the DB read + selection,
- * then hands rows here.
+ * Pure assembly of the paywall view-model (strategy-only — no before/after). NO
+ * prisma / inngest / AI-SDK imports — so the unit test can import it (see
+ * vitest.config.ts). The service layer (`services/onboardingPlan.ts`) does the DB
+ * read + primary-account selection, then hands rows here.
  */
 
 /** A `SocialAccount` row slice the plan builder needs. `insights`/`strategy` are raw JSON. */
@@ -51,17 +50,6 @@ export function formatLabel(format: string): string {
   if (f === "text" || f === "post" || f === "status") return "Posts";
   if (f === "link") return "Links";
   return f ? f.charAt(0).toUpperCase() + f.slice(1) : "Posts";
-}
-
-/**
- * Whether a content-mix entry is a Reel. `mediaType` can't distinguish an IG
- * Reel from an FB feed video — both arrive as "video" — so we only treat plain
- * "video" as a Reel on Instagram (where video IS a Reel). This keeps the honest
- * "no Reels" diagnosis from ever firing incorrectly on a Facebook video poster.
- */
-function isReelLike(type: string, supportsReels: boolean): boolean {
-  const t = type.toLowerCase();
-  return t.includes("reel") || (supportsReels && t === "video");
 }
 
 /** Lower = surfaced first. Reels/Carousels lead the "after" formats. */
@@ -105,9 +93,10 @@ function platformRank(platform: string): number {
 }
 
 /**
- * Pick the account that will make the most compelling reveal: prefer one whose
- * strategy is already written, then the richest data tier, then Instagram, then
- * the oldest connection. Returns null when no supported account exists.
+ * Pick the primary account whose handle the reveal shows (header fallback +
+ * loading copy): prefer one whose strategy is already written, then the richest
+ * data tier, then Instagram, then the oldest connection. Returns null when no
+ * supported account exists.
  */
 export function selectPrimaryAccount(
   accounts: RawAccountInput[]
@@ -130,108 +119,13 @@ export function selectPrimaryAccount(
   })[0];
 }
 
-/** Build the honest "before" fragments. Reads like "Today you're ___". */
-export function buildDiagnosis(args: {
-  dataQuality: DataQuality;
-  postsPerWeek: number | null;
-  topFormatLabel: string | null;
-  topFormatPct: number;
-  hasReels: boolean;
-  /** Whether the platform has Reels (Instagram) — gates the "no Reels" callout. */
-  supportsReels: boolean;
-}): string[] {
-  const {
-    dataQuality,
-    postsPerWeek,
-    topFormatLabel,
-    topFormatPct,
-    hasReels,
-    supportsReels,
-  } = args;
-
-  if (dataQuality === "cold_start" || dataQuality === "platform_no_history") {
-    return ["just getting started — no posts to learn from yet"];
-  }
-
-  const out: string[] = [];
-
-  if (postsPerWeek === null) {
-    out.push("posting without a steady rhythm");
-  } else if (postsPerWeek < 1) {
-    out.push("posting less than once a week");
-  } else {
-    out.push(`posting about ${postsPerWeek}×/week`);
-  }
-
-  if (topFormatLabel) {
-    const lead = topFormatPct >= 60 ? `${topFormatPct}% ` : "mostly ";
-    // Only call out "no Reels" where Reels exist and they aren't using them.
-    const noReels = supportsReels && !hasReels ? ", no Reels" : "";
-    out.push(`${lead}${topFormatLabel.toLowerCase()}${noReels}`);
-  }
-
-  out.push("without a repeating content plan");
-  return out;
-}
-
-function buildBefore(account: RawAccountInput): {
-  before: PaywallPlanBefore;
-  dataQuality: DataQuality;
-} {
-  const insights = parseInsights(account.insights);
-  const strategy = parseStrategy(account.strategy);
-  const dataQuality: DataQuality = insights?.meta.dataQuality ?? "cold_start";
-  const supportsReels = account.platform.toLowerCase() === "instagram";
-
-  const freq = insights?.zernio.postingFrequency?.avgPostsPerWeek;
-  const postsPerWeek =
-    typeof freq === "number"
-      ? Math.round(freq)
-      : (strategy?.cadence.currentPerWeek ?? null);
-
-  // On Instagram a "video" IS a Reel — label it as such; everywhere else it's
-  // plain video. Keeps the "Today" column and diagnosis honest per platform.
-  const mixLabel = (type: string) =>
-    supportsReels && type.toLowerCase() === "video"
-      ? "Reels"
-      : formatLabel(type);
-
-  const contentMix = (insights?.computed.contentMix ?? [])
-    .map((c) => ({
-      type: c.type,
-      label: mixLabel(c.type),
-      percentage: Math.round(c.percentage),
-    }))
-    .sort((a, b) => b.percentage - a.percentage);
-
-  const topFormatLabel = contentMix.length > 0 ? contentMix[0].label : null;
-  const topFormatPct = contentMix.length > 0 ? contentMix[0].percentage : 0;
-  const hasReels = contentMix.some((c) => isReelLike(c.type, supportsReels));
-
-  const before: PaywallPlanBefore = {
-    postsPerWeek,
-    followers: insights?.zernio.account.followersCount ?? null,
-    avgEngagement: insights?.computed.avgEngagementRate ?? null,
-    contentMix,
-    topFormatLabel,
-    hasReels,
-    diagnosis: buildDiagnosis({
-      dataQuality,
-      postsPerWeek,
-      topFormatLabel,
-      topFormatPct,
-      hasReels,
-      supportsReels,
-    }),
-  };
-
-  return { before, dataQuality };
-}
-
-function buildAfter(account: RawAccountInput): PaywallPlanAfter | null {
-  const strategy = parseStrategy(account.strategy);
-  if (!strategy) return null;
-
+/**
+ * Build the "after" plan from an authored strategy. Now fed by the brand-level
+ * `User.businessStrategy` (not the per-account `SocialAccount.strategy`), so the
+ * paywall reveal is ready as soon as the business strategy lands — no social
+ * analysis wait. The shape is unchanged, so the `Plan*` components stay compatible.
+ */
+function buildAfterFromStrategy(strategy: SocialStrategy): PaywallPlanAfter {
   const formatPlan = strategy.formatPlan
     .map((f) => ({
       format: f.format,
@@ -279,27 +173,35 @@ function buildAfter(account: RawAccountInput): PaywallPlanAfter | null {
   };
 }
 
-/** Assemble the full view-model for one already-selected account. */
+/**
+ * Assemble the view-model. It's purely the brand-level `businessStrategy`
+ * ("after", ready instantly) — there is deliberately NO before/after on this
+ * step. `account` carries the primary handle for the header fallback / loading
+ * copy; it's null when no supported account is connected.
+ */
 export function buildPaywallPlan(input: {
-  account: RawAccountInput;
+  account: RawAccountInput | null;
+  businessStrategy: SocialStrategy | null;
   goal: OnboardingGoal | null;
   businessName: string | null;
 }): PaywallPlan {
-  const { account, goal, businessName } = input;
-  const { before, dataQuality } = buildBefore(account);
-  const after = buildAfter(account);
+  const { account, businessStrategy, goal, businessName } = input;
+
+  const after = businessStrategy
+    ? buildAfterFromStrategy(businessStrategy)
+    : null;
 
   return {
     status: after ? "ready" : "building",
-    account: {
-      platform: account.platform,
-      handle: account.username.replace(/^@/, ""),
-    },
+    account: account
+      ? {
+          platform: account.platform,
+          handle: account.username.replace(/^@/, ""),
+        }
+      : null,
     businessName,
     goal,
     goalLabel: goalLabel(goal),
-    dataQuality,
-    before,
     after,
   };
 }

@@ -581,7 +581,25 @@ export async function getAnalytics(
   if (options?.order) params.set("order", options.order);
 
   const qs = params.toString();
-  return lateRequest(`/analytics?${qs}`, { apiKey });
+  const res = await lateRequest<AnalyticsResponse>(`/analytics?${qs}`, { apiKey });
+
+  // Always-on (incl. prod) diagnostic — this is the single chokepoint that
+  // decides the post count feeding insights → strategy. Surfaces WHY a freshly
+  // connected account can read as "0 posts": compare the requested `source`,
+  // the per-source `posts.length`, and the account-wide `overview.totalPosts`.
+  // If overview.totalPosts > 0 but posts.length === 0 the source filter (or a
+  // not-yet-landed backfill / account-id mismatch) is hiding real history.
+  const accountIds = (res.accounts ?? []).map((a) => a._id);
+  console.log(
+    `[zernio:analytics] GET /analytics?${qs} → posts=${res.posts?.length ?? 0}, ` +
+      `overview{total=${res.overview?.totalPosts ?? "?"}, published=${res.overview?.publishedPosts ?? "?"}, ` +
+      `scheduled=${res.overview?.scheduledPosts ?? "?"}, lastSync=${res.overview?.lastSync ?? "none"}, ` +
+      `syncTriggered=${res.overview?.dataStaleness?.syncTriggered ?? false}, ` +
+      `staleAccounts=${res.overview?.dataStaleness?.staleAccountCount ?? 0}}, ` +
+      `accounts=[${accountIds.join(", ")}], hasAnalyticsAccess=${res.hasAnalyticsAccess ?? "n/a"}`
+  );
+
+  return res;
 }
 
 export async function getDailyMetrics(

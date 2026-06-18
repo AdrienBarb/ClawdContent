@@ -9,6 +9,7 @@ import {
   cleanupUserProfile,
 } from "@/lib/services/profile";
 import { getPlanFromStripePriceId } from "@/lib/constants/plans";
+import { captureServerEvent } from "@/lib/tracking/postHogClient";
 import { inngest } from "@/inngest";
 import {
   DEFAULT_TIMEZONE,
@@ -232,6 +233,31 @@ async function handleCheckoutCompleted(
     select: { name: true, email: true, timezone: true },
   });
 
+  // Conversion event for the paywall A/B test. Keyed on the SAME anonymous
+  // distinct id that saw the paywall (stamped into checkout metadata), so it
+  // funnels cleanly against paywall_checkout_started in PostHog. amount =
+  // first-invoice total, so the discount variant lands at ~$49 and control at
+  // ~$99 — net-revenue signal per variant. Stripe subscription metadata carries
+  // the variant too (durable cohort anchor for retention analysis).
+  const paywallVariant = session.metadata?.paywallVariant ?? "control";
+  const paywallDistinctId = session.metadata?.distinctId;
+  if (paywallDistinctId) {
+    after(() =>
+      captureServerEvent(
+        paywallDistinctId,
+        "paywall_subscription_activated",
+        {
+          userId,
+          planId,
+          variant: paywallVariant,
+          amount:
+            session.amount_total != null ? session.amount_total / 100 : null,
+          currency: session.currency,
+        }
+      )
+    );
+  }
+
   after(async () => {
     try {
       await ensureUserProfile(userId, user?.name ?? "User");
@@ -241,9 +267,10 @@ async function handleCheckoutCompleted(
     }
   });
 
-  // Magic moment: build week 1 while the user finishes checking out. The
-  // event id dedupes redelivered webhooks (Inngest drops duplicate ids for
-  // 24h); the WeeklyBatch unique constraint backstops beyond that.
+  // Magic moment: build the first rolling 7-day window (anchored on the
+  // checkout day) while the user finishes checking out; the next windows roll
+  // 7 days from here. The event id dedupes redelivered webhooks (Inngest drops
+  // duplicate ids for 24h); the WeeklyBatch unique constraint backstops beyond.
   after(async () => {
     try {
       const tz = user?.timezone ?? DEFAULT_TIMEZONE;

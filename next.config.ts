@@ -65,6 +65,21 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async rewrites() {
+    // Local dev only: when local Supabase storage is reached through a tunnel
+    // (e.g. ngrok pointing at the Next app) so Zernio can fetch generated media,
+    // proxy the public-object path to the local Supabase origin. Turn it on with
+    // LOCAL_SUPABASE_STORAGE_ORIGIN; leave unset in prod (cloud Supabase serves
+    // its own domain), so no rewrite is added there.
+    const localStorageOrigin = process.env.LOCAL_SUPABASE_STORAGE_ORIGIN;
+    if (!localStorageOrigin) return [];
+    return [
+      {
+        source: "/storage/v1/object/public/:path*",
+        destination: `${localStorageOrigin.replace(/\/$/, "")}/storage/v1/object/public/:path*`,
+      },
+    ];
+  },
   async redirects() {
     return [
       {

@@ -6,14 +6,29 @@ import {
   getStripePriceId,
 } from "@/lib/constants/plans";
 
+export interface CheckoutOptions {
+  /** Stripe coupon id to auto-apply (intro-discount A/B variant). */
+  couponId?: string;
+  /** Paywall A/B variant — stamped into Stripe metadata for cohort analysis. */
+  paywallVariant?: string;
+  /**
+   * Anonymous distinct id — stamped into metadata so the webhook can attribute
+   * the conversion to the same PostHog identity that saw the paywall.
+   */
+  distinctId?: string;
+}
+
 export async function createCheckoutSession(
   userId: string,
   email: string,
   planId: PlanId,
   interval: BillingInterval,
   affonsoReferral?: string,
-  successUrl?: string
+  successUrl?: string,
+  options?: CheckoutOptions
 ): Promise<string> {
+  const { couponId, paywallVariant, distinctId } = options ?? {};
+
   const existing = await prisma.subscription.findUnique({
     where: { userId },
   });
@@ -41,10 +56,26 @@ export async function createCheckoutSession(
   const baseUrl =
     process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
+  // Stamped on both the session and the subscription so the webhook can read
+  // the variant for conversion tracking and Stripe itself becomes the durable
+  // cohort anchor for retention/revenue analysis.
+  const metadata: Record<string, string> = {
+    userId,
+    planId,
+    ...(affonsoReferral && { affonso_referral: affonsoReferral }),
+    ...(paywallVariant && { paywallVariant }),
+    ...(distinctId && { distinctId }),
+  };
+
   const session = await stripe.checkout.sessions.create({
     customer: customerId,
     mode: "subscription",
-    allow_promotion_codes: true,
+    // Stripe rejects a session that sets BOTH `allow_promotion_codes` and a
+    // `discounts` array. When we auto-apply the intro coupon, drop the manual
+    // promo-code box; otherwise keep it on for support-issued codes.
+    ...(couponId
+      ? { discounts: [{ coupon: couponId }] }
+      : { allow_promotion_codes: true }),
     line_items: [{ price: priceId, quantity: 1 }],
     // Defense-in-depth against open redirect: only honour a same-origin
     // relative path (the schema already enforces this at the boundary).
@@ -53,14 +84,10 @@ export async function createCheckoutSession(
         ? `${baseUrl}${successUrl}`
         : `${baseUrl}/d?payment=success`,
     cancel_url: `${baseUrl}/d`,
-    metadata: {
-      userId,
-      planId,
-      ...(affonsoReferral && { affonso_referral: affonsoReferral }),
-    },
+    metadata,
     // Hard paywall: no trial — the first charge happens at checkout.
     subscription_data: {
-      metadata: { userId, planId },
+      metadata,
     },
   });
 

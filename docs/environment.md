@@ -9,6 +9,12 @@ DIRECT_URL=                      # Used by Prisma CLI (prisma.config.ts)
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
+# Local dev only — make generated media URLs publicly reachable so Zernio can
+# fetch post images (local Supabase runs on a 127.0.0.1 loopback Zernio can't
+# reach, which fails post validation with "Image URL must be publicly reachable").
+# Leave both UNSET in prod (cloud Supabase serves its own public domain).
+SUPABASE_PUBLIC_URL=                 # Public base for emitted media URLs, e.g. https://postclaw.ngrok.app
+LOCAL_SUPABASE_STORAGE_ORIGIN=       # Proxy target if the tunnel hits the Next app, e.g. http://127.0.0.1:54521
 
 # Authentication
 BETTER_AUTH_SECRET=
@@ -30,6 +36,13 @@ STRIPE_PRICE_STARTER_MONTHLY=
 STRIPE_PRICE_STARTER_YEARLY=
 STRIPE_PRICE_BUSINESS_MONTHLY=
 STRIPE_PRICE_BUSINESS_YEARLY=
+# Paywall A/B intro-discount coupon (optional). When set, the "discount" variant
+# of the onboarding paywall (PostHog flag `paywall-intro-discount`, 50/50) shows
+# "$49 first month, then $99/mo" and auto-applies this coupon at checkout. Create
+# in Stripe as amount_off $50.00, duration: once, scoped to the $99 price. Leave
+# UNSET to keep everyone on full-price control (the $49 copy can never show
+# without a real coupon behind it).
+STRIPE_COUPON_POSTCLAW_INTRO=
 
 # Email (Resend — single email provider: magic links, digests, alerts)
 RESEND_API_KEY=

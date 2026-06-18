@@ -16,6 +16,14 @@ import { MEDIA_BUCKET } from "./constants";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+// Base URL stamped into media URLs that LEAVE our infra — post images Zernio
+// fetches from its cloud. In prod this is the cloud Supabase URL
+// (= NEXT_PUBLIC_SUPABASE_URL). In local dev NEXT_PUBLIC_SUPABASE_URL is a
+// 127.0.0.1 loopback Zernio can't reach, so SUPABASE_PUBLIC_URL overrides it
+// with a publicly reachable origin (e.g. an ngrok tunnel). Uploads still go
+// through the loopback client below — only the emitted URL changes.
+const SUPABASE_PUBLIC_URL = process.env.SUPABASE_PUBLIC_URL || SUPABASE_URL;
+
 export { MEDIA_BUCKET };
 
 export function isStorageConfigured(): boolean {
@@ -57,12 +65,12 @@ export function buildUserPath(
 
 /** Deterministic public URL — matches Supabase's `/object/public/` route. */
 export function getPublicUrl(path: string): string {
-  if (!SUPABASE_URL) {
+  if (!SUPABASE_PUBLIC_URL) {
     throw new Error(
-      "Supabase storage is not configured (NEXT_PUBLIC_SUPABASE_URL)"
+      "Supabase storage is not configured (NEXT_PUBLIC_SUPABASE_URL / SUPABASE_PUBLIC_URL)"
     );
   }
-  const base = SUPABASE_URL.replace(/\/$/, "");
+  const base = SUPABASE_PUBLIC_URL.replace(/\/$/, "");
   return `${base}/storage/v1/object/public/${MEDIA_BUCKET}/${path}`;
 }
 

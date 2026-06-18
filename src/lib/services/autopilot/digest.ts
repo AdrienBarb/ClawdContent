@@ -16,8 +16,6 @@ import { markDigestSent } from "./batch";
 import { DEFAULT_TIMEZONE } from "./time";
 import type { BatchPostSnapshot } from "@/lib/schemas/autopilot";
 
-const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
-
 function actionUrl(payload: ActionTokenPayload): string {
   const token = createActionToken(payload);
   return `${config.project.url}/api/autopilot/actions?token=${encodeURIComponent(token)}`;
@@ -103,23 +101,12 @@ export async function sendWeeklyDigest(batchId: string): Promise<void> {
     .map((p) => p.scheduledAt)
     .sort()[0];
 
-  const launchUrl = isReview
-    ? actionUrl({
-        userId: batch.userId,
-        postRef: batch.id,
-        refKind: "batch",
-        action: "approve_week",
-        batchId: batch.id,
-        exp: Math.floor((batch.weekStart.getTime() + WEEK_MS) / 1000),
-      })
-    : null;
-
   const { error } = await resendClient.emails.send(
     {
       from: config.contact.email,
       to: batch.user.email,
       subject: isReview
-        ? `Your week is planned — ${posts.length} posts ready to launch`
+        ? `Your week is planned — ${posts.length} posts ready to review`
         : `Your week is ready — ${posts.length} posts scheduled`,
       react: WeeklyDigestEmail({
         firstName: firstNameOf(batch.user.name, batch.user.email),
@@ -127,7 +114,6 @@ export async function sendWeeklyDigest(batchId: string): Promise<void> {
         firstPostLabel: firstScheduled ? timeLabel(firstScheduled, timeZone) : null,
         mode: isReview ? "review" : "full_auto",
         posts: items,
-        launchUrl,
         dashboardUrl,
       }),
       tags: [{ name: "category", value: "autopilot_digest" }],

@@ -11,7 +11,7 @@ import {
   CreditCardIcon,
   GearSixIcon,
   SignOutIcon,
-  GiftIcon,
+  HouseIcon,
   PlusIcon,
   UserCircleIcon,
   PlugsIcon,
@@ -33,12 +33,12 @@ interface AccountInfo {
 }
 
 const menuItems = [
+  { href: appRouter.dashboard, label: "Dashboard", icon: HouseIcon },
   { href: appRouter.business, label: "My business", icon: UserCircleIcon },
   { href: appRouter.accounts, label: "Accounts", icon: PlugsIcon },
   { href: appRouter.media, label: "Media", icon: ImagesIcon },
   { href: appRouter.billing, label: "Billing", icon: CreditCardIcon },
   { href: appRouter.settings, label: "Settings", icon: GearSixIcon },
-  { href: appRouter.affiliates, label: "Affiliates", icon: GiftIcon },
 ];
 
 function getInitials(name?: string | null, email?: string | null) {
@@ -52,29 +52,6 @@ function getInitials(name?: string | null, email?: string | null) {
   }
   if (email) return email[0].toUpperCase();
   return "U";
-}
-
-function NavLink({
-  href,
-  label,
-  isActive,
-}: {
-  href: string;
-  label: string;
-  isActive: boolean;
-}) {
-  return (
-    <Link
-      href={href}
-      className={`rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors ${
-        isActive
-          ? "bg-white text-gray-900 shadow-sm"
-          : "text-gray-600 hover:text-gray-900 hover:bg-black/[0.04]"
-      }`}
-    >
-      {label}
-    </Link>
-  );
 }
 
 export default function Navbar() {
@@ -91,10 +68,6 @@ export default function Navbar() {
     await signOut();
     router.push("/");
   };
-
-  const isWeekActive =
-    pathname === "/d" || pathname === "/d/" || pathname.startsWith("/d/channels");
-  const isResultsActive = pathname.startsWith("/d/results");
 
   return (
     <header className="sticky top-0 z-40 border-b border-gray-200 bg-[#faf9f5]">
@@ -115,15 +88,6 @@ export default function Navbar() {
             PostClaw
           </span>
         </Link>
-
-        <nav className="flex items-center gap-1 ml-2 shrink-0">
-          <NavLink href={appRouter.dashboard} label="My week" isActive={isWeekActive} />
-          <NavLink
-            href={appRouter.results}
-            label="Results"
-            isActive={isResultsActive}
-          />
-        </nav>
 
         <div className="flex-1 min-w-0" />
 

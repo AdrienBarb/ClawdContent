@@ -84,8 +84,10 @@ When a platform is cold-start (LinkedIn personal first scan, Bluesky, or any acc
 
 ## Debug logging
 
-Grep-friendly prefixes: `[zernio:raw]`, `[zernioContext]`, `[insights:claude:prompt]`, `[insights:claude:output]`, `[insights:final]`, `[suggestions:cache]`, `[suggestions:claude:prompt]`, `[suggestions:claude:output]`, `[accounts] 🔄 reconnect detected`, `[Zernio Webhook]`, `[analyze-account]`.
+Grep-friendly prefixes: `[zernio:analytics]` (always-on, incl. prod — every `getAnalytics` call: requested source, per-source post count vs account-wide `overview.totalPosts`, returned account ids — the place to debug "I have posts but it reads 0"), `[zernio:raw]` (dev-only full payloads), `[zernioContext]`, `[insights:claude:prompt]`, `[insights:claude:output]`, `[insights:final]`, `[strategy:claude:prompt]` (incl. `postsAnalyzed` + `currentPerWeek`), `[suggestions:cache]`, `[suggestions:claude:prompt]`, `[suggestions:claude:output]`, `[accounts] 🔄 reconnect detected`, `[Zernio Webhook]`, `[analyze-account]`.
 
 ```bash
-npm run dev | grep -E "\[zernio|\[insights|\[suggestions"
+npm run dev | grep -E "\[zernio|\[insights|\[strategy|\[suggestions"
 ```
+
+**Debugging "connected my IG but it says 0 posts":** trace `[zernio:analytics]` → if `posts=0` while `overview.total>0`, Zernio's organic backfill for that source hasn't landed (or the account-id isn't in `accounts=[…]`); if `overview.total=0` too, Zernio itself hasn't imported the account's history yet (check `syncTriggered` / `lastSync`). `source=external` (first-connect default) only returns already-backfilled organic posts.

@@ -6,7 +6,7 @@ import {
 import { executeAutopilotAction } from "@/lib/services/autopilot/actions";
 import config from "@/lib/config";
 
-export const maxDuration = 120; // approve_week commits a whole staged week
+export const maxDuration = 120; // regenerate runs a model rewrite + Zernio update
 
 /**
  * One-click digest actions. NOT session-gated — the HMAC token is the
@@ -27,11 +27,6 @@ const ACTION_LABELS: Record<ActionTokenPayload["action"], { title: string; cta: 
     title: "Rewrite this post?",
     cta: "Yes, rewrite it",
     blurb: "A fresh version will replace the current caption, same topic.",
-  },
-  approve_week: {
-    title: "Launch your week?",
-    cta: "Launch my week",
-    blurb: "Every planned post will be scheduled and will publish automatically.",
   },
 };
 

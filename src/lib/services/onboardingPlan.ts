@@ -4,15 +4,19 @@ import {
   buildPaywallPlan,
   type RawAccountInput,
 } from "@/lib/insights/paywallPlan";
+import { parseBusinessStrategy } from "@/lib/schemas/strategy";
 import type { OnboardingGoal } from "@/lib/schemas/onboarding";
 import type { KnowledgeBase } from "@/lib/schemas/knowledgeBase";
 import type { PaywallPlan } from "@/lib/schemas/onboardingPlan";
 
 /**
- * Read the user's primary account and assemble the paywall before/after plan.
- * Returns null when the user has no active, supported account. Read-only — the
- * strategy is generated (and retried on failure) by the analyze-account Inngest
- * job, never here.
+ * Assemble the paywall plan: the brand-level `businessStrategy` ("after",
+ * ready instantly) plus a best-effort current-state diagnosis ("before") from
+ * the primary account's insights when they're ready. Returns null only when
+ * there's nothing to show yet (no business strategy AND no connected account) —
+ * the client keeps polling until the strategy lands. Read-only: the business
+ * strategy is generated (and retried on failure) by the `business-strategy/generate`
+ * Inngest job, never here.
  */
 export async function getOnboardingPlan(
   userId: string
@@ -22,6 +26,7 @@ export async function getOnboardingPlan(
     select: {
       onboardingGoal: true,
       knowledgeBase: true,
+      businessStrategy: true,
       lateProfile: {
         select: {
           socialAccounts: {
@@ -43,13 +48,18 @@ export async function getOnboardingPlan(
 
   const accounts: RawAccountInput[] = user?.lateProfile?.socialAccounts ?? [];
   const primary = selectPrimaryAccount(accounts);
-  if (!primary) return null;
+  const businessStrategy = parseBusinessStrategy(user?.businessStrategy);
+
+  // Nothing to reveal yet → null keeps the client polling (paywall shows
+  // "building") until the business strategy lands.
+  if (!businessStrategy && !primary) return null;
 
   const businessName =
     (user?.knowledgeBase as KnowledgeBase | null)?.businessName ?? null;
 
   return buildPaywallPlan({
     account: primary,
+    businessStrategy,
     goal: (user?.onboardingGoal as OnboardingGoal | null) ?? null,
     businessName,
   });

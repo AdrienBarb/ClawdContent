@@ -13,7 +13,7 @@ import type {
 import type { KnowledgeBase } from "@/lib/schemas/knowledgeBase";
 
 // Polling endpoint for the wizard. Status-only (no Zernio sync) — mirrors
-// /api/dashboard/status. Screen 3 polls until websiteAnalysis resolves; the
+// /api/dashboard/status. Screen 4 polls until websiteAnalysis resolves; the
 // final screen polls subscription.status after the subscribe CTA.
 export async function GET() {
   try {
@@ -31,6 +31,7 @@ export async function GET() {
         onboardingStep: true,
         onboardingCompletedAt: true,
         websiteUrl: true,
+        businessDescription: true,
         onboardingGoal: true,
         websiteAnalysis: true,
         knowledgeBase: true,
@@ -56,6 +57,7 @@ export async function GET() {
       step: user?.onboardingStep ?? 1,
       isCompleted: !!user?.onboardingCompletedAt,
       websiteUrl: user?.websiteUrl ?? null,
+      businessDescription: user?.businessDescription ?? null,
       goal: (user?.onboardingGoal as OnboardingGoal | null) ?? null,
       websiteAnalysis:
         (user?.websiteAnalysis as WebsiteAnalysisState | null) ?? null,

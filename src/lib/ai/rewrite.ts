@@ -1,13 +1,17 @@
 import { z } from "zod";
 import type { Insights } from "@/lib/schemas/insights";
-import { formatVoiceFingerprint } from "@/lib/services/promptContext";
+import { PLATFORM_CONFIG } from "@/lib/insights/platformConfig";
+import {
+  formatBusinessContext,
+  formatVoiceFingerprint,
+} from "@/lib/services/promptContext";
 import { buildHumanRulesBlock } from "@/lib/ai/humanRules";
 
 export const rewriteOutputSchema = z.object({
   content: z.string(),
 });
 
-const instructionMap: Record<string, string> = {
+export const instructionMap: Record<string, string> = {
   rewrite: "Rewrite this post with a fresh angle while keeping the same message and tone.",
   shorter: "Make this post shorter and more concise. Keep the key message.",
   longer: "Expand this post with more detail while keeping it engaging. Don't make it too long.",
@@ -17,19 +21,9 @@ const instructionMap: Record<string, string> = {
   fix: "Fix any grammar and spelling mistakes in this post. Keep the same tone and meaning. If there are no mistakes, return the text as-is.",
 };
 
-const platformLimits: Record<string, string> = {
-  instagram: "2200 characters max for captions",
-  facebook: "63206 characters max",
-};
-
-const platformNames: Record<string, string> = {
-  instagram: "Instagram",
-  facebook: "Facebook",
-};
-
 function buildBusinessSlice(kb: Record<string, unknown> | null): string {
   if (!kb) return "";
-  return `\nBusiness: ${kb.businessName ?? "Unknown"}\nDescription: ${kb.description ?? ""}\n`;
+  return `\n${formatBusinessContext(kb, { withHeader: false })}\n`;
 }
 
 function buildVoiceSlice(insights: Insights | null): string {
@@ -48,8 +42,9 @@ export function buildRewritePrompt(
   knowledgeBase: Record<string, unknown> | null,
   insights: Insights | null = null,
 ): string {
-  const platformLabel = platformNames[platform] ?? platform;
-  const limit = platformLimits[platform] ?? "";
+  const config = PLATFORM_CONFIG[platform];
+  const platformLabel = config?.displayName ?? platform;
+  const limit = config?.charLimit ?? null;
 
   return `You are editing a social media post for ${platformLabel}.
 ${buildBusinessSlice(knowledgeBase)}${buildVoiceSlice(insights)}
@@ -57,7 +52,7 @@ Original post:
 ${content}
 
 Instruction: ${instructionMap[instruction] ?? instruction}
-${limit ? `\nCharacter limit: ${limit}. Make sure the output respects this limit.` : ""}
+${limit ? `\nCharacter limit: ${limit} characters. Make sure the output respects this limit.` : ""}
 Write the new version. Keep it natural and human-sounding. Match the business owner's voice. Do not add quotes around the content.
 
 ${buildHumanRulesBlock()}`;
@@ -82,8 +77,9 @@ export function buildEditPrompt(
   knowledgeBase: Record<string, unknown> | null,
   insights: Insights | null = null,
 ): string {
-  const platformLabel = platformNames[platform] ?? platform;
-  const limit = platformLimits[platform] ?? "";
+  const config = PLATFORM_CONFIG[platform];
+  const platformLabel = config?.displayName ?? platform;
+  const limit = config?.charLimit ?? null;
   const safeInstruction = instruction.replace(/<\/?edit_instruction>/gi, "");
 
   return `You are editing a social media post for ${platformLabel}.
@@ -101,7 +97,7 @@ Apply the instruction precisely:
 - Preserve every part of the original post that the instruction does not explicitly change. Same wording, same structure, same tone elsewhere.
 - Match the business owner's voice fingerprint above for any NEW content you write.
 - Write in the same language as the original post.
-${limit ? `- Respect the character limit: ${limit}.` : ""}
+${limit ? `- Respect the character limit: ${limit} characters.` : ""}
 
 Return the edited post. No surrounding quotes. No "Edited:" prefix. Ready to publish.
 

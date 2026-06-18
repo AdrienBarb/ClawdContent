@@ -19,6 +19,42 @@ async function markAnalysisCompleted(socialAccountId: string): Promise<void> {
   });
 }
 
+// The per-account (network) strategy needs the confirmed knowledgeBase. During
+// onboarding, accounts connect at step 2 — BEFORE the business facts are confirmed
+// at step 4 — so computing one here would burn a model call on null inputs (no
+// goal, no KB). This strategy is a background artifact now: the paywall is powered
+// by the brand-level `User.businessStrategy` (built from KB+goal during
+// onboarding), not by this per-account one. This pass builds the per-account
+// strategy once the KB is confirmed (reconnect/refresh), and the autopilot weekly
+// loop ensures one exists before it plans a week. Keyed on KB only (not goal) so
+// legacy users with a null onboardingGoal still get a strategy.
+async function hasConfirmedKnowledgeBase(
+  socialAccountId: string
+): Promise<boolean> {
+  const account = await prisma.socialAccount.findUnique({
+    where: { id: socialAccountId },
+    select: {
+      lateProfile: { select: { user: { select: { knowledgeBase: true } } } },
+    },
+  });
+  return account?.lateProfile?.user?.knowledgeBase != null;
+}
+
+// Shared body of the compute-strategy step in both functions below: skip until
+// the knowledgeBase is confirmed, otherwise (re)compute the strategy.
+async function computeStrategyIfReady(
+  socialAccountId: string,
+  logPrefix: string
+): Promise<void> {
+  if (!(await hasConfirmedKnowledgeBase(socialAccountId))) {
+    console.log(
+      `${logPrefix} ⏭️  skip strategy — knowledgeBase not confirmed yet (socialAccountId=${socialAccountId})`
+    );
+    return;
+  }
+  await computeStrategy(socialAccountId);
+}
+
 export const analyzeAccount = inngest.createFunction(
   { id: "analyze-account", retries: 3, triggers: [{ event: "account/connected" }] },
   async ({ event, step }) => {
@@ -109,15 +145,18 @@ export const analyzeAccount = inngest.createFunction(
       await markAnalysisCompleted(socialAccountId);
     });
 
-    // Strategy is derived from the just-saved insights. Skip when the first
-    // pass returned null (account deleted) — there's nothing to build from.
-    // computeStrategy THROWS on a model failure (it returns null only for
-    // legitimate skips: deleted account / unsupported platform / no KB), so a
-    // failed generation re-runs via Inngest's step retries. Runs after the
-    // completion flip, so even an exhausted retry leaves analysisStatus intact.
+    // Per-account (network) strategy, derived from the just-saved insights. Skip
+    // when the first pass returned null (account deleted) — nothing to build from.
+    // Also skip until the knowledgeBase is confirmed (onboarding pre-step-4): this
+    // strategy is background-only (the paywall reads the brand-level
+    // businessStrategy instead), and the autopilot weekly loop ensures one exists
+    // if this pass skipped. computeStrategy THROWS on a model failure (it returns
+    // null only for legitimate skips: deleted account / unsupported platform / no
+    // KB), so a failed generation re-runs via Inngest's step retries. Runs after
+    // the completion flip, so even an exhausted retry leaves analysisStatus intact.
     if (insights !== null) {
       await step.run("compute-strategy", async () => {
-        await computeStrategy(socialAccountId);
+        await computeStrategyIfReady(socialAccountId, "[analyze-account]");
         return null;
       });
     }
@@ -148,11 +187,13 @@ export const refreshInsights = inngest.createFunction(
       await markAnalysisCompleted(socialAccountId);
     });
 
-    // Refresh the strategy off the new insights. Throws on a model failure so
-    // Inngest retries the step (same as connect).
+    // Refresh the per-account (network) strategy off the new insights. Throws on
+    // a model failure so Inngest retries the step (same as connect). Skips until
+    // KB is confirmed (a reconnect mid-onboarding) — it's a background artifact;
+    // the paywall reads the brand-level businessStrategy instead.
     if (insights !== null) {
       await step.run("compute-strategy", async () => {
-        await computeStrategy(socialAccountId);
+        await computeStrategyIfReady(socialAccountId, "[refresh-insights]");
         return null;
       });
     }

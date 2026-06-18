@@ -104,3 +104,75 @@ export function parseStrategy(raw: unknown): SocialStrategy | null {
   }
   return parsed.data;
 }
+
+/**
+ * Monotonic rank of a strategy's data tier (higher = built on more real social
+ * data). Gates strategy writes so a later cold/thin regeneration — the
+ * onboarding Phase-1 pass (knowledgeBase + goal only) or a re-run before
+ * Zernio's backfill lands — can never downgrade a richer strategy another job
+ * already saved. Equal tiers are allowed to overwrite (a fresh same-tier pass
+ * with goal/KB now present supersedes a premature one).
+ */
+const DATA_QUALITY_RANK: Record<string, number> = {
+  platform_no_history: 0,
+  cold_start: 0,
+  thin: 1,
+  rich: 2,
+};
+
+export function dataQualityRank(dataQuality: string): number {
+  return DATA_QUALITY_RANK[dataQuality] ?? 0;
+}
+
+/**
+ * The brand-level "business" strategy persisted on `User.businessStrategy`.
+ *
+ * Same authored shape as the per-account strategy (positioning, summary,
+ * pillars, format/cadence plan, double-down/stop) — it's the same `assembleStrategy`
+ * output — plus a `kbSource` tag. It's built early in onboarding from the
+ * knowledgeBase (or the website-analysis draft) + goal alone, with NO social
+ * data, so the paywall can reveal it instantly. `cadence.source` is always
+ * `"benchmark"` and `dataQuality` always `"cold_start"` (no insights feed it).
+ */
+export const businessStrategyStoredSchema = strategyStoredSchema.extend({
+  /**
+   * Which knowledgeBase tier this was built from. Guards the step-3 (draft) →
+   * step-4 (confirmed) race: a draft-built strategy must never clobber a
+   * confirmed-built one if its generation finishes later. Defaults to
+   * "confirmed" so a legacy row without the tag is treated as authoritative.
+   */
+  kbSource: z.enum(["draft", "confirmed"]).default("confirmed"),
+});
+
+export type BusinessStrategy = z.infer<typeof businessStrategyStoredSchema>;
+
+/**
+ * Runtime parse of `User.businessStrategy`. Returns null when missing or when
+ * it fails the schema — callers treat null as "no business strategy yet" (the
+ * paywall stays in its "building" state and the client keeps polling).
+ */
+export function parseBusinessStrategy(raw: unknown): BusinessStrategy | null {
+  if (raw === null || raw === undefined) return null;
+  const parsed = businessStrategyStoredSchema.safeParse(raw);
+  if (!parsed.success) {
+    console.warn(
+      `[strategy] ⚠️  businessStrategy JSON failed parse — treating as missing`
+    );
+    return null;
+  }
+  return parsed.data;
+}
+
+/**
+ * Monotonic rank of a business strategy's knowledgeBase tier (higher = built on
+ * more authoritative facts). Confirmed always beats draft; equal tiers overwrite
+ * (a step-4 re-edit with corrected facts supersedes a premature build).
+ */
+const KB_SOURCE_RANK: Record<string, number> = {
+  draft: 0,
+  confirmed: 1,
+};
+
+export function kbSourceRank(kbSource: string): number {
+  return KB_SOURCE_RANK[kbSource] ?? 0;
+}

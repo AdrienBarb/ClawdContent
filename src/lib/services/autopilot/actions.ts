@@ -8,7 +8,6 @@ import { humanizeContent } from "@/lib/ai/humanize";
 import { HUMAN_SAMPLING } from "@/lib/ai/humanRules";
 import { captureServerEvent } from "@/lib/tracking/postHogClient";
 import { updateBatchPostSnapshot } from "./batch";
-import { approveBatch } from "./approve";
 import type { ActionTokenPayload } from "./actionTokens";
 
 export type ExecuteActionResult =
@@ -44,19 +43,6 @@ export async function executeAutopilotAction(
   payload: ActionTokenPayload
 ): Promise<ExecuteActionResult> {
   const { userId, postRef, refKind, action, batchId } = payload;
-
-  if (action === "approve_week") {
-    const result = await approveBatch({ userId, batchId });
-    if (!result.ok) {
-      return result.error === "already_approved"
-        ? { ok: true, message: "This week is already launched." }
-        : { ok: false, message: "This week could not be found." };
-    }
-    return {
-      ok: true,
-      message: `Your week is launched — ${result.scheduled} post${result.scheduled === 1 ? "" : "s"} scheduled.`,
-    };
-  }
 
   const profile = await prisma.lateProfile.findUnique({
     where: { userId },

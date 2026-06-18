@@ -1272,6 +1272,7 @@ function ReorderableMediaItem({
             className="h-20 w-20 rounded-lg object-cover pointer-events-none"
             width={160}
             height={160}
+            unoptimized
           />
         )}
       </button>

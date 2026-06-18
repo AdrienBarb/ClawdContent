@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { ImageIcon, SpinnerGapIcon } from "@phosphor-icons/react";
 import PageHeader from "@/components/dashboard/PageHeader";
+import { DashboardTabs } from "@/components/dashboard/DashboardTabs";
 import { appRouter } from "@/lib/constants/appRouter";
 import { getPlatform } from "@/lib/constants/platforms";
 import useApi from "@/lib/hooks/useApi";
@@ -152,6 +153,7 @@ export default function ResultsPage() {
 
   return (
     <div className="space-y-6">
+      <DashboardTabs />
       <PageHeader title="Results" subtitle="What worked over the last 30 days." />
 
       {isLoading ? (

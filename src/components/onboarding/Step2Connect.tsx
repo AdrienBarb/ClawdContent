@@ -53,6 +53,7 @@ export default function Step2Connect({
         returnTo={`${appRouter.onboarding}?step=3`}
         onboarding
         allowedPlatforms={ONBOARDING_PLATFORMS}
+        variant="stack"
       />
 
       {hasAccount && (

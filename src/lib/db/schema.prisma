@@ -27,6 +27,12 @@ model User {
   onboardingCompletedAt      DateTime?
   websiteAnalysis            Json?
   onboardingGoal             String?
+  // Brand-level growth strategy (positioning, pillars, format/cadence plan)
+  // built early in onboarding from knowledgeBase/draft + goal alone — NO social
+  // data. Powers the paywall reveal with zero analysis wait. Shape validated by
+  // `businessStrategyStoredSchema` (src/lib/schemas/strategy.ts). The per-account
+  // `SocialAccount.strategy` stays background-only (autopilot/analyze).
+  businessStrategy           Json?
   postsPublished             Int              @default(0)
   lastSuggestionsGeneratedAt DateTime?
   outcomeSnapshot            OutcomeSnapshot?

@@ -20,8 +20,6 @@ interface WeeklyDigestEmailProps {
   firstPostLabel: string | null;
   mode: "full_auto" | "review";
   posts: DigestPostItem[];
-  /** Review mode only: one-click "Launch my week" commit link. */
-  launchUrl: string | null;
   dashboardUrl: string;
 }
 
@@ -37,12 +35,11 @@ export const WeeklyDigestEmail = ({
   firstPostLabel,
   mode,
   posts,
-  launchUrl,
   dashboardUrl,
 }: WeeklyDigestEmailProps) => {
   const isReview = mode === "review";
   const previewText = isReview
-    ? `Your week is planned — ${postCount} posts waiting for your go`
+    ? `Your week is planned — ${postCount} posts ready to review`
     : `Your week is ready — ${postCount} posts${firstPostLabel ? `, first goes live ${firstPostLabel}` : ""}`;
 
   return (
@@ -53,15 +50,9 @@ export const WeeklyDigestEmail = ({
       <Text className="m-0 mb-5 text-[14px] leading-relaxed text-gray-600">
         Hi {firstName} — {postCount} post{postCount === 1 ? "" : "s"}{" "}
         {isReview
-          ? "are planned for next week. Nothing publishes until you launch it."
-          : `are scheduled for next week${firstPostLabel ? `. The first goes live ${firstPostLabel}` : ""}.`}
+          ? "are planned for the week ahead. Nothing publishes until you approve each one in the app."
+          : `are scheduled for the week ahead${firstPostLabel ? `. The first goes live ${firstPostLabel}` : ""}.`}
       </Text>
-
-      {isReview && launchUrl ? (
-        <Section className="mb-6 text-center">
-          <EmailButton href={launchUrl}>Launch my week</EmailButton>
-        </Section>
-      ) : null}
 
       {posts.map((post, i) => (
         <Section
@@ -104,8 +95,8 @@ export const WeeklyDigestEmail = ({
 
       <Hr className="my-5 border-gray-200" />
       <Section className="text-center">
-        <EmailButton href={dashboardUrl} variant={isReview ? "secondary" : "primary"}>
-          See my week
+        <EmailButton href={dashboardUrl} variant="primary">
+          {isReview ? "Review my week" : "See my week"}
         </EmailButton>
       </Section>
     </EmailLayout>

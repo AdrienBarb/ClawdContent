@@ -8,6 +8,7 @@ import { prisma } from "@/lib/db/prisma";
 import { coerceMediaItems, mediaItemsSchema } from "@/lib/schemas/mediaItems";
 import { validateMediaItems } from "@/lib/services/mediaValidation";
 import { publishOrScheduleSuggestion } from "@/lib/services/publishSuggestion";
+import { publishResultToResponse } from "@/lib/http/publishResultResponse";
 
 const patchInputSchema = z
   .object({
@@ -86,7 +87,12 @@ export async function PATCH(
 
     const data: Record<string, unknown> = {};
     if (input.content !== undefined) data.content = input.content;
-    if (input.mediaItems !== undefined) data.mediaItems = input.mediaItems;
+    if (input.mediaItems !== undefined) {
+      data.mediaItems = input.mediaItems;
+      // A user-supplied, platform-validated visual clears the autopilot's
+      // needs_media hold so the post becomes schedulable again.
+      if (existing.status === "needs_media") data.status = "draft";
+    }
     if (input.suggestedDay !== undefined) data.suggestedDay = input.suggestedDay;
     if (input.suggestedHour !== undefined) data.suggestedHour = input.suggestedHour;
     if (input.scheduledAt !== undefined) {
@@ -121,70 +127,13 @@ export async function POST(
       action,
     });
 
-    if (result.ok) {
-      if (result.partial) {
-        return NextResponse.json(
-          {
-            error: "PUBLISH_PARTIAL",
-            postId: result.postId,
-            message:
-              result.action === "scheduled"
-                ? "Post scheduled — refresh to clear it from your drafts."
-                : "Post published — refresh to clear it from your drafts.",
-          },
-          { status: 500 }
-        );
-      }
-      return NextResponse.json({
-        success: true,
-        postId: result.postId,
-        action: result.action,
-      });
-    }
-
-    switch (result.error) {
-      case "not_found":
-        return NextResponse.json({ error: "Suggestion not found" }, { status: 404 });
-      case "already_publishing":
-        return NextResponse.json(
-          {
-            error: "ALREADY_PUBLISHING",
-            message:
-              "This post is already being published — give it a few seconds.",
-          },
-          { status: 409 }
-        );
-      case "free_post_limit_reached":
-        return NextResponse.json({ error: "FREE_POST_LIMIT_REACHED" }, { status: 403 });
-      case "no_schedule_staged":
-        return NextResponse.json(
-          { error: "NO_SCHEDULE_STAGED", message: "Pick a schedule time first." },
-          { status: 422 }
-        );
-      case "schedule_in_past":
-        return NextResponse.json(
-          {
-            error: "SCHEDULE_IN_PAST",
-            message: "That schedule time has passed. Pick a new one.",
-          },
-          { status: 422 }
-        );
-      case "media_validation_failed":
-        return NextResponse.json(
-          { error: "MEDIA_VALIDATION_FAILED", message: result.message },
-          { status: 422 }
-        );
-      case "validation_failed":
-        return NextResponse.json(
-          { error: "VALIDATION_FAILED", validationErrors: result.validationErrors },
-          { status: 422 }
-        );
-      case "publish_failed":
-        return NextResponse.json(
-          { error: "PUBLISH_FAILED", message: result.message },
-          { status: 500 }
-        );
-    }
+    return publishResultToResponse(result, {
+      notFoundMessage: "Suggestion not found",
+      partialMessage: (committed) =>
+        committed === "scheduled"
+          ? "Post scheduled — refresh to clear it from your drafts."
+          : "Post published — refresh to clear it from your drafts.",
+    });
   } catch (error) {
     return errorHandler(error);
   }

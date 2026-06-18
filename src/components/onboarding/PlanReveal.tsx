@@ -1,25 +1,28 @@
 "use client";
 
 import type { PaywallPlan } from "@/lib/schemas/onboardingPlan";
-import PlanDelta from "./PlanDelta";
 import PlanPositioning from "./PlanPositioning";
 import PlanPillars from "./PlanPillars";
 import PlanFormats from "./PlanFormats";
 import PlanCoaching from "./PlanCoaching";
 
 /**
- * The "aha" reveal: a clear before/after, then the strategy we've already
- * written for this account — angle, themes, cadence & format plan, and what
- * we'll lean into. Sits above the subscribe CTA on the final onboarding step.
+ * The "aha" reveal: the brand-level strategy we've already written — angle,
+ * themes, cadence & format plan, and what we'll lean into. Strategy-only (no
+ * before/after). Sits above the subscribe CTA on the final onboarding step.
  */
 export default function PlanReveal({ plan }: { plan: PaywallPlan }) {
-  const { after, before } = plan;
+  const { after } = plan;
 
   if (!after) return null; // caller guards; defensive
 
-  const who = plan.account.handle
-    ? `@${plan.account.handle}`
-    : (plan.businessName ?? "your account");
+  // Brand-level reveal: lead with the business name, fall back to the connected
+  // handle, then a neutral phrase.
+  const who = plan.businessName
+    ? plan.businessName
+    : plan.account?.handle
+      ? `@${plan.account.handle}`
+      : "your business";
 
   return (
     <div className="space-y-4">
@@ -37,7 +40,6 @@ export default function PlanReveal({ plan }: { plan: PaywallPlan }) {
         ) : null}
       </header>
 
-      <PlanDelta before={before} after={after} />
       <PlanPositioning positioning={after.positioning} />
       <PlanPillars pillars={after.pillars} />
       <PlanFormats

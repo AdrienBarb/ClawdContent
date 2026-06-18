@@ -5,16 +5,37 @@ import { brandingSchema, type KnowledgeBase } from "@/lib/schemas/knowledgeBase"
  * Onboarding is a 5-screen resumable wizard. Progress lives on the `User` row
  * (`onboardingStep`, `websiteAnalysis`) and the completion gate is
  * `onboardingCompletedAt` (set when the user subscribes). The website
- * scrape + extraction runs in the background via Inngest, so screen 3 polls
+ * scrape + extraction runs in the background via Inngest, so screen 4 polls
  * `/api/onboarding/status` for the result.
  */
 
-/** Screen 1 — website is required (no manual/skip path). */
-export const onboardingStartSchema = z.object({
-  websiteUrl: z
-    .string()
-    .url("Please enter a valid URL (e.g. https://www.yourbusiness.com)"),
-});
+/**
+ * Screen 1 — provide EITHER a website URL OR a short business description
+ * (mutually exclusive). The website path scrapes with Firecrawl + extracts; the
+ * description path extracts the knowledge base from the text alone (no scrape).
+ * The UI sends only the active field, so exactly one must be present.
+ */
+export const onboardingStartSchema = z
+  .object({
+    websiteUrl: z
+      .string()
+      .trim()
+      .url("Please enter a valid URL (e.g. https://www.yourbusiness.com)")
+      .optional(),
+    businessDescription: z
+      .string()
+      .trim()
+      .min(20, "Tell us a little more — a sentence or two about your business.")
+      .max(1000, "Keep it under 1000 characters.")
+      .optional(),
+  })
+  .refine(
+    (d) => [d.websiteUrl, d.businessDescription].filter(Boolean).length === 1,
+    {
+      message:
+        "Provide either a website or a business description (not both).",
+    }
+  );
 
 export type OnboardingStartInput = z.infer<typeof onboardingStartSchema>;
 
@@ -82,11 +103,14 @@ export const onboardingSaveSchema = z.object({
 
 export type OnboardingSaveInput = z.infer<typeof onboardingSaveSchema>;
 
-/** Persisted in `User.websiteAnalysis` by the Inngest job; read on screen 3. */
+/** Persisted in `User.websiteAnalysis` by the Inngest job; read on screen 4. */
 export type WebsiteAnalysisState = {
   status: "pending" | "running" | "done" | "failed";
   draft?: KnowledgeBase;
-  errorCode?: "unreachable" | "extraction_failed";
+  // "unreachable" / "extraction_failed" are decided inside the job;
+  // "job_failed" is written by the Inngest onFailure handler when the function
+  // exhausts its retries, so the status always reaches a terminal state.
+  errorCode?: "unreachable" | "extraction_failed" | "job_failed";
 };
 
 export type OnboardingAccount = {
@@ -103,6 +127,9 @@ export type OnboardingStatus = {
   isCompleted: boolean;
   /** The URL saved on screen 1 — repopulates the field when the user returns. */
   websiteUrl: string | null;
+  /** The description saved on screen 1 (no-website path) — lets screen 4 re-fire
+   *  analysis on "Try again" without the user retyping it. */
+  businessDescription: string | null;
   /** The primary goal picked on screen 3 — repopulates the selection on return. */
   goal: OnboardingGoal | null;
   websiteAnalysis: WebsiteAnalysisState | null;

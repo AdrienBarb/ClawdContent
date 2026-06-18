@@ -48,12 +48,13 @@ export async function captureServerEvent(
 // Helper function to evaluate a feature flag server-side
 export async function getFeatureFlag(
   flagKey: string,
-  distinctId: string
+  distinctId: string,
+  options?: { sendFeatureFlagEvents?: boolean }
 ): Promise<string | boolean | undefined> {
   const client = getPostHogClient();
   if (!client) return undefined;
 
-  const value = await client.getFeatureFlag(flagKey, distinctId);
+  const value = await client.getFeatureFlag(flagKey, distinctId, options);
   return value;
 }
 

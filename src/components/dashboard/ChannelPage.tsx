@@ -437,7 +437,7 @@ function PostCard({
               media.type === "video" ? (
                 <video key={i} src={media.url} className="h-20 rounded-lg" controls />
               ) : (
-                <Image key={i} src={media.url} alt="" className="h-20 w-20 rounded-lg object-cover" width={80} height={80} />
+                <Image key={i} src={media.url} alt="" className="h-20 w-20 rounded-lg object-cover" width={80} height={80} unoptimized />
               )
             ))}
           </div>
@@ -602,7 +602,7 @@ function EditPostModal({
                 media.type === "video" ? (
                   <video key={i} src={media.url} className="h-20 rounded-lg" controls />
                 ) : (
-                  <Image key={i} src={media.url} alt="" className="h-20 w-20 rounded-lg object-cover" width={80} height={80} />
+                  <Image key={i} src={media.url} alt="" className="h-20 w-20 rounded-lg object-cover" width={80} height={80} unoptimized />
                 )
               ))}
             </div>

@@ -1,5 +1,3 @@
-import "server-only";
-
 /**
  * Timezone math for the autopilot. Users store an IANA timezone
  * (User.timezone, nullable → UTC). All helpers are DST-aware via Intl —
@@ -90,19 +88,57 @@ export function wallTimeToUtc(
 }
 
 /**
- * The Monday 00:00 (user-local) that starts the week FOLLOWING `now`.
- * Generation runs Sunday 17:00 local, so "the coming week" starts the next
- * day. Used as the WeeklyBatch idempotency anchor ([userId, weekStart]).
+ * Snap an instant that represents (or sits near) a local midnight to exactly
+ * 00:00 local. Probes at +12h so a near-midnight instant resolves to the
+ * intended local calendar day (dodging the midnight boundary), then re-resolves
+ * local midnight. DST-safe — used for anchors, never for "now" (todayStart).
  */
-export function nextWeekStart(now: Date, timeZone: string): Date {
-  const local = getLocalParts(now, timeZone);
-  // Days until next Monday (weekday 0). If today IS Monday, jump a full week.
-  const daysUntilMonday = (7 - local.weekday) % 7 || 7;
-  const base = wallTimeToUtc(
-    { year: local.year, month: local.month, day: local.day, hour: 0 },
+function localMidnightOf(instant: Date, timeZone: string): Date {
+  const p = getLocalParts(
+    new Date(instant.getTime() + 12 * 60 * 60 * 1000),
     timeZone
   );
-  return new Date(base.getTime() + daysUntilMonday * 24 * 60 * 60 * 1000);
+  return wallTimeToUtc(
+    { year: p.year, month: p.month, day: p.day, hour: 0 },
+    timeZone
+  );
+}
+
+/**
+ * The local-midnight that starts the rolling week 7 days after `anchor`.
+ * Every user's week is a 7-day window anchored on their first-generation day;
+ * each cycle advances the anchor by 7 calendar days. DST-safe: snaps the
+ * anchor to local midnight, adds 7 days of real time, then re-resolves local
+ * midnight of the resulting date.
+ */
+export function rollingNextAnchor(anchor: Date, timeZone: string): Date {
+  const anchorMidnight = localMidnightOf(anchor, timeZone);
+  return localMidnightOf(
+    new Date(anchorMidnight.getTime() + 7 * 24 * 60 * 60 * 1000),
+    timeZone
+  );
+}
+
+/**
+ * The instant of `hour:00` local on the day BEFORE `anchor`. A rolling window
+ * that starts on `anchor` is generated the evening before — generalizing the
+ * old "Sunday 17:00 → Monday week" to any anchor weekday, so existing
+ * Monday-anchored users keep getting their week the same Sunday evening.
+ */
+export function generationFireAt(
+  anchor: Date,
+  timeZone: string,
+  hour: number
+): Date {
+  const anchorMidnight = localMidnightOf(anchor, timeZone);
+  const dayBefore = getLocalParts(
+    new Date(anchorMidnight.getTime() - 12 * 60 * 60 * 1000),
+    timeZone
+  );
+  return wallTimeToUtc(
+    { year: dayBefore.year, month: dayBefore.month, day: dayBefore.day, hour },
+    timeZone
+  );
 }
 
 /** Local midnight of "today" in the given zone — anchor for first-week batches. */

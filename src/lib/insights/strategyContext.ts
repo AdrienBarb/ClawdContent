@@ -9,6 +9,7 @@ import {
 import {
   formatBusinessContext,
   formatGoalContext,
+  formatStrategyContext,
 } from "@/lib/services/promptContext";
 import { formatLabel } from "@/lib/insights/paywallPlan";
 import {
@@ -99,21 +100,17 @@ function formatTimes(times: { dayOfWeek: number; hour: number }[]): string {
     .join(", ");
 }
 
-export function buildStrategyPrompt(
-  inputs: StrategyInputs,
-  knowledgeBase: Record<string, unknown> | null
-): string {
+/**
+ * Push the account-status sections (real follower/cadence/engagement numbers,
+ * top/bottom posts, inferred voice) onto the prompt. ACCOUNT MODE ONLY — these
+ * describe a live social account from its insights. Brand mode has none and
+ * skips this entirely (see `buildStrategyPrompt`).
+ */
+function pushAccountStatusSections(
+  sections: string[],
+  inputs: StrategyInputs
+): void {
   const { kb } = inputs;
-  const sections: string[] = [];
-
-  sections.push(
-    `You are an expert social media manager building a concrete growth strategy for a small business's ${inputs.displayName} account. Ground every recommendation in THEIR real numbers below — cite them. Be specific to this business, never generic. Never mention that any of this is automated or AI-generated.`
-  );
-
-  sections.push(formatBusinessContext(knowledgeBase));
-
-  const goalBlock = formatGoalContext(inputs.goal);
-  if (goalBlock) sections.push(goalBlock);
 
   // --- Where they are now (facts) ---
   const nowLines: string[] = [`## Where they are now (${inputs.displayName})`];
@@ -176,6 +173,60 @@ export function buildStrategyPrompt(
         v.patterns.length ? `\nWhat performs: ${v.patterns.join("; ")}` : ""
       }`
     );
+  }
+}
+
+export function buildStrategyPrompt(
+  inputs: StrategyInputs,
+  knowledgeBase: Record<string, unknown> | null,
+  /**
+   * Optional brand-level strategy to align this per-account plan to. When the
+   * onboarding business strategy exists, the per-account (network) strategy is
+   * anchored to it so positioning/pillars stay consistent across accounts.
+   * Omitted for the brand-strategy build itself (there's nothing to anchor to).
+   */
+  businessStrategy?: SocialStrategy | null
+): string {
+  const { kb } = inputs;
+  // Brand mode (the onboarding business strategy) has NO social data — no
+  // insights, no platform. The account-status sections below ("Where they are
+  // now", "What's working/underperforming", "Their voice") would all degrade to
+  // "no followers / not enough history yet / no posts yet" and the model would
+  // dutifully repeat that ("starting fresh with no post history yet"). So in
+  // brand mode we skip them entirely and steer purely from the business + goal.
+  const isBrand = inputs.platform === "brand";
+  const sections: string[] = [];
+
+  sections.push(
+    isBrand
+      ? `You are an expert brand strategist building a brand-level content strategy for a small business that will publish on ${inputs.displayName}. Base every recommendation on what this business actually does and the goal below. Be specific to this business, never generic. This is the opening plan for a business that is about to start posting, so frame it as where to begin — never claim to know how they have posted before, and never say they have no history. Never mention that any of this is automated or AI-generated.`
+      : `You are an expert social media manager building a concrete growth strategy for a small business's ${inputs.displayName} account. Ground every recommendation in THEIR real numbers below — cite them. Be specific to this business, never generic. Never mention that any of this is automated or AI-generated.`
+  );
+
+  sections.push(formatBusinessContext(knowledgeBase));
+
+  const goalBlock = formatGoalContext(inputs.goal);
+  if (goalBlock) sections.push(goalBlock);
+
+  // Anchor to the brand-level strategy (if one exists) so this account's plan
+  // stays consistent with the umbrella positioning/pillars rather than drifting.
+  const brandBlock = businessStrategy
+    ? formatStrategyContext(businessStrategy, { withHeader: false })
+    : "";
+  if (brandBlock) {
+    sections.push(
+      `## Brand-level strategy (keep this account aligned to it)\n${brandBlock}`
+    );
+  }
+
+  if (isBrand) {
+    sections.push(
+      `## Starting point for ${inputs.displayName}\n- Recommended cadence to begin with: ${kb.recommendedPostsPerWeek.min}-${kb.recommendedPostsPerWeek.max}×/week.\n- Recommended format mix: ${kb.formatMix
+        .map((f) => `${f.format} = ${f.role}`)
+        .join("; ")}`
+    );
+  } else {
+    pushAccountStatusSections(sections, inputs);
   }
 
   sections.push(`## ${inputs.displayName} principles\n${kb.principles.map((p) => `- ${p}`).join("\n")}`);

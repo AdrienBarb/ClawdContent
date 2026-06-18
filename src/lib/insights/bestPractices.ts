@@ -197,3 +197,70 @@ export const BEST_PRACTICES: Record<string, PlatformBestPractices> = {
 export function getBestPractices(platform: string): PlatformBestPractices | null {
   return BEST_PRACTICES[platform] ?? null;
 }
+
+/**
+ * Brand-level "best practices" socle — the IG + Facebook umbrella used to build
+ * the social-independent BUSINESS strategy (`computeBusinessStrategy`). NOT a
+ * member of `BEST_PRACTICES` (that map is pinned to `SUPPORTED_PLATFORMS` by a
+ * parity test); it's a standalone neutral socle so the strategy plumbing
+ * (`buildStrategyInputs`/`buildStrategyPrompt`/`assembleStrategy`) can run with
+ * `insights: null` and no single-platform anchor. The recommended cadence band
+ * is identical across IG and FB (3-5×/wk); the format mix is their union, so the
+ * brand plan can span both. `displayName` drives the prompt copy ("Instagram and
+ * Facebook"), keeping the rendered prompt platform-neutral.
+ */
+export const BRAND_BEST_PRACTICES: PlatformBestPractices = {
+  platform: "brand",
+  displayName: "Instagram and Facebook",
+  recommendedPostsPerWeek: { min: 3, max: 5 },
+  formatMix: [
+    {
+      format: "reel",
+      role: "Reach & discovery",
+      bestFor:
+        "Getting in front of people who don't follow you yet. Lead format for growth, aim ~half of posts.",
+    },
+    {
+      format: "carousel",
+      role: "Engagement & saves",
+      bestFor:
+        "Earning saves and shares — how-tos, tips, before/after, step-by-steps.",
+    },
+    {
+      format: "photo",
+      role: "Everyday engagement",
+      bestFor:
+        "The highest-engagement everyday format — single photos, behind-the-scenes, product and people shots.",
+    },
+    {
+      format: "text",
+      role: "Conversation",
+      bestFor: "Quick questions and updates that spark comments and replies.",
+    },
+  ],
+  bestTimeDefaults: PLATFORM_CONFIG.instagram.defaultBestTimes,
+  benchmarkEngagementRate: {
+    good: 2,
+    strong: 5,
+    basis:
+      "Per-post engagement across Instagram and Facebook for a small account. Impression-based, so treat as approximate.",
+    source: "Buffer 2026; Metricool 2025; RivalIQ 2025",
+  },
+  principles: [
+    "Consistency beats volume — 3-5 quality posts/week outperform daily mediocre ones.",
+    "Lead with Reels for reach (the first 3 seconds decide), carousels for saves, photos for everyday engagement.",
+    "Hook in the opening line; keep one clear CTA near the end.",
+    "Reply to comments — conversation compounds reach on both platforms.",
+  ],
+  metricMeaning: {
+    engagementRate:
+      "Engagement ÷ impressions. ~2%+ is healthy for a small account; 5%+ is strong.",
+    saves:
+      "A save signals 'I'll come back to this' — carousels and how-tos earn the most.",
+    shares:
+      "Shares/sends push a post to people who don't follow you yet — the strongest reach multiplier.",
+    reach:
+      "Unique accounts that saw the post. Reach above your follower count means it escaped your audience (good).",
+    comments: "Conversation depth — replying back compounds it.",
+  },
+};

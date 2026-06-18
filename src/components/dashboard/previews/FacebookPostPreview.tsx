@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import {
   GlobeHemisphereWestIcon,
@@ -17,6 +17,8 @@ export interface PostPreviewProps {
   contentType: string; // "text" | "image" | "video" | "carousel"
   avatarColor?: string; // platform brand color fallback for the avatar circle
   timestampLabel?: string; // e.g. "Scheduled · Tue 9:00 AM"
+  embedded?: boolean; // drop the standalone max-width when nested in a manage card
+  expandable?: boolean; // make "See more" interactive so the full caption can be read
 }
 
 const CAPTION_LIMIT = 280;
@@ -39,6 +41,8 @@ export function FacebookPostPreview({
   contentType,
   avatarColor,
   timestampLabel,
+  embedded,
+  expandable,
 }: PostPreviewProps) {
   const avatarBg = avatarColor ?? "#0866FF";
   const initial = username.charAt(0).toUpperCase() || "?";
@@ -46,13 +50,18 @@ export function FacebookPostPreview({
   const firstImage = mediaItems.find((m) => m.type === "image");
   const gridItems = mediaItems.slice(0, 2);
   const extraCount = mediaItems.length - 2;
+  const [captionExpanded, setCaptionExpanded] = useState(false);
   const isLongCaption = caption.length > CAPTION_LIMIT;
-  const displayedCaption = isLongCaption
-    ? `${caption.slice(0, CAPTION_LIMIT).trimEnd()}…`
-    : caption;
+  const showFullCaption = expandable && captionExpanded;
 
   return (
-    <div className="w-full min-w-[320px] max-w-[470px] overflow-hidden rounded-2xl border border-gray-200 bg-white">
+    <div
+      className={
+        embedded
+          ? "w-full overflow-hidden rounded-xl border border-gray-200 bg-white"
+          : "w-full min-w-[320px] max-w-[470px] overflow-hidden rounded-2xl border border-gray-200 bg-white"
+      }
+    >
       {/* Header */}
       <div className="flex items-center gap-2.5 px-3 py-3">
         <span
@@ -79,10 +88,28 @@ export function FacebookPostPreview({
 
       {/* Caption (above media — Facebook order) */}
       {caption ? (
-        <p className="line-clamp-4 px-3 pb-3 text-[14px] leading-relaxed text-gray-900">
-          <span>{displayedCaption}</span>
-          {isLongCaption ? <span className="text-gray-500"> See more</span> : null}
-        </p>
+        <div className="px-3 pb-3">
+          <p
+            className={`text-[14px] leading-relaxed text-gray-900 ${
+              showFullCaption ? "" : "line-clamp-4"
+            }`}
+          >
+            {caption}
+          </p>
+          {isLongCaption && expandable ? (
+            <button
+              type="button"
+              onClick={() => setCaptionExpanded((v) => !v)}
+              className="mt-1 text-[13px] font-medium text-gray-500 hover:text-gray-700"
+            >
+              {captionExpanded ? "See less" : "See more"}
+            </button>
+          ) : isLongCaption ? (
+            <span className="mt-1 inline-block text-[13px] text-gray-500">
+              See more
+            </span>
+          ) : null}
+        </div>
       ) : null}
 
       {/* Media */}
@@ -105,7 +132,7 @@ export function FacebookPostPreview({
           {gridItems.map((item, index) => (
             <div
               key={`${item.url}-${index}`}
-              className="relative w-full aspect-square"
+              className="relative w-full aspect-square bg-gray-100"
             >
               <Image
                 src={item.url}
@@ -126,7 +153,7 @@ export function FacebookPostPreview({
           ))}
         </div>
       ) : (
-        <div className="relative w-full aspect-[4/5]">
+        <div className="relative w-full aspect-[4/5] bg-gray-100">
           <Image
             src={mediaItems[0].url}
             alt={`Post by ${username}`}

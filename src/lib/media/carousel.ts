@@ -9,6 +9,12 @@ import {
 import { NANO_BANANA_PRO } from "./gemini";
 import { verifyImageText } from "./ocrGuard";
 import type { StyleKit } from "./styleKit";
+import {
+  paletteLine,
+  buildTextGraphicPrompt,
+  OCR_RETRY_SUFFIX,
+  MAX_TEXT_ATTEMPTS,
+} from "./textGraphic";
 
 /**
  * Carousel = chained generation, no atomic deck call exists on any provider.
@@ -27,27 +33,17 @@ export interface CarouselSlideSpec {
   body?: string;
 }
 
-function paletteLine(kit: StyleKit): string {
-  return kit.palette.length > 0
-    ? `Use EXACTLY these brand colors: ${kit.palette.join(", ")}.`
-    : "Use a cohesive, tasteful color palette.";
-}
-
 export function buildCoverPrompt(
   slide: CarouselSlideSpec,
   kit: StyleKit
 ): string {
-  return [
-    `Design the COVER slide of a social-media carousel (flat graphic design, not a photo).`,
-    `Render this headline EXACTLY, large and legible: "${slide.headline}".`,
-    slide.body ? `Smaller supporting text, rendered EXACTLY: "${slide.body}".` : "",
-    paletteLine(kit),
-    kit.logoUrl ? "Place the provided logo small and unobtrusive in a corner." : "",
-    `Style: ${kit.styleAnchor}.`,
-    "No watermarks. No extra text beyond what is specified.",
-  ]
-    .filter(Boolean)
-    .join("\n");
+  return buildTextGraphicPrompt({
+    intro:
+      "Design the COVER slide of a social-media carousel (flat graphic design, not a photo).",
+    headline: slide.headline,
+    body: slide.body,
+    kit,
+  });
 }
 
 export function buildSlidePrompt(
@@ -67,8 +63,6 @@ export function buildSlidePrompt(
     .filter(Boolean)
     .join("\n");
 }
-
-const MAX_TEXT_ATTEMPTS = 2;
 
 /**
  * Generate one slide with the OCR guard: render → transcribe → diff against
@@ -110,10 +104,7 @@ export async function generateVerifiedSlide({
   for (let attempt = 0; attempt < MAX_TEXT_ATTEMPTS; attempt++) {
     last = await generateImage({
       model: NANO_BANANA_PRO,
-      prompt:
-        attempt === 0
-          ? prompt
-          : `${prompt}\nIMPORTANT: the previous render misspelled the text. Reproduce every word and number letter-perfect.`,
+      prompt: attempt === 0 ? prompt : `${prompt}${OCR_RETRY_SUFFIX}`,
       aspectRatio,
       referenceImages: references,
     });

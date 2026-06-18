@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 import {
   buildPaywallPlan,
   selectPrimaryAccount,
-  buildDiagnosis,
   formatLabel,
   goalLabel,
   type RawAccountInput,
@@ -10,7 +9,10 @@ import {
 import { makeInsights } from "@/lib/insights/__fixtures__/zernio";
 import type { SocialStrategy } from "@/lib/schemas/strategy";
 
-// A schema-valid stored strategy (parseStrategy validates it on the way in).
+// A schema-valid stored strategy (parseStrategy validates it on the way in). The
+// paywall "after" is fed by the brand-level businessStrategy, so this stands in
+// for `User.businessStrategy`; it's also reused as a per-account `strategy` to
+// exercise the selectPrimaryAccount strategy-ready tiebreaker.
 function makeStrategy(over: Partial<SocialStrategy> = {}): SocialStrategy {
   return {
     version: 1,
@@ -94,125 +96,29 @@ describe("goalLabel", () => {
   });
 });
 
-describe("buildDiagnosis", () => {
-  it("names the cadence + format gap honestly for a rich account", () => {
-    const d = buildDiagnosis({
-      dataQuality: "rich",
-      postsPerWeek: 1,
-      topFormatLabel: "Photos",
-      topFormatPct: 92,
-      hasReels: false,
-      supportsReels: true,
-    });
-    expect(d[0]).toBe("posting about 1×/week");
-    expect(d[1]).toBe("92% photos, no Reels");
-    expect(d.at(-1)).toContain("without a repeating");
-  });
-  it("drops the 'no Reels' callout when they already post Reels", () => {
-    const d = buildDiagnosis({
-      dataQuality: "rich",
-      postsPerWeek: 4,
-      topFormatLabel: "Reels",
-      topFormatPct: 80,
-      hasReels: true,
-      supportsReels: true,
-    });
-    expect(d[1]).toBe("80% reels");
-  });
-  it("never claims 'no Reels' on a platform without Reels (Facebook video)", () => {
-    const d = buildDiagnosis({
-      dataQuality: "rich",
-      postsPerWeek: 2,
-      topFormatLabel: "Video",
-      topFormatPct: 70,
-      hasReels: false,
-      supportsReels: false,
-    });
-    expect(d[1]).toBe("70% video");
-    expect(d.join(" ")).not.toContain("no Reels");
-  });
-  it("uses a blank-canvas line for cold-start", () => {
-    const d = buildDiagnosis({
-      dataQuality: "cold_start",
-      postsPerWeek: null,
-      topFormatLabel: null,
-      topFormatPct: 0,
-      hasReels: false,
-      supportsReels: true,
-    });
-    expect(d).toHaveLength(1);
-    expect(d[0]).toContain("just getting started");
-  });
-});
-
-describe("buildPaywallPlan — platform-aware Reels handling", () => {
-  it("labels IG video as Reels and suppresses the 'no Reels' nudge", () => {
-    const plan = buildPaywallPlan({
-      account: makeAccount({
-        platform: "instagram",
-        insights: makeInsights({
-          dataQuality: "rich",
-          postingFrequency: { avgPostsPerWeek: 3, bestPostsPerWeek: 4, weeksObserved: 5 },
-          contentMix: [
-            { type: "video", percentage: 80 },
-            { type: "image", percentage: 20 },
-          ],
-        }),
-      }),
-      goal: "brand_awareness",
-      businessName: "Reel Co",
-    });
-    expect(plan.before.topFormatLabel).toBe("Reels");
-    expect(plan.before.hasReels).toBe(true);
-    expect(plan.before.diagnosis.join(" ")).not.toContain("no Reels");
-  });
-
-  it("keeps Facebook video as Video and never claims 'no Reels'", () => {
-    const plan = buildPaywallPlan({
-      account: makeAccount({
-        platform: "facebook",
-        insights: makeInsights({
-          dataQuality: "rich",
-          postingFrequency: { avgPostsPerWeek: 2, bestPostsPerWeek: 3, weeksObserved: 5 },
-          contentMix: [
-            { type: "video", percentage: 70 },
-            { type: "image", percentage: 30 },
-          ],
-        }),
-      }),
-      goal: "find_customers",
-      businessName: "Local FB Co",
-    });
-    expect(plan.before.topFormatLabel).toBe("Video");
-    expect(plan.before.hasReels).toBe(false);
-    expect(plan.before.diagnosis.join(" ")).not.toContain("no Reels");
-  });
-});
-
-describe("buildPaywallPlan — ready (rich account)", () => {
+describe("buildPaywallPlan — ready (strategy-only reveal)", () => {
   const plan = buildPaywallPlan({
     account: makeAccount(),
+    businessStrategy: makeStrategy(),
     goal: "find_customers",
     businessName: "Your Bakery",
   });
 
-  it("is ready with an after block", () => {
+  it("is ready with an after block once the business strategy exists", () => {
     expect(plan.status).toBe("ready");
     expect(plan.after).not.toBeNull();
   });
 
-  it("captures the honest before-state from insights", () => {
-    expect(plan.before.postsPerWeek).toBe(1);
-    expect(plan.before.followers).toBe(63);
-    expect(plan.before.topFormatLabel).toBe("Photos");
-    expect(plan.before.hasReels).toBe(false);
-    expect(plan.before.diagnosis[1]).toBe("92% photos, no Reels");
-  });
-
-  it("surfaces the cadence jump and goal framing", () => {
+  it("surfaces the cadence, goal framing, and account handle", () => {
     expect(plan.after?.postsPerWeek).toBe(5);
     expect(plan.goalLabel).toBe("get found by new customers");
-    expect(plan.account.handle).toBe("yourbakery");
+    expect(plan.account?.handle).toBe("yourbakery");
+    expect(plan.businessName).toBe("Your Bakery");
+  });
+
+  it("carries NO before/after comparison fields (strategy-only step)", () => {
+    expect(plan).not.toHaveProperty("before");
+    expect(plan).not.toHaveProperty("dataQuality");
   });
 
   it("orders target formats Reels-first and lists newly added formats", () => {
@@ -220,7 +126,7 @@ describe("buildPaywallPlan — ready (rich account)", () => {
     expect(plan.after?.newFormatLabels).toEqual(["Reels", "Carousels"]);
   });
 
-  it("scrubs unpublishable Stories from legacy stored strategies", () => {
+  it("scrubs unpublishable Stories from the strategy", () => {
     // makeStrategy carries a "story" formatPlan entry (pre-guard stored shape) —
     // Zernio can't publish Stories, so the plan must never surface it.
     expect(plan.after?.formatPlan.map((f) => f.label)).not.toContain("Stories");
@@ -238,15 +144,11 @@ describe("buildPaywallPlan — ready (rich account)", () => {
   });
 });
 
-describe("buildPaywallPlan — cold start", () => {
-  const plan = buildPaywallPlan({
-    account: makeAccount({
-      insights: makeInsights({
-        dataQuality: "cold_start",
-        postsAnalyzed: 0,
-        contentMix: [],
-      }),
-      strategy: makeStrategy({
+describe("buildPaywallPlan — cold-start business strategy", () => {
+  it("still produces a full after-plan from the benchmark strategy", () => {
+    const plan = buildPaywallPlan({
+      account: makeAccount({ strategy: null }),
+      businessStrategy: makeStrategy({
         dataQuality: "cold_start",
         cadence: {
           currentPerWeek: null,
@@ -255,43 +157,38 @@ describe("buildPaywallPlan — cold start", () => {
           source: "benchmark",
         },
       }),
-    }),
-    goal: "build_community",
-    businessName: "Fresh Start Co",
-  });
-
-  it("shows a blank-canvas diagnosis with no empty metrics", () => {
-    expect(plan.dataQuality).toBe("cold_start");
-    expect(plan.before.postsPerWeek).toBeNull();
-    expect(plan.before.topFormatLabel).toBeNull();
-    expect(plan.before.diagnosis[0]).toContain("just getting started");
-  });
-
-  it("still produces a full after-plan from the benchmark strategy", () => {
+      goal: "build_community",
+      businessName: "Fresh Start Co",
+    });
     expect(plan.status).toBe("ready");
     expect(plan.after?.postsPerWeek).toBe(3);
   });
 });
 
-describe("buildPaywallPlan — building (no strategy yet)", () => {
-  it("is building with no after-plan while the strategy hasn't landed", () => {
+describe("buildPaywallPlan — building (no business strategy yet)", () => {
+  it("is building with no after-plan while the business strategy hasn't landed", () => {
     const plan = buildPaywallPlan({
-      account: makeAccount({ strategy: null, analysisStatus: "analyzing" }),
+      account: makeAccount(),
+      businessStrategy: null,
       goal: null,
       businessName: null,
     });
     expect(plan.status).toBe("building");
     expect(plan.after).toBeNull();
   });
+});
 
-  it("stays building even once analysis completed but no strategy exists", () => {
+describe("buildPaywallPlan — brand-level, account-agnostic", () => {
+  it("reveals the brand strategy even with no connected account", () => {
     const plan = buildPaywallPlan({
-      account: makeAccount({ strategy: null, analysisStatus: "completed" }),
-      goal: null,
-      businessName: null,
+      account: null,
+      businessStrategy: makeStrategy(),
+      goal: "authority",
+      businessName: "Solo Brand",
     });
-    expect(plan.status).toBe("building");
-    expect(plan.after).toBeNull();
+    expect(plan.status).toBe("ready");
+    expect(plan.account).toBeNull();
+    expect(plan.after?.postsPerWeek).toBe(5);
   });
 });
 

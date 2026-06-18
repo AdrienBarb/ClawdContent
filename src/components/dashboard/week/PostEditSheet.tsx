@@ -11,6 +11,7 @@ import {
 import { SpinnerGapIcon, TrashIcon, UploadSimpleIcon } from "@phosphor-icons/react";
 import { appRouter } from "@/lib/constants/appRouter";
 import { useSupabaseUpload } from "@/lib/hooks/useSupabaseUpload";
+import { jsonFetch, localInputToIso, toLocalInputValue } from "./datetime";
 import type { TimelineItem } from "./types";
 
 interface Props {
@@ -19,67 +20,6 @@ interface Props {
   onClose: () => void;
   /** Refetch timeline data after any mutation. */
   onChanged: () => void;
-}
-
-function toLocalInputValue(iso: string | null, timeZone: string | null): string {
-  if (!iso) return "";
-  const date = new Date(iso);
-  const dtf = new Intl.DateTimeFormat("en-CA", {
-    timeZone: timeZone ?? undefined,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-  const parts: Record<string, string> = {};
-  for (const p of dtf.formatToParts(date)) parts[p.type] = p.value;
-  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour === "24" ? "00" : parts.hour}:${parts.minute}`;
-}
-
-/**
- * datetime-local gives a wall time in the USER's timezone — convert it to a
- * UTC ISO using the same one-pass offset trick as the server-side helper.
- */
-function localInputToIso(value: string, timeZone: string | null): string | null {
-  if (!value) return null;
-  const [datePart, timePart] = value.split("T");
-  const [y, m, d] = datePart.split("-").map(Number);
-  const [hh, mm] = timePart.split(":").map(Number);
-  if (!timeZone) return new Date(y, m - 1, d, hh, mm).toISOString();
-  const utcGuess = Date.UTC(y, m - 1, d, hh, mm);
-  const dtf = new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-  const parts: Record<string, string> = {};
-  for (const p of dtf.formatToParts(new Date(utcGuess))) parts[p.type] = p.value;
-  const shown = Date.UTC(
-    Number(parts.year),
-    Number(parts.month) - 1,
-    Number(parts.day),
-    Number(parts.hour) % 24,
-    Number(parts.minute)
-  );
-  return new Date(utcGuess - (shown - utcGuess)).toISOString();
-}
-
-async function jsonFetch(
-  url: string,
-  init: RequestInit
-): Promise<{ ok: boolean; body: unknown }> {
-  const res = await fetch(url, {
-    headers: { "Content-Type": "application/json" },
-    ...init,
-  });
-  const body = await res.json().catch(() => null);
-  return { ok: res.ok, body };
 }
 
 export function PostEditSheet({ item, timezone, onClose, onChanged }: Props) {

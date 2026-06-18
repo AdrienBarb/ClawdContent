@@ -92,6 +92,7 @@ export default function OnboardingWizard({
       {step === 4 && (
         <Step4BusinessInfo
           status={status}
+          onRefetch={() => void refetch()}
           onBack={() => goTo(3)}
           onNext={() => goTo(5)}
         />

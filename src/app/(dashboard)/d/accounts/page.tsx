@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import dynamic from "next/dynamic";
 import { appRouter } from "@/lib/constants/appRouter";
 import { getPlatform } from "@/lib/constants/platforms";
 import useApi from "@/lib/hooks/useApi";
@@ -23,19 +22,7 @@ import ConnectAccountButtons from "@/components/dashboard/ConnectAccountButtons"
 import PageHeader from "@/components/dashboard/PageHeader";
 import toast from "react-hot-toast";
 
-// Modals only mount on user click — defer their JS.
-const SubscribeModal = dynamic(
-  () => import("@/components/dashboard/SubscribeModal"),
-  { ssr: false }
-);
-const UpgradeModal = dynamic(
-  () => import("@/components/dashboard/UpgradeModal"),
-  { ssr: false }
-);
-
 interface DashboardStatus {
-  subscription: { status: string; planId: string } | null;
-  plan: { id: string; name: string; socialAccountLimit: number };
   accounts: Array<{
     id: string;
     platform: string;
@@ -49,9 +36,6 @@ export default function AccountsPage() {
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
   const [reconnectingId, setReconnectingId] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
-  const [showSubscribeModal, setShowSubscribeModal] = useState(false);
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-
   const {
     data: status,
     isLoading,
@@ -126,22 +110,12 @@ export default function AccountsPage() {
     getConnectUrl({ platform });
   };
 
-  const subStatus = status?.subscription?.status;
-  const hasActiveSubscription =
-    subStatus === "active" ||
-    subStatus === "trialing" ||
-    subStatus === "past_due";
-
   const accounts = status?.accounts ?? [];
   const activeCount = accounts.filter((a) => a.status === "active").length;
   const connectedPlatforms = accounts
     .filter((a) => a.status === "active")
     .map((a) => a.platform);
-  const plan = status?.plan;
-  const accountLimit = plan?.socialAccountLimit ?? 2;
-  const isAtLimit = activeCount >= accountLimit;
   const isEmptyState = accounts.length === 0;
-  const usagePct = Math.min((activeCount / accountLimit) * 100, 100);
 
   if (isLoading) {
     return (
@@ -166,25 +140,9 @@ export default function AccountsPage() {
             <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-gray-400">
               Connected
             </p>
-            {hasActiveSubscription && plan ? (
-              <div className="flex items-center gap-2.5">
-                <span className="text-[11px] text-gray-500 tabular-nums">
-                  {activeCount} / {accountLimit} on {plan.name}
-                </span>
-                <div className="h-1 w-16 overflow-hidden rounded-full bg-gray-100">
-                  <div
-                    className={`h-full rounded-full transition-all ${
-                      isAtLimit ? "bg-amber-400" : "bg-primary"
-                    }`}
-                    style={{ width: `${usagePct}%` }}
-                  />
-                </div>
-              </div>
-            ) : (
-              <span className="text-[11px] text-gray-500 tabular-nums">
-                {activeCount} active
-              </span>
-            )}
+            <span className="text-[11px] text-gray-500 tabular-nums">
+              {activeCount} active
+            </span>
           </div>
           <ul className="px-2 pb-2">
             {accounts.map((account) => {
@@ -337,56 +295,8 @@ export default function AccountsPage() {
           <ConnectAccountButtons
             onAccountConnected={refetch}
             connectedPlatforms={connectedPlatforms}
-            disabled={isAtLimit}
-            onDisabledClick={
-              isAtLimit
-                ? () =>
-                    hasActiveSubscription
-                      ? setShowUpgradeModal(true)
-                      : setShowSubscribeModal(true)
-                : undefined
-            }
           />
-          {isAtLimit && (
-            <p className="mt-3 text-[12px] text-amber-600">
-              {hasActiveSubscription ? (
-                <>
-                  You&apos;ve reached your {plan?.name} plan limit.{" "}
-                  <button
-                    onClick={() => setShowUpgradeModal(true)}
-                    className="cursor-pointer font-medium text-primary hover:underline"
-                  >
-                    Upgrade for more accounts
-                  </button>
-                </>
-              ) : (
-                <>
-                  Connect more accounts by subscribing.{" "}
-                  <button
-                    onClick={() => setShowSubscribeModal(true)}
-                    className="cursor-pointer font-medium text-primary hover:underline"
-                  >
-                    Choose a plan
-                  </button>
-                </>
-              )}
-            </p>
-          )}
         </section>
-      )}
-
-      <SubscribeModal
-        open={showSubscribeModal}
-        onOpenChange={setShowSubscribeModal}
-      />
-
-      {plan && (
-        <UpgradeModal
-          open={showUpgradeModal}
-          onOpenChange={setShowUpgradeModal}
-          currentPlanName={plan.name}
-          accountLimit={accountLimit}
-        />
       )}
     </div>
   );
