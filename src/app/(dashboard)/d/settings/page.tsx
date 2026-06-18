@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useRef, useEffect, useId } from "react";
+import toast from "react-hot-toast";
 import { appRouter } from "@/lib/constants/appRouter";
 import useApi from "@/lib/hooks/useApi";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -49,7 +50,26 @@ export default function SettingsPage() {
 
   const { mutate: updateAutopilot, isPending: autopilotPending } = usePatch(
     "/api/autopilot/settings",
-    { onSuccess: () => refetch() }
+    {
+      onSuccess: (
+        _res: unknown,
+        variables: { mode?: string; paused?: boolean }
+      ) => {
+        refetch();
+        if (variables.mode) {
+          toast.success(
+            variables.mode === "review"
+              ? "Switched to Approve first."
+              : "Switched to Publish automatically."
+          );
+        } else if (variables.paused !== undefined) {
+          toast.success(
+            variables.paused ? "Autopilot paused." : "Autopilot resumed."
+          );
+        }
+      },
+      onError: () => toast.error("Couldn't update your settings. Try again."),
+    }
   );
 
   const currentTimezone = status?.timezone;

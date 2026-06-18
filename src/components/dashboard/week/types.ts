@@ -22,6 +22,12 @@ export interface TimelineItem {
   /** "zernio" = committed on Zernio; "local" = staged PostSuggestion. */
   kind: "zernio" | "local";
   id: string;
+  /**
+   * Owning SocialAccount.id (DB id) — needed to re-render the visual via the
+   * stateless compose engine. "" when it can't be resolved (e.g. the account
+   * was disconnected); the regenerate action guards on it.
+   */
+  accountId: string;
   platform: string;
   username: string;
   content: string;
@@ -30,4 +36,6 @@ export interface TimelineItem {
   scheduledAt: string | null;
   /** "scheduled" | "draft" | "needs_media" | "failed" */
   status: string;
+  /** Frozen media concept for a local draft — re-used to anchor regeneration. */
+  mediaPlan?: unknown;
 }

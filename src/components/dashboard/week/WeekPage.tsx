@@ -129,12 +129,20 @@ export default function WeekPage() {
     return activeAccounts.find((a) => a.platform === platform)?.username ?? "you";
   };
 
+  // A committed post carries the Zernio (late) account id; the compose engine
+  // keys off our SocialAccount.id, so map across. "" when the account is gone.
+  const accountIdFor = (lateAccountId?: string): string => {
+    if (!lateAccountId) return "";
+    return activeAccounts.find((a) => a.lateAccountId === lateAccountId)?.id ?? "";
+  };
+
   // Plain computation (tens of items at most) — memoizing it invited stale
   // closures over the accounts list for the username lookup.
   const local: TimelineItem[] = (suggestionsData?.suggestions ?? []).map(
     (s) => ({
       kind: "local",
       id: s.id,
+      accountId: s.socialAccountId,
       platform: s.socialAccount.platform,
       username: s.socialAccount.username,
       content: s.content,
@@ -142,6 +150,7 @@ export default function WeekPage() {
       mediaItems: s.mediaItems,
       scheduledAt: s.scheduledAt,
       status: s.status === "needs_media" ? "needs_media" : "draft",
+      mediaPlan: s.mediaPlan,
     })
   );
   const committed: TimelineItem[] = (scheduledData?.posts ?? []).map((p) => {
@@ -149,6 +158,7 @@ export default function WeekPage() {
     return {
       kind: "zernio",
       id: p.id,
+      accountId: accountIdFor(p.platforms[0]?.accountId),
       platform,
       username: usernameFor(platform, p.platforms[0]?.accountId),
       content: p.content,
@@ -234,6 +244,7 @@ export default function WeekPage() {
                 setEditing({
                   kind: "zernio",
                   id: p.id,
+                  accountId: accountIdFor(p.platforms[0]?.accountId),
                   platform: p.platforms[0]?.platform ?? "instagram",
                   username: usernameFor(
                     p.platforms[0]?.platform ?? "instagram",
@@ -416,7 +427,6 @@ function DaySection({
         <PostCard
           key={`${item.kind}-${item.id}`}
           item={item}
-          timezone={timezone}
           mode={mode}
           timeLabel={timeLabel(item.scheduledAt, timezone)}
           onChanged={onChanged}

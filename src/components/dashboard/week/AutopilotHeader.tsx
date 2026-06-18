@@ -107,26 +107,29 @@ export function AutopilotHeader({
   const { mutate: setMode, isPending } = usePost(
     appRouter.api.autopilotPublishingMode,
     {
-      onSuccess: (res: {
-        effect?: string;
-        count?: number;
-        skipped?: number;
-      }) => {
+      onSuccess: (
+        res: { effect?: string; count?: number; skipped?: number },
+        variables: { state: PublishingState }
+      ) => {
         const n = res?.count ?? 0;
         const skipped = res?.skipped ?? 0;
-        if (res?.effect === "reverted") {
-          if (n > 0) {
-            toast.success(
-              `${n} post${n === 1 ? "" : "s"} pulled back for your review.`
-            );
-          }
-          if (skipped > 0) {
-            toast(
-              `${skipped} post${skipped === 1 ? "" : "s"} stayed live — already out or in progress.`
-            );
-          }
+        // Always confirm the switch landed. The effect counts below are extra
+        // detail — but even when there's nothing to re-bucket (effect "none")
+        // the user must never be left wondering whether the toggle worked.
+        const label =
+          MODE_OPTIONS.find((o) => o.value === variables.state)?.label ??
+          "publishing mode";
+        toast.success(`Switched to “${label}.”`);
+        if (res?.effect === "reverted" && n > 0) {
+          toast(
+            `${n} post${n === 1 ? "" : "s"} pulled back for your review.`
+          );
+        } else if (res?.effect === "reverted" && skipped > 0) {
+          toast(
+            `${skipped} post${skipped === 1 ? "" : "s"} stayed live — already out or in progress.`
+          );
         } else if (res?.effect === "committed" && n > 0) {
-          toast.success(`${n} post${n === 1 ? "" : "s"} scheduled.`);
+          toast(`${n} post${n === 1 ? "" : "s"} scheduled.`);
         }
         onChanged();
       },

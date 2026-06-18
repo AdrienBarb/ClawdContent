@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { mediaItemsSchema } from "./mediaItems";
 
 export const deletePostSchema = z.object({
   postId: z.string().min(1),
@@ -25,5 +26,8 @@ export const updatePostSchema = z.object({
   postId: z.string().min(1),
   content: z.string().min(1).optional(),
   scheduledAt: z.string().optional(),
-  mediaItems: z.array(z.object({ url: z.string(), type: z.string() })).optional(),
+  // Same Supabase-bucket allowlist as the suggestions PATCH route — editing a
+  // committed post's visual must not be a weaker boundary than editing a draft
+  // (blocks SSRF / pointing the publisher at an arbitrary URL).
+  mediaItems: mediaItemsSchema.optional(),
 });

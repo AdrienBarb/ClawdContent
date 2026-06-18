@@ -11,12 +11,14 @@ import type { MediaItem } from "@/lib/schemas/mediaItems";
 
 export interface Suggestion {
   id: string;
+  socialAccountId: string;
   content: string;
   contentType: string;
   suggestedDay: number;
   suggestedHour: number;
   reasoning: string | null;
   mediaItems: MediaItem[];
+  mediaPlan?: unknown;
   scheduledAt: string | null;
   status: string;
   socialAccount: { platform: string; username: string };

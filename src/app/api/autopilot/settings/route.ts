@@ -5,7 +5,13 @@ import { NextResponse, NextRequest } from "next/server";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/db/prisma";
 import { autopilotSettingsSchema } from "@/lib/schemas/autopilot";
+import { setPublishingMode } from "@/lib/services/autopilot/publishingMode";
 import { captureServerEvent } from "@/lib/tracking/postHogClient";
+
+// A mode change re-buckets the current week (un-schedule a live week for
+// review, commit a staged review week for auto) — give it room, same as the
+// dashboard header's publishing-mode route.
+export const maxDuration = 120;
 
 export async function PATCH(req: NextRequest) {
   try {
@@ -19,38 +25,44 @@ export async function PATCH(req: NextRequest) {
 
     const body = await req.json();
     const { mode, paused } = autopilotSettingsSchema.parse(body);
+    const userId = session.user.id;
 
-    const data: { autopilotMode?: string; autopilotPausedAt?: Date | null } = {};
-    if (mode !== undefined) data.autopilotMode = mode;
-    if (paused !== undefined) data.autopilotPausedAt = paused ? new Date() : null;
-
-    if (Object.keys(data).length === 0) {
-      return NextResponse.json({ ok: true });
-    }
-
-    const user = await prisma.user.update({
-      where: { id: session.user.id },
-      data,
-      select: { autopilotMode: true, autopilotPausedAt: true },
-    });
-
+    // Route the mode change through setPublishingMode (NOT a raw field write)
+    // so the User.autopilotMode flag can never drift out of sync with what's
+    // actually on the Zernio schedule — a raw write here is exactly how a user
+    // ends up "in review" while a week is still auto-publishing. Picking a live
+    // mode also resumes (clears autopilotPausedAt), so a `mode` change owns the
+    // pause flag too — the `paused` field is only honored on its own (the
+    // settings UI toggles them with separate requests).
     if (mode !== undefined) {
-      await captureServerEvent(session.user.id, "autopilot_mode_switched", {
-        mode,
+      const result = await setPublishingMode({ userId, state: mode });
+      if (!result.ok) {
+        return NextResponse.json({ error: result.error }, { status: 409 });
+      }
+      await captureServerEvent(userId, "autopilot_mode_switched", { mode });
+    } else if (paused !== undefined) {
+      // Pause only stops planning new weeks; it leaves the current week exactly
+      // as it is, so a direct flag write is correct here (no re-bucketing).
+      await prisma.user.update({
+        where: { id: userId },
+        data: { autopilotPausedAt: paused ? new Date() : null },
       });
-    }
-    if (paused !== undefined) {
       await captureServerEvent(
-        session.user.id,
+        userId,
         paused ? "autopilot_paused" : "autopilot_resumed",
         {}
       );
     }
 
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { autopilotMode: true, autopilotPausedAt: true },
+    });
+
     return NextResponse.json({
       ok: true,
-      mode: user.autopilotMode,
-      paused: user.autopilotPausedAt !== null,
+      mode: user?.autopilotMode ?? "full_auto",
+      paused: user?.autopilotPausedAt !== null,
     });
   } catch (error) {
     return errorHandler(error);
