@@ -20,6 +20,14 @@ export async function lateRequest<T>(
   const key = apiKey ?? getMasterApiKey();
   const start = Date.now();
 
+  // Compact preview of the outgoing payload (no secrets — the API key lives in
+  // the header, not the body). Logged on mutating calls so a post bug can be
+  // traced to exactly what we sent to Zernio (content/mediaItems/scheduledFor).
+  const bodyNote =
+    body && method !== "GET"
+      ? ` body=${JSON.stringify(body).slice(0, 300)}`
+      : "";
+
   try {
     const res = await fetch(`${ZERNIO_API_BASE}${path}`, {
       method,
@@ -35,14 +43,16 @@ export async function lateRequest<T>(
     if (!res.ok) {
       const text = await res.text().catch(() => "Unknown error");
       console.error(
-        `[Zernio] ❌ ${method} ${path} → ${res.status} (${duration}ms): ${text.slice(0, 200)}`
+        `[Zernio] ❌ ${method} ${path} → ${res.status} (${duration}ms): ${text.slice(0, 200)}${bodyNote}`
       );
       throw new Error(
         `Zernio API ${method} ${path} failed (${res.status}): ${text}`
       );
     }
 
-    console.log(`[Zernio] ✓ ${method} ${path} → ${res.status} (${duration}ms)`);
+    console.log(
+      `[Zernio] ✓ ${method} ${path} → ${res.status} (${duration}ms)${bodyNote}`
+    );
 
     if (res.status === 204) return undefined as T;
 

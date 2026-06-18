@@ -186,6 +186,13 @@ export async function getPost(
     };
   }>(`/posts/${postId}`, { apiKey });
   const p = data.post;
+  // The revert path reads status/publishedAt to decide whether a post is safely
+  // pullable — log them so a "post wasn't pulled back" can be traced.
+  console.log(
+    `[zernio:post] GET ${postId} → status=${p.status} publishedAt=${p.publishedAt ?? "null"} scheduledFor=${p.scheduledFor ?? "null"} media=${p.mediaItems?.length ?? 0} platforms=[${p.platforms
+      .map((pt) => `${pt.platform}:${pt.status ?? "?"}${pt.errorMessage ? `(${pt.errorMessage})` : ""}`)
+      .join(", ")}]`
+  );
   return {
     id: p._id,
     content: p.content,
@@ -210,10 +217,12 @@ export async function deletePost(
   postId: string,
   apiKey: string
 ): Promise<void> {
+  console.log(`[zernio:post] DELETE ${postId} — removing from Zernio`);
   await lateRequest(`/posts/${postId}`, {
     method: "DELETE",
     apiKey,
   });
+  console.log(`[zernio:post] DELETE ${postId} ✓ removed`);
 }
 
 export async function listAccounts(
@@ -288,6 +297,15 @@ export async function updatePost(
     body.mediaItems = current.mediaItems;
   }
 
+  console.log(
+    `[zernio:post] PUT ${postId} — changing [${[
+      data.content !== undefined ? "content" : null,
+      data.scheduledAt !== undefined ? "scheduledAt" : null,
+      data.mediaItems !== undefined ? `media(${data.mediaItems.length})` : null,
+    ]
+      .filter(Boolean)
+      .join(", ")}]`
+  );
   await lateRequest(`/posts/${postId}`, {
     method: "PUT",
     body,
@@ -324,12 +342,28 @@ export async function createPost(
   if (data.mediaItems && data.mediaItems.length > 0)
     body.mediaItems = data.mediaItems;
 
+  const mode = data.scheduledAt
+    ? `schedule@${data.scheduledAt}`
+    : data.publishNow !== false
+      ? "publishNow"
+      : "draft";
+  console.log(
+    `[zernio:post] POST /posts — ${data.platform.platform}${data.platform.accountId ? `(${data.platform.accountId})` : ""} ${mode} media=${data.mediaItems?.length ?? 0}`
+  );
+
   const raw = await lateRequest<{ post: LatePostRaw }>("/posts", {
     method: "POST",
     body,
     apiKey,
   });
   const p = raw.post;
+  // The post can come back 200 yet land as `draft`/errored at the platform —
+  // log the realized status so a "scheduled but didn't go out" bug is visible.
+  console.log(
+    `[zernio:post] POST /posts ✓ id=${p._id} status=${p.status} scheduledFor=${p.scheduledFor ?? "null"} platforms=[${(p.platforms ?? [])
+      .map((pt) => `${pt.platform}:${pt.status ?? "?"}${pt.errorMessage ? `(${pt.errorMessage})` : ""}`)
+      .join(", ")}]`
+  );
   return {
     id: p._id,
     content: p.content,

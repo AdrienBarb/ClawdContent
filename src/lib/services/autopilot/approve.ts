@@ -31,6 +31,9 @@ export async function approveBatch({
     where: { batchId, status: "draft" },
     select: { id: true, scheduledAt: true },
   });
+  console.log(
+    `[autopilot:approve] user=${userId} batch=${batchId} committing ${suggestions.length} staged draft(s) to Zernio`
+  );
 
   // Slots may have passed while the week waited for approval — bump stale
   // times forward so the commit isn't rejected with schedule_in_past.
@@ -64,6 +67,9 @@ export async function approveBatch({
           status: "scheduled",
           externalPostId: result.postId,
         });
+        console.log(
+          `[autopilot:approve] committed suggestion=${suggestion.id} → externalPostId=${result.postId}`
+        );
       } else {
         failed += 1;
         statusBySuggestion.set(suggestion.id, {
@@ -85,6 +91,10 @@ export async function approveBatch({
       );
     }
   }
+
+  console.log(
+    `[autopilot:approve] user=${userId} batch=${batchId} done: scheduled=${scheduled} failed=${failed}`
+  );
 
   // Refresh the durable snapshot so digest links + dashboard stay accurate.
   const posts = (Array.isArray(batch.posts) ? batch.posts : []) as unknown as BatchPostSnapshot[];
