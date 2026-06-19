@@ -18,8 +18,8 @@ export const PLANS: Plan[] = [
     id: "pro",
     name: "PostClaw",
     monthlyPrice: 99,
-    socialAccountLimit: 9,
-    socialAccountLabel: "All social accounts (up to 9)",
+    socialAccountLimit: 1,
+    socialAccountLabel: "1 Instagram account",
     highlighted: true,
     cta: "Subscribe",
   },
@@ -39,7 +39,7 @@ export interface SharedFeature {
 
 export const SHARED_FEATURES: SharedFeature[] = [
   { label: "Unlimited posts", includedIn: "all" },
-  { label: "AI content adapted per platform", includedIn: "all" },
+  { label: "Posts written for Instagram", includedIn: "all" },
   { label: "Scheduling & automation", includedIn: "all" },
   { label: "Brand voice memory", includedIn: "all" },
   { label: "Content calendar planning", includedIn: "all" },

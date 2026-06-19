@@ -7,11 +7,12 @@ import { appRouter } from "@/lib/constants/appRouter";
 import SignInModal from "@/components/SignInModal";
 
 const features = [
-  "Unlimited posts to Instagram & Facebook",
+  "A growth strategy built for your brand",
+  "Plans and posts to Instagram automatically",
   "Learns your voice, your offer, your brand",
-  "Auto-scheduling at peak times",
-  "Approve from your phone in seconds",
-  "Native posts written for Instagram and Facebook",
+  "Posts at peak times, written native for Instagram",
+  "Approve or tweak from your phone in seconds",
+  "Unlimited posts, no per-post limits",
   "Real human support, not a chatbot",
   "Cancel anytime",
 ];

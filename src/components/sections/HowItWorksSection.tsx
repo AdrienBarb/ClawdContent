@@ -1,18 +1,18 @@
 const steps = [
   {
     n: "01",
-    t: "Tell it about your business",
-    d: "Paste your website. PostClaw learns what you sell, your tone, what's special, in 30 seconds.",
+    t: "It learns your brand",
+    d: "Paste your website. PostClaw learns what you sell, your voice, and what makes you different. All in 30 seconds.",
   },
   {
     n: "02",
-    t: "Connect Instagram & Facebook",
-    d: "Two minutes. No technical setup. Add the accounts you actually use.",
+    t: "It builds your strategy",
+    d: "Connect your Instagram. PostClaw studies your niche and plans what to post, which formats, and when to post them.",
   },
   {
     n: "03",
-    t: "Approve. It posts.",
-    d: "Drafts arrive ready. Tap approve. Posts go out at the right time, written for each platform.",
+    t: "It runs on autopilot",
+    d: "A full week of posts goes out, written for Instagram and scheduled at peak times. Review, tweak, or let it run. You stay in control, hands-free.",
   },
 ];
 
@@ -25,8 +25,8 @@ export default function HowItWorksSection() {
             How it works
           </div>
           <h2 className="max-w-[900px] font-display text-4xl leading-none tracking-[-0.025em] text-[#0f1437] text-balance md:text-6xl lg:text-[80px]">
-            From signup to your first post in{" "}
-            <em className="italic text-[#ec6f5b]">under five minutes.</em>
+            Set it up in five minutes.{" "}
+            <em className="italic text-[#ec6f5b]">It runs from there.</em>
           </h2>
         </div>
         <div className="grid grid-cols-1 gap-12 md:grid-cols-3 md:gap-8">

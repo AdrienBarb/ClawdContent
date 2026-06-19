@@ -12,7 +12,7 @@ export const metadata: Metadata = genPageMetadata({
   title:
     "PostClaw Blog: social media, made easy for busy people",
   description:
-    "Practical guides for small businesses, solo founders, and creators who'd rather spend time on their work than on Instagram and Facebook. Tips, playbooks, and real workflows.",
+    "Practical guides for small businesses, solo founders, and creators who'd rather spend time on their work than on Instagram. Tips, playbooks, and real workflows.",
   url: "/blog",
 });
 
@@ -36,7 +36,7 @@ export default async function BlogPage() {
           <p>
             Practical writing for people who&apos;d rather run their business, ship
             their product, or make their work, instead of spending their
-            evenings stuck on Instagram and Facebook.
+            evenings stuck on Instagram.
           </p>
           <p>
             We share the playbooks, examples, and workflows we use ourselves:
@@ -60,12 +60,12 @@ export default async function BlogPage() {
       {/* CTA Section */}
       <section className="bg-card rounded-3xl border border-border p-8 md:p-12 text-center">
         <h2 className="text-2xl font-bold text-foreground mb-4">
-          Tell PostClaw what to post. It does the rest.
+          PostClaw plans and posts to your Instagram. You approve.
         </h2>
         <p className="text-muted-foreground mb-6 max-w-xl mx-auto">
           PostClaw is your social media manager. It learns your brand, plans
-          your content, and publishes to Instagram, Facebook, and the rest of
-          your accounts. No dashboard. No editor. No learning curve.
+          your content, and publishes to your Instagram. No dashboard. No
+          editor. No learning curve.
         </p>
         <Button
           asChild

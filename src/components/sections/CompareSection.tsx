@@ -3,11 +3,11 @@ type Cell = boolean | string;
 const cols = ["PostClaw", "Buffer", "Hootsuite", "Hire someone"] as const;
 
 const rows: [string, Cell, Cell, Cell, Cell][] = [
-  ["Writes the post for you", true, false, false, true],
-  ["Adapts tone per platform", true, false, false, true],
-  ["Schedules at peak times", true, true, true, false],
-  ["Learns your business", true, false, false, false],
-  ["Setup under 5 minutes", true, false, false, false],
+  ["Writes every post for you", true, false, false, true],
+  ["Builds a growth strategy", true, false, false, true],
+  ["Posts automatically, no daily input", true, false, false, true],
+  ["Learns your brand", true, false, false, true],
+  ["Ready in 5 minutes", true, false, false, false],
   ["Monthly cost", "$99", "$15", "$99", "$2,000+"],
 ];
 
@@ -26,8 +26,8 @@ export default function CompareSection() {
             The honest comparison
           </div>
           <h2 className="font-display text-4xl leading-none tracking-[-0.025em] text-[#0f1437] text-balance md:text-5xl lg:text-[72px]">
-            Other tools give you a dashboard.{" "}
-            <em className="italic text-[#ec6f5b]">We give you the posts.</em>
+            Other tools hand you a dashboard.{" "}
+            <em className="italic text-[#ec6f5b]">PostClaw hands you a manager.</em>
           </h2>
         </div>
 

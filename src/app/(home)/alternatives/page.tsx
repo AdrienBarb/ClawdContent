@@ -12,7 +12,7 @@ import { ArrowRight } from "lucide-react";
 export const metadata: Metadata = genPageMetadata({
   title: "PostClaw Alternatives & Competitors Comparison",
   description:
-    "Looking for a social media automation or AI content management tool? Compare PostClaw with other platforms and discover why creators choose PostClaw to publish everywhere from one chat.",
+    "Looking for a social media automation or AI content management tool? Compare PostClaw with other platforms and discover why creators choose PostClaw to put their Instagram on autopilot.",
   url: "/alternatives",
 });
 
@@ -33,8 +33,8 @@ export default async function AlternativesPage() {
         <p className="text-lg text-muted-foreground leading-relaxed mb-8">
           Looking for a social media automation or AI content management tool?
           Compare PostClaw with other platforms in the market. Learn what makes
-          each tool unique and discover why creators choose PostClaw to publish
-          everywhere from a single chat.
+          each tool unique and discover why creators choose PostClaw to put
+          their Instagram on autopilot.
         </p>
         <Button
           asChild
@@ -103,7 +103,7 @@ export default async function AlternativesPage() {
         </h2>
         <p className="text-muted-foreground mb-6">
           Your AI social media manager. It learns your brand, plans your content,
-          and publishes to Instagram and Facebook. $99/month, unlimited posts.
+          and publishes to Instagram. $99/month, unlimited posts.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Button

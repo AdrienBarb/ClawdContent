@@ -8,10 +8,6 @@ import useApi from "@/lib/hooks/useApi";
 import type { OnboardingStatus } from "@/lib/schemas/onboarding";
 import OnboardingShell from "./OnboardingShell";
 
-// Onboarding focuses on the two platforms dominant among real users. The
-// dashboard connect UI still offers every supported platform.
-const ONBOARDING_PLATFORMS = ["instagram", "facebook"];
-
 interface Props {
   status: OnboardingStatus | undefined;
   onRefetch: () => void;
@@ -40,7 +36,7 @@ export default function Step2Connect({
     <OnboardingShell
       step={2}
       title="Connect your social accounts"
-      subtitle="Link your Instagram or Facebook. We'll see what's worked for you before, so the posts we plan fit your account from day one."
+      subtitle="Link your Instagram. We'll see what's worked for you before, so the posts we plan fit your account from day one."
       onBack={onBack}
       onSubmit={() => save({ step: 3 })}
       ctaLabel="Continue"
@@ -52,14 +48,13 @@ export default function Step2Connect({
         connectedPlatforms={connectedPlatforms}
         returnTo={`${appRouter.onboarding}?step=3`}
         onboarding
-        allowedPlatforms={ONBOARDING_PLATFORMS}
         variant="stack"
       />
 
       {hasAccount && (
         <p className="mt-4 flex items-center justify-center gap-1.5 text-sm text-gray-500">
           <CheckIcon className="h-4 w-4 text-[#e8614d]" weight="bold" />
-          {accounts.length} account{accounts.length > 1 ? "s" : ""} connected
+          Account connected
         </p>
       )}
     </OnboardingShell>

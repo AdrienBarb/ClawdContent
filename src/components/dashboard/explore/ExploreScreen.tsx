@@ -13,7 +13,6 @@ import {
 import { appRouter } from "@/lib/constants/appRouter";
 import { useDashboardStatus } from "@/lib/hooks/useDashboardStatus";
 import { DashboardTabs } from "@/components/dashboard/DashboardTabs";
-import { SingleAccountSelector } from "./SingleAccountSelector";
 import { GeneratedPostCard } from "./GeneratedPostCard";
 import { jsonFetch } from "@/components/dashboard/week/datetime";
 import type { ComposePostResponse } from "@/lib/schemas/composePost";
@@ -98,9 +97,7 @@ export default function ExploreScreen() {
         )}
 
         <Composer
-          accounts={activeAccounts}
           accountId={accountId}
-          onAccountChange={setAccountId}
           input={input}
           onInputChange={setInput}
           onSend={generate}
@@ -119,17 +116,13 @@ export default function ExploreScreen() {
 }
 
 function Composer({
-  accounts,
   accountId,
-  onAccountChange,
   input,
   onInputChange,
   onSend,
   busy,
 }: {
-  accounts: { id: string; platform: string; username: string }[];
   accountId: string;
-  onAccountChange: (id: string) => void;
   input: string;
   onInputChange: (value: string) => void;
   onSend: () => void;
@@ -152,13 +145,6 @@ function Composer({
       }}
       className="w-full overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-all focus-within:border-[#e8614d] focus-within:ring-2 focus-within:ring-[#e8614d]/15"
     >
-      <div className="border-b border-gray-100 bg-black/[0.015] px-3 py-2">
-        <SingleAccountSelector
-          accounts={accounts}
-          selectedId={accountId}
-          onChange={onAccountChange}
-        />
-      </div>
       <div className="relative">
         <textarea
           value={input}
@@ -246,7 +232,7 @@ function EmptyState() {
         Connect an account to start creating
       </p>
       <p className="mx-auto mt-1 max-w-sm text-[13px] leading-relaxed text-gray-500">
-        Once an Instagram or Facebook account is connected, you can create posts
+        Once an Instagram account is connected, you can create posts
         here whenever you want — your weekly plan keeps running either way.
       </p>
       <Link

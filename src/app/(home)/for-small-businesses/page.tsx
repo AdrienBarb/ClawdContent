@@ -57,13 +57,13 @@ const steps = [
   },
   {
     n: "02",
-    t: "Connect Instagram & Facebook",
+    t: "Connect Instagram",
     d: "Two minutes, no technical setup. Add the accounts your customers actually use.",
   },
   {
     n: "03",
-    t: "Approve from your phone",
-    d: "Drafts arrive ready. Tap approve between customers. Posts go out at the right time, written for each platform.",
+    t: "It posts on autopilot",
+    d: "Posts go out automatically, written for Instagram and timed right. Tap approve from your phone between customers, or let PostClaw run the week.",
   },
 ];
 
@@ -78,7 +78,7 @@ const faqs = [
   },
   {
     q: "I tried Buffer and Hootsuite and they're just empty dashboards. How is this different?",
-    a: "Buffer and Hootsuite hand you a blank screen and expect you to write. PostClaw writes the posts, adapts each one for the platform, and publishes them. You only review.",
+    a: "Buffer and Hootsuite hand you a blank screen and expect you to write. PostClaw writes the posts, shapes each one for Instagram, and publishes them. You only review.",
   },
   {
     q: "Will my posts sound generic or robotic?",
@@ -173,7 +173,7 @@ export default function ForSmallBusinessesPage() {
               <em className="italic text-[#ec6f5b]">We run the feed.</em>
             </h1>
             <p className="mt-9 max-w-[640px] text-base leading-[1.55] text-[#b9bdd6] md:text-xl">
-              PostClaw is a social media manager for photographers, caterers, coaches, consultants, and local shops. It learns your business, writes posts in your voice, and publishes to your Instagram and Facebook on schedule. $99 a month, the agency you&apos;d hire costs twenty times more.
+              PostClaw is a social media manager for photographers, caterers, coaches, consultants, and local shops. It learns your business, writes posts in your voice, and publishes to your Instagram on schedule. $99 a month, the agency you&apos;d hire costs twenty times more.
             </p>
             <div className="mt-11 flex flex-wrap items-center justify-center gap-3.5">
               <Link
@@ -183,10 +183,10 @@ export default function ForSmallBusinessesPage() {
                 Start Growing →
               </Link>
               <Link
-                href="/"
+                href="#how-it-works"
                 className="rounded-full border border-[#2a2d52] bg-transparent px-6 py-4 text-sm font-medium text-white transition-colors hover:border-[#3a3d62]"
               >
-                See the full demo
+                See how it works
               </Link>
             </div>
           </div>

@@ -2,17 +2,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { appRouter } from "@/lib/constants/appRouter";
 import { useSession, signOut } from "@/lib/better-auth/auth-client";
-import { getPlatform } from "@/lib/constants/platforms";
-import { useDashboardStatus } from "@/lib/hooks/useDashboardStatus";
 import {
   CreditCardIcon,
   GearSixIcon,
   SignOutIcon,
   HouseIcon,
-  PlusIcon,
   UserCircleIcon,
   PlugsIcon,
   ImagesIcon,
@@ -24,13 +21,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-interface AccountInfo {
-  id: string;
-  platform: string;
-  username: string;
-  status: string;
-}
 
 const menuItems = [
   { href: appRouter.dashboard, label: "Dashboard", icon: HouseIcon },
@@ -55,14 +45,8 @@ function getInitials(name?: string | null, email?: string | null) {
 }
 
 export default function Navbar() {
-  const pathname = usePathname();
   const router = useRouter();
   const { data: session } = useSession();
-  const { data: status } = useDashboardStatus();
-
-  const accounts: AccountInfo[] = (status?.accounts ?? []).filter(
-    (a: AccountInfo) => a.status === "active"
-  );
 
   const handleSignOut = async () => {
     await signOut();
@@ -90,44 +74,6 @@ export default function Navbar() {
         </Link>
 
         <div className="flex-1 min-w-0" />
-
-        {/* Account chips */}
-        <div className="hidden md:flex items-center gap-1.5 min-w-0 overflow-x-auto">
-          {accounts.map((account) => {
-            const platform = getPlatform(account.platform);
-            const color = platform?.color ?? "#666";
-            const isActive = pathname === `/d/channels/${account.id}`;
-            return (
-              <Link
-                key={account.id}
-                href={`/d/channels/${account.id}`}
-                title={`${platform?.label ?? account.platform} · @${account.username}`}
-                className={`flex shrink-0 items-center gap-1.5 rounded-full border py-1 pl-1 pr-2.5 transition-colors ${
-                  isActive
-                    ? "border-gray-300 bg-white shadow-sm"
-                    : "border-transparent hover:bg-black/[0.04]"
-                }`}
-              >
-                <span
-                  className="flex h-5 w-5 items-center justify-center rounded-full text-white [&_svg]:h-3 [&_svg]:w-3"
-                  style={{ backgroundColor: color }}
-                >
-                  {platform?.icon}
-                </span>
-                <span className="max-w-[110px] truncate text-[12px] font-medium text-gray-700">
-                  {account.username}
-                </span>
-              </Link>
-            );
-          })}
-          <Link
-            href={appRouter.accounts}
-            title="Add account"
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-dashed border-gray-300 text-gray-400 hover:bg-black/[0.04] hover:text-gray-600 transition-colors"
-          >
-            <PlusIcon className="h-3.5 w-3.5" />
-          </Link>
-        </div>
 
         {/* Avatar menu */}
         <DropdownMenu>

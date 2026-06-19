@@ -8,7 +8,6 @@ import { useDashboardStatus } from "@/lib/hooks/useDashboardStatus";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   ShareNetworkIcon,
-  PlusIcon,
   XIcon,
   SpinnerGapIcon,
   ArrowsClockwiseIcon,
@@ -130,8 +129,8 @@ export default function AccountsPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Social accounts"
-        subtitle="The accounts PostClaw posts to on your behalf."
+        title="Instagram account"
+        subtitle="The account PostClaw posts to on your behalf."
       />
 
       {accounts.length > 0 && (
@@ -249,7 +248,7 @@ export default function AccountsPage() {
         </section>
       )}
 
-      {isEmptyState ? (
+      {isEmptyState && (
         <section
           id="connect-section"
           className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm sm:p-10"
@@ -280,22 +279,6 @@ export default function AccountsPage() {
               Disconnect anytime
             </span>
           </div>
-        </section>
-      ) : (
-        <section
-          id="connect-section"
-          className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm"
-        >
-          <div className="mb-4 flex items-center gap-2">
-            <PlusIcon className="h-3.5 w-3.5 text-gray-400" />
-            <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-gray-400">
-              Add another platform
-            </p>
-          </div>
-          <ConnectAccountButtons
-            onAccountConnected={refetch}
-            connectedPlatforms={connectedPlatforms}
-          />
         </section>
       )}
     </div>

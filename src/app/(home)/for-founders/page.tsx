@@ -33,19 +33,19 @@ export const metadata: Metadata = {
 const useCases = [
   {
     t: "Launch days",
-    q: "Tell PostClaw what you shipped. Get an Instagram post, a Reel caption, a Story, and a Facebook announcement. All on brand, all in your voice.",
+    q: "When you ship, PostClaw turns it into an Instagram post, a Reel caption, and a Story. All on brand, all in your voice.",
   },
   {
     t: "Build-in-public",
-    q: "Weekly progress posts that don't sound like every other founder. Drop your changelog, get a week of Instagram and Facebook posts written for you.",
+    q: "Weekly progress posts that don't sound like every other founder. Drop your changelog, get a week of Instagram posts written for you.",
   },
   {
     t: "Customer wins",
-    q: "Got a testimonial or a customer win? PostClaw turns it into an Instagram carousel, a Story, and a Facebook post.",
+    q: "Got a testimonial or a customer win? PostClaw turns it into an Instagram carousel and a Story.",
   },
   {
     t: "Audience growth",
-    q: "Posts that actually engage instead of disappearing. PostClaw adapts the hook for Instagram and Facebook and posts when your audience is online.",
+    q: "Posts that actually engage instead of disappearing. PostClaw adapts the hook for Instagram and posts when your audience is online.",
   },
 ];
 
@@ -57,20 +57,20 @@ const steps = [
   },
   {
     n: "02",
-    t: "Connect Instagram & Facebook",
-    d: "Your Instagram and Facebook. Two-minute setup. Same OAuth flow you've done a hundred times.",
+    t: "Connect Instagram",
+    d: "Your Instagram. Two-minute setup. Same OAuth flow you've done a hundred times.",
   },
   {
     n: "03",
-    t: "Drop a sentence, get a week",
-    d: "Tell PostClaw what shipped, what's next, who you talked to. It drafts a week of posts for Instagram and Facebook. You approve in five minutes.",
+    t: "Drop a sentence, it runs the week",
+    d: "PostClaw plans and posts your Instagram week automatically. Shipped something big? Add a sentence and it builds the week around it. Approve in five minutes, or let it run.",
   },
 ];
 
 const faqs = [
   {
     q: "I'm shipping product, not running a content engine. Can I really hand this off?",
-    a: "That's the point. You spend five minutes a week telling PostClaw what's happening (a feature, a customer call, a bug fix). It writes everything, schedules it, and posts. You go back to building.",
+    a: "That's the point. PostClaw plans and posts your week automatically. Spend five minutes adding what's happening (a feature, a customer call, a bug fix) and it works that in, or let it run. It writes everything, schedules it, and posts. You go back to building.",
   },
   {
     q: "I don't want generic startup posts that sound like a bot.",
@@ -78,7 +78,7 @@ const faqs = [
   },
   {
     q: "Can it handle build-in-public + customer wins + launch announcements without losing the thread?",
-    a: "Yes. You tell it what's happening, it categorizes the moment (launch, build-in-public, customer story, milestone) and writes native posts for each. Coordinated across your Instagram and Facebook in one go.",
+    a: "Yes. Add what's happening and PostClaw categorizes the moment (launch, build-in-public, customer story, milestone), then writes native posts for each. All planned for your Instagram in one go.",
   },
   {
     q: "Why $99/mo and not free?",
@@ -173,7 +173,7 @@ export default function ForFoundersPage() {
               <em className="italic text-[#ec6f5b]">We&apos;ll ship the posts.</em>
             </h1>
             <p className="mt-9 max-w-[640px] text-base leading-[1.55] text-[#b9bdd6] md:text-xl">
-              Building, shipping, talking to users, that&apos;s the job. Posting to Instagram and Facebook every day shouldn&apos;t be. PostClaw drafts a week of posts from a sentence and publishes them for $99 a month.
+              Building, shipping, talking to users, that&apos;s the job. Posting to Instagram every day shouldn&apos;t be. PostClaw plans a week of Instagram posts and publishes them for you. $99 a month.
             </p>
             <div className="mt-11 flex flex-wrap items-center justify-center gap-3.5">
               <Link
@@ -183,10 +183,10 @@ export default function ForFoundersPage() {
                 Start Growing →
               </Link>
               <Link
-                href="/"
+                href="#how-it-works"
                 className="rounded-full border border-[#2a2d52] bg-transparent px-6 py-4 text-sm font-medium text-white transition-colors hover:border-[#3a3d62]"
               >
-                See the full demo
+                See how it works
               </Link>
             </div>
           </div>

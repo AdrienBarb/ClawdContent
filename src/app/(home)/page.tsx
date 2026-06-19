@@ -1,6 +1,4 @@
 import HeroSection from "@/components/sections/HeroSection";
-import DemoSection from "@/components/sections/DemoSection";
-import PlatformsSection from "@/components/sections/PlatformsSection";
 import HowItWorksSection from "@/components/sections/HowItWorksSection";
 import OutcomesSection from "@/components/sections/OutcomesSection";
 import WhoIsThisForSection from "@/components/sections/WhoIsThisForSection";
@@ -11,8 +9,6 @@ import PoweredBySection from "@/components/sections/PoweredBySection";
 import FinalCTASection from "@/components/sections/FinalCTASection";
 import { faqs } from "@/data/faq";
 import config from "@/lib/config";
-import { getDistinctId } from "@/lib/tracking/distinctId";
-import { getFeatureFlag } from "@/lib/tracking/postHogClient";
 
 export const dynamic = "force-dynamic";
 
@@ -69,41 +65,31 @@ const howToSchema = {
   "@type": "HowTo",
   name: "How to set up PostClaw",
   description:
-    "From signup to your first post in under five minutes.",
+    "Set up PostClaw in five minutes. It runs your Instagram from there.",
   totalTime: "PT5M",
   step: [
     {
       "@type": "HowToStep",
       position: 1,
-      name: "Tell it about your business",
-      text: "Paste your website. PostClaw learns what you sell, your tone, what's special, in 30 seconds.",
+      name: "It learns your brand",
+      text: "Paste your website. PostClaw learns what you sell, your voice, and what makes you different in 30 seconds.",
     },
     {
       "@type": "HowToStep",
       position: 2,
-      name: "Connect Instagram & Facebook",
-      text: "Two minutes. No technical setup. Add the accounts you actually use.",
+      name: "It builds your strategy",
+      text: "Connect your Instagram. PostClaw studies your niche and plans what to post, which formats, and when to post them.",
     },
     {
       "@type": "HowToStep",
       position: 3,
-      name: "Approve. It posts.",
-      text: "Drafts arrive ready. Tap approve. Posts go out at the right time, written for each platform.",
+      name: "It runs on autopilot",
+      text: "A full week of posts goes out, written for Instagram and scheduled at peak times. Review, tweak, or let it run.",
     },
   ],
 };
 
 export default async function Home() {
-  const distinctId = await getDistinctId();
-
-  let heroVariant = "control";
-  if (distinctId) {
-    const flag = await getFeatureFlag("hero-section-experiment", distinctId);
-    if (flag === "test") {
-      heroVariant = "test";
-    }
-  }
-
   return (
     <div className="flex flex-col">
       <script
@@ -130,9 +116,7 @@ export default async function Home() {
           __html: JSON.stringify(howToSchema),
         }}
       />
-      <HeroSection variant={heroVariant} />
-      <DemoSection />
-      <PlatformsSection />
+      <HeroSection />
       <HowItWorksSection />
       <OutcomesSection />
       <WhoIsThisForSection />

@@ -37,8 +37,8 @@ export default function TermsPage() {
           <p className="text-muted-foreground">
             PostClaw provides an AI social media manager accessible via a
             web-based chat interface. The Service allows you to create, adapt,
-            and publish social media posts to supported platforms (Instagram and
-            Facebook) through a conversational
+            and publish social media posts to a supported platform (Instagram)
+            through a conversational
             interface with an AI-powered social media manager. Each subscriber
             receives a dedicated, isolated instance.
           </p>
@@ -115,42 +115,9 @@ export default function TermsPage() {
               </li>
               <li>
                 No partial refunds are provided for unused portions of a billing
-                period, except as described in the 7-day money-back guarantee
-                below
+                period
               </li>
             </ul>
-
-            <h3 className="text-lg font-semibold mt-6 mb-2">
-              7-Day Money-Back Guarantee
-            </h3>
-            <p className="text-muted-foreground">
-              If you are not satisfied with the Service, you may request a full
-              refund of your first monthly payment within 7 days of your initial
-              subscription date. To request a refund:
-            </p>
-            <ul className="list-disc pl-6 text-muted-foreground space-y-1">
-              <li>
-                Send an email to{" "}
-                <a href="mailto:admin@postclaw.io" className="underline">
-                  admin@postclaw.io
-                </a>{" "}
-                within 7 days of your first payment
-              </li>
-              <li>
-                Include your account email address and the reason for your
-                refund request
-              </li>
-              <li>
-                Refunds are processed within 5–10 business days to your
-                original payment method
-              </li>
-            </ul>
-            <p className="text-muted-foreground">
-              This guarantee applies only to your first billing cycle. Subsequent
-              months are not eligible for the money-back guarantee. Upon refund,
-              your subscription will be canceled and your AI social media manager
-              will be deprovisioned immediately.
-            </p>
           </div>
         </section>
 
@@ -194,7 +161,7 @@ export default function TermsPage() {
           <div className="space-y-3">
             <p className="text-muted-foreground">
               The Service integrates with third-party platforms including
-              Instagram and Facebook. You
+              Instagram. You
               acknowledge that:
             </p>
             <ul className="list-disc pl-6 text-muted-foreground space-y-1">

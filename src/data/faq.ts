@@ -2,7 +2,12 @@ export const faqs = [
   {
     question: "How does it actually work?",
     answer:
-      "Sign up, connect your social media accounts, and PostClaw gets to work. It creates post ideas based on your business, writes the content, adapts it for each platform, and schedules or publishes for you. You review, approve, and you're done.",
+      "Sign up, connect your Instagram, and PostClaw gets to work. It creates post ideas based on your business, writes the content, shapes it for Instagram, and schedules or publishes for you. You review, approve, and you're done.",
+  },
+  {
+    question: "Do I have to do anything each week?",
+    answer:
+      "No. PostClaw plans and posts to your Instagram automatically. You'll see the week ahead, so you can change anything or let it run. Prefer to approve each post first? Switch on review mode and nothing goes live until you say so.",
   },
   {
     question:
@@ -18,7 +23,7 @@ export const faqs = [
   {
     question: "What platforms are supported?",
     answer:
-      "Instagram and Facebook — the two platforms where most small businesses actually reach customers. Connect one or both, and PostClaw writes each post natively for the platform it's going to, schedules it, and publishes once you approve.",
+      "Instagram — where most small businesses actually reach their customers. Connect your account, and PostClaw writes each post natively, schedules it, and publishes once you approve.",
   },
   {
     question: "Can I review posts before they go live?",
@@ -33,6 +38,6 @@ export const faqs = [
   {
     question: "Can I cancel anytime?",
     answer:
-      "Yes. No contracts, no cancellation fees, no hidden charges. Cancel from your dashboard whenever you want.",
+      "Yes. PostClaw is $99/month, billed monthly. No contracts, no cancellation fees, no hidden charges. Cancel from your dashboard whenever you want.",
   },
 ];

@@ -127,10 +127,10 @@ export default async function CompetitorPageView({
       offers: {
         "@type": "Offer",
         priceCurrency: "USD",
-        price: "29",
+        price: "99",
         priceSpecification: {
           "@type": "UnitPriceSpecification",
-          price: "29",
+          price: "99",
           priceCurrency: "USD",
           unitText: "Monthly",
         },
@@ -148,10 +148,10 @@ export default async function CompetitorPageView({
   };
 
   const ctaFeatures = [
-    "AI social media manager — just chat and publish",
-    "Grow your Facebook & Instagram on autopilot",
-    "AI-adapted content per platform",
-    "Unlimited posts — no per-action fees",
+    "AI social media manager that runs your Instagram",
+    "Grow your Instagram on autopilot",
+    "Posts written native for Instagram",
+    "Unlimited posts, no per-action fees",
   ];
 
   return (
@@ -418,8 +418,8 @@ export default async function CompetitorPageView({
                 Ready to Switch from {competitor.competitorName}?
               </h2>
               <p className="text-muted-foreground text-lg">
-                Join creators who use PostClaw to publish everywhere from one
-                chat.
+                Join creators who use PostClaw to put their Instagram on
+                autopilot.
               </p>
             </div>
 

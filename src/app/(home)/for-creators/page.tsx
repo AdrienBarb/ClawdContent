@@ -9,7 +9,7 @@ const PAGE_PATH = "/for-creators";
 const PAGE_URL = `${config.project.url}${PAGE_PATH}`;
 const PAGE_TITLE = "Social Media Manager for Creators";
 const PAGE_DESCRIPTION =
-  "A social media manager for video creators, newsletter writers, course makers, and indie artists. One idea becomes a week of Instagram and Facebook posts. $99/mo, a fraction of what an editor costs.";
+  "A social media manager for video creators, newsletter writers, course makers, and indie artists. One idea becomes a week of Instagram posts. $99/mo, a fraction of what an editor costs.";
 
 export const metadata: Metadata = {
   title: PAGE_TITLE,
@@ -33,11 +33,11 @@ export const metadata: Metadata = {
 const useCases = [
   {
     t: "Video drops",
-    q: "New video, new podcast, new short. PostClaw turns it into an Instagram caption, a Reel hook, a Story, and a Facebook post. Each one tuned to where it's going.",
+    q: "New video, new podcast, new short. PostClaw turns it into an Instagram caption, a Reel hook, and a Story. Each one tuned to the format it's going in.",
   },
   {
     t: "Newsletter promo",
-    q: "Drop your newsletter URL on send day. PostClaw turns the lede into platform-native teasers that drive subscribers, not impressions.",
+    q: "Drop your newsletter URL on send day. PostClaw turns the lede into Instagram-native teasers that drive subscribers, not impressions.",
   },
   {
     t: "Course & product launches",
@@ -52,37 +52,37 @@ const useCases = [
 const steps = [
   {
     n: "01",
-    t: "Tell PostClaw what you make",
+    t: "It learns what you make",
     d: "Paste your website, your newsletter, your portfolio. PostClaw learns your voice, your audience, your usual themes.",
   },
   {
     n: "02",
-    t: "Connect Instagram & Facebook",
-    d: "Connect your Instagram and Facebook. Two-minute connect, no technical setup.",
+    t: "Connect Instagram",
+    d: "Connect your Instagram. Two-minute connect, no technical setup.",
   },
   {
     n: "03",
-    t: "Drop one idea, get a week",
-    d: "Tell PostClaw what you're working on. It drafts a week of platform-native posts in your voice. Approve, edit, or skip. Your call.",
+    t: "Drop an idea, it runs the week",
+    d: "PostClaw plans and posts your Instagram week automatically. Got a launch or a new drop? Add it and PostClaw builds the week around it. Approve, edit, or let it run.",
   },
 ];
 
 const faqs = [
   {
     q: "I have ideas, not time. Will PostClaw actually save my schedule?",
-    a: "That's the whole point. You drop one idea (a video, a newsletter, a thought) and get a week of Instagram and Facebook posts back. Approve in five minutes, get back to making things. Most creators batch a week of posts in one sitting.",
+    a: "That's the whole point. You drop one idea (a video, a newsletter, a thought) and get a week of Instagram posts back. Approve in five minutes, get back to making things. Most creators batch a week of posts in one sitting.",
   },
   {
     q: "Will it sound like a marketing bot?",
     a: "PostClaw learns your voice from your existing work and from posts you approve. The first week tunes it. After that, posts sound like you on a good day. If a draft sounds off, edit once and PostClaw remembers.",
   },
   {
-    q: "Instagram and Facebook are different beasts. Can it handle both?",
-    a: "That's the design. The same idea becomes a scroll-stopping Instagram caption, a Reel hook, and a Story — and a warmer, shareable Facebook post. You don't write each version, PostClaw does.",
+    q: "Can it turn one idea into different kinds of posts?",
+    a: "That's the design. The same idea becomes a scroll-stopping Instagram caption, a Reel hook, and a carousel, each written for the format, not copy-pasted. You don't write each version, PostClaw does.",
   },
   {
     q: "Can I batch a whole week's content in one session?",
-    a: "Yes. Tell PostClaw your themes for the week (a video drop, a newsletter promo, a build-update). You get a calendar of drafts for Instagram and Facebook. Approve in 5 to 10 minutes, done for the week.",
+    a: "Yes. Add your themes for the week (a video drop, a newsletter promo, a build update) and PostClaw plans a calendar of Instagram posts around them. Approve in 5 to 10 minutes, done for the week.",
   },
   {
     q: "What if my style is very specific and I don't want it changed?",
@@ -173,7 +173,7 @@ export default function ForCreatorsPage() {
               <em className="italic text-[#ec6f5b]">We&apos;ll post about it.</em>
             </h1>
             <p className="mt-9 max-w-[640px] text-base leading-[1.55] text-[#b9bdd6] md:text-xl">
-              You make videos, newsletters, courses, art. PostClaw turns one idea into a week of Instagram and Facebook posts and handles publishing. Get your hours back. $99 a month, a fraction of what an editor costs.
+              You make videos, newsletters, courses, art. PostClaw turns one idea into a week of Instagram posts and handles publishing. Get your hours back. $99 a month, a fraction of what an editor costs.
             </p>
             <div className="mt-11 flex flex-wrap items-center justify-center gap-3.5">
               <Link
@@ -183,10 +183,10 @@ export default function ForCreatorsPage() {
                 Start Growing →
               </Link>
               <Link
-                href="/"
+                href="#how-it-works"
                 className="rounded-full border border-[#2a2d52] bg-transparent px-6 py-4 text-sm font-medium text-white transition-colors hover:border-[#3a3d62]"
               >
-                See the full demo
+                See how it works
               </Link>
             </div>
           </div>

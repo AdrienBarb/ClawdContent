@@ -8,12 +8,12 @@ const personas = [
   },
   {
     t: "Solo Founders & Indie Hackers",
-    q: "Ship features, close deals, talk to users. Leave the 5-posts-a-day to PostClaw.",
+    q: "Ship features, close deals, talk to users. Leave the strategy and the posting to PostClaw.",
     href: "/for-founders",
   },
   {
     t: "Creators Who'd Rather Create",
-    q: "One idea becomes a week of Instagram and Facebook posts. Back to the actual work.",
+    q: "One idea becomes a week of Instagram posts. Back to the actual work.",
     href: "/for-creators",
   },
 ];

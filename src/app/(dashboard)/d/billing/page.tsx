@@ -68,28 +68,13 @@ async function BillingContent() {
           <span className="text-gray-400 text-lg">{intervalLabel}</span>
         </div>
 
-        {/* Usage */}
+        {/* Connected account */}
         <div className="flex items-center gap-3 mb-4 p-3 rounded-xl bg-gray-50">
-          <div className="flex-1">
-            <p className="text-sm font-medium text-gray-700">
-              Social accounts: {activeAccountCount} / {plan.socialAccountLimit}
-            </p>
-          </div>
-          <div className="w-20 h-2 bg-gray-200 rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full ${
-                activeAccountCount >= plan.socialAccountLimit
-                  ? "bg-amber-400"
-                  : "bg-primary"
-              }`}
-              style={{
-                width: `${Math.min(
-                  (activeAccountCount / plan.socialAccountLimit) * 100,
-                  100
-                )}%`,
-              }}
-            />
-          </div>
+          <p className="text-sm font-medium text-gray-700">
+            {activeAccountCount > 0
+              ? "Instagram account connected"
+              : "No Instagram account connected"}
+          </p>
         </div>
 
         <div className="flex items-center gap-2.5 mb-2">

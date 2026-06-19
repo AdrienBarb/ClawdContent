@@ -7,10 +7,6 @@ import { useRouter } from "next/navigation";
 import { appRouter } from "@/lib/constants/appRouter";
 import SignInModal from "@/components/SignInModal";
 
-interface HeroSectionProps {
-  variant?: string;
-}
-
 const people = [
   { src: "/images/reassurance/kaya.jpeg", name: "Kaya", linkedin: "https://www.linkedin.com/in/kayayurieff/" },
   { src: "/images/reassurance/jorje.jpeg", name: "Jorge", linkedin: "https://www.linkedin.com/in/jorge-zuloaga/" },
@@ -26,11 +22,10 @@ const stats: [string, string][] = [
   ["20×", "cheaper than a $2,000 agency"],
 ];
 
-export default function HeroSection({ variant = "control" }: HeroSectionProps) {
+export default function HeroSection() {
   const { data: session } = useSession();
   const router = useRouter();
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
-  const isTest = variant === "test";
 
   const handleGetStarted = () => {
     if (session?.user) {
@@ -46,25 +41,17 @@ export default function HeroSection({ variant = "control" }: HeroSectionProps) {
         <div className="flex flex-col items-center">
           <div className="mb-9 inline-flex items-center gap-2.5 rounded-full border border-[#ec6f5b55] bg-[#ec6f5b22] px-3.5 py-1.5 text-xs text-[#f8a594]">
             <span className="h-1.5 w-1.5 rounded-full bg-[#ec6f5b]" />
-            Tell it. It posts it. That&apos;s it.
+            It plans. It posts. You approve.
           </div>
 
-          {isTest ? (
-            <h1 className="font-display text-5xl leading-[0.96] tracking-[-0.03em] text-balance md:text-7xl lg:text-[96px]">
-              Grow your Facebook &amp; Instagram
-              <br />
-              <em className="italic text-[#ec6f5b]">on autopilot.</em>
-            </h1>
-          ) : (
-            <h1 className="font-display text-5xl leading-[0.96] tracking-[-0.03em] text-balance md:text-7xl lg:text-[112px]">
-              Your <em className="italic text-[#ec6f5b]">AI</em> social
-              <br />
-              media manager.
-            </h1>
-          )}
+          <h1 className="font-display text-5xl leading-[0.96] tracking-[-0.03em] text-balance md:text-7xl lg:text-[96px]">
+            Grow your Instagram
+            <br />
+            <em className="italic text-[#ec6f5b]">on autopilot.</em>
+          </h1>
 
           <p className="mt-9 max-w-[620px] text-base leading-[1.55] text-[#b9bdd6] md:text-xl">
-            Text PostClaw what&apos;s happening — a new offer, a sale, a quiet week. It writes, schedules, and posts to your Instagram and Facebook for you, every week.
+            PostClaw learns your brand, builds your growth strategy, and posts to your Instagram every week. Review what&apos;s coming, change anything, or let it run.
           </p>
 
           <div className="mt-11 flex flex-wrap items-center justify-center gap-3.5">
@@ -75,10 +62,10 @@ export default function HeroSection({ variant = "control" }: HeroSectionProps) {
               Start Growing →
             </button>
             <a
-              href="#demo"
+              href="#how-it-works"
               className="rounded-full border border-[#2a2d52] bg-transparent px-6 py-4 text-sm font-medium text-white transition-colors hover:border-[#3a3d62]"
             >
-              ▶ Watch 60-sec demo
+              See how it works →
             </a>
           </div>
 
