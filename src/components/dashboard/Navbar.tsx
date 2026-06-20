@@ -4,7 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { appRouter } from "@/lib/constants/appRouter";
-import { useSession, signOut } from "@/lib/better-auth/auth-client";
+import { useSession } from "@/lib/better-auth/auth-client";
+import { signOutWithReset } from "@/lib/better-auth/logout";
 import {
   CreditCardIcon,
   GearSixIcon,
@@ -49,7 +50,7 @@ export default function Navbar() {
   const { data: session } = useSession();
 
   const handleSignOut = async () => {
-    await signOut();
+    await signOutWithReset();
     router.push("/");
   };
 

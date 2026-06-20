@@ -9,7 +9,7 @@ import {
 import {
   makeAnalyticsPost,
   realIgPost,
-  realFbPost,
+  realIgLowReachPost,
   realIgReel,
 } from "@/lib/insights/__fixtures__/zernio";
 
@@ -27,8 +27,8 @@ describe("toStoredPost", () => {
     expect(stored.metrics.igReelsVideoViewTotalTime).toBe(13320);
   });
 
-  it("maps every FB metric including reach and clicks (uniform shape)", () => {
-    const stored = toStoredPost(realFbPost);
+  it("maps every metric including reach and clicks (uniform shape)", () => {
+    const stored = toStoredPost(realIgLowReachPost);
     expect(stored.metrics).toEqual({
       impressions: 4,
       reach: 2,

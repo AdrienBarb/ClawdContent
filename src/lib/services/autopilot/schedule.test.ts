@@ -181,18 +181,6 @@ describe("planSlotDates", () => {
     expect(planned.map((p) => p.index)).toEqual([0, 1, 2]);
   });
 
-  it("places cold-start Facebook defaults entirely inside the rolling window", () => {
-    const slots = [
-      { dayOfWeek: 2, hour: 13 }, // Wed
-      { dayOfWeek: 3, hour: 19 }, // Thu
-      { dayOfWeek: 6, hour: 11 }, // Sun
-    ];
-    const planned = planSlotDates({ anchor, slots, timeZone: TZ, now });
-    expect(planned).toHaveLength(3);
-    expect(planned.every((p) => inWindow(p.scheduledAt))).toBe(true);
-    expect(new Set(planned.map((p) => p.dayOfWeek)).size).toBe(3);
-  });
-
   it("spreads cycled (repeated-day) slots onto distinct days, all in window", () => {
     const slots = [
       { dayOfWeek: 1, hour: 18 },

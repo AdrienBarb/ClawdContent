@@ -11,7 +11,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useSession, signOut } from "@/lib/better-auth/auth-client";
+import { useSession } from "@/lib/better-auth/auth-client";
+import { signOutWithReset } from "@/lib/better-auth/logout";
 import SignInModal from "@/components/SignInModal";
 import { ListIcon, XIcon } from "@phosphor-icons/react";
 
@@ -21,7 +22,7 @@ export default function Navbar() {
   const { data: session } = useSession();
 
   const handleSignOut = async () => {
-    await signOut();
+    await signOutWithReset();
   };
 
   const getInitials = (name?: string | null, email?: string | null) => {

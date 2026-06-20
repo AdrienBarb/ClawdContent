@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/db/prisma";
 import { isSupportedPlatform } from "@/lib/insights/platformConfig";
+import { computeEffectiveResumeStep } from "@/lib/services/onboarding";
 import type {
   OnboardingGoal,
   OnboardingStatus,
@@ -53,8 +54,19 @@ export async function GET() {
       },
     });
 
+    const accounts = (user?.lateProfile?.socialAccounts ?? []).filter((a) =>
+      isSupportedPlatform(a.platform)
+    );
+
     const status: OnboardingStatus = {
-      step: user?.onboardingStep ?? 1,
+      // Clamp a reaped returnee (incomplete, 0 connected accounts) back to the
+      // Connect step so the client wizard's forward-only reconcile can't strand
+      // them past it.
+      step: computeEffectiveResumeStep(
+        user?.onboardingStep,
+        user?.onboardingCompletedAt,
+        accounts.length
+      ),
       isCompleted: !!user?.onboardingCompletedAt,
       websiteUrl: user?.websiteUrl ?? null,
       businessDescription: user?.businessDescription ?? null,
@@ -62,9 +74,7 @@ export async function GET() {
       websiteAnalysis:
         (user?.websiteAnalysis as WebsiteAnalysisState | null) ?? null,
       knowledgeBase: (user?.knowledgeBase as KnowledgeBase | null) ?? null,
-      accounts: (user?.lateProfile?.socialAccounts ?? []).filter((a) =>
-        isSupportedPlatform(a.platform)
-      ),
+      accounts,
       subscription: user?.subscription ?? null,
     };
 

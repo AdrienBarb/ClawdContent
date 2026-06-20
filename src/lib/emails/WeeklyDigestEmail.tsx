@@ -25,7 +25,6 @@ interface WeeklyDigestEmailProps {
 
 function platformLabel(platform: string): string {
   if (platform === "instagram") return "Instagram";
-  if (platform === "facebook") return "Facebook";
   return platform;
 }
 

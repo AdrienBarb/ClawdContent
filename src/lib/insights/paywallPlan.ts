@@ -85,18 +85,11 @@ const TIER_RANK: Record<DataQuality, number> = {
   platform_no_history: 3,
 };
 
-function platformRank(platform: string): number {
-  const p = platform.toLowerCase();
-  if (p === "instagram") return 0;
-  if (p === "facebook") return 1;
-  return 2;
-}
-
 /**
  * Pick the primary account whose handle the reveal shows (header fallback +
  * loading copy): prefer one whose strategy is already written, then the richest
- * data tier, then Instagram, then the oldest connection. Returns null when no
- * supported account exists.
+ * data tier, then the oldest connection. Returns null when no supported account
+ * exists.
  */
 export function selectPrimaryAccount(
   accounts: RawAccountInput[]
@@ -111,9 +104,6 @@ export function selectPrimaryAccount(
 
     const tier = TIER_RANK[dataQualityOf(a)] - TIER_RANK[dataQualityOf(b)];
     if (tier !== 0) return tier;
-
-    const plat = platformRank(a.platform) - platformRank(b.platform);
-    if (plat !== 0) return plat;
 
     return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
   })[0];

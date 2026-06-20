@@ -12,7 +12,6 @@ import {
 import { appRouter } from "@/lib/constants/appRouter";
 import { getPlatform } from "@/lib/constants/platforms";
 import { InstagramPostPreview } from "@/components/dashboard/previews/InstagramPostPreview";
-import { FacebookPostPreview } from "@/components/dashboard/previews/FacebookPostPreview";
 import { SchedulePicker } from "@/components/dashboard/SchedulePicker";
 import {
   TweakTabButton,
@@ -161,14 +160,11 @@ export function GeneratedPostCard({ post, onCommitted }: Props) {
     }
   };
 
-  const Preview =
-    post.platform === "facebook" ? FacebookPostPreview : InstagramPostPreview;
-
   return (
     <div className="mx-auto w-full max-w-[460px] overflow-hidden rounded-2xl border border-gray-200 bg-[#faf9f5] shadow-sm">
       {/* The post itself */}
       <div className="relative p-3">
-        <Preview
+        <InstagramPostPreview
           username={post.username}
           caption={caption}
           mediaItems={mediaItems}

@@ -12,8 +12,8 @@ const comparisons = [
     with: "Posts go out daily. Zero effort.",
   },
   {
-    without: "Same caption copy-pasted to every platform",
-    with: "Each post rewritten for Instagram and Facebook",
+    without: "The same caption pasted onto every post",
+    with: "Each post written natively for the feed, Reels, and carousels",
   },
   {
     without: "Hiring a social media person: $1,000–2,000/mo",

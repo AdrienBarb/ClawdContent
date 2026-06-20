@@ -583,7 +583,7 @@ export default function AnalyticsDashboard() {
               <div className="space-y-3">
                 {[
                   { platform: "instagram", text: "Behind the scenes of this morning's bake — fresh sourdough...", views: "3.2K", eng: "284" },
-                  { platform: "facebook", text: "This weekend only: 20% off every booking. Tag a friend...", views: "1.8K", eng: "156" },
+                  { platform: "instagram", text: "This weekend only: 20% off every booking. Tag a friend...", views: "1.8K", eng: "156" },
                   { platform: "instagram", text: "New arrivals just dropped — swipe to find your favourite...", views: "1.2K", eng: "98" },
                 ].map((post, i) => {
                   const pl = getPlatform(post.platform);

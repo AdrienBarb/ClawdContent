@@ -12,11 +12,9 @@ import { PLATFORM_CONFIG } from "@/lib/insights/platformConfig";
  *
  * EVERY number is traced to a cited source in the comment beside it. Figures
  * were web-researched 2026-06-08 (Buffer / Hootsuite / Metricool / Socialinsider
- * / RivalIQ / Mosseri). Facebook cadence was re-verified specifically because
- * generic "1-2×/day" advice is refuted by the data (engagement-per-post decays
- * with frequency for small Pages).
+ * / RivalIQ / Mosseri).
  *
- * Scope matches `SUPPORTED_PLATFORMS`: Instagram + Facebook only. A parity test
+ * Scope matches `SUPPORTED_PLATFORMS`: Instagram only. A parity test
  * (`bestPractices.test.ts`) fails if a supported platform is missing an entry.
  */
 
@@ -131,66 +129,6 @@ export const BEST_PRACTICES: Record<string, PlatformBestPractices> = {
       comments: "Conversation depth — replying back compounds it.",
     },
   },
-  facebook: {
-    platform: "facebook",
-    displayName: "Facebook",
-    // RE-VERIFIED (generic daily-posting advice is wrong for small Pages):
-    // Buffer 2025 top-performing brands post ~4.6×/wk; Hootsuite 2025 small-page
-    // sweet spot ~2×/wk; Social Media Examiner found 28-29 posts/wk beat 44/wk on
-    // reach+engagement. 3-5×/wk balances reach and quality; 2×/wk is an acceptable
-    // floor for very small Pages.
-    recommendedPostsPerWeek: { min: 3, max: 5 },
-    formatMix: [
-      {
-        format: "photo",
-        role: "Engagement lead",
-        // Buffer 2026 (52M posts): photos +34.7% engagement vs text, +43.8% vs
-        // video; albums 2.9% (Hootsuite 2025).
-        bestFor: "The highest-engagement everyday format — single photos and albums.",
-      },
-      {
-        format: "reel",
-        role: "Reach & discovery",
-        // Hootsuite 2025: Reels get 2-3× the organic reach of regular video.
-        bestFor: "Reaching beyond your Page fans. Use for growth, not just engagement.",
-      },
-      {
-        format: "text",
-        role: "Conversation",
-        // Socialinsider 2026: status/text posts historically high ER but declining.
-        bestFor: "Quick questions and updates that spark comments.",
-      },
-      {
-        format: "link",
-        role: "Use sparingly",
-        // Socialinsider 2026: link posts 0.05% ER — reach is heavily suppressed.
-        bestFor: "Only when you must drive off-platform; never a default format.",
-      },
-    ],
-    bestTimeDefaults: PLATFORM_CONFIG.facebook.defaultBestTimes,
-    benchmarkEngagementRate: {
-      good: 1,
-      strong: 5,
-      basis:
-        "Per-post engagement. Platform median is ~0.15%, but small Pages (<1k) reach 5-9% (follower/reach-based). Zernio reports an impression-based rate, so treat as approximate.",
-      source: "Buffer 2026 (52M posts); RivalIQ 2025; Socialinsider 2026",
-    },
-    principles: [
-      "Post 3-5×/week, not daily — engagement-per-post falls as frequency climbs (Social Media Examiner; Buffer 2025).",
-      "Lead with photos/albums for engagement and Reels for reach; avoid bare link posts (Buffer & Hootsuite 2025).",
-      "Ask questions and reply to every comment — comments and shares are the engine of Facebook reach.",
-      "Keep it native: upload media directly instead of linking out.",
-    ],
-    metricMeaning: {
-      engagementRate:
-        "Engagement ÷ impressions (per Zernio). 1%+ is healthy for a small Page; 5%+ is strong. Small Pages can far exceed the ~0.15% platform median.",
-      reach: "Unique people who saw the post — Facebook does report reach (ground-truthed).",
-      shares:
-        "Shares are the strongest Facebook reach multiplier — they re-expose the post to a friend's whole network.",
-      comments: "Facebook weights comments heavily; questions and replies compound reach.",
-      clicks: "Link/profile clicks — meaningful only for posts whose goal is a click-through.",
-    },
-  },
 };
 
 /** KB for a platform, or null if we don't have one (unsupported platform). */
@@ -199,19 +137,17 @@ export function getBestPractices(platform: string): PlatformBestPractices | null
 }
 
 /**
- * Brand-level "best practices" socle — the IG + Facebook umbrella used to build
- * the social-independent BUSINESS strategy (`computeBusinessStrategy`). NOT a
- * member of `BEST_PRACTICES` (that map is pinned to `SUPPORTED_PLATFORMS` by a
- * parity test); it's a standalone neutral socle so the strategy plumbing
+ * Brand-level "best practices" socle — the Instagram umbrella used to build the
+ * social-independent BUSINESS strategy (`computeBusinessStrategy`). NOT a member
+ * of `BEST_PRACTICES` (that map is pinned to `SUPPORTED_PLATFORMS` by a parity
+ * test); it's a standalone socle so the strategy plumbing
  * (`buildStrategyInputs`/`buildStrategyPrompt`/`assembleStrategy`) can run with
- * `insights: null` and no single-platform anchor. The recommended cadence band
- * is identical across IG and FB (3-5×/wk); the format mix is their union, so the
- * brand plan can span both. `displayName` drives the prompt copy ("Instagram and
- * Facebook"), keeping the rendered prompt platform-neutral.
+ * `insights: null` and no per-account anchor. `displayName` drives the prompt
+ * copy ("Instagram").
  */
 export const BRAND_BEST_PRACTICES: PlatformBestPractices = {
   platform: "brand",
-  displayName: "Instagram and Facebook",
+  displayName: "Instagram",
   recommendedPostsPerWeek: { min: 3, max: 5 },
   formatMix: [
     {
@@ -232,25 +168,20 @@ export const BRAND_BEST_PRACTICES: PlatformBestPractices = {
       bestFor:
         "The highest-engagement everyday format — single photos, behind-the-scenes, product and people shots.",
     },
-    {
-      format: "text",
-      role: "Conversation",
-      bestFor: "Quick questions and updates that spark comments and replies.",
-    },
   ],
   bestTimeDefaults: PLATFORM_CONFIG.instagram.defaultBestTimes,
   benchmarkEngagementRate: {
     good: 2,
     strong: 5,
     basis:
-      "Per-post engagement across Instagram and Facebook for a small account. Impression-based, so treat as approximate.",
+      "Per-post engagement on Instagram for a small account. Impression-based, so treat as approximate.",
     source: "Buffer 2026; Metricool 2025; RivalIQ 2025",
   },
   principles: [
     "Consistency beats volume — 3-5 quality posts/week outperform daily mediocre ones.",
     "Lead with Reels for reach (the first 3 seconds decide), carousels for saves, photos for everyday engagement.",
     "Hook in the opening line; keep one clear CTA near the end.",
-    "Reply to comments — conversation compounds reach on both platforms.",
+    "Reply to comments — conversation compounds reach.",
   ],
   metricMeaning: {
     engagementRate:

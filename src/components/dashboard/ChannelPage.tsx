@@ -299,7 +299,7 @@ function ChannelHeaderStats({
   stats: ChannelHeaderStatsData | null;
   loading: boolean;
 }) {
-  // Instagram and Facebook both expose followers + primary + secondary metric.
+  // Instagram exposes followers + primary + secondary metric.
   const expectedCellCount = 3;
   const cells = useMemo<StatCell[]>(() => {
     if (!stats) return [];

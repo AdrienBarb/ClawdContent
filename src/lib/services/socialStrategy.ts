@@ -220,7 +220,7 @@ export async function computeBusinessStrategy(
   const goal = user.onboardingGoal ?? null;
 
   // Brand mode: no platform, no insights. The deterministic plumbing degrades to
-  // benchmark cadence/times and a cold-start data tier; the synthetic IG+FB
+  // benchmark cadence/times and a cold-start data tier; the synthetic Instagram
   // socle keeps the rendered prompt platform-neutral.
   const inputs = buildStrategyInputs({
     platform: "brand",

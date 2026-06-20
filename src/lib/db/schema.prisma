@@ -112,6 +112,14 @@ model Subscription {
   currentPeriodStart   DateTime?
   currentPeriodEnd     DateTime?
   cancelAtPeriodEnd    Boolean   @default(false)
+  // Dunning: set when the subscription first enters past_due (a failed
+  // invoice), cleared when it recovers to active. The daily reconcile cron
+  // measures days since this to escalate emails and force-cancel at the cutoff.
+  pastDueSince         DateTime?
+  // Highest dunning email already sent, so escalation never double-sends:
+  // 0 = none, 1 = initial (J0), 2 = reminder (J1), 3 = final warning (J3).
+  // Reset to 0 on recovery to active.
+  dunningStage         Int       @default(0)
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 

@@ -74,6 +74,30 @@ async function persistImage({
   return url;
 }
 
+/**
+ * Re-derive a FEED-SAFE 4:5 still from an existing image URL (the Reel hero is
+ * 9:16 — a Story/Reel ratio Instagram REJECTS as a feed image: allowed feed
+ * aspect is 0.8–1.91, and 9:16 ≈ 0.56). Used by the reel→static degrade path:
+ * the hero is photoreal with no on-image text, so a centre cover-crop to 4:5 is
+ * safe. Returns the new 4:5 URL (persisted + Media row). Throws on fetch error
+ * so the caller can degrade to needs_media rather than commit an un-publishable
+ * post.
+ */
+export async function deriveFeedStillFromUrl({
+  userId,
+  batchId,
+  sourceUrl,
+}: {
+  userId: string;
+  batchId: string;
+  sourceUrl: string;
+}): Promise<string> {
+  const res = await fetch(sourceUrl);
+  if (!res.ok) throw new Error(`hero still fetch ${res.status}`);
+  const buf = Buffer.from(await res.arrayBuffer());
+  return persistImage({ userId, batchId, data: buf, aspectRatio: "4:5" });
+}
+
 async function styleReferences(kit: StyleKit): Promise<ReferenceImage[]> {
   const refs: ReferenceImage[] = [];
   for (const url of kit.referenceImageUrls.slice(0, 2)) {

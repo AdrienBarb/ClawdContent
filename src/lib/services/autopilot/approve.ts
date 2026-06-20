@@ -5,14 +5,29 @@ import { publishOrScheduleSuggestion } from "@/lib/services/publishSuggestion";
 import type { BatchPostSnapshot } from "@/lib/schemas/autopilot";
 
 export type ApproveBatchResult =
-  | { ok: true; scheduled: number; failed: number }
-  | { ok: false; error: "not_found" | "already_approved" | "commit_failed" };
+  | {
+      ok: true;
+      /** Committed to the Zernio schedule. */
+      scheduled: number;
+      /** Un-publishable (failed Zernio validation) → moved to needs_media. */
+      held: number;
+      /** Genuine publish error (transient/infra) → left committable for retry. */
+      failed: number;
+      /** Whether the batch was marked approved (true unless a retryable failure remains). */
+      approved: boolean;
+    }
+  | { ok: false; error: "not_found" | "already_approved" };
 
 /**
  * Review mode "Launch my week": commits every staged draft in the batch to
  * Zernio. Per-draft idempotency rides on publishOrScheduleSuggestion
  * (publishedExternalId + soft lock), so re-running after a partial failure
  * only commits what's left.
+ *
+ * A draft that Zernio rejects as un-publishable (validation) is NOT treated as
+ * a hard failure — it's moved to needs_media (held back for the user to fix)
+ * and the rest of the week still commits. Only a transient publish error keeps
+ * the batch unapproved so "Launch my week" can be retried.
  */
 export async function approveBatch({
   userId,
@@ -48,6 +63,7 @@ export async function approveBatch({
   }
 
   let scheduled = 0;
+  let held = 0;
   let failed = 0;
   const statusBySuggestion = new Map<
     string,
@@ -69,6 +85,28 @@ export async function approveBatch({
         });
         console.log(
           `[autopilot:approve] committed suggestion=${suggestion.id} → externalPostId=${result.postId}`
+        );
+      } else if (
+        result.error === "validation_failed" ||
+        result.error === "media_validation_failed"
+      ) {
+        // Un-publishable post — hold it back instead of blocking the whole
+        // launch. Move it out of the committable-draft pool into needs_media so
+        // it surfaces in "Need review" for the user to regenerate, and let the
+        // rest of the week commit normally.
+        held += 1;
+        await prisma.postSuggestion
+          .update({
+            where: { id: suggestion.id },
+            data: { status: "needs_media" },
+          })
+          .catch(() => {});
+        statusBySuggestion.set(suggestion.id, {
+          status: "needs_media",
+          externalPostId: null,
+        });
+        console.warn(
+          `[autopilot:approve] held suggestion=${suggestion.id} (un-publishable): ${result.error}`
         );
       } else {
         failed += 1;
@@ -93,7 +131,7 @@ export async function approveBatch({
   }
 
   console.log(
-    `[autopilot:approve] user=${userId} batch=${batchId} done: scheduled=${scheduled} failed=${failed}`
+    `[autopilot:approve] user=${userId} batch=${batchId} done: scheduled=${scheduled} held=${held} failed=${failed}`
   );
 
   // Refresh the durable snapshot so digest links + dashboard stay accurate.
@@ -111,20 +149,24 @@ export async function approveBatch({
     };
   });
 
-  // Total failure: keep the batch unapproved (the user can retry "Launch my
-  // week" once the cause — e.g. a lapsed card — is fixed) but persist the
-  // per-post statuses so the attention strip reflects reality.
-  const totalFailure = scheduled === 0 && failed > 0;
+  // A retryable failure (transient publish/infra error) keeps the batch
+  // unapproved so "Launch my week" can be retried once the cause is fixed.
+  // Held posts (un-publishable → needs_media) do NOT block approval: they're
+  // resolved out of the commit path and shown for the user to regenerate.
+  const hasRetryableFailure = failed > 0;
   await prisma.weeklyBatch.update({
     where: { id: batchId },
     data: {
-      ...(totalFailure ? {} : { approvedAt: new Date() }),
+      ...(hasRetryableFailure ? {} : { approvedAt: new Date() }),
       posts: nextPosts as unknown as Prisma.InputJsonValue,
     },
   });
 
-  if (totalFailure) {
-    return { ok: false, error: "commit_failed" };
-  }
-  return { ok: true, scheduled, failed };
+  return {
+    ok: true,
+    scheduled,
+    held,
+    failed,
+    approved: !hasRetryableFailure,
+  };
 }

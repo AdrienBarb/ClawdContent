@@ -1,6 +1,9 @@
 import { cookies } from "next/headers";
+import { DISTINCT_ID_COOKIE } from "./cookies";
 
-export const DISTINCT_ID_COOKIE = "postclaw_distinct_id";
+// Re-exported so server callers keep importing it from here, while client code
+// imports it from `./cookies` directly (this module pulls in next/headers).
+export { DISTINCT_ID_COOKIE };
 
 /**
  * Read the anonymous distinct ID from the cookie store (server components / route handlers).

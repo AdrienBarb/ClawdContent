@@ -60,13 +60,17 @@ export const auth = betterAuth({
           const anonId = getDistinctIdFromHeader(cookieHeader);
           const distinctId = anonId ?? user.id;
 
-          if (anonId) {
-            await identifyUser(anonId, {
-              userId: user.id,
-              email: user.email,
-              name: user.name,
-            });
-          }
+          // Identify the canonical user id — NOT the anonymous id. Identifying
+          // the anon id would flag it `is_identified`, which blocks the later
+          // client-side `posthog.identify(userId)` from merging the anonymous
+          // browsing person into the user (identified→identified merges are
+          // rejected). Keeping the anon id un-identified makes that a clean
+          // anon→identified merge. `user_signed_up` still fires on the anon id
+          // below, so it stitches into the user via that client merge.
+          await identifyUser(user.id, {
+            email: user.email,
+            name: user.name,
+          });
 
           const utmData = getUtmFromCookieHeader(cookieHeader);
 
@@ -84,13 +88,11 @@ export const auth = betterAuth({
             }),
           });
 
-          // Create Zernio profile so user can connect social accounts immediately
-          const { ensureUserProfile } = await import(
-            "@/lib/services/profile"
-          );
-          await ensureUserProfile(user.id, user.name).catch((err) =>
-            console.error(`Failed to create profile for user ${user.id}:`, err)
-          );
+          // NOTE: the Zernio profile is provisioned lazily on the first social
+          // connect (see getConnectUrl), NOT at signup — most signups never
+          // reach the connect step, so creating a profile here just generates
+          // orphans for the reaper to clean. Lazy provisioning + the reaper keep
+          // the master Zernio account free of unused profiles/keys.
 
           // Resend audience: keep the marketing contact list in sync
           await createMarketingContact({

@@ -13,7 +13,6 @@ import { appRouter } from "@/lib/constants/appRouter";
 import { getPlatform } from "@/lib/constants/platforms";
 import { useSupabaseUpload } from "@/lib/hooks/useSupabaseUpload";
 import { InstagramPostPreview } from "@/components/dashboard/previews/InstagramPostPreview";
-import { FacebookPostPreview } from "@/components/dashboard/previews/FacebookPostPreview";
 import {
   TweakTabButton,
   CaptionEditor,
@@ -52,8 +51,6 @@ export function PostCard({ item, mode, timeLabel, onChanged }: Props) {
   const needsMedia = item.status === "needs_media";
   const isPublished = item.status === "published";
   const meta = getPlatform(item.platform);
-  const Preview =
-    item.platform === "facebook" ? FacebookPostPreview : InstagramPostPreview;
 
   // Derive the preview's content type from the live media — the stored
   // contentType can lag a regenerate/upload (PATCH doesn't recompute it).
@@ -278,7 +275,7 @@ export function PostCard({ item, mode, timeLabel, onChanged }: Props) {
     <article className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
       {/* Native post preview */}
       <div className="relative px-4 pt-4 pb-3">
-        <Preview
+        <InstagramPostPreview
           username={item.username}
           // While editing, preview the live caption so the user sees exactly
           // what they're writing / what a rewrite produced (mirrors Explore).

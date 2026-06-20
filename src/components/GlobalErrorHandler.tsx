@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { useErrorStore } from "@/lib/stores/errorStore";
-import { signOut } from "@/lib/better-auth/auth-client";
+import { signOutWithReset } from "@/lib/better-auth/logout";
 
 const GlobalErrorHandler = () => {
   const router = useRouter();
@@ -15,7 +15,7 @@ const GlobalErrorHandler = () => {
 
     switch (statusCode) {
       case 401:
-        signOut();
+        void signOutWithReset();
         toast.error(errorMessage || "Session expired. Please sign in again.");
         router.push("/");
         break;

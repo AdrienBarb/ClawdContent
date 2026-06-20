@@ -57,6 +57,104 @@ export async function deleteScopedApiKey(apiKeyId: string): Promise<void> {
   });
 }
 
+/**
+ * Delete a Zernio profile. Used by the lifecycle cleanup/reaper to remove the
+ * profile of a churned / non-converting / orphaned user. Uses the master key by
+ * default (the per-user scoped key may already be gone). The caller deletes the
+ * profile's accounts + scoped key first; profile deletion is the final step.
+ */
+export async function deleteProfile(
+  profileId: string,
+  apiKey?: string
+): Promise<void> {
+  await lateRequest(`/profiles/${profileId}`, {
+    method: "DELETE",
+    apiKey,
+  });
+}
+
+const PROFILE_LIST_LIMIT = 2000;
+
+/**
+ * List every profile under the master Zernio account (admin key). Used by the
+ * orphan-reaper backstop to find Zernio profiles that no longer have a matching
+ * DB `LateProfile`. Defaults to the master key. Reuses the `LateProfile` shape
+ * ({ id, name }).
+ */
+export async function listProfiles(apiKey?: string): Promise<LateProfile[]> {
+  const data = await lateRequest<{
+    profiles: { _id: string; name: string }[];
+  }>(`/profiles?limit=${PROFILE_LIST_LIMIT}`, { apiKey });
+  // The endpoint isn't paginated here — if we ever hit the cap, the orphan
+  // backstop would silently stop seeing profiles past it. Surface that.
+  if (data.profiles.length >= PROFILE_LIST_LIMIT) {
+    console.warn(
+      `[Zernio] listProfiles hit the ${PROFILE_LIST_LIMIT} cap — orphan reaping may be incomplete; add pagination.`
+    );
+  }
+  return data.profiles.map((p) => ({ id: p._id, name: p.name }));
+}
+
+/** Scoped API key as returned by the master `/api-keys` list. */
+export interface LateApiKeyRecord {
+  id: string;
+  name: string;
+  scope: string;
+  /** Zernio returns these as strings OR populated objects { _id, ... }. */
+  profileIds: (string | { _id: string })[];
+}
+
+/**
+ * List every API key under the master Zernio account (admin key). Used by the
+ * cleanup to resolve a profile's scoped key id (the DB only stores the key
+ * STRING, not its id). Defaults to the master key. NEVER delete a `scope:"full"`
+ * key — that is the master key itself.
+ */
+export async function listApiKeys(
+  apiKey?: string
+): Promise<LateApiKeyRecord[]> {
+  const data = await lateRequest<{
+    apiKeys: {
+      _id: string;
+      name: string;
+      scope: string;
+      profileIds?: (string | { _id: string })[];
+    }[];
+  }>("/api-keys", { apiKey });
+  return (data.apiKeys ?? []).map((k) => ({
+    id: k._id,
+    name: k.name,
+    scope: k.scope,
+    profileIds: k.profileIds ?? [],
+  }));
+}
+
+/**
+ * Find the id of the scoped API key bound to a given profile, from a master
+ * `/api-keys` list. Fail-safe: matches ONLY a key that (a) is not `scope:"full"`
+ * (the master key), (b) is named exactly `postclaw-<profileId>` (how
+ * createScopedApiKey names them), AND (c) references the profile in profileIds.
+ * The triple guard guarantees the master key can never be selected for deletion
+ * even if Zernio ever relabels its scope. Returns null when no scoped key
+ * matches (already deleted / never created) — a leaked key is preferable to
+ * deleting the master.
+ */
+export function findScopedKeyId(
+  profileId: string,
+  keys: LateApiKeyRecord[]
+): string | null {
+  const normalize = (p: string | { _id: string }): string =>
+    typeof p === "string" ? p : p._id;
+  const expectedName = `postclaw-${profileId}`;
+  const match = keys.find(
+    (k) =>
+      k.scope !== "full" &&
+      k.name === expectedName &&
+      k.profileIds.some((p) => normalize(p) === profileId)
+  );
+  return match ? match.id : null;
+}
+
 export async function getConnectUrl(
   platform: string,
   profileId: string,
@@ -227,7 +325,7 @@ export async function deletePost(
 
 export async function listAccounts(
   profileId: string,
-  apiKey: string
+  apiKey?: string
 ): Promise<(LateAccount & { isActive: boolean })[]> {
   const data = await lateRequest<{ accounts: LateAccountRaw[] }>(
     `/accounts?profileId=${profileId}`,
@@ -243,7 +341,7 @@ export async function listAccounts(
 
 export async function deleteAccount(
   accountId: string,
-  apiKey: string
+  apiKey?: string
 ): Promise<void> {
   await lateRequest(`/accounts/${accountId}`, {
     method: "DELETE",

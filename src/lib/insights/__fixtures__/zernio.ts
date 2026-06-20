@@ -60,10 +60,10 @@ export const realIgPost = makeAnalyticsPost({
   },
 });
 
-/** The exact FB top post from the live probe — note reach:2 and clicks present. */
-export const realFbPost = makeAnalyticsPost({
-  _id: "fb-1",
-  platform: "facebook",
+/** A low-reach post from the live probe — note reach:2 and clicks present (uniform shape). */
+export const realIgLowReachPost = makeAnalyticsPost({
+  _id: "ig-2",
+  platform: "instagram",
   content: "y".repeat(876),
   mediaType: "image",
   analytics: {

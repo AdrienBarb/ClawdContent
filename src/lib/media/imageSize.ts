@@ -6,7 +6,7 @@ import type { MediaAspectRatio } from "./geminiImage";
  * Gemini lets us pick an aspect ratio + resolution tier (1K/2K/4K) but not
  * arbitrary pixel dims — and 1080 isn't a multiple of what the tiers produce.
  * So every asset goes through ONE deterministic cover-resize to land exactly
- * on Instagram/Facebook's expected dimensions before Zernio sees it.
+ * on Instagram's expected dimensions before Zernio sees it.
  */
 export const TARGET_DIMS: Record<
   MediaAspectRatio,

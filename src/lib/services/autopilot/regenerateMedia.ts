@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db/prisma";
 import { Prisma } from "@prisma/client";
 import { getOrBuildStyleKit } from "@/lib/media/styleKit";
 import { renderStaticMedia, type PostMediaPlan } from "@/lib/media/mediaPlan";
+import { validateSuggestionPublishable } from "@/lib/services/publishSuggestion";
 import type { MediaItem } from "@/lib/schemas/mediaItems";
 
 export type RegenerateMediaResult =
@@ -73,12 +74,27 @@ export async function regenerateSuggestionMedia({
     data: {
       mediaItems: result.mediaItems as unknown as Prisma.InputJsonValue,
       contentType: plan.kind === "carousel" ? "carousel" : "image",
-      // Only a render that passed the OCR guard clears the needs_media hold.
-      ...(suggestion.status === "needs_media" && result.textVerified
-        ? { status: "draft" }
-        : {}),
     },
   });
+
+  // Clearing a needs_media hold requires BOTH the OCR guard passing AND the
+  // post actually being publishable now (Zernio validation). Media regen can't
+  // fix a caption-level block (e.g. caption too long), so promoting back to a
+  // committable draft purely on an OCR pass would be a false "fixed" — the
+  // commit path would just hold it again. Re-validate before clearing.
+  if (suggestion.status === "needs_media" && result.textVerified) {
+    const verdict = await validateSuggestionPublishable({ userId, suggestionId });
+    if (verdict.ok) {
+      await prisma.postSuggestion.update({
+        where: { id: suggestionId },
+        data: { status: "draft" },
+      });
+    } else {
+      console.warn(
+        `[autopilot:regen] kept needs_media suggestion=${suggestionId} — media re-rendered but still not publishable: ${verdict.reason}`
+      );
+    }
+  }
 
   return { ok: true, mediaItems: result.mediaItems };
 }

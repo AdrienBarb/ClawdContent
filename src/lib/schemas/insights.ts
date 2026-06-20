@@ -40,9 +40,9 @@ const postMetricsSchema = z.object({
   // schemas are never sent to the LLM, so defaults/bounds are safe here.
   clicks: z.number().default(0),
   views: z.number(),
-  /** Avg seconds a Reel was watched. 0 for non-Reels and on FB. IG's #1 ranking signal. */
+  /** Avg seconds a Reel was watched. 0 for non-Reels. IG's #1 ranking signal. */
   igReelsAvgWatchTime: z.number().default(0),
-  /** Total seconds watched across all Reel views. 0 for non-Reels and on FB. */
+  /** Total seconds watched across all Reel views. 0 for non-Reels. */
   igReelsVideoViewTotalTime: z.number().default(0),
   engagementRate: z.number(),
 });

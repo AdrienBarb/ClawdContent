@@ -32,13 +32,17 @@ import {
   renderStaticMedia,
   renderReelHero,
   persistReelVideo,
+  deriveFeedStillFromUrl,
 } from "@/lib/media/mediaPlan";
 import {
   startReelGeneration,
   checkReelOperation,
 } from "@/lib/media/geminiVideo";
 import { fetchReferenceImage } from "@/lib/media/geminiImage";
-import { publishOrScheduleSuggestion } from "@/lib/services/publishSuggestion";
+import {
+  publishOrScheduleSuggestion,
+  validateSuggestionPublishable,
+} from "@/lib/services/publishSuggestion";
 import { SUPPORTED_PLATFORMS } from "@/lib/insights/platformConfig";
 import { captureServerEvent } from "@/lib/tracking/postHogClient";
 import type { BatchPostSnapshot } from "@/lib/schemas/autopilot";
@@ -371,6 +375,41 @@ export const autopilotGenerateWeek = inngest.createFunction(
       }
     }
 
+    // 6b — publishability gate. A post only stays a committable draft if it
+    // ALREADY passes Zernio's validation (aspect ratio, caption length, media
+    // rules) with its FINAL rendered media. Anything that wouldn't publish is
+    // held back as needs_media — so the commit phase (full_auto) and "Launch my
+    // week" (review) can never hit a swallowed validation_failed. AI output is
+    // supposed to be publishable; this guarantees it before anything commits.
+    for (const post of planned) {
+      const media = mediaOutcome.get(post.suggestionId);
+      if (!media || media.status !== "draft") continue; // only gate committable posts
+      const verdict = await step.run(`validate-${post.suggestionId}`, () =>
+        validateSuggestionPublishable({ userId, suggestionId: post.suggestionId })
+      );
+      if (!verdict.ok) {
+        await step.run(`gate-degrade-${post.suggestionId}`, () =>
+          markNeedsMedia(post.suggestionId)
+        );
+        mediaOutcome.set(post.suggestionId, {
+          mediaUrl: media.mediaUrl,
+          mediaType: media.mediaType,
+          status: "needs_media",
+        });
+        console.warn(
+          `[autopilot:gate] held suggestion=${post.suggestionId} (${post.platform}): ${verdict.reason}`
+        );
+        await step.run(`track-gate-held-${post.suggestionId}`, () =>
+          captureServerEvent(userId, "autopilot_media_degraded", {
+            suggestionId: post.suggestionId,
+            kind: post.mediaPlan.kind,
+            to: "needs_media",
+            cause: "validation_failed",
+          })
+        );
+      }
+    }
+
     // 7 — commit (full auto) or stage (review)
     const isFullAuto = batch.mode !== "review";
     const commitOutcome = new Map<string, { externalPostId: string | null; status: string }>();
@@ -675,10 +714,68 @@ async function generateReelMedia({
     }
   }
 
-  // Degrade: video → the hero still as a static image post.
-  await step.run(`reel-fallback-${id}`, () =>
-    applyMediaToSuggestion(id, [{ url: heroUrl, type: "image" }], "image")
-  );
+  // Degrade: video → a FEED-SAFE 4:5 still derived from the 9:16 hero. The raw
+  // hero is 9:16 (Reel/Story dims) which Instagram REJECTS as a feed image
+  // (allowed feed aspect 0.8–1.91; 9:16 ≈ 0.56) — committing it verbatim makes
+  // an un-publishable post that fails validation forever. The hero is photoreal
+  // with no on-image text, so a centre-crop to 4:5 is safe.
+  const still = await step.run(`reel-fallback-${id}`, async () => {
+    // Best quality: a FRESH 4:5 photoreal still composed for the feed from the
+    // same scene. The 9:16 hero is framed for vertical, so centre-cropping it
+    // can clip the subject — re-rendering at 4:5 composes for the feed instead.
+    try {
+      const fresh = await renderStaticMedia({
+        userId,
+        batchId: batch.id,
+        plan: {
+          kind: "photo",
+          imagePrompt:
+            post.mediaPlan.imagePrompt ?? post.mediaPlan.reelPrompt ?? "",
+        },
+        kit,
+        aspectRatio: "4:5",
+      });
+      if (fresh.ok && fresh.mediaItems.length > 0) {
+        await applyMediaToSuggestion(id, fresh.mediaItems, "image");
+        return { url: fresh.mediaItems[0].url };
+      }
+    } catch (err) {
+      console.warn(
+        `[autopilot] reel fresh-4:5 still failed suggestion=${id}: ${err instanceof Error ? err.message : err}`
+      );
+    }
+    // Fallback: cover-crop the existing 9:16 hero to a feed-safe 4:5. Still
+    // publishable (the original bug was committing the raw 9:16); composition
+    // is the only tradeoff vs the fresh render above.
+    try {
+      const url = await deriveFeedStillFromUrl({
+        userId,
+        batchId: batch.id,
+        sourceUrl: heroUrl,
+      });
+      await applyMediaToSuggestion(id, [{ url, type: "image" }], "image");
+      return { url };
+    } catch (err) {
+      console.warn(
+        `[autopilot] reel still-degrade failed suggestion=${id}: ${err instanceof Error ? err.message : err}`
+      );
+      return { url: null };
+    }
+  });
+  if (!still.url) {
+    // Couldn't produce a feed-safe still → hold back rather than commit the
+    // un-publishable 9:16 hero as a feed image.
+    await step.run(`reel-degrade2-${id}`, () => markNeedsMedia(id));
+    await step.run(`track-reel-degraded2-${id}`, () =>
+      captureServerEvent(userId, "autopilot_media_degraded", {
+        suggestionId: id,
+        kind: "reel",
+        to: "needs_media",
+        cause: "still_derive_failed",
+      })
+    );
+    return { mediaUrl: null, mediaType: null, status: "needs_media" };
+  }
   await step.run(`track-reel-fallback-${id}`, () =>
     captureServerEvent(userId, "autopilot_media_degraded", {
       suggestionId: id,
@@ -686,5 +783,5 @@ async function generateReelMedia({
       to: "static_image",
     })
   );
-  return { mediaUrl: heroUrl, mediaType: "image", status: "draft" };
+  return { mediaUrl: still.url, mediaType: "image", status: "draft" };
 }

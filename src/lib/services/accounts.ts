@@ -6,6 +6,7 @@ import {
 } from "@/lib/late/mutations";
 import { inngest } from "@/inngest/client";
 import { isSupportedPlatform } from "@/lib/insights/platformConfig";
+import { ensureUserProfile } from "@/lib/services/profile";
 
 export async function getConnectedAccounts(userId: string) {
   const lateProfile = await prisma.lateProfile.findUnique({
@@ -27,8 +28,21 @@ export async function getConnectUrl(
     where: { userId },
   });
 
+  // Lazy provisioning: the Zernio profile is created on the FIRST connect (not
+  // at signup), and transparently re-created here if a returning user's profile
+  // was reaped. ensureUserProfile is idempotent.
   if (!lateProfile) {
-    throw new Error("Late profile not found. Please wait for provisioning to complete.");
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true },
+    });
+    const ensured = await ensureUserProfile(userId, user?.name ?? "User");
+    return lateGetConnectUrl(
+      platform,
+      ensured.profileId,
+      redirectUrl,
+      ensured.apiKey
+    );
   }
 
   return lateGetConnectUrl(

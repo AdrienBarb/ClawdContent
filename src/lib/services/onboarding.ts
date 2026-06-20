@@ -25,6 +25,32 @@ export type ScrapeAndExtractResult =
   | { success: false; errorCode: "unreachable" | "extraction_failed" };
 
 /**
+ * Onboarding step index of the "Connect a social account" screen (Step2Connect).
+ */
+export const ONBOARDING_CONNECT_STEP = 2;
+
+/**
+ * The step a returning user should resume on. The stored `onboardingStep` only
+ * ever moves forward, so on its own it would strand a reaped returnee on the
+ * paywall with zero connected accounts and no Zernio profile. For an incomplete
+ * user with no connected accounts, clamp back to the Connect step so they
+ * reconnect (their brand knowledge persists, only the Zernio side was reaped).
+ * Completed users (re-subscribers) keep their stored step.
+ */
+export function computeEffectiveResumeStep(
+  onboardingStep: number | null | undefined,
+  onboardingCompletedAt: Date | null | undefined,
+  connectedAccountCount: number
+): number {
+  const stored = onboardingStep ?? 1;
+  if (onboardingCompletedAt) return stored;
+  if (connectedAccountCount === 0) {
+    return Math.min(stored, ONBOARDING_CONNECT_STEP);
+  }
+  return stored;
+}
+
+/**
  * Shared per-field extraction guidance for both KB-extraction prompts (website
  * scrape + the owner's typed description). The two prompts differ only in their
  * framing and which input they wrap — the field rules are identical, so they
@@ -163,7 +189,10 @@ ${businessDescription}
  */
 export async function startOnboardingAnalysis(
   userId: string,
-  input: { websiteUrl?: string; businessDescription?: string }
+  input: { websiteUrl?: string; businessDescription?: string },
+  // Anonymous PostHog distinct id (from the request cookie) so the background
+  // job's analysis events land on the same person as user_signed_up / paywall_*.
+  distinctId?: string
 ): Promise<void> {
   const pending: WebsiteAnalysisState = { status: "pending" };
 
@@ -179,7 +208,7 @@ export async function startOnboardingAnalysis(
     });
     await inngest.send({
       name: "onboarding/website-analyze",
-      data: { userId, websiteUrl: input.websiteUrl },
+      data: { userId, websiteUrl: input.websiteUrl, distinctId },
     });
   } else if (input.businessDescription) {
     await prisma.user.update({
@@ -193,7 +222,7 @@ export async function startOnboardingAnalysis(
     });
     await inngest.send({
       name: "onboarding/website-analyze",
-      data: { userId, businessDescription: input.businessDescription },
+      data: { userId, businessDescription: input.businessDescription, distinctId },
     });
   }
 }

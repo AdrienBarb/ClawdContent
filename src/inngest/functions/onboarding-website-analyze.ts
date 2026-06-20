@@ -4,6 +4,7 @@ import {
   scrapeAndExtractKnowledgeBase,
   extractKnowledgeBaseFromDescription,
 } from "@/lib/services/onboarding";
+import { captureServerEvent } from "@/lib/tracking/postHogClient";
 import type { WebsiteAnalysisState } from "@/lib/schemas/onboarding";
 
 interface AnalyzeEvent {
@@ -11,8 +12,14 @@ interface AnalyzeEvent {
     userId: string;
     websiteUrl?: string;
     businessDescription?: string;
+    // Anonymous PostHog distinct id threaded from /api/onboarding/start so the
+    // analysis events land on the same person as the other onboarding events.
+    distinctId?: string;
   };
 }
+
+const ANALYSIS_COMPLETED_EVENT = "onboarding_website_analysis_completed";
+const ANALYSIS_FAILED_EVENT = "onboarding_website_analysis_failed";
 
 /**
  * Land a terminal "failed" WITHOUT demoting a "done" — a superseding retry (or a
@@ -63,14 +70,19 @@ export const onboardingWebsiteAnalyze = inngest.createFunction(
     // would otherwise leave `websiteAnalysis` stuck on "running" forever. Land
     // it on a terminal "failed" so the client renders a definite state.
     onFailure: async ({ event }) => {
-      const { userId } = (event.data.event as unknown as AnalyzeEvent).data;
+      const { userId, distinctId } = (
+        event.data.event as unknown as AnalyzeEvent
+      ).data;
       if (!userId) return;
       await writeFailed(userId, "job_failed");
+      await captureServerEvent(distinctId ?? userId, ANALYSIS_FAILED_EVENT, {
+        reason: "job_failed",
+      });
     },
     triggers: [{ event: "onboarding/website-analyze" }],
   },
   async ({ event, step }) => {
-    const { userId, websiteUrl, businessDescription } =
+    const { userId, websiteUrl, businessDescription, distinctId } =
       event.data as AnalyzeEvent["data"];
 
     await step.run("mark-running", async () => {
@@ -117,6 +129,28 @@ export const onboardingWebsiteAnalyze = inngest.createFunction(
         return;
       }
       await writeFailed(userId, result.errorCode);
+    });
+
+    // Funnel analytics — keyed on the anonymous distinct id (falls back to
+    // userId) so it stitches with the other onboarding events. Isolated in its
+    // own step so a tracking hiccup can't disturb the analysis save above. The
+    // transient-retry path never reaches here (it throws); `onFailure` tracks
+    // that case, so each terminal outcome emits exactly one event. The try/catch
+    // guarantees this step never throws → it can never exhaust retries and let
+    // `onFailure` emit a second, conflicting terminal event for the same run.
+    await step.run("track-analysis-result", async () => {
+      const trackingId = distinctId ?? userId;
+      try {
+        if (result.success) {
+          await captureServerEvent(trackingId, ANALYSIS_COMPLETED_EVENT);
+        } else {
+          await captureServerEvent(trackingId, ANALYSIS_FAILED_EVENT, {
+            reason: result.errorCode,
+          });
+        }
+      } catch {
+        // Analytics is best-effort — never fail the job over a tracking hiccup.
+      }
     });
 
     return { success: result.success, userId };

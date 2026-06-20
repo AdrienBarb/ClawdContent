@@ -71,7 +71,7 @@ function toComposeMediaPlan(output: ComposePostOutput): PostMediaPlan {
  * Generate ONE ephemeral post for /explore: a caption plus a system-decided
  * visual. Nothing is persisted — the post lives in client state until the user
  * posts or schedules it. Instagram always gets a visual (it rejects media-less
- * posts); Facebook may stay text-only.
+ * posts).
  */
 export async function composePost({
   userId,
@@ -141,7 +141,6 @@ export async function composePost({
       // blocks publish until the user regenerates a visual.
       contentType = "image";
     }
-    // Facebook with a failed image silently degrades to a text-only post.
   }
 
   const slots = getBestSlots({

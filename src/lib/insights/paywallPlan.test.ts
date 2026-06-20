@@ -201,7 +201,7 @@ describe("selectPrimaryAccount", () => {
   });
 
   it("prefers an account with a strategy already authored", () => {
-    const withStrategy = makeAccount({ id: "ready", platform: "facebook" });
+    const withStrategy = makeAccount({ id: "ready", platform: "instagram" });
     const building = makeAccount({
       id: "building",
       platform: "instagram",
@@ -210,33 +210,35 @@ describe("selectPrimaryAccount", () => {
     expect(selectPrimaryAccount([building, withStrategy])?.id).toBe("ready");
   });
 
-  it("prefers the richer data tier over platform", () => {
+  it("prefers the richer data tier", () => {
     const igThin = makeAccount({
       id: "ig-thin",
       platform: "instagram",
       insights: makeInsights({ dataQuality: "thin" }),
     });
-    const fbRich = makeAccount({
-      id: "fb-rich",
-      platform: "facebook",
-      insights: makeInsights({ dataQuality: "rich" }),
-    });
-    expect(selectPrimaryAccount([igThin, fbRich])?.id).toBe("fb-rich");
-  });
-
-  it("breaks an equal-readiness, equal-tier tie in favor of Instagram", () => {
-    const fb = makeAccount({
-      id: "fb",
-      platform: "facebook",
-      insights: makeInsights({ dataQuality: "rich" }),
-    });
-    const ig = makeAccount({
-      id: "ig",
+    const igRich = makeAccount({
+      id: "ig-rich",
       platform: "instagram",
       insights: makeInsights({ dataQuality: "rich" }),
     });
-    // Both strategy-ready, both rich → platformRank decides.
-    expect(selectPrimaryAccount([fb, ig])?.id).toBe("ig");
+    expect(selectPrimaryAccount([igThin, igRich])?.id).toBe("ig-rich");
+  });
+
+  it("breaks an equal-readiness, equal-tier tie by oldest connection", () => {
+    const newer = makeAccount({
+      id: "newer",
+      platform: "instagram",
+      insights: makeInsights({ dataQuality: "rich" }),
+      createdAt: new Date("2026-06-10T00:00:00.000Z"),
+    });
+    const older = makeAccount({
+      id: "older",
+      platform: "instagram",
+      insights: makeInsights({ dataQuality: "rich" }),
+      createdAt: new Date("2026-06-01T00:00:00.000Z"),
+    });
+    // Both strategy-ready, both rich → oldest createdAt wins.
+    expect(selectPrimaryAccount([newer, older])?.id).toBe("older");
   });
 
   it("ignores unsupported platforms when picking", () => {

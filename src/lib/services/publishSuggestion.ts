@@ -35,6 +35,47 @@ export type PublishResult =
     }
   | { ok: false; error: "publish_failed"; message: string };
 
+/**
+ * Re-runs the exact publish-time validation (local media rules + Zernio's
+ * `/tools/validate/post`) against a suggestion's CURRENT content + media,
+ * WITHOUT publishing, locking, or mutating anything. The autopilot generation
+ * pipeline calls this as a pre-commit gate so a post only ever becomes a
+ * committable draft once it would actually publish — catching aspect-ratio,
+ * caption-length, and media-rule violations at generation time instead of at
+ * "Launch my week" time (where they surface as a swallowed `validation_failed`).
+ */
+export async function validateSuggestionPublishable(args: {
+  userId: string;
+  suggestionId: string;
+}): Promise<{ ok: true } | { ok: false; reason: string }> {
+  const suggestion = await prisma.postSuggestion.findFirst({
+    where: {
+      id: args.suggestionId,
+      socialAccount: { lateProfile: { userId: args.userId } },
+    },
+    include: { socialAccount: { include: { lateProfile: true } } },
+  });
+  if (!suggestion) return { ok: false, reason: "not_found" };
+
+  const mediaItems = coerceMediaItems(suggestion.mediaItems);
+
+  const local = validateMediaItems(mediaItems, suggestion.socialAccount.platform);
+  if (!local.ok) return { ok: false, reason: local.error };
+
+  const validation = await validatePost(
+    suggestion.content,
+    suggestion.socialAccount.platform,
+    mediaItems.length > 0 ? mediaItems : undefined,
+    suggestion.socialAccount.lateProfile.lateApiKey
+  );
+  if (!validation.valid) {
+    const reason =
+      validation.errors.map((e) => e.error).join("; ") || "validation_failed";
+    return { ok: false, reason };
+  }
+  return { ok: true };
+}
+
 async function releaseLock(suggestionId: string): Promise<void> {
   try {
     await prisma.postSuggestion.update({

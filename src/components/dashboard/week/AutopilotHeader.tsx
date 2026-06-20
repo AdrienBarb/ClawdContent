@@ -41,7 +41,7 @@ const MODE_OPTIONS: {
   {
     value: "paused",
     label: "Paused",
-    desc: "Stop planning new weeks until you turn it back on.",
+    desc: "Pulls this week off the schedule and stops planning until you resume.",
   },
 ];
 
@@ -108,11 +108,19 @@ export function AutopilotHeader({
     appRouter.api.autopilotPublishingMode,
     {
       onSuccess: (
-        res: { effect?: string; count?: number; skipped?: number },
+        res: {
+          effect?: string;
+          count?: number;
+          skipped?: number;
+          held?: number;
+          failed?: number;
+        },
         variables: { state: PublishingState }
       ) => {
         const n = res?.count ?? 0;
         const skipped = res?.skipped ?? 0;
+        const held = res?.held ?? 0;
+        const failed = res?.failed ?? 0;
         // Always confirm the switch landed. The effect counts below are extra
         // detail — but even when there's nothing to re-bucket (effect "none")
         // the user must never be left wondering whether the toggle worked.
@@ -122,14 +130,26 @@ export function AutopilotHeader({
         toast.success(`Switched to “${label}.”`);
         if (res?.effect === "reverted" && n > 0) {
           toast(
-            `${n} post${n === 1 ? "" : "s"} pulled back for your review.`
+            `${n} post${n === 1 ? "" : "s"} pulled back off the schedule.`
           );
         } else if (res?.effect === "reverted" && skipped > 0) {
           toast(
             `${skipped} post${skipped === 1 ? "" : "s"} stayed live — already out or in progress.`
           );
-        } else if (res?.effect === "committed" && n > 0) {
-          toast(`${n} post${n === 1 ? "" : "s"} scheduled.`);
+        } else if (res?.effect === "committed") {
+          if (n > 0) toast(`${n} post${n === 1 ? "" : "s"} scheduled.`);
+          // Un-publishable posts are held back (not lost) — point the user at
+          // them so the week never silently drops a post.
+          if (held > 0) {
+            toast(
+              `${held} post${held === 1 ? "" : "s"} need new media — fix ${held === 1 ? "it" : "them"} under “Need review” below.`
+            );
+          }
+          if (failed > 0) {
+            toast.error(
+              `${failed} post${failed === 1 ? "" : "s"} couldn't be scheduled — try again in a moment.`
+            );
+          }
         }
         onChanged();
       },
@@ -152,16 +172,24 @@ export function AutopilotHeader({
 
   const selectState = async (value: PublishingState) => {
     if (value === state || isPending) return;
-    // Pulling an already-scheduled week back into review un-schedules those
-    // posts from the platform — confirm before touching live schedules. This
-    // applies from BOTH full_auto and paused (pause leaves posts scheduled).
-    if (value === "review" && state !== "review" && scheduledCount > 0) {
+    // Both "review" and "paused" pull this week's still-scheduled posts off the
+    // platform — confirm before touching live schedules.
+    const willUnschedule =
+      (value === "review" || value === "paused") && scheduledCount > 0;
+    if (willUnschedule) {
       const ok = await confirm({
-        title: "Pull this week back to review?",
+        title:
+          value === "paused"
+            ? "Pause and pull this week back?"
+            : "Pull this week back to review?",
         description: `${scheduledCount} scheduled post${
           scheduledCount === 1 ? "" : "s"
-        } will stop auto-publishing and wait for your approval. Posts that already went out stay live.`,
-        confirmLabel: "Pull back",
+        } will stop auto-publishing${
+          value === "paused"
+            ? " and planning will pause"
+            : " and wait for your approval"
+        }. Posts that already went out stay live.`,
+        confirmLabel: value === "paused" ? "Pause" : "Pull back",
         cancelLabel: "Keep auto",
       });
       if (!ok) return;

@@ -36,7 +36,7 @@ export interface OutcomeSnapshotPayload {
 
 /**
  * Picks the per-platform "primary" metric from the platform config (likes for
- * IG/FB, views for TikTok/YT, saves for Pinterest). Falls back to engagementRate
+ * IG, views for TikTok/YT, saves for Pinterest). Falls back to engagementRate
  * when the platform config is unknown.
  */
 function metricForPost(p: AnalyticsPost): { metric: string; value: number } {

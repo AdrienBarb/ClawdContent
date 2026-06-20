@@ -102,6 +102,36 @@ export async function getSubscriptionByUserId(userId: string) {
   return prisma.subscription.findUnique({ where: { userId } });
 }
 
+/**
+ * Statuses that grant product access. Single source of truth for the inline
+ * `status in [active, trialing]` checks scattered across the autopilot dispatch
+ * and paywall guards.
+ */
+export const ENTITLED_STATUSES = ["active", "trialing"] as const;
+
+/**
+ * Statuses for which we KEEP the user's Zernio profile: entitled + the dunning
+ * grace window (past_due). The reaper deletes profiles for users NOT in this
+ * set, so a user in dunning is never reaped out from under their retrying card.
+ */
+export const PROFILE_GRACE_STATUSES = [
+  ...ENTITLED_STATUSES,
+  "past_due",
+] as const;
+
+/**
+ * Single source of truth for "is this user entitled to the product right now".
+ * Reused by the lifecycle crons so the reaper never touches an entitled user.
+ */
+export function isSubscriptionActive(
+  subscription: { status: string } | null | undefined
+): boolean {
+  return (
+    subscription != null &&
+    (ENTITLED_STATUSES as readonly string[]).includes(subscription.status)
+  );
+}
+
 export async function createPortalSession(userId: string): Promise<string> {
   const subscription = await prisma.subscription.findUnique({
     where: { userId },

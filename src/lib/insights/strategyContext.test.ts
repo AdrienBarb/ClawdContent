@@ -10,7 +10,7 @@ import { strategyStoredSchema, type StrategyLLMOutput } from "@/lib/schemas/stra
 import {
   makeInsights,
   realIgReel,
-  realFbPost,
+  realIgLowReachPost,
 } from "@/lib/insights/__fixtures__/zernio";
 
 const igKb = getBestPractices("instagram")!;
@@ -22,7 +22,7 @@ const richInsights = makeInsights({
   bestTimes: [{ dayOfWeek: 2, hour: 9, avgEngagement: 30, postCount: 4 }],
   avgEngagementRate: 4.2, // true mean over all fetched posts (not the tails)
   topPosts: [toStoredPost(realIgReel)], // ER 7.35
-  bottomPosts: [toStoredPost(realFbPost)], // ER 0
+  bottomPosts: [toStoredPost(realIgLowReachPost)], // ER 0
   inferred: {
     topics: ["coffee", "latte art"],
     toneSummary: "warm and playful",

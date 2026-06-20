@@ -27,15 +27,9 @@ interface ConnectAccountButtonsProps {
    */
   onboarding?: boolean;
   /**
-   * Restrict the picker to these platform ids (order preserved from PLATFORMS).
-   * Onboarding uses it to focus on Instagram + Facebook; the dashboard shows
-   * the full list when omitted.
-   */
-  allowedPlatforms?: string[];
-  /**
    * Layout. "grid" (default) = the compact dashboard picker. "stack" =
    * full-width, vertically stacked, solid brand-fill buttons (onboarding).
-   * Both platforms get equal treatment — no badges, no reordering.
+   * Every platform gets equal treatment — no badges, no reordering.
    */
   variant?: "grid" | "stack";
 }
@@ -47,13 +41,10 @@ export default function ConnectAccountButtons({
   onDisabledClick,
   returnTo,
   onboarding = false,
-  allowedPlatforms,
   variant = "grid",
 }: ConnectAccountButtonsProps) {
   const { usePost } = useApi();
-  const platforms = allowedPlatforms
-    ? PLATFORMS.filter((p) => allowedPlatforms.includes(p.id))
-    : PLATFORMS;
+  const platforms = PLATFORMS;
   const [connectingPlatform, setConnectingPlatform] = useState<string | null>(
     null
   );

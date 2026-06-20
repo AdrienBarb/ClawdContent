@@ -37,6 +37,8 @@ export async function POST(req: NextRequest) {
       state,
       effect: result.effect,
       count: result.count,
+      held: result.held ?? 0,
+      failed: result.failed ?? 0,
     });
 
     return NextResponse.json(result);

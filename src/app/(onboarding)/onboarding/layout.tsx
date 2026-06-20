@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/lib/better-auth/auth";
 import { prisma } from "@/lib/db/prisma";
+import PostHogIdentify from "@/components/tracking/PostHogIdentify";
 
 export default async function OnboardingLayout({
   children,
@@ -28,6 +29,7 @@ export default async function OnboardingLayout({
 
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-[#faf9f5] px-0 py-0 sm:px-4 sm:py-8">
+      <PostHogIdentify userId={session.user.id} />
       {children}
     </div>
   );

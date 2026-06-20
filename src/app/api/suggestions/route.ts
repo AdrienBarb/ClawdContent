@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
       },
       select: { id: true, platform: true, username: true },
     });
-    if (!account) {
+    if (!account || !isSupportedPlatform(account.platform)) {
       return NextResponse.json(
         { error: "Suggestion not found" },
         { status: 404 }

@@ -1,5 +1,5 @@
 import React from "react";
-import { SiInstagram, SiFacebook } from "react-icons/si";
+import { SiInstagram } from "react-icons/si";
 
 export interface PlatformConfig {
   id: string;
@@ -9,10 +9,8 @@ export interface PlatformConfig {
   icon: React.ReactNode;
   /**
    * Solid brand fill (gradient or solid) for the full-width stacked connect
-   * buttons. White text sits on this, so every value clears WCAG AA (≥4.5:1):
-   * the Instagram gradient stops short of its light yellow tail (each stop
-   * ~5.1–6.1:1) and Facebook uses a slightly deepened brand blue (~5.1:1 vs the
-   * stock #1877F2's failing 4.2:1).
+   * buttons. White text sits on this, so the value clears WCAG AA (≥4.5:1): the
+   * Instagram gradient stops short of its light yellow tail (each stop ~5.1–6.1:1).
    */
   solidFill: string;
   /** Larger brand glyph for the stacked connect buttons. */
@@ -32,15 +30,6 @@ export const PLATFORMS: PlatformConfig[] = [
     solidFill:
       "linear-gradient(135deg, #4F5BD5 0%, #962FBF 45%, #C13584 100%)",
     iconLarge: <SiInstagram className={iconLargeClass} />,
-  },
-  {
-    id: "facebook",
-    label: "Facebook",
-    color: "#0866FF",
-    bgLight: "#e6f0ff",
-    icon: <SiFacebook className={iconClass} />,
-    solidFill: "#1568E0",
-    iconLarge: <SiFacebook className={iconLargeClass} />,
   },
 ];
 

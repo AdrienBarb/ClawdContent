@@ -7,6 +7,10 @@ import {
   autopilotDispatch,
   autopilotGenerateWeek,
 } from "./functions/autopilot";
+import {
+  reconcileBilling,
+  reapInactiveProfiles,
+} from "./functions/lifecycle";
 
 export const functions = [
   analyzeAccount,
@@ -16,4 +20,6 @@ export const functions = [
   generateBusinessStrategy,
   autopilotDispatch,
   autopilotGenerateWeek,
+  reconcileBilling,
+  reapInactiveProfiles,
 ];

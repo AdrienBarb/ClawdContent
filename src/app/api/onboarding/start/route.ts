@@ -6,6 +6,7 @@ import { headers } from "next/headers";
 import { limitOnboardingAnalyze } from "@/lib/rateLimit/onboardingLimiter";
 import { onboardingStartSchema } from "@/lib/schemas/onboarding";
 import { startOnboardingAnalysis } from "@/lib/services/onboarding";
+import { getDistinctId } from "@/lib/tracking/distinctId";
 
 // Screen 1: store the URL, advance to screen 2, and kick off the background
 // scrape+extract job. We do NOT await the job — the user connects socials while
@@ -39,10 +40,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    await startOnboardingAnalysis(session.user.id, {
-      websiteUrl,
-      businessDescription,
-    });
+    const distinctId = await getDistinctId();
+    await startOnboardingAnalysis(
+      session.user.id,
+      { websiteUrl, businessDescription },
+      distinctId
+    );
 
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (error) {

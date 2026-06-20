@@ -65,22 +65,6 @@ export const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
     requiresMedia: "image_or_video",
     mediaRules: { maxImages: 10, maxVideos: 1 },
   },
-  facebook: {
-    platform: "facebook",
-    displayName: "Facebook",
-    primaryMetric: "likes",
-    supportsAnalytics: true,
-    noExternalHistory: false,
-    defaultBestTimes: [
-      { dayOfWeek: 2, hour: 13 }, // Wed 13h
-      { dayOfWeek: 3, hour: 19 }, // Thu 19h
-      { dayOfWeek: 6, hour: 11 }, // Sun 11h
-    ],
-    charLimit: null,
-    recommendedPostsPerDay: 2,
-    requiresMedia: null,
-    mediaRules: { maxImages: 10, maxVideos: 1 },
-  },
 };
 
 /**

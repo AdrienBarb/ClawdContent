@@ -6,6 +6,7 @@ import { appRouter } from "@/lib/constants/appRouter";
 import Navbar from "@/components/dashboard/Navbar";
 import TimezoneSync from "@/components/dashboard/TimezoneSync";
 import LegacyKBBanner from "@/components/dashboard/LegacyKBBanner";
+import PostHogIdentify from "@/components/tracking/PostHogIdentify";
 
 export default async function DashboardLayout({
   children,
@@ -38,6 +39,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex min-h-screen flex-col bg-[#faf9f5]">
+      <PostHogIdentify userId={session.user.id} />
       <TimezoneSync />
       <Navbar />
 

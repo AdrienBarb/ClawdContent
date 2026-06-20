@@ -7,7 +7,7 @@ import { z } from "zod";
  */
 
 export const plannedFormatSchema = z.enum([
-  "text", // caption only — Facebook only (Instagram requires media)
+  "text", // caption only — coerced to a visual for Instagram (which requires media)
   "photo", // photoreal image, no on-image text
   "text_card", // flat graphic with exact on-image copy
   "carousel", // 2-6 slides, cover-anchored

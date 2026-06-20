@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CheckIcon, SpinnerGapIcon } from "@phosphor-icons/react";
 import toast from "react-hot-toast";
 import { appRouter } from "@/lib/constants/appRouter";
 import useApi from "@/lib/hooks/useApi";
+import { captureClientEvent } from "@/lib/tracking/clientEvents";
 import { useOnboardingPlan } from "@/lib/hooks/useOnboardingPlan";
 import PlanReveal from "./PlanReveal";
 import PlanBuilding from "./PlanBuilding";
@@ -31,6 +32,14 @@ export default function Step6Paywall() {
   useEffect(() => {
     const t = setTimeout(() => setTimedOut(true), BUILDING_TIMEOUT_MS);
     return () => clearTimeout(t);
+  }, []);
+
+  // Analytics: paywall exposure marker (complements paywall_checkout_started).
+  const paywallViewed = useRef(false);
+  useEffect(() => {
+    if (paywallViewed.current) return;
+    paywallViewed.current = true;
+    captureClientEvent("onboarding_paywall_viewed");
   }, []);
 
   const { mutate: checkout, isPending: isCheckingOut } = usePost(

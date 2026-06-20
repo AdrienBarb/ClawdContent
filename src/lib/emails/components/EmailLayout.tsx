@@ -32,7 +32,7 @@ export const EmailLayout = ({ preview, children }: EmailLayoutProps) => {
             {children}
             <Hr className="my-6 border-gray-200" />
             <Text className="m-0 text-[12px] text-gray-400">
-              PostClaw — your Facebook &amp; Instagram, on autopilot.
+              PostClaw — your Instagram, on autopilot.
             </Text>
           </Container>
         </Body>

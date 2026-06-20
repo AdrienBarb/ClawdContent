@@ -6,13 +6,18 @@ import { useQueryState, parseAsInteger, parseAsString } from "nuqs";
 import { SpinnerGapIcon } from "@phosphor-icons/react";
 import { appRouter } from "@/lib/constants/appRouter";
 import { useOnboardingStatus } from "@/lib/hooks/useOnboardingStatus";
+import { captureClientEvent } from "@/lib/tracking/clientEvents";
 import Step1Website from "./Step1Website";
 import Step2Connect from "./Step2Connect";
 import Step3Goal from "./Step3Goal";
 import Step4BusinessInfo from "./Step4BusinessInfo";
 import Step5Branding from "./Step5Branding";
 import Step6Paywall from "./Step6Paywall";
-import { TOTAL_STEPS } from "./OnboardingShell";
+import { ONBOARDING_STEPS, TOTAL_STEPS } from "./OnboardingShell";
+
+/** Structural step label for analytics (which step, never user input). */
+const stepName = (n: number): string =>
+  ONBOARDING_STEPS[n - 1]?.label ?? `step_${n}`;
 
 export default function OnboardingWizard({
   initialStep,
@@ -55,6 +60,34 @@ export default function OnboardingWizard({
     const id = setInterval(() => void refetch(), 2000);
     return () => clearInterval(id);
   }, [stripeSuccess, status?.isCompleted, refetch]);
+
+  // Analytics funnel — driven from the single `step` source. `started` fires
+  // once per mount; `step_viewed` on every step entry; `step_completed` on a
+  // forward single-step advance (prev → prev+1) for in-wizard moves (Back and
+  // resume/reconcile multi-step jumps never emit it). The OAuth connect path
+  // leaves the wizard full-page and remounts at step 3, so the Connect step's
+  // completion is emitted from OnboardingConnectedBridge, not here.
+  const startedFired = useRef(false);
+  const trackedStep = useRef<number | null>(null);
+  useEffect(() => {
+    if (!startedFired.current) {
+      startedFired.current = true;
+      captureClientEvent("onboarding_started");
+    }
+    const prev = trackedStep.current;
+    if (prev === step) return;
+    if (prev !== null && step === prev + 1) {
+      captureClientEvent("onboarding_step_completed", {
+        step: prev,
+        step_name: stepName(prev),
+      });
+    }
+    captureClientEvent("onboarding_step_viewed", {
+      step,
+      step_name: stepName(step),
+    });
+    trackedStep.current = step;
+  }, [step]);
 
   const goTo = (n: number) => {
     void setStep(n);

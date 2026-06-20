@@ -14,6 +14,10 @@ export type SetPublishingModeResult =
       effect: "none" | "committed" | "reverted";
       count: number;
       skipped?: number;
+      /** full_auto commit: posts held back as needs_media (un-publishable). */
+      held?: number;
+      /** full_auto commit: posts that hit a transient publish error. */
+      failed?: number;
     }
   | { ok: false; error: string };
 
@@ -30,8 +34,9 @@ const inFlight = new Set<string>();
  *   → full_auto: commit any staged (review) week now  (= "Launch my week")
  *   → review:    pull this week's not-yet-published scheduled posts back to
  *                drafts (un-schedules them from Zernio so they stop going out)
- *   → paused:    just stop planning new weeks; already-scheduled posts stand
- * The user setting itself stays forward-looking (governs next Sunday too).
+ *   → paused:    stop planning new weeks AND pull this week's still-scheduled
+ *                posts back off Zernio so nothing goes out while paused
+ * The user setting itself stays forward-looking (governs next week too).
  */
 export async function setPublishingMode({
   userId,
@@ -58,13 +63,7 @@ export async function setPublishingMode({
     await prisma.user.update({ where: { id: userId }, data });
     console.log(`[autopilot:mode] user=${userId} user setting saved (${JSON.stringify(data)})`);
 
-    // Pausing leaves the current week exactly as it is.
-    if (state === "paused") {
-      console.log(`[autopilot:mode] user=${userId} paused — current week left untouched`);
-      return { ok: true, effect: "none", count: 0 };
-    }
-
-    // 2 — current-week effect on the latest batch.
+    // 2 — current-week effect on the latest batch (shared by all three modes).
     const batch = await prisma.weeklyBatch.findFirst({
       where: { userId },
       orderBy: { weekStart: "desc" },
@@ -81,7 +80,10 @@ export async function setPublishingMode({
     );
 
     if (state === "full_auto") {
-      // Commit a staged review week so it stops "needing review".
+      // Commit a staged review week so it stops "needing review". The mode
+      // setting already flipped (forward-looking); a per-post commit problem
+      // must NOT fail the switch — un-publishable posts are held back and
+      // surfaced as a count so the user can fix them, the rest still commit.
       if (batch.mode === "review" && !batch.approvedAt) {
         const staged = await prisma.postSuggestion.count({
           where: { batchId: batch.id, status: "draft" },
@@ -92,32 +94,43 @@ export async function setPublishingMode({
         if (staged > 0) {
           console.log(`[autopilot:mode] user=${userId} committing staged week via approveBatch…`);
           const res = await approveBatch({ userId, batchId: batch.id });
-          // Surface a total commit failure (e.g. lapsed card) instead of
-          // silently reporting success with zero scheduled.
           if (!res.ok) {
+            // Pre-condition only (not_found / already_approved) — the mode
+            // already flipped, so report no current-week effect rather than
+            // failing the switch and desyncing the UI from the saved setting.
             console.warn(
-              `[autopilot:mode] user=${userId} approveBatch FAILED for batch=${batch.id}: ${res.error}`
+              `[autopilot:mode] user=${userId} approveBatch precondition for batch=${batch.id}: ${res.error}`
             );
-            return { ok: false, error: res.error };
+            return { ok: true, effect: "none", count: 0 };
           }
           console.log(
-            `[autopilot:mode] user=${userId} committed batch=${batch.id}: scheduled=${res.scheduled} failed=${res.failed}`
+            `[autopilot:mode] user=${userId} committed batch=${batch.id}: scheduled=${res.scheduled} held=${res.held} failed=${res.failed}`
           );
-          return { ok: true, effect: "committed", count: res.scheduled };
+          return {
+            ok: true,
+            effect: "committed",
+            count: res.scheduled,
+            held: res.held,
+            failed: res.failed,
+          };
         }
       }
       console.log(`[autopilot:mode] user=${userId} → full_auto: nothing to commit — effect=none`);
       return { ok: true, effect: "none", count: 0 };
     }
 
-    // state === "review": pull committed posts back into review.
-    console.log(`[autopilot:mode] user=${userId} → review: pulling committed week back off the Zernio schedule…`);
+    // state === "review" OR "paused": pull this week's still-scheduled posts
+    // back off Zernio so nothing auto-publishes. Review re-arms the week for
+    // approval; pause additionally stops planning new weeks (set in step 1).
+    console.log(
+      `[autopilot:mode] user=${userId} → ${state}: pulling committed week back off the Zernio schedule…`
+    );
     const { pulled, skipped } = await revertWeekToReview({
       userId,
       batchId: batch.id,
     });
     console.log(
-      `[autopilot:mode] user=${userId} → review DONE for batch=${batch.id}: pulled=${pulled} skipped=${skipped}`
+      `[autopilot:mode] user=${userId} → ${state} DONE for batch=${batch.id}: pulled=${pulled} skipped=${skipped}`
     );
     return { ok: true, effect: "reverted", count: pulled, skipped };
   } finally {

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { DISTINCT_ID_COOKIE } from "@/lib/tracking/distinctId";
+import { DISTINCT_ID_COOKIE } from "@/lib/tracking/cookies";
 import { UTM_COOKIE, extractUtmFromUrl } from "@/lib/tracking/utm";
 
 export function proxy(request: NextRequest) {
@@ -11,13 +11,15 @@ export function proxy(request: NextRequest) {
 
   const response = NextResponse.next({ request: { headers: requestHeaders } });
 
-  // Set anonymous distinct ID on first visit
+  // Set anonymous distinct ID on first visit. NOT httpOnly on purpose: posthog-js
+  // reads it client-side to bootstrap its distinct_id, so client + server events
+  // share one identity (see PostHogProvider). It's an anonymous analytics id (no
+  // PII / no session), so JS-readability is the standard, low-risk tradeoff.
   if (!request.cookies.get(DISTINCT_ID_COOKIE)) {
     const distinctId = crypto.randomUUID();
     response.cookies.set(DISTINCT_ID_COOKIE, distinctId, {
       maxAge: 60 * 60 * 24 * 365,
       path: "/",
-      httpOnly: true,
       sameSite: "lax",
     });
   }

@@ -15,6 +15,7 @@ import {
   DEFAULT_TIMEZONE,
   todayStart,
 } from "@/lib/services/autopilot/time";
+import { sendDunningEmail, DUNNING_STAGE } from "@/lib/services/dunning";
 
 export async function POST(req: NextRequest) {
   const sig = req.headers.get("stripe-signature");
@@ -354,6 +355,10 @@ async function handleSubscriptionUpdated(
       currentPeriodStart: period.start,
       currentPeriodEnd: period.end,
       cancelAtPeriodEnd: subscription.cancel_at_period_end,
+      // Recovered → reset the dunning ladder.
+      ...(subscription.status === "active"
+        ? { pastDueSince: null, dunningStage: DUNNING_STAGE.NONE }
+        : {}),
     },
   });
 }
@@ -410,6 +415,10 @@ async function handleInvoiceSucceeded(
       status: sub.status,
       currentPeriodStart: period.start,
       currentPeriodEnd: period.end,
+      // Recovered → reset the dunning ladder.
+      ...(sub.status === "active"
+        ? { pastDueSince: null, dunningStage: DUNNING_STAGE.NONE }
+        : {}),
     },
   });
 }
@@ -418,13 +427,40 @@ async function handleInvoiceFailed(invoice: Stripe.Invoice): Promise<void> {
   const subscriptionId = getSubscriptionIdFromInvoice(invoice);
   if (!subscriptionId) return;
 
-  // Mark as past_due — do NOT deprovision. Stripe will retry.
-  await prisma.subscription
-    .update({
-      where: { stripeSubscriptionId: subscriptionId },
-      data: { status: "past_due" },
-    })
-    .catch(() => {
-      // Subscription may not exist yet
-    });
+  const existing = await prisma.subscription.findUnique({
+    where: { stripeSubscriptionId: subscriptionId },
+    select: {
+      pastDueSince: true,
+      dunningStage: true,
+      user: { select: { name: true, email: true } },
+    },
+  });
+  if (!existing) return; // Subscription may not exist yet
+
+  // Mark past_due — do NOT deprovision. Stripe retries; the daily reconcile cron
+  // escalates the dunning emails and force-cancels at the J7 cutoff. Stamp
+  // pastDueSince on first entry (the cron measures days from it) and advance the
+  // dunning ladder to "initial" so escalation never re-sends the J0 email.
+  const isFirstEntry = existing.pastDueSince === null;
+  await prisma.subscription.update({
+    where: { stripeSubscriptionId: subscriptionId },
+    data: {
+      status: "past_due",
+      ...(isFirstEntry ? { pastDueSince: new Date() } : {}),
+      ...(existing.dunningStage < DUNNING_STAGE.INITIAL
+        ? { dunningStage: DUNNING_STAGE.INITIAL }
+        : {}),
+    },
+  });
+
+  // Send the J0 "payment failed" email once (idempotent per subscription+stage).
+  if (existing.dunningStage < DUNNING_STAGE.INITIAL) {
+    after(() =>
+      sendDunningEmail(
+        { name: existing.user.name, email: existing.user.email },
+        "initial",
+        subscriptionId
+      )
+    );
+  }
 }

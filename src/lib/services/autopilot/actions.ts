@@ -2,7 +2,7 @@ import "server-only";
 import { prisma } from "@/lib/db/prisma";
 import { generateObject } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
-import { deletePost, getPost, updatePost } from "@/lib/late/mutations";
+import { deletePost, getPost, updatePost, validatePost } from "@/lib/late/mutations";
 import { buildRewritePrompt, rewriteOutputSchema } from "@/lib/ai/rewrite";
 import { humanizeContent } from "@/lib/ai/humanize";
 import { HUMAN_SAMPLING } from "@/lib/ai/humanRules";
@@ -13,6 +13,34 @@ import type { ActionTokenPayload } from "./actionTokens";
 export type ExecuteActionResult =
   | { ok: true; message: string }
   | { ok: false; message: string };
+
+/**
+ * A rewritten caption must still publish on the LIVE post. `updatePost` is a
+ * raw PUT with no validation, so guard it: re-validate the new caption against
+ * the post's existing media via Zernio before pushing it. Returns false (caller
+ * keeps the original caption) when the rewrite would break the post — e.g. it
+ * overran the platform's character limit. A validate-endpoint hiccup is treated
+ * as publishable (the PUT itself still validates server-side) — never block a
+ * rewrite on a transient infra error.
+ */
+async function rewriteIsPublishable(
+  content: string,
+  platform: string,
+  mediaItems: { url: string; type: string }[],
+  apiKey: string
+): Promise<boolean> {
+  try {
+    const v = await validatePost(
+      content,
+      platform,
+      mediaItems.length > 0 ? mediaItems : undefined,
+      apiKey
+    );
+    return v.valid;
+  } catch {
+    return true;
+  }
+}
 
 /**
  * A "local" token references a staged PostSuggestion. After "Launch my week"
@@ -121,6 +149,16 @@ export async function executeAutopilotAction(
           ...HUMAN_SAMPLING,
         });
         const content = humanizeContent(object.content);
+        const media = post.mediaItems.map((m) => ({ url: m.url, type: m.type }));
+        if (!(await rewriteIsPublishable(content, platform, media, profile.lateApiKey))) {
+          console.warn(
+            `[autopilot:actions] regenerate produced an un-publishable caption for ${postRef}; keeping the original`
+          );
+          return {
+            ok: false,
+            message: "Couldn't rewrite this post — the new version wouldn't publish. Open the app to edit it instead.",
+          };
+        }
         await updatePost(postRef, { content }, profile.lateApiKey);
         await updateBatchPostSnapshot(
           batchId,
@@ -157,6 +195,16 @@ export async function executeAutopilotAction(
             ...HUMAN_SAMPLING,
           });
           const content = humanizeContent(object.content);
+          const media = post.mediaItems.map((m) => ({ url: m.url, type: m.type }));
+          if (!(await rewriteIsPublishable(content, platform, media, profile.lateApiKey))) {
+            console.warn(
+              `[autopilot:actions] regenerate (post-launch) produced an un-publishable caption for ${externalId}; keeping the original`
+            );
+            return {
+              ok: false,
+              message: "Couldn't rewrite this post — the new version wouldn't publish. Open the app to edit it instead.",
+            };
+          }
           await updatePost(externalId, { content }, profile.lateApiKey);
           await updateBatchPostSnapshot(
             batchId,

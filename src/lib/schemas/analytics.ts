@@ -5,7 +5,7 @@ const dateFormat = z
   .regex(/^\d{4}-\d{2}-\d{2}$/)
   .optional();
 
-const platformEnum = z.enum(["instagram", "facebook"]).optional();
+const platformEnum = z.enum(["instagram"]).optional();
 
 export const analyticsQuerySchema = z.object({
   period: z.enum(["7d", "30d", "90d"]).default("30d"),
