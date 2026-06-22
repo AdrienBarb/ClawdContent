@@ -198,8 +198,9 @@ export const autopilotGenerateWeek = inngest.createFunction(
     id: "autopilot-generate-week",
     retries: 2,
     concurrency: [
-      // Whole-fleet cap — Gemini image endpoints 503 under burst load.
-      { limit: 6 },
+      // Whole-fleet cap — Gemini image endpoints 503 under burst load, and the
+      // Inngest plan allows at most 5 concurrent runs per function.
+      { limit: 5 },
       { key: "event.data.userId", limit: 1 },
     ],
     onFailure: async ({ event }) => {
