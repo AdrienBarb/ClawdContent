@@ -48,15 +48,6 @@ export interface OnboardingShellProps {
   isSubmitting?: boolean;
   /** Show the trailing arrow on the CTA (false on terminal/action steps). */
   ctaArrow?: boolean;
-  /** Small print to the left of the CTA (e.g. pricing terms). */
-  footMicro?: React.ReactNode;
-  /**
-   * Full-width offer block that takes over the footer (CTA stays right). When
-   * set it replaces the Back · footMicro · CTA row — used by the paywall step
-   * to carry the price/offer across the whole footer. Steps with `footerOffer`
-   * have no Back button.
-   */
-  footerOffer?: React.ReactNode;
 }
 
 /**
@@ -79,8 +70,6 @@ export default function OnboardingShell({
   ctaDisabled = false,
   isSubmitting = false,
   ctaArrow = true,
-  footMicro,
-  footerOffer,
 }: OnboardingShellProps) {
   const hasHeader = Boolean(title || subtitle);
 
@@ -152,38 +141,19 @@ export default function OnboardingShell({
       </div>
 
       {/* Footer */}
-      {footerOffer ? (
-        // Paywall step: the footer itself is tinted (warm coral wash) and holds
-        // the price, trust checks, and CTA (built in Step6Paywall). Full-width,
-        // flush to the card edges — no inset card.
-        <div
-          className="border-t border-[#f0ddd3] px-8 py-4"
-          style={{ backgroundColor: "#fbeee7" }}
+      <div className="flex items-center justify-between gap-3 border-t border-gray-100 px-8 py-4">
+        <button
+          type="button"
+          onClick={onBack}
+          className={`flex items-center gap-1.5 text-[13.5px] text-gray-500 transition-colors hover:text-gray-700 ${
+            onBack ? "cursor-pointer" : "invisible"
+          }`}
         >
-          {footerOffer}
-        </div>
-      ) : (
-        <div className="flex items-center justify-between gap-3 border-t border-gray-100 px-8 py-4">
-          <button
-            type="button"
-            onClick={onBack}
-            className={`flex items-center gap-1.5 text-[13.5px] text-gray-500 transition-colors hover:text-gray-700 ${
-              onBack ? "cursor-pointer" : "invisible"
-            }`}
-          >
-            <ArrowLeftIcon className="h-4 w-4" />
-            Back
-          </button>
-          <div className="flex items-center gap-3">
-            {footMicro && (
-              <span className="text-[11.5px] leading-tight text-gray-400">
-                {footMicro}
-              </span>
-            )}
-            {cta}
-          </div>
-        </div>
-      )}
+          <ArrowLeftIcon className="h-4 w-4" />
+          Back
+        </button>
+        <div className="flex items-center gap-3">{cta}</div>
+      </div>
     </>
   );
 
